@@ -8,11 +8,11 @@
 <style>
 html,body{margin:0;min-height:100%;background:#070a0f;color:#f3f4f6;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 #loading{min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px}
-#loading b{font-size:22px}#loading small{display:block;margin-top:8px;color:#94a3b8}
+#loading b{font-size:22px}#loading small{display:block;margin-top:8px;color:#94a3b8;max-width:760px}
 </style>
 </head>
 <body>
-<div id="loading"><div><b>Control de Proyectos</b><small>Cargando aplicación…</small></div></div>
+<div id="loading"><div><b>Control de Proyectos</b><small>Cargando aplicación web…</small></div></div>
 <script src="bundle-01.js"></script>
 <script src="bundle-02.js"></script>
 <script src="bundle-03.js"></script>
@@ -28,9 +28,14 @@ html,body{margin:0;min-height:100%;background:#070a0f;color:#f3f4f6;font-family:
 <script>
 (async()=>{
   try{
-    const binary=atob(window.__CP_B64||'');
+    let b64=String(window.__CP_B64||'').replace(/[^A-Za-z0-9+/=]/g,'');
+    b64=b64.replace(/=+$/,'');
+    b64+='='.repeat((4-(b64.length%4))%4);
+    if(!b64 || !b64.startsWith('H4sI')) throw new Error('El paquete principal de la aplicación no se cargó correctamente.');
+    const binary=atob(b64);
     const bytes=new Uint8Array(binary.length);
     for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+    if(typeof DecompressionStream!=='function') throw new Error('Este navegador no admite la descompresión necesaria. Actualiza Edge/Chrome e inténtalo de nuevo.');
     const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
     let html=await new Response(stream).text();
     html=html.replace('</body>','<script src="core-functions-fix.js"><\/script><script src="project-actions-fix.js"><\/script><script src="dashboard-enhancements.js"><\/script><script src="progress-fix.js"><\/script><script src="adjudication-report.js"><\/script><script src="reports-menu-fix.js"><\/script><script src="reports-render-fix.js"><\/script><script src="dashboard-redesign-v3.js"><\/script><script src="project-summary-redesign.js"><\/script><script src="review-issues-v1.js"><\/script><script src="estimate-scanner-v1.js"><\/script></body>');
@@ -38,7 +43,8 @@ html,body{margin:0;min-height:100%;background:#070a0f;color:#f3f4f6;font-family:
     document.write(html);
     document.close();
   }catch(err){
-    document.getElementById('loading').innerHTML='<div><b>No se pudo cargar la aplicación.</b><small>'+String(err)+'</small></div>';
+    console.error('Control de Proyectos:',err);
+    document.getElementById('loading').innerHTML='<div><b>No se pudo cargar la aplicación.</b><small>'+String(err)+'</small><small style="margin-top:14px">Versión web: 2026-08-18 22:06 · Si acabas de actualizar, usa Ctrl+F5.</small></div>';
   }
 })();
 </script>

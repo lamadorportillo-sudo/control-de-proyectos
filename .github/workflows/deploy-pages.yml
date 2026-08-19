@@ -8,6 +8,7 @@ on:
       - 'build-pages.cjs'
       - 'bundle-*.js'
       - 'estimate-scanner-v1.js'
+      - 'adaptive-learning-v1.js'
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 

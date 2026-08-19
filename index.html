@@ -33,7 +33,7 @@ html,body{margin:0;min-height:100%;background:#070a0f;color:#f3f4f6;font-family:
     for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
     const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
     let html=await new Response(stream).text();
-    html=html.replace('</body>','<script src="core-functions-fix.js"><\/script><script src="dashboard-enhancements.js"><\/script><script src="progress-fix.js"><\/script><script src="adjudication-report.js"><\/script><script src="reports-menu-fix.js"><\/script><script src="reports-render-fix.js"><\/script></body>');
+    html=html.replace('</body>','<script src="core-functions-fix.js"><\/script><script src="project-actions-fix.js"><\/script><script src="dashboard-enhancements.js"><\/script><script src="progress-fix.js"><\/script><script src="adjudication-report.js"><\/script><script src="reports-menu-fix.js"><\/script><script src="reports-render-fix.js"><\/script></body>');
     document.open();
     document.write(html);
     document.close();

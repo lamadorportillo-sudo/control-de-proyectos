@@ -18,9 +18,8 @@ if(!b64.startsWith('H4sI')) throw new Error('Paquete Base64/GZIP inválido');
 let html=zlib.gunzipSync(Buffer.from(b64,'base64')).toString('utf8');
 if(!html.includes('</body>')) throw new Error('HTML base incompleto');
 
-// Corrige una inserción antigua del escáner que quedó dentro del template
-// usado para exportar informes. El escáner ya existe como script independiente
-// al final de la aplicación, por lo que aquí solo se elimina la copia incrustada.
+// Elimina una copia histórica del escáner que quedó dentro del template
+// utilizado para exportar informes.
 const fnPos=html.indexOf('function downloadCurrentReport');
 const badStart='<body>${body}<script>\n/* ===== ESCANER / IMPORTADOR DE ESTIMACIONES V1 ===== */';
 const start=fnPos>=0?html.indexOf(badStart,fnPos):-1;
@@ -30,6 +29,16 @@ if(start>=0){
   if(end<0) throw new Error('Se detectó el escáner incrustado, pero no se encontró su cierre.');
   html=html.slice(0,start)+'<body>${body}</body></html>`;'+html.slice(end+endMarker.length);
   console.log('Se eliminó la copia incrustada del escáner dentro del generador de informes.');
+}
+
+// Añade el lector documental profundo como una capa independiente. El lector
+// anterior se conserva para la pantalla de revisión y guardado ya validada.
+const deepScanner=fs.readFileSync('estimate-scanner-v1.js','utf8');
+if(!deepScanner.includes('LECTOR DOCUMENTAL PROFUNDO V2')) throw new Error('No se encontró el lector documental V2.');
+if(!html.includes('LECTOR DOCUMENTAL PROFUNDO V2')){
+  const bodyEnd=html.toLowerCase().lastIndexOf('</body>');
+  if(bodyEnd<0) throw new Error('No se encontró </body> para insertar el lector V2.');
+  html=html.slice(0,bodyEnd)+`<script>\n${deepScanner}\n</script>\n`+html.slice(bodyEnd);
 }
 
 // Validación sintáctica de todos los scripts inline antes de publicar.

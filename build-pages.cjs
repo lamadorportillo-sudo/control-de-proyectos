@@ -31,14 +31,22 @@ if(start>=0){
   console.log('Se eliminó la copia incrustada del escáner dentro del generador de informes.');
 }
 
-// Añade el lector documental profundo como una capa independiente. El lector
-// anterior se conserva para la pantalla de revisión y guardado ya validada.
+// Añade el lector documental profundo como una capa independiente.
 const deepScanner=fs.readFileSync('estimate-scanner-v1.js','utf8');
 if(!deepScanner.includes('LECTOR DOCUMENTAL PROFUNDO V2')) throw new Error('No se encontró el lector documental V2.');
 if(!html.includes('LECTOR DOCUMENTAL PROFUNDO V2')){
   const bodyEnd=html.toLowerCase().lastIndexOf('</body>');
   if(bodyEnd<0) throw new Error('No se encontró </body> para insertar el lector V2.');
   html=html.slice(0,bodyEnd)+`<script>\n${deepScanner}\n</script>\n`+html.slice(bodyEnd);
+}
+
+// Añade el motor de aprendizaje adaptativo como módulo independiente.
+const adaptiveLearning=fs.readFileSync('adaptive-learning-v1.js','utf8');
+if(!adaptiveLearning.includes('APRENDIZAJE ADAPTATIVO V1')) throw new Error('No se encontró el motor de aprendizaje adaptativo.');
+if(!html.includes('APRENDIZAJE ADAPTATIVO V1')){
+  const bodyEnd=html.toLowerCase().lastIndexOf('</body>');
+  if(bodyEnd<0) throw new Error('No se encontró </body> para insertar aprendizaje adaptativo.');
+  html=html.slice(0,bodyEnd)+`<script>\n${adaptiveLearning}\n</script>\n`+html.slice(bodyEnd);
 }
 
 // Validación sintáctica de todos los scripts inline antes de publicar.

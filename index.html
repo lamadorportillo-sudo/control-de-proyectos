@@ -13,39 +13,41 @@ html,body{margin:0;min-height:100%;background:#070a0f;color:#f3f4f6;font-family:
 </head>
 <body>
 <div id="loading"><div><b>Control de Proyectos</b><small>Cargando aplicación web…</small></div></div>
-<script src="bundle-01.js"></script>
-<script src="bundle-02.js"></script>
-<script src="bundle-03.js"></script>
-<script src="bundle-04.js"></script>
-<script src="bundle-05.js"></script>
-<script src="bundle-06.js"></script>
-<script src="bundle-07.js"></script>
-<script src="bundle-08.js"></script>
-<script src="bundle-09.js"></script>
-<script src="bundle-10.js"></script>
-<script src="bundle-11.js"></script>
-<script src="bundle-12.js"></script>
 <script>
 (async()=>{
+  const VERSION='2026-08-18-2210-b66371e';
+  const fail=(err)=>{
+    console.error('Control de Proyectos:',err);
+    const el=document.getElementById('loading');
+    if(el)el.innerHTML='<div><b>No se pudo cargar la aplicación.</b><small>'+String(err)+'</small><small style="margin-top:14px">Versión web: '+VERSION+'</small></div>';
+  };
   try{
-    let b64=String(window.__CP_B64||'').replace(/[^A-Za-z0-9+/=]/g,'');
-    b64=b64.replace(/=+$/,'');
+    const names=Array.from({length:12},(_,i)=>`bundle-${String(i+1).padStart(2,'0')}.js`);
+    const sources=await Promise.all(names.map(async name=>{
+      const r=await fetch(`${name}?v=${encodeURIComponent(VERSION)}`,{cache:'no-store'});
+      if(!r.ok)throw new Error(`No se pudo cargar ${name} (HTTP ${r.status}).`);
+      return [name,await r.text()];
+    }));
+    const chunks=sources.map(([name,src])=>{
+      const m=src.match(/\+\s*'([^']*)'/s);
+      if(!m)throw new Error(`El archivo ${name} no contiene un bloque Base64 válido.`);
+      return m[1];
+    });
+    let b64=chunks.join('').replace(/[^A-Za-z0-9+/]/g,'');
     b64+='='.repeat((4-(b64.length%4))%4);
-    if(!b64 || !b64.startsWith('H4sI')) throw new Error('El paquete principal de la aplicación no se cargó correctamente.');
+    if(!b64.startsWith('H4sI'))throw new Error('El paquete principal no tiene una cabecera GZIP válida.');
     const binary=atob(b64);
     const bytes=new Uint8Array(binary.length);
     for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
-    if(typeof DecompressionStream!=='function') throw new Error('Este navegador no admite la descompresión necesaria. Actualiza Edge/Chrome e inténtalo de nuevo.');
+    if(typeof DecompressionStream!=='function')throw new Error('Este navegador no admite DecompressionStream. Actualiza Edge o Chrome.');
     const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
     let html=await new Response(stream).text();
-    html=html.replace('</body>','<script src="core-functions-fix.js"><\/script><script src="project-actions-fix.js"><\/script><script src="dashboard-enhancements.js"><\/script><script src="progress-fix.js"><\/script><script src="adjudication-report.js"><\/script><script src="reports-menu-fix.js"><\/script><script src="reports-render-fix.js"><\/script><script src="dashboard-redesign-v3.js"><\/script><script src="project-summary-redesign.js"><\/script><script src="review-issues-v1.js"><\/script><script src="estimate-scanner-v1.js"><\/script></body>');
+    if(!html.includes('</body>'))throw new Error('El HTML principal se obtuvo incompleto.');
+    html=html.replace('</body>','<script src="core-functions-fix.js?v='+VERSION+'"><\/script><script src="project-actions-fix.js?v='+VERSION+'"><\/script><script src="dashboard-enhancements.js?v='+VERSION+'"><\/script><script src="progress-fix.js?v='+VERSION+'"><\/script><script src="adjudication-report.js?v='+VERSION+'"><\/script><script src="reports-menu-fix.js?v='+VERSION+'"><\/script><script src="reports-render-fix.js?v='+VERSION+'"><\/script><script src="dashboard-redesign-v3.js?v='+VERSION+'"><\/script><script src="project-summary-redesign.js?v='+VERSION+'"><\/script><script src="review-issues-v1.js?v='+VERSION+'"><\/script><script src="estimate-scanner-v1.js?v='+VERSION+'"><\/script></body>');
     document.open();
     document.write(html);
     document.close();
-  }catch(err){
-    console.error('Control de Proyectos:',err);
-    document.getElementById('loading').innerHTML='<div><b>No se pudo cargar la aplicación.</b><small>'+String(err)+'</small><small style="margin-top:14px">Versión web: 2026-08-18 22:06 · Si acabas de actualizar, usa Ctrl+F5.</small></div>';
-  }
+  }catch(err){fail(err)}
 })();
 </script>
 </body>

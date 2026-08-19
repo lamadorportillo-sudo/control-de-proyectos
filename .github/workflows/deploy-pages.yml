@@ -40,15 +40,27 @@ jobs:
           html = html_path.read_text(encoding='utf-8')
           js = js_path.read_text(encoding='utf-8')
           marker = '/* ===== CICLO CONTRACTUAL LCE/RLCE V1 ===== */'
-          if marker not in html:
+          new_block = '<script>\n' + js + '\n</script>'
+
+          marker_pos = html.find(marker)
+          if marker_pos >= 0:
+              start = html.rfind('<script', 0, marker_pos)
+              start = html.find('>', start) + 1 if start >= 0 else -1
+              block_start = html.rfind('<script', 0, marker_pos)
+              block_end = html.find('</script>', marker_pos)
+              if block_start < 0 or block_end < 0:
+                  raise SystemExit('No se pudo localizar el bloque contractual existente')
+              block_end += len('</script>')
+              html = html[:block_start] + new_block + html[block_end:]
+              print('Ciclo contractual actualizado en index.html')
+          else:
               pos = html.lower().rfind('</body>')
               if pos < 0:
                   raise SystemExit('No se encontró </body> en index.html')
-              html = html[:pos] + '<script>\n' + js + '\n</script>\n' + html[pos:]
-              html_path.write_text(html, encoding='utf-8')
+              html = html[:pos] + new_block + '\n' + html[pos:]
               print('Ciclo contractual integrado en index.html')
-          else:
-              print('Ciclo contractual ya integrado')
+
+          html_path.write_text(html, encoding='utf-8')
           PY
 
       - name: Guardar index.html directo en main

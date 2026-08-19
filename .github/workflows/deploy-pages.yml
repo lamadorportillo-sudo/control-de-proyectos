@@ -12,6 +12,7 @@ on:
       - 'contract-lifecycle-v1.js'
       - 'contract-lifecycle-accordion-ui.js'
       - 'search-display-fix.js'
+      - 'budget-control-v1.js'
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
@@ -35,6 +36,7 @@ jobs:
           node --check contract-lifecycle-v1.js
           node --check contract-lifecycle-accordion-ui.js
           node --check search-display-fix.js
+          node --check budget-control-v1.js
 
       - name: Integrar ciclo contractual LCE-RLCE
         run: |
@@ -116,6 +118,32 @@ jobs:
               html = html[:pos] + new_block + '\n' + html[pos:]
           html_path.write_text(html, encoding='utf-8')
           print('Corrección del buscador integrada en index.html')
+          PY
+
+      - name: Integrar disponibilidad presupuestaria S.A.M.I.
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          html_path = Path('index.html')
+          js = Path('budget-control-v1.js').read_text(encoding='utf-8')
+          html = html_path.read_text(encoding='utf-8')
+          marker = '/* ===== DISPONIBILIDAD PRESUPUESTARIA S.A.M.I. V1 ===== */'
+          new_block = '<script>\n' + js + '\n</script>'
+          marker_pos = html.find(marker)
+          if marker_pos >= 0:
+              block_start = html.rfind('<script', 0, marker_pos)
+              block_end = html.find('</script>', marker_pos)
+              if block_start < 0 or block_end < 0:
+                  raise SystemExit('No se pudo localizar el módulo de disponibilidad presupuestaria')
+              block_end += len('</script>')
+              html = html[:block_start] + new_block + html[block_end:]
+          else:
+              pos = html.lower().rfind('</body>')
+              if pos < 0:
+                  raise SystemExit('No se encontró </body> en index.html')
+              html = html[:pos] + new_block + '\n' + html[pos:]
+          html_path.write_text(html, encoding='utf-8')
+          print('Disponibilidad presupuestaria S.A.M.I. integrada en index.html')
           PY
 
       - name: Guardar index.html directo en main

@@ -18,14 +18,15 @@ if(!b64.startsWith('H4sI')) throw new Error('Paquete Base64/GZIP inválido');
 let html=zlib.gunzipSync(Buffer.from(b64,'base64')).toString('utf8');
 if(!html.includes('</body>')) throw new Error('HTML base incompleto');
 
-// Corrige el buscador de proyectos: al redibujar la lista, recupera foco y cursor
-// para permitir escribir de forma continua sin tener que volver a hacer clic.
+// Corrige el buscador de proyectos de raíz: no redibuja la vista mientras se escribe.
+// Filtra las tarjetas ya renderizadas, por lo que el input conserva foco y permite
+// escribir palabras/códigos completos de forma continua en PC, tablet y celular.
 const searchOld="$('#projectSearch').oninput=e=>{view.search=e.target.value;renderProjects(k)};";
-const searchNew="$('#projectSearch').oninput=e=>{const value=e.target.value,pos=e.target.selectionStart??value.length;view.search=value;renderProjects(k);const input=$('#projectSearch');if(input){input.focus();const caret=Math.min(pos,value.length);try{input.setSelectionRange(caret,caret)}catch{}}};";
+const searchNew="$('#projectSearch').oninput=e=>{view.search=e.target.value;const q=view.search.trim().toLowerCase(),grid=$('.dashboard-project-grid');if(!grid)return;const cards=[...grid.querySelectorAll('.card')];let visible=0;cards.forEach(card=>{const show=!q||card.textContent.toLowerCase().includes(q);card.style.display=show?'':'none';if(show)visible++});let empty=grid.querySelector('[data-search-empty]');if(!visible){if(!empty){empty=document.createElement('div');empty.className='empty';empty.dataset.searchEmpty='1';empty.textContent='No hay proyectos que coincidan con la búsqueda.';grid.appendChild(empty)}}else if(empty)empty.remove()};";
 if(html.includes(searchOld)){
   html=html.replace(searchOld,searchNew);
-  console.log('Buscador corregido: conserva foco y posición del cursor.');
-}else if(!html.includes('const value=e.target.value,pos=e.target.selectionStart')){
+  console.log('Buscador corregido: filtra tarjetas sin redibujar la vista.');
+}else if(!html.includes("grid.querySelectorAll('.card')")){
   throw new Error('No se encontró el manejador esperado del buscador de proyectos.');
 }
 

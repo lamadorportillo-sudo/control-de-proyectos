@@ -28,14 +28,13 @@ jobs:
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Preparar sitio
-        run: |
-          touch .nojekyll
+      - name: Reconstruir y validar aplicación
+        run: node build-pages.cjs
 
-      - name: Subir sitio
+      - name: Subir sitio generado
         uses: actions/upload-pages-artifact@v4
         with:
-          path: '.'
+          path: './_site'
 
       - name: Publicar
         id: deployment

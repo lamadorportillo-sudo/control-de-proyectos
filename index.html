@@ -13,21 +13,21 @@ html,body{margin:0;min-height:100%;background:#070a0f;color:#f3f4f6;font-family:
 </head>
 <body>
 <div id="loading"><div><b>Control de Proyectos</b><small>Cargando aplicación web…</small></div></div>
-<script src="bundle-01.js?v=20260818-full"></script>
-<script src="bundle-02.js?v=20260818-full"></script>
-<script src="bundle-03.js?v=20260818-full"></script>
-<script src="bundle-04.js?v=20260818-full"></script>
-<script src="bundle-05.js?v=20260818-full"></script>
-<script src="bundle-06.js?v=20260818-full"></script>
-<script src="bundle-07.js?v=20260818-full"></script>
-<script src="bundle-08.js?v=20260818-full"></script>
-<script src="bundle-09.js?v=20260818-full"></script>
-<script src="bundle-10.js?v=20260818-full"></script>
-<script src="bundle-11.js?v=20260818-full"></script>
-<script src="bundle-12.js?v=20260818-full"></script>
+<script src="bundle-01.js?v=20260818-full2"></script>
+<script src="bundle-02.js?v=20260818-full2"></script>
+<script src="bundle-03.js?v=20260818-full2"></script>
+<script src="bundle-04.js?v=20260818-full2"></script>
+<script src="bundle-05.js?v=20260818-full2"></script>
+<script src="bundle-06.js?v=20260818-full2"></script>
+<script src="bundle-07.js?v=20260818-full2"></script>
+<script src="bundle-08.js?v=20260818-full2"></script>
+<script src="bundle-09.js?v=20260818-full2"></script>
+<script src="bundle-10.js?v=20260818-full2"></script>
+<script src="bundle-11.js?v=20260818-full2"></script>
+<script src="bundle-12.js?v=20260818-full2"></script>
 <script>
 (async()=>{
-  const VERSION='2026-08-18-full-bundles';
+  const VERSION='2026-08-18-full2';
   try{
     let b64=String(window.__CP_B64||'').replace(/[^A-Za-z0-9+/=]/g,'');
     b64=b64.replace(/=+$/,'');
@@ -40,9 +40,7 @@ html,body{margin:0;min-height:100%;background:#070a0f;color:#f3f4f6;font-family:
     const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
     const html=await new Response(stream).text();
     if(!html.includes('</body>')) throw new Error('El HTML principal se obtuvo incompleto.');
-    document.open();
-    document.write(html);
-    document.close();
+    document.open();document.write(html);document.close();
   }catch(err){
     console.error('Control de Proyectos:',err);
     document.getElementById('loading').innerHTML='<div><b>No se pudo cargar la aplicación.</b><small>'+String(err)+'</small><small style="margin-top:14px">Versión web: '+VERSION+'</small></div>';

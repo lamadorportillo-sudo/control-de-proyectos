@@ -9,6 +9,7 @@ on:
       - 'bundle-*.js'
       - 'estimate-scanner-v1.js'
       - 'adaptive-learning-v1.js'
+      - 'contract-lifecycle-v1.js'
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
@@ -26,6 +27,29 @@ jobs:
 
       - name: Reconstruir, reparar y validar HTML
         run: node build-pages.cjs
+
+      - name: Validar ciclo contractual
+        run: node --check contract-lifecycle-v1.js
+
+      - name: Integrar ciclo contractual LCE-RLCE
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          html_path = Path('index.html')
+          js_path = Path('contract-lifecycle-v1.js')
+          html = html_path.read_text(encoding='utf-8')
+          js = js_path.read_text(encoding='utf-8')
+          marker = '/* ===== CICLO CONTRACTUAL LCE/RLCE V1 ===== */'
+          if marker not in html:
+              pos = html.lower().rfind('</body>')
+              if pos < 0:
+                  raise SystemExit('No se encontró </body> en index.html')
+              html = html[:pos] + '<script>\n' + js + '\n</script>\n' + html[pos:]
+              html_path.write_text(html, encoding='utf-8')
+              print('Ciclo contractual integrado en index.html')
+          else:
+              print('Ciclo contractual ya integrado')
+          PY
 
       - name: Guardar index.html directo en main
         run: |

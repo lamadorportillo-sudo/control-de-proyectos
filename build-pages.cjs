@@ -86,3 +86,5 @@ if(html.includes('window.__CP_B64=')) throw new Error('El HTML final aún contie
 
 fs.writeFileSync('index.html',html,'utf8');
 console.log(`index.html directo generado: ${Buffer.byteLength(html,'utf8')} bytes; ${scripts.length} scripts validados.`);
+
+// Reejecución solicitada para publicar la corrección del foco del buscador.

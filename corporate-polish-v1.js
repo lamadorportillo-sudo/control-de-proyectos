@@ -44,7 +44,7 @@ function orderNav(){
  selectors.forEach(sel=>{const el=nav.querySelector(sel);if(el)nav.appendChild(el)});
  const labels={home:'Inicio',projects:'Proyectos',budget:'Presupuesto',alerts:'Alertas',audit:'Auditoría',reports:'Reportes'};
  nav.querySelectorAll('[data-ccx]').forEach(b=>{if(labels[b.dataset.ccx])b.textContent=labels[b.dataset.ccx]});
- c=document.getElementById('cccNavBtn');if(c)c.textContent='Contratos';
+ const c=document.getElementById('cccNavBtn');if(c)c.textContent='Contratos';
  const g=document.getElementById('ccgNavBtn');if(g)g.textContent='Gacetas';
 }
 

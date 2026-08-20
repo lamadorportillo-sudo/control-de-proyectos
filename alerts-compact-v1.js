@@ -42,46 +42,13 @@ function compact(list,itemSelector,host){
   if(!list||!host)return false;
   const items=[...list.querySelectorAll(itemSelector)];
   if(!items.length)return false;
-
-  list.hidden=false;
-  list.style.display='grid';
-  list.classList.add('cp-alert-list-clean');
-
+  list.hidden=false;list.style.display='grid';list.classList.add('cp-alert-list-clean');
   items.sort((a,b)=>classify(b).score-classify(a).score).forEach(node=>list.appendChild(node));
-
-  const stats=items.reduce((o,node)=>{
-    const c=classify(node);
-    if(c.critical)o.critical++;
-    if(c.deadline)o.deadline++;
-    if(c.guarantee)o.guarantee++;
-    if(c.advance)o.advance++;
-    return o;
-  },{critical:0,deadline:0,guarantee:0,advance:0});
-
+  const stats=items.reduce((o,node)=>{const c=classify(node);if(c.critical)o.critical++;if(c.deadline)o.deadline++;if(c.guarantee)o.guarantee++;if(c.advance)o.advance++;return o;},{critical:0,deadline:0,guarantee:0,advance:0});
   let summary=host.querySelector(':scope > .cp-alerts-compact');
-  if(!summary){
-    summary=document.createElement('div');
-    summary.className='cp-alerts-compact';
-    list.before(summary);
-  }
-
-  summary.innerHTML=`
-    <div class="cp-alerts-head">
-      <div><b>${items.length} alertas activas</b><small>Solo se muestran las 2 de mayor prioridad.</small></div>
-    </div>
-    <div class="cp-alerts-chips">
-      <span class="cp-alert-chip critical"><strong>${stats.critical}</strong> críticas</span>
-      <span class="cp-alert-chip deadline"><strong>${stats.deadline}</strong> plazos</span>
-      <span class="cp-alert-chip guarantee"><strong>${stats.guarantee}</strong> garantías</span>
-      <span class="cp-alert-chip advance"><strong>${stats.advance}</strong> anticipos</span>
-    </div>
-    <button type="button" class="cp-alerts-open ${state.expanded?'active':''}" data-cp-alerts-open>
-      ${state.expanded?'Ocultar detalle':`Ver todas las alertas (${items.length})`}
-    </button>`;
-
-  items.forEach((node,index)=>{
-    node.dataset.cpAlertHidden=(!state.expanded&&index>=2)?'1':'0';
-  });
+  if(!summary){summary=document.createElement('div');summary.className='cp-alerts-compact';list.before(summary)}
+  summary.innerHTML=`<div class="cp-alerts-head"><div><b>${items.length} alertas activas</b><small>Solo se muestran las 2 de mayor prioridad.</small></div></div><div class="cp-alerts-chips"><span class="cp-alert-chip critical"><strong>${stats.critical}</strong> críticas</span><span class="cp-alert-chip deadline"><strong>${stats.deadline}</strong> plazos</span><span class="cp-alert-chip guarantee"><strong>${stats.guarantee}</strong> garantías</span><span class="cp-alert-chip advance"><strong>${stats.advance}</strong> anticipos</span></div><button type="button" class="cp-alerts-open ${state.expanded?'active':''}" data-cp-alerts-open>${state.expanded?'Ocultar detalle':`Ver todas las alertas (${items.length})`}</button>`;
+  items.forEach((node,index)=>{node.dataset.cpAlertHidden=(!state.expanded&&index>=2)?'1':'0'});
   return true;
 }
 
@@ -89,67 +56,33 @@ function apply(){
   try{
     if(typeof view!=='undefined'&&view.screen!=='projects')return;
     ensureStyle();
-
     const rail=document.querySelector('.control-rail-v3 .rail-alert-list');
-    if(rail){
-      const host=rail.closest('.rail-card')||rail.parentElement;
-      compact(rail,'.rail-alert',host);
-      document.querySelector('.followup-center .followup-panel')?.setAttribute('hidden','');
-      return;
-    }
-
+    if(rail){const host=rail.closest('.rail-card')||rail.parentElement;compact(rail,'.rail-alert',host);document.querySelector('.followup-center .followup-panel')?.setAttribute('hidden','');return}
     const old=document.querySelector('.followup-center .followup-list');
-    if(old){
-      const host=old.closest('.followup-panel')||old.parentElement;
-      host?.removeAttribute('hidden');
-      compact(old,'.followup-item',host);
-    }
+    if(old){const host=old.closest('.followup-panel')||old.parentElement;host?.removeAttribute('hidden');compact(old,'.followup-item',host)}
   }catch(err){console.warn('Alertas compactas:',err)}
 }
-
 function afterRender(){setTimeout(apply,0)}
-
-if(typeof renderApp==='function'&&!renderApp.__cpAlertsCompact){
-  const base=renderApp;
-  const wrapped=function(){const result=base.apply(this,arguments);afterRender();return result;};
-  wrapped.__cpAlertsCompact=true;
-  renderApp=wrapped;
-}
-if(typeof renderProjects==='function'&&!renderProjects.__cpAlertsCompact){
-  const base=renderProjects;
-  const wrapped=function(){const result=base.apply(this,arguments);afterRender();return result;};
-  wrapped.__cpAlertsCompact=true;
-  renderProjects=wrapped;
-}
-
-document.addEventListener('click',e=>{
-  if(!e.target.closest?.('[data-cp-alerts-open]'))return;
-  state.expanded=!state.expanded;
-  apply();
-},true);
-
-ensureStyle();
-setTimeout(apply,0);
-setTimeout(apply,250);
-setTimeout(apply,900);
+if(typeof renderApp==='function'&&!renderApp.__cpAlertsCompact){const base=renderApp;const wrapped=function(){const result=base.apply(this,arguments);afterRender();return result;};wrapped.__cpAlertsCompact=true;renderApp=wrapped}
+if(typeof renderProjects==='function'&&!renderProjects.__cpAlertsCompact){const base=renderProjects;const wrapped=function(){const result=base.apply(this,arguments);afterRender();return result;};wrapped.__cpAlertsCompact=true;renderProjects=wrapped}
+document.addEventListener('click',e=>{if(!e.target.closest?.('[data-cp-alerts-open]'))return;state.expanded=!state.expanded;apply()},true);
+ensureStyle();setTimeout(apply,0);setTimeout(apply,250);setTimeout(apply,900);
 })();
 
-/* Cargador permanente del módulo histórico de Gacetas.
-   Se mantiene aquí porque alertas-compact-v1.js ya forma parte del despliegue estable. */
+/* Cargador estable de extensiones corporativas. */
 (()=>{
 'use strict';
-if(window.__CC_PROCUREMENT_LOADER_V1__)return;
-window.__CC_PROCUREMENT_LOADER_V1__=true;
-function loadProcurement(){
-  if(window.__CC_PROCUREMENT_THRESHOLDS_V1__)return;
-  if(document.querySelector('script[data-cc-procurement-loader]'))return;
-  const s=document.createElement('script');
-  s.src='procurement-thresholds-v1.js?v=20260820-gacetas1';
-  s.async=false;
-  s.dataset.ccProcurementLoader='1';
-  s.onerror=()=>console.error('No se pudo cargar el módulo histórico de Gacetas.');
-  document.head.appendChild(s);
+if(window.__CC_STABLE_EXTENSIONS_LOADER_V1__)return;
+window.__CC_STABLE_EXTENSIONS_LOADER_V1__=true;
+const modules=[
+  {flag:'__CC_PROCUREMENT_THRESHOLDS_V1__',src:'procurement-thresholds-v1.js?v=20260820-gacetas2',key:'procurement'},
+  {flag:'__CC_CORPORATE_UI_V1__',src:'corporate-ui-v1.js?v=20260820-corporate1',key:'corporate'}
+];
+function loadAll(){
+  modules.forEach(m=>{
+    if(window[m.flag]||document.querySelector(`script[data-cc-extension="${m.key}"]`))return;
+    const s=document.createElement('script');s.src=m.src;s.async=false;s.dataset.ccExtension=m.key;s.onerror=()=>console.error(`No se pudo cargar ${m.src}`);document.head.appendChild(s);
+  });
 }
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadProcurement,{once:true});
-else loadProcurement();
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadAll,{once:true});else loadAll();
 })();

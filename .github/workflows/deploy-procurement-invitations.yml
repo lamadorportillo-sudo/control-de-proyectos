@@ -1,0 +1,69 @@
+name: Publicar invitaciones a cotización y licitación
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'procurement-invitations-v1.js'
+      - '.github/workflows/deploy-procurement-invitations.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: control-contractual-procurement-invitations
+  cancel-in-progress: true
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Validar módulo
+        run: node --check procurement-invitations-v1.js
+
+      - name: Integrar módulo en la página y compilación
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          module='procurement-invitations-v1.js'
+          version='20260820-invitations1'
+
+          index=Path('index.html')
+          html=index.read_text(encoding='utf-8')
+          html=re.sub(r'<script\s+src=["\']'+re.escape(module)+r'(?:\?[^"\']*)?["\']\s*></script>\s*','',html,flags=re.I)
+          pos=html.lower().rfind('</body>')
+          if pos<0: raise SystemExit('No se encontró </body> en index.html')
+          html=html[:pos]+f'<script src="{module}?v={version}"></script>\n'+html[pos:]
+          index.write_text(html,encoding='utf-8')
+
+          build=Path('build-pages.cjs')
+          src=build.read_text(encoding='utf-8')
+          entry=f"  ['{module}','{version}']"
+          if entry not in src:
+              anchor="  ['visit-print-v2.js','20260820-visitprint2']"
+              if anchor not in src: raise SystemExit('No se encontró el punto de integración de módulos.')
+              src=src.replace(anchor,anchor+',\n'+entry)
+              build.write_text(src,encoding='utf-8')
+          print('Módulo de invitaciones integrado.')
+          PY
+
+      - name: Publicar cambios
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- index.html build-pages.cjs; then
+            echo "El módulo ya estaba integrado."
+          else
+            git add index.html build-pages.cjs
+            git commit -m "Integrar invitaciones previas al proceso [skip ci]"
+            git push origin HEAD:main
+          fi

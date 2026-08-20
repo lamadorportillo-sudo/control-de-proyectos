@@ -1,0 +1,78 @@
+name: Integrar módulo Gacetas una vez
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'procurement-thresholds-v1.js'
+      - '.github/workflows/integrate-procurement-once.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Validar módulo
+        run: node --check procurement-thresholds-v1.js
+
+      - name: Hacer permanente el módulo
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          # build-pages.cjs
+          p=Path('build-pages.cjs')
+          s=p.read_text(encoding='utf-8')
+          needle="  ['engineering-ux-v1.js','20260820-master2']"
+          if "procurement-thresholds-v1.js" not in s:
+              if needle not in s:
+                  raise SystemExit('No se encontró lateModules esperado')
+              s=s.replace(needle, needle+",\n  ['procurement-thresholds-v1.js','20260820-gacetas1']")
+          p.write_text(s,encoding='utf-8')
+
+          # workflow principal
+          p=Path('.github/workflows/deploy-pages.yml')
+          y=p.read_text(encoding='utf-8')
+          if "- 'procurement-thresholds-v1.js'" not in y:
+              y=y.replace("      - 'engineering-ux-v1.js'", "      - 'engineering-ux-v1.js'\n      - 'procurement-thresholds-v1.js'")
+          if 'node --check procurement-thresholds-v1.js' not in y:
+              y=y.replace('          node --check engineering-ux-v1.js', '          node --check engineering-ux-v1.js\n          node --check procurement-thresholds-v1.js')
+          y=y.replace("modules = ['workspace-access-v1.js','alerts-compact-v1.js','dashboard-executive-v1.js','engineering-ux-v1.js']",
+                      "modules = ['workspace-access-v1.js','alerts-compact-v1.js','dashboard-executive-v1.js','engineering-ux-v1.js','procurement-thresholds-v1.js']")
+          if '<script src="procurement-thresholds-v1.js?v=20260820-gacetas1"></script>' not in y:
+              y=y.replace("              '<script src=\"engineering-ux-v1.js?v=20260820-master3\"></script>\\n'",
+                          "              '<script src=\"engineering-ux-v1.js?v=20260820-master3\"></script>\\n'\n              '<script src=\"procurement-thresholds-v1.js?v=20260820-gacetas1\"></script>\\n'")
+          p.write_text(y,encoding='utf-8')
+
+          # index actual: carga inmediata, siempre al final
+          p=Path('index.html')
+          h=p.read_text(encoding='utf-8')
+          h=re.sub(r'\n?<script\s+src=["\']procurement-thresholds-v1\.js(?:\?[^"\']*)?["\']\s*></script>', '', h, flags=re.I)
+          pos=h.lower().rfind('</body>')
+          if pos<0: raise SystemExit('No se encontró </body>')
+          h=h[:pos]+'<script src="procurement-thresholds-v1.js?v=20260820-gacetas1"></script>\n'+h[pos:]
+          p.write_text(h,encoding='utf-8')
+          PY
+
+      - name: Validar generador
+        run: node --check build-pages.cjs
+
+      - name: Guardar integración
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add build-pages.cjs .github/workflows/deploy-pages.yml index.html
+          if git diff --cached --quiet; then
+            echo "El módulo ya estaba integrado."
+          else
+            git commit -m "Integrar Gacetas y umbrales históricos [skip ci]"
+            git push origin HEAD:main
+          fi

@@ -10,18 +10,48 @@ const s=document.createElement('style');s.id='cc-corporate-polish-v1';s.textCont
 label:has(>#ccgUrl),label:has(>#ccgSha){display:none!important}
 `;document.head.appendChild(s);
 
+function ensurePermanentNav(){
+ const nav=document.getElementById('ccxNav');if(!nav)return;
+
+ let c=document.getElementById('cccNavBtn');
+ if(!c){
+   c=document.createElement('button');
+   c.id='cccNavBtn';c.type='button';c.className='ccc-nav-btn';c.textContent='Contratos';
+   c.dataset.ccContracts='1';
+   const projects=nav.querySelector('[data-ccx="projects"]');
+   projects?.insertAdjacentElement('afterend',c);
+ }
+
+ let g=document.getElementById('ccgNavBtn');
+ if(!g){
+   g=document.createElement('button');
+   g.id='ccgNavBtn';g.type='button';g.textContent='Gacetas';
+   g.title='Gacetas y umbrales por año fiscal';
+   g.addEventListener('click',e=>{
+     e.preventDefault();e.stopPropagation();
+     if(typeof window.renderProcurementThresholds==='function')window.renderProcurementThresholds();
+     else if(typeof toast==='function')toast('El módulo de Gacetas aún se está cargando. Intenta nuevamente en un momento.');
+   });
+   const budget=nav.querySelector('[data-ccx="budget"]');
+   budget?.insertAdjacentElement('afterend',g);
+ }
+}
+
 function orderNav(){
  const nav=document.getElementById('ccxNav');if(!nav)return;
+ ensurePermanentNav();
  const selectors=['[data-ccx="home"]','[data-ccx="projects"]','#cccNavBtn','[data-ccx="budget"]','#ccgNavBtn','[data-ccx="alerts"]','[data-ccx="audit"]','[data-ccx="reports"]'];
  selectors.forEach(sel=>{const el=nav.querySelector(sel);if(el)nav.appendChild(el)});
- const labels={home:'Dashboard',projects:'Proyectos',budget:'Presupuesto',alerts:'Alertas',audit:'Auditoría',reports:'Reportes'};
+ const labels={home:'Inicio',projects:'Proyectos',budget:'Presupuesto',alerts:'Alertas',audit:'Auditoría',reports:'Reportes'};
  nav.querySelectorAll('[data-ccx]').forEach(b=>{if(labels[b.dataset.ccx])b.textContent=labels[b.dataset.ccx]});
- const c=document.getElementById('cccNavBtn');if(c)c.textContent='Contratos';
+ c=document.getElementById('cccNavBtn');if(c)c.textContent='Contratos';
  const g=document.getElementById('ccgNavBtn');if(g)g.textContent='Gacetas';
 }
 
 if(typeof renderApp==='function'&&!renderApp.__ccCorporatePolish){
- const base=renderApp;const wrapped=function(){const r=base.apply(this,arguments);setTimeout(orderNav,40);return r};wrapped.__ccCorporatePolish=true;renderApp=wrapped;
+ const base=renderApp;
+ const wrapped=function(){const r=base.apply(this,arguments);setTimeout(orderNav,60);setTimeout(orderNav,220);return r};
+ wrapped.__ccCorporatePolish=true;renderApp=wrapped;
 }
-setTimeout(orderNav,180);setTimeout(orderNav,650);setTimeout(orderNav,1400);
+setTimeout(orderNav,120);setTimeout(orderNav,500);setTimeout(orderNav,1200);setTimeout(orderNav,2500);
 })();

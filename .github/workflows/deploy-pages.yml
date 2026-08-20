@@ -14,6 +14,11 @@ on:
       - 'search-display-fix.js'
       - 'budget-control-v1.js'
       - 'budget-project-link-v2.js'
+      - 'budget-portfolio-tab-v1.js'
+      - 'excel-backup-v1.js'
+      - 'alerts-compact-v1.js'
+      - 'workspace-access-v1.js'
+      - 'dashboard-executive-v1.js'
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
@@ -39,6 +44,11 @@ jobs:
           node --check search-display-fix.js
           node --check budget-control-v1.js
           node --check budget-project-link-v2.js
+          node --check budget-portfolio-tab-v1.js
+          node --check excel-backup-v1.js
+          node --check alerts-compact-v1.js
+          node --check workspace-access-v1.js
+          node --check dashboard-executive-v1.js
 
       - name: Integrar ciclo contractual LCE-RLCE
         run: |
@@ -50,7 +60,6 @@ jobs:
           js = js_path.read_text(encoding='utf-8')
           marker = '/* ===== CICLO CONTRACTUAL LCE/RLCE V1 ===== */'
           new_block = '<script>\n' + js + '\n</script>'
-
           marker_pos = html.find(marker)
           if marker_pos >= 0:
               block_start = html.rfind('<script', 0, marker_pos)
@@ -59,14 +68,10 @@ jobs:
                   raise SystemExit('No se pudo localizar el bloque contractual existente')
               block_end += len('</script>')
               html = html[:block_start] + new_block + html[block_end:]
-              print('Ciclo contractual actualizado en index.html')
           else:
               pos = html.lower().rfind('</body>')
-              if pos < 0:
-                  raise SystemExit('No se encontró </body> en index.html')
+              if pos < 0: raise SystemExit('No se encontró </body> en index.html')
               html = html[:pos] + new_block + '\n' + html[pos:]
-              print('Ciclo contractual integrado en index.html')
-
           html_path.write_text(html, encoding='utf-8')
           PY
 
@@ -83,17 +88,14 @@ jobs:
           if marker_pos >= 0:
               block_start = html.rfind('<script', 0, marker_pos)
               block_end = html.find('</script>', marker_pos)
-              if block_start < 0 or block_end < 0:
-                  raise SystemExit('No se pudo localizar la interfaz desplegable contractual')
+              if block_start < 0 or block_end < 0: raise SystemExit('No se pudo localizar la interfaz desplegable contractual')
               block_end += len('</script>')
               html = html[:block_start] + new_block + html[block_end:]
           else:
               pos = html.lower().rfind('</body>')
-              if pos < 0:
-                  raise SystemExit('No se encontró </body> en index.html')
+              if pos < 0: raise SystemExit('No se encontró </body> en index.html')
               html = html[:pos] + new_block + '\n' + html[pos:]
           html_path.write_text(html, encoding='utf-8')
-          print('Interfaz desplegable contractual integrada en index.html')
           PY
 
       - name: Integrar corrección de búsqueda
@@ -109,17 +111,14 @@ jobs:
           if marker_pos >= 0:
               block_start = html.rfind('<script', 0, marker_pos)
               block_end = html.find('</script>', marker_pos)
-              if block_start < 0 or block_end < 0:
-                  raise SystemExit('No se pudo localizar la corrección del buscador')
+              if block_start < 0 or block_end < 0: raise SystemExit('No se pudo localizar la corrección del buscador')
               block_end += len('</script>')
               html = html[:block_start] + new_block + html[block_end:]
           else:
               pos = html.lower().rfind('</body>')
-              if pos < 0:
-                  raise SystemExit('No se encontró </body> en index.html')
+              if pos < 0: raise SystemExit('No se encontró </body> en index.html')
               html = html[:pos] + new_block + '\n' + html[pos:]
           html_path.write_text(html, encoding='utf-8')
-          print('Corrección del buscador integrada en index.html')
           PY
 
       - name: Integrar disponibilidad presupuestaria S.A.M.I.
@@ -135,17 +134,14 @@ jobs:
           if marker_pos >= 0:
               block_start = html.rfind('<script', 0, marker_pos)
               block_end = html.find('</script>', marker_pos)
-              if block_start < 0 or block_end < 0:
-                  raise SystemExit('No se pudo localizar el módulo de disponibilidad presupuestaria')
+              if block_start < 0 or block_end < 0: raise SystemExit('No se pudo localizar el módulo de disponibilidad presupuestaria')
               block_end += len('</script>')
               html = html[:block_start] + new_block + html[block_end:]
           else:
               pos = html.lower().rfind('</body>')
-              if pos < 0:
-                  raise SystemExit('No se encontró </body> en index.html')
+              if pos < 0: raise SystemExit('No se encontró </body> en index.html')
               html = html[:pos] + new_block + '\n' + html[pos:]
           html_path.write_text(html, encoding='utf-8')
-          print('Disponibilidad presupuestaria S.A.M.I. integrada en index.html')
           PY
 
       - name: Vincular disponibilidad con cada proyecto
@@ -161,17 +157,37 @@ jobs:
           if marker_pos >= 0:
               block_start = html.rfind('<script', 0, marker_pos)
               block_end = html.find('</script>', marker_pos)
-              if block_start < 0 or block_end < 0:
-                  raise SystemExit('No se pudo localizar la vinculación presupuestaria')
+              if block_start < 0 or block_end < 0: raise SystemExit('No se pudo localizar la vinculación presupuestaria')
               block_end += len('</script>')
               html = html[:block_start] + new_block + html[block_end:]
           else:
               pos = html.lower().rfind('</body>')
-              if pos < 0:
-                  raise SystemExit('No se encontró </body> en index.html')
+              if pos < 0: raise SystemExit('No se encontró </body> en index.html')
               html = html[:pos] + new_block + '\n' + html[pos:]
           html_path.write_text(html, encoding='utf-8')
-          print('Disponibilidad vinculada a cada expediente en index.html')
+          PY
+
+      - name: Integrar arquitectura ejecutiva maestra
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html_path = Path('index.html')
+          html = html_path.read_text(encoding='utf-8')
+          modules = ['workspace-access-v1.js','alerts-compact-v1.js','dashboard-executive-v1.js']
+          for module in modules:
+              pattern = r'<script\s+src=["\']' + re.escape(module) + r'(?:\?[^"\']*)?["\']\s*></script>\s*'
+              html = re.sub(pattern, '', html, flags=re.I)
+          pos = html.lower().rfind('</body>')
+          if pos < 0: raise SystemExit('No se encontró </body> en index.html')
+          block = (
+              '<script src="workspace-access-v1.js?v=20260820-master"></script>\n'
+              '<script src="alerts-compact-v1.js?v=20260820-master"></script>\n'
+              '<script src="dashboard-executive-v1.js?v=20260820-master"></script>\n'
+          )
+          html = html[:pos] + block + html[pos:]
+          html_path.write_text(html, encoding='utf-8')
+          print('Arquitectura ejecutiva maestra integrada y versionada.')
           PY
 
       - name: Guardar index.html directo en main
@@ -182,6 +198,6 @@ jobs:
             echo "index.html ya está actualizado."
           else
             git add index.html
-            git commit -m "Publicar HTML directo reparado [skip ci]"
+            git commit -m "Publicar arquitectura ejecutiva maestra [skip ci]"
             git push origin HEAD:main
           fi

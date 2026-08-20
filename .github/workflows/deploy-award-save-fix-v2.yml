@@ -1,0 +1,59 @@
+name: Publicar guardado de adjudicación V2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'procurement-award-fix-v1.js'
+      - '.github/workflows/deploy-award-save-fix-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: control-contractual-award-save-v2
+  cancel-in-progress: true
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Validar JavaScript
+        run: node --check procurement-award-fix-v1.js
+
+      - name: Cambiar versión para evitar caché
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          version='20260820-award2'
+          module='procurement-award-fix-v1.js'
+
+          idx=Path('index.html')
+          html=idx.read_text(encoding='utf-8')
+          html=re.sub(r'(<script\s+src=["\']procurement-award-fix-v1\.js\?v=)[^"\']+(["\']\s*></script>)',r'\g<1>'+version+r'\2',html,flags=re.I)
+          idx.write_text(html,encoding='utf-8')
+
+          b=Path('build-pages.cjs')
+          src=b.read_text(encoding='utf-8')
+          src=re.sub(r"\['procurement-award-fix-v1\.js','[^']+'\]", "['procurement-award-fix-v1.js','"+version+"']", src)
+          b.write_text(src,encoding='utf-8')
+          print('Versión de adjudicación actualizada a',version)
+          PY
+
+      - name: Guardar integración
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- index.html build-pages.cjs; then
+            echo "La versión V2 ya estaba integrada."
+          else
+            git add index.html build-pages.cjs
+            git commit -m "Integrar guardado de adjudicación V2 [skip ci]"
+            git push origin HEAD:main
+          fi

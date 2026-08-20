@@ -3,6 +3,7 @@
 'use strict';
 if(window.__CP_EXCEL_LOGIN_V2__)return;
 window.__CP_EXCEL_LOGIN_V2__=true;
+window.__CP_EXCEL_BACKUP_V1__=true;
 
 /* ---------------- RESPALDO EXCEL ---------------- */
 const SHEETJS_URL='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
@@ -103,7 +104,6 @@ async function exportBackupExcel(){
 }
 window.exportBackupExcel=exportBackupExcel;
 try{if(typeof exportBackup!=='undefined')exportBackup=exportBackupExcel}catch(_e){}
-
 function wireBackup(){const b=document.getElementById('backupBtn');if(!b)return;b.textContent='⇩ Respaldo Excel';b.onclick=exportBackupExcel;}
 
 /* ---------------- ACCESO INSTITUCIONAL ---------------- */
@@ -156,8 +156,8 @@ function installLoginOverride(){
   try{if(typeof renderAuth==='function'&&!renderAuth.__cpInstitutional){institutionalRenderAuth.__cpInstitutional=true;renderAuth=institutionalRenderAuth;}}catch(_e){}
   try{if(typeof renderApp==='function'&&!renderApp.__cpExcelWire){const base=renderApp;const wrapped=function(){const result=base.apply(this,arguments);queueMicrotask(wireBackup);return result};wrapped.__cpExcelWire=true;renderApp=wrapped;}}catch(_e){}
   wireBackup();
-  const authVisible=!document.querySelector('.shell')&&document.getElementById('app')&&(!window.session||!session?.accessToken);
-  if(authVisible)institutionalRenderAuth();
+  const authVisible=!document.querySelector('.shell')&&!!document.getElementById('authForm');
+  if(authVisible&&!document.querySelector('.cp-login-page'))institutionalRenderAuth();
 }
 
 installLoginOverride();

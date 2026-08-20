@@ -75,8 +75,10 @@ ensureStyle();setTimeout(apply,0);setTimeout(apply,250);setTimeout(apply,900);
 if(window.__CC_STABLE_EXTENSIONS_LOADER_V1__)return;
 window.__CC_STABLE_EXTENSIONS_LOADER_V1__=true;
 const modules=[
-  {flag:'__CC_PROCUREMENT_THRESHOLDS_V1__',src:'procurement-thresholds-v1.js?v=20260820-gacetas2',key:'procurement'},
-  {flag:'__CC_CORPORATE_UI_V1__',src:'corporate-ui-v1.js?v=20260820-corporate1',key:'corporate'}
+  {flag:'__CC_PROCUREMENT_THRESHOLDS_V1__',src:'procurement-thresholds-v1.js?v=20260820-gacetas3',key:'procurement'},
+  {flag:'__CC_CONTRACTS_CENTER_V1__',src:'contracts-center-v1.js?v=20260820-contracts1',key:'contracts'},
+  {flag:'__CC_CORPORATE_UI_V1__',src:'corporate-ui-v1.js?v=20260820-corporate2',key:'corporate'},
+  {flag:'__CC_CORPORATE_POLISH_V1__',src:'corporate-polish-v1.js?v=20260820-polish1',key:'polish'}
 ];
 function loadAll(){
   modules.forEach(m=>{

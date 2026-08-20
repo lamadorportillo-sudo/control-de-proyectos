@@ -1,4 +1,4 @@
-name: Publicar corrección de almacenamiento local
+name: Publicar corrección de almacenamiento local V2
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: control-contractual-storage-quota
+  group: control-contractual-storage-quota-v2
   cancel-in-progress: true
 
 jobs:
@@ -32,8 +32,7 @@ jobs:
           from pathlib import Path
           import re
           module='storage-quota-fix-v1.js'
-          version='20260820-storagequota1'
-
+          version='20260820-storagequota2'
           index=Path('index.html')
           html=index.read_text(encoding='utf-8')
           html=re.sub(r'<script\s+src=["\']'+re.escape(module)+r'(?:\?[^"\']*)?["\']\s*></script>\s*','',html,flags=re.I)
@@ -41,13 +40,12 @@ jobs:
           if pos<0: raise SystemExit('No se encontró </body>')
           html=html[:pos]+f'<script src="{module}?v={version}"></script>\n'+html[pos:]
           index.write_text(html,encoding='utf-8')
-
           build=Path('build-pages.cjs')
           src=build.read_text(encoding='utf-8')
           src=re.sub(r"\s*\['storage-quota-fix-v1\.js','[^']+'\],?",'',src)
           anchor="  ['project-search-clean-v1.js','20260820-searchclean1'],"
           if anchor not in src: raise SystemExit('No se encontró el punto de integración')
-          src=src.replace(anchor,anchor+"\n  ['storage-quota-fix-v1.js','20260820-storagequota1'],")
+          src=src.replace(anchor,anchor+"\n  ['storage-quota-fix-v1.js','20260820-storagequota2'],")
           build.write_text(src,encoding='utf-8')
           PY
 
@@ -62,6 +60,6 @@ jobs:
             echo "Sin cambios adicionales."
           else
             git add index.html build-pages.cjs
-            git commit -m "Integrar persistencia segura ante límite local [skip ci]"
+            git commit -m "Integrar persistencia segura V2 [skip ci]"
             git push origin HEAD:main
           fi

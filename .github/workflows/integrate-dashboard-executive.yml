@@ -6,6 +6,7 @@ on:
     paths:
       - 'dashboard-executive-v1.js'
       - 'workspace-access-v1.js'
+      - 'engineering-ux-v1.js'
       - 'index.html'
       - 'build-pages.cjs'
       - '.github/workflows/integrate-dashboard-executive.yml'
@@ -25,25 +26,27 @@ jobs:
         run: |
           node --check workspace-access-v1.js
           node --check dashboard-executive-v1.js
-      - name: Integrar acceso y arquitectura maestra
+          node --check engineering-ux-v1.js
+      - name: Integrar acceso, arquitectura y UX de ingeniería
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import re
           p=Path('index.html')
           html=p.read_text(encoding='utf-8')
-          for module in ['workspace-access-v1.js','dashboard-executive-v1.js']:
+          for module in ['workspace-access-v1.js','dashboard-executive-v1.js','engineering-ux-v1.js']:
               html=re.sub(r'\n?<script\s+src=["\']'+re.escape(module)+r'(?:\?[^"\']*)?["\']\s*></script>', '', html, flags=re.I)
           pos=html.lower().rfind('</body>')
           if pos<0:
               raise SystemExit('No se encontró </body>')
           block=(
-              '<script src="workspace-access-v1.js?v=20260820-master"></script>\n'
-              '<script src="dashboard-executive-v1.js?v=20260820-master"></script>\n'
+              '<script src="workspace-access-v1.js?v=20260820-master2"></script>\n'
+              '<script src="dashboard-executive-v1.js?v=20260820-master2"></script>\n'
+              '<script src="engineering-ux-v1.js?v=20260820-master2"></script>\n'
           )
           html=html[:pos]+block+html[pos:]
           p.write_text(html,encoding='utf-8')
-          print('Arquitectura ejecutiva maestra integrada.')
+          print('Arquitectura ejecutiva y UX de ingeniería integradas.')
           PY
       - name: Publicar si cambió
         run: |
@@ -53,6 +56,6 @@ jobs:
             echo "index.html ya contiene la arquitectura ejecutiva."
           else
             git add index.html
-            git commit -m "Integrar arquitectura ejecutiva maestra [skip ci]"
+            git commit -m "Integrar UX de ingeniería y arquitectura maestra [skip ci]"
             git push origin HEAD:main
           fi

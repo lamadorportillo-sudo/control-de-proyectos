@@ -1,0 +1,79 @@
+name: Publicar tablas y fotografías de visitas V2
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'visit-photo-persistence-v2.js'
+      - 'visit-print-v2.js'
+      - '.github/workflows/deploy-visit-report-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: control-contractual-visit-report-v2
+  cancel-in-progress: true
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Validar JavaScript
+        run: |
+          node --check visit-photo-persistence-v2.js
+          node --check visit-print-v2.js
+
+      - name: Integrar módulos V2
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          modules = [
+              ('visit-photo-persistence-v2.js', '20260820-photopersist2'),
+              ('visit-print-v2.js', '20260820-visitprint2'),
+          ]
+
+          index = Path('index.html')
+          html = index.read_text(encoding='utf-8')
+          for module, version in modules:
+              html = re.sub(r'<script\s+src=["\']' + re.escape(module) + r'(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
+          pos = html.lower().rfind('</body>')
+          if pos < 0:
+              raise SystemExit('No se encontró </body> en index.html')
+          tags = ''.join(f'<script src="{m}?v={v}"></script>\n' for m,v in modules)
+          html = html[:pos] + tags + html[pos:]
+          index.write_text(html, encoding='utf-8')
+
+          build = Path('build-pages.cjs')
+          src = build.read_text(encoding='utf-8')
+          for module, version in modules:
+              src = re.sub(r"\s*\['" + re.escape(module) + r"','[^']+'\],?", '', src)
+          anchor = "  ['visit-print-v1.js','20260820-visitprint1']"
+          if anchor not in src:
+              raise SystemExit('No se encontró el punto de integración de visitas.')
+          addition = anchor + ",\n  ['visit-photo-persistence-v2.js','20260820-photopersist2'],\n  ['visit-print-v2.js','20260820-visitprint2']"
+          src = src.replace(anchor, addition)
+          build.write_text(src, encoding='utf-8')
+          print('Módulos V2 de visitas integrados.')
+          PY
+
+      - name: Publicar cambios
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- index.html build-pages.cjs; then
+            echo "Los módulos V2 ya estaban integrados."
+          else
+            git add index.html build-pages.cjs
+            git commit -m "Integrar tablas dinámicas y fotografías de visitas V2 [skip ci]"
+            git push origin HEAD:main
+          fi

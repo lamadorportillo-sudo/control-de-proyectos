@@ -96,12 +96,17 @@ if(!html.includes('budget-portfolio-tab-v1.js')){
   html=html.slice(0,bodyEnd)+'<script src="budget-portfolio-tab-v1.js"></script>\n'+html.slice(bodyEnd);
 }
 
-// Arquitectura ejecutiva y protección operativa: siempre se cargan al final.
+// Arquitectura ejecutiva, normativa histórica y diseño corporativo.
+// Los módulos funcionales se cargan de forma directa para no depender de cachés o cargadores secundarios.
 const lateModules=[
-  ['workspace-access-v1.js','20260820-master2'],
-  ['alerts-compact-v1.js','20260820-master2'],
-  ['dashboard-executive-v1.js','20260820-master2'],
-  ['engineering-ux-v1.js','20260820-master2']
+  ['workspace-access-v1.js','20260820-master4'],
+  ['alerts-compact-v1.js','20260820-master4'],
+  ['dashboard-executive-v1.js','20260820-master4'],
+  ['engineering-ux-v1.js','20260820-master4'],
+  ['procurement-thresholds-v1.js','20260820-gacetas4'],
+  ['contracts-center-v1.js','20260820-contracts2'],
+  ['corporate-ui-v1.js','20260820-corporate3'],
+  ['corporate-polish-v1.js','20260820-polish2']
 ];
 for(const [module,version] of lateModules){
   if(!fs.existsSync(module)) throw new Error(`No se encontró ${module}.`);

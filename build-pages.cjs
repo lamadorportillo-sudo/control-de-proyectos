@@ -117,6 +117,7 @@ const lateModules=[
   ['summary-budget-law-v1.js','20260820-summarybudgetlaw1'],
   ['project-search-clean-v1.js','20260820-searchclean1'],
   ['storage-quota-fix-v1.js','20260820-storagequota2'],
+  ['procurement-process-save-v4.js','20260820-procsave4'],
 ];
 for(const [module,version] of lateModules){
   if(!fs.existsSync(module)) throw new Error(`No se encontró ${module}.`);

@@ -20,6 +20,9 @@ on:
       - 'workspace-access-v1.js'
       - 'dashboard-executive-v1.js'
       - 'engineering-ux-v1.js'
+      - 'procurement-award-fix-v1.js'
+      - 'visit-photos-v1.js'
+      - 'award-notices-v1.js'
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
@@ -51,6 +54,9 @@ jobs:
           node --check workspace-access-v1.js
           node --check dashboard-executive-v1.js
           node --check engineering-ux-v1.js
+          node --check procurement-award-fix-v1.js
+          node --check visit-photos-v1.js
+          node --check award-notices-v1.js
 
       - name: Integrar ciclo contractual LCE-RLCE
         run: |

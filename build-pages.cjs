@@ -107,7 +107,7 @@ const lateModules=[
   ['contracts-center-v1.js','20260820-contracts2'],
   ['corporate-ui-v1.js','20260820-corporate3'],
   ['corporate-polish-v1.js','20260820-polish6'],
-  ['procurement-award-fix-v1.js','20260820-award2'],
+  ['procurement-award-fix-v1.js','20260820-award3'],
   ['visit-photos-v1.js','20260820-visits1'],
   ['award-notices-v1.js','20260820-notes1'],
   ['visit-photo-persistence-v2.js','20260820-photopersist2'],

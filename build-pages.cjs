@@ -111,8 +111,9 @@ const lateModules=[
   ['visit-photos-v1.js','20260820-visits1'],
   ['award-notices-v1.js','20260820-notes1'],
   ['visit-photo-persistence-v2.js','20260820-photopersist2'],
-  ['visit-print-v2.js','20260820-visitprint2'],
+  ['visit-print-v3.js','20260820-visitprint3'],
   ['procurement-invitations-v2.js','20260820-invitations2'],
+  ['procurement-offers-invitees-v1.js','20260820-offersinvitees1'],
 ];
 for(const [module,version] of lateModules){
   if(!fs.existsSync(module)) throw new Error(`No se encontró ${module}.`);

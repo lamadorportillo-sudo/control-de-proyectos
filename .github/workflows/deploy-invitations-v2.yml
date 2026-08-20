@@ -1,0 +1,72 @@
+name: Publicar invitaciones V2 optimizadas
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'procurement-invitations-v2.js'
+      - '.github/workflows/deploy-invitations-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: control-contractual-invitations-v2
+  cancel-in-progress: true
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Validar módulo
+        run: node --check procurement-invitations-v2.js
+
+      - name: Integrar versión optimizada
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          index=Path('index.html')
+          html=index.read_text(encoding='utf-8')
+          # Quitar la versión antigua de invitaciones y la impresión V1 duplicada.
+          for module in ['procurement-invitations-v1.js','procurement-invitations-v2.js','visit-print-v1.js']:
+              html=re.sub(r'<script\s+src=["\']'+re.escape(module)+r'(?:\?[^"\']*)?["\']\s*></script>\s*','',html,flags=re.I)
+          pos=html.lower().rfind('</body>')
+          if pos<0:
+              raise SystemExit('No se encontró </body> en index.html')
+          html=html[:pos]+'<script src="procurement-invitations-v2.js?v=20260820-invitations2"></script>\n'+html[pos:]
+          index.write_text(html,encoding='utf-8')
+
+          build=Path('build-pages.cjs')
+          src=build.read_text(encoding='utf-8')
+          # Remover módulos antiguos/duplicados del arreglo de módulos tardíos.
+          src=re.sub(r"\s*\['procurement-invitations-v1\.js','[^']+'\],?",'',src)
+          src=re.sub(r"\s*\['procurement-invitations-v2\.js','[^']+'\],?",'',src)
+          src=re.sub(r"\s*\['visit-print-v1\.js','[^']+'\],?",'',src)
+          anchor="  ['visit-print-v2.js','20260820-visitprint2']"
+          if anchor not in src:
+              raise SystemExit('No se encontró el módulo de impresión V2 para insertar invitaciones.')
+          src=src.replace(anchor,anchor+",\n  ['procurement-invitations-v2.js','20260820-invitations2']")
+          build.write_text(src,encoding='utf-8')
+          print('Invitaciones V2 integradas y observador V1 retirado.')
+          PY
+
+      - name: Publicar cambios
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- index.html build-pages.cjs; then
+            echo "La versión optimizada ya estaba integrada."
+          else
+            git add index.html build-pages.cjs
+            git commit -m "Integrar invitaciones V2 y reducir carga del navegador [skip ci]"
+            git push origin HEAD:main
+          fi

@@ -106,7 +106,8 @@ const lateModules=[
   ['procurement-thresholds-v1.js','20260820-gacetas4'],
   ['contracts-center-v1.js','20260820-contracts2'],
   ['corporate-ui-v1.js','20260820-corporate3'],
-  ['corporate-polish-v1.js','20260820-polish6']
+  ['corporate-polish-v1.js','20260820-polish6'],
+  ['procurement-award-fix-v1.js','20260820-award1']
 ];
 for(const [module,version] of lateModules){
   if(!fs.existsSync(module)) throw new Error(`No se encontró ${module}.`);

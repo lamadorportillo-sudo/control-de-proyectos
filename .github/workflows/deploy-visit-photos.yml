@@ -1,0 +1,60 @@
+name: Publicar fotografías de visitas
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'index.html'
+      - 'visit-photos-v1.js'
+      - '.github/workflows/deploy-visit-photos.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: control-contractual-visit-photos
+  cancel-in-progress: true
+
+jobs:
+  integrate-visit-photos:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Validar módulo fotográfico
+        run: node --check visit-photos-v1.js
+
+      - name: Integrar fotografías de visitas
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          path = Path('index.html')
+          html = path.read_text(encoding='utf-8')
+          module = 'visit-photos-v1.js'
+          html = re.sub(r'<script\s+src=["\']visit-photos-v1\.js(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
+          pos = html.lower().rfind('</body>')
+          if pos < 0:
+              raise SystemExit('No se encontró </body> en index.html')
+          tag = '<script src="visit-photos-v1.js?v=20260820-visits1"></script>\n'
+          html = html[:pos] + tag + html[pos:]
+          path.write_text(html, encoding='utf-8')
+          print('Módulo fotográfico integrado.')
+          PY
+
+      - name: Publicar index.html
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- index.html; then
+            echo "index.html ya incluye el módulo fotográfico."
+          else
+            git add index.html
+            git commit -m "Integrar fotografías en visitas [skip ci]"
+            git push origin HEAD:main
+          fi

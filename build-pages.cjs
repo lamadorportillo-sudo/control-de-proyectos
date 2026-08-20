@@ -96,7 +96,7 @@ if(!html.includes('budget-portfolio-tab-v1.js')){
   html=html.slice(0,bodyEnd)+'<script src="budget-portfolio-tab-v1.js"></script>\n'+html.slice(bodyEnd);
 }
 
-// Arquitectura ejecutiva, normativa histórica y diseño corporativo.
+// Arquitectura ejecutiva, normativa histórica, documentos de adjudicación y diseño corporativo.
 // Los módulos funcionales se cargan de forma directa para no depender de cachés o cargadores secundarios.
 const lateModules=[
   ['workspace-access-v1.js','20260820-master4'],
@@ -107,7 +107,9 @@ const lateModules=[
   ['contracts-center-v1.js','20260820-contracts2'],
   ['corporate-ui-v1.js','20260820-corporate3'],
   ['corporate-polish-v1.js','20260820-polish6'],
-  ['procurement-award-fix-v1.js','20260820-award1']
+  ['procurement-award-fix-v1.js','20260820-award1'],
+  ['visit-photos-v1.js','20260820-visits1'],
+  ['award-notices-v1.js','20260820-notes1']
 ];
 for(const [module,version] of lateModules){
   if(!fs.existsSync(module)) throw new Error(`No se encontró ${module}.`);

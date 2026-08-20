@@ -1,0 +1,51 @@
+name: Integrar dashboard ejecutivo
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dashboard-executive-v1.js'
+      - 'index.html'
+      - 'build-pages.cjs'
+      - '.github/workflows/integrate-dashboard-executive.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+      - name: Validar JavaScript
+        run: node --check dashboard-executive-v1.js
+      - name: Integrar módulo ejecutivo
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          html=p.read_text(encoding='utf-8')
+          tag='<script src="dashboard-executive-v1.js?v=20260819a"></script>'
+          import re
+          html=re.sub(r'\n?<script src="dashboard-executive-v1\.js[^\"]*"></script>', '', html)
+          pos=html.lower().rfind('</body>')
+          if pos<0:
+              raise SystemExit('No se encontró </body>')
+          html=html[:pos]+tag+'\n'+html[pos:]
+          p.write_text(html,encoding='utf-8')
+          print('Dashboard ejecutivo integrado.')
+          PY
+      - name: Publicar si cambió
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- index.html; then
+            echo "index.html ya contiene el dashboard ejecutivo."
+          else
+            git add index.html
+            git commit -m "Integrar dashboard ejecutivo en Control Contractual [skip ci]"
+            git push origin HEAD:main
+          fi

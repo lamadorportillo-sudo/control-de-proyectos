@@ -1,0 +1,83 @@
+name: Publicar ofertas vinculadas y rendimiento
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'procurement-offers-invitees-v1.js'
+      - 'visit-print-v3.js'
+      - '.github/workflows/deploy-offers-performance-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: control-contractual-offers-performance
+  cancel-in-progress: true
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Validar módulos
+        run: |
+          node --check procurement-offers-invitees-v1.js
+          node --check visit-print-v3.js
+
+      - name: Integrar módulos sin bucles de renderizado
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          index=Path('index.html')
+          html=index.read_text(encoding='utf-8')
+          remove=['visit-print-v2.js','procurement-offers-invitees-v1.js','visit-print-v3.js']
+          for module in remove:
+              html=re.sub(r'<script\s+src=["\']'+re.escape(module)+r'(?:\?[^"\']*)?["\']\s*></script>\s*','',html,flags=re.I)
+          tags=(
+              '<script src="visit-print-v3.js?v=20260820-visitprint3"></script>\n'
+              '<script src="procurement-offers-invitees-v1.js?v=20260820-offersinvitees1"></script>\n'
+          )
+          pos=html.lower().rfind('</body>')
+          if pos<0: raise SystemExit('No se encontró </body>.')
+          html=html[:pos]+tags+html[pos:]
+          index.write_text(html,encoding='utf-8')
+
+          build=Path('build-pages.cjs')
+          src=build.read_text(encoding='utf-8')
+          src=re.sub(r"\s*\['visit-print-v2\.js','[^']+'\],?",'',src)
+          src=re.sub(r"\s*\['visit-print-v3\.js','[^']+'\],?",'',src)
+          src=re.sub(r"\s*\['procurement-offers-invitees-v1\.js','[^']+'\],?",'',src)
+          anchor="  ['procurement-invitations-v2.js','20260820-invitations2'],"
+          if anchor not in src:
+              raise SystemExit('No se encontró el ancla de invitaciones V2 en build-pages.cjs')
+          addition=(
+              "  ['visit-print-v3.js','20260820-visitprint3'],\n"
+              "  ['procurement-invitations-v2.js','20260820-invitations2'],\n"
+              "  ['procurement-offers-invitees-v1.js','20260820-offersinvitees1'],"
+          )
+          src=src.replace(anchor,addition)
+          build.write_text(src,encoding='utf-8')
+          print('Integración completada.')
+          PY
+
+      - name: Validar build
+        run: node --check build-pages.cjs
+
+      - name: Guardar integración
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- index.html build-pages.cjs; then
+            echo "Sin cambios adicionales."
+          else
+            git add index.html build-pages.cjs
+            git commit -m "Integrar ofertas invitadas y eliminar bucle de impresión [skip ci]"
+            git push origin HEAD:main
+          fi

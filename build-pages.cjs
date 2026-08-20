@@ -89,11 +89,26 @@ if(!html.includes('APRENDIZAJE ADAPTATIVO V1')){
   html=html.slice(0,bodyEnd)+`<script>\n${adaptiveLearning}\n</script>\n`+html.slice(bodyEnd);
 }
 
-// Pestaña independiente para los 58 proyectos de disponibilidad presupuestaria.
+// Pestaña independiente para la disponibilidad presupuestaria.
 if(!fs.existsSync('budget-portfolio-tab-v1.js')) throw new Error('No se encontró budget-portfolio-tab-v1.js.');
 if(!html.includes('budget-portfolio-tab-v1.js')){
   const bodyEnd=html.toLowerCase().lastIndexOf('</body>');
   html=html.slice(0,bodyEnd)+'<script src="budget-portfolio-tab-v1.js"></script>\n'+html.slice(bodyEnd);
+}
+
+// Arquitectura ejecutiva y protección operativa: siempre se cargan al final.
+const lateModules=[
+  ['workspace-access-v1.js','20260820-master2'],
+  ['alerts-compact-v1.js','20260820-master2'],
+  ['dashboard-executive-v1.js','20260820-master2'],
+  ['engineering-ux-v1.js','20260820-master2']
+];
+for(const [module,version] of lateModules){
+  if(!fs.existsSync(module)) throw new Error(`No se encontró ${module}.`);
+  const re=new RegExp(`<script\\s+src=["']${module.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&')}(?:\\?[^"']*)?["']\\s*></script>\\s*`,'gi');
+  html=html.replace(re,'');
+  const pos=html.toLowerCase().lastIndexOf('</body>');
+  html=html.slice(0,pos)+`<script src="${module}?v=${version}"></script>\n`+html.slice(pos);
 }
 
 const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m=>m[1]);

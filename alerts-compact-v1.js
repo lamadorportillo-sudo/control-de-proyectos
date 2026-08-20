@@ -133,3 +133,23 @@ setTimeout(apply,0);
 setTimeout(apply,250);
 setTimeout(apply,900);
 })();
+
+/* Cargador permanente del módulo histórico de Gacetas.
+   Se mantiene aquí porque alertas-compact-v1.js ya forma parte del despliegue estable. */
+(()=>{
+'use strict';
+if(window.__CC_PROCUREMENT_LOADER_V1__)return;
+window.__CC_PROCUREMENT_LOADER_V1__=true;
+function loadProcurement(){
+  if(window.__CC_PROCUREMENT_THRESHOLDS_V1__)return;
+  if(document.querySelector('script[data-cc-procurement-loader]'))return;
+  const s=document.createElement('script');
+  s.src='procurement-thresholds-v1.js?v=20260820-gacetas1';
+  s.async=false;
+  s.dataset.ccProcurementLoader='1';
+  s.onerror=()=>console.error('No se pudo cargar el módulo histórico de Gacetas.');
+  document.head.appendChild(s);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadProcurement,{once:true});
+else loadProcurement();
+})();

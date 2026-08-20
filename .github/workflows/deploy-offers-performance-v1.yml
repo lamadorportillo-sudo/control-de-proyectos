@@ -81,3 +81,5 @@ jobs:
             git commit -m "Integrar ofertas invitadas y eliminar bucle de impresión [skip ci]"
             git push origin HEAD:main
           fi
+
+# Reejecución solicitada para publicar la corrección de rendimiento.

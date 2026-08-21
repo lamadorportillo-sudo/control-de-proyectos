@@ -71,7 +71,7 @@ function loadPortfolioModules(){
   if(window.__CC_PORTFOLIO_LOADER_V1__)return;
   window.__CC_PORTFOLIO_LOADER_V1__=true;
   const modules=[
-    'portfolio-redesign-v1.js?v=20260821-portfolio3',
+    'portfolio-redesign-v1.js?v=20260821-portfolio4',
     'project-portfolio-detail-v1.js?v=20260821-projectdetail2',
     'project-functional-actions-v1.js?v=20260821-actions2',
     'visit-independent-reports-v1.js?v=20260821-visitsind1',

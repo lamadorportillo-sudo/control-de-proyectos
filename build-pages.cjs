@@ -89,6 +89,13 @@ if(!html.includes('APRENDIZAJE ADAPTATIVO V1')){
   html=html.slice(0,bodyEnd)+`<script>\n${adaptiveLearning}\n</script>\n`+html.slice(bodyEnd);
 }
 
+// El endurecimiento se instala antes del primer render para evitar mezclar espacios de trabajo.
+const coreHardening=fs.readFileSync('core-hardening-v1.js','utf8');
+try{new vm.Script(coreHardening,{filename:'core-hardening-v1.js'})}catch(err){throw new Error(`JavaScript inválido en core-hardening-v1.js: ${err.message}`)}
+const bootMarker='installProjectActionSafety();\nrender();';
+if(!html.includes(bootMarker)) throw new Error('No se encontró el punto de arranque para instalar el endurecimiento.');
+html=html.replace(bootMarker,`installProjectActionSafety();\n${coreHardening}\nrender();`);
+
 // Pestaña independiente para la disponibilidad presupuestaria.
 if(!fs.existsSync('budget-portfolio-tab-v1.js')) throw new Error('No se encontró budget-portfolio-tab-v1.js.');
 if(!html.includes('budget-portfolio-tab-v1.js')){
@@ -119,7 +126,6 @@ const lateModules=[
   ['storage-quota-fix-v1.js','20260820-storagequota2'],
   ['project-tabs-complete-v1.js','20260820-tabscomplete1'],
   ['procurement-process-save-v4.js','20260820-procsave4'],
-  ['core-hardening-v1.js','20260820-hardening1'],
 ];
 for(const [module,version] of lateModules){
   if(!fs.existsSync(module)) throw new Error(`No se encontró ${module}.`);

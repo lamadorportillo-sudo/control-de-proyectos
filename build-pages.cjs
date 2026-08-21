@@ -59,9 +59,9 @@ const listCss=`<style id="projects-list-fix-v1">
 </style>`;
 if(!html.includes('projects-list-fix-v1')) html=html.replace('</head>',listCss+'\n</head>');
 
-// Regla de cierre del proyecto.
+// El avance nunca cambia por sí solo el estado contractual del proyecto.
 const progressOld="function syncAllProjectProgress(){(db.projects||[]).forEach(p=>{const c=db.contracts.find(x=>x.projectId===p.id),a=projectAutomaticProgress(p,c);p.physicalProgress=a.physical;p.financialProgress=a.financial})}";
-const progressNew="function syncAllProjectProgress(){(db.projects||[]).forEach(p=>{const c=db.contracts.find(x=>x.projectId===p.id),a=projectAutomaticProgress(p,c);p.physicalProgress=a.physical;p.financialProgress=a.financial;const qualityPaid=(db.payments||[]).some(x=>x.projectId===p.id&&x.status==='Pagado'&&/calidad/i.test(x.movementType||''));const complete=a.physical>=100||qualityPaid;if(complete&&!/finaliz|cerrad/i.test(p.status||'')){p.status='Finalizado';p.finalizedAt=p.finalizedAt||iso();p.finalizedReason=a.physical>=100?'Avance de ejecución 100%':'Garantía de calidad pagada/devuelta';if(c&&!/finaliz|cerrad/i.test(c.status||''))c.status='Finalizado'}})}";
+const progressNew="function syncAllProjectProgress(){(db.projects||[]).forEach(p=>{const c=db.contracts.find(x=>x.projectId===p.id),a=projectAutomaticProgress(p,c);p.physicalProgress=a.physical;p.financialProgress=a.financial})}";
 if(html.includes(progressOld)) html=html.replace(progressOld,progressNew);
 
 // Elimina una copia histórica del escáner dentro del template de informes.
@@ -88,6 +88,13 @@ if(!html.includes('APRENDIZAJE ADAPTATIVO V1')){
   const bodyEnd=html.toLowerCase().lastIndexOf('</body>');
   html=html.slice(0,bodyEnd)+`<script>\n${adaptiveLearning}\n</script>\n`+html.slice(bodyEnd);
 }
+
+// El endurecimiento se instala antes del primer render para evitar mezclar espacios de trabajo.
+const coreHardening=fs.readFileSync('core-hardening-v1.js','utf8');
+try{new vm.Script(coreHardening,{filename:'core-hardening-v1.js'})}catch(err){throw new Error(`JavaScript inválido en core-hardening-v1.js: ${err.message}`)}
+const bootMarker='installProjectActionSafety();\nrender();';
+if(!html.includes(bootMarker)) throw new Error('No se encontró el punto de arranque para instalar el endurecimiento.');
+html=html.replace(bootMarker,`installProjectActionSafety();\n${coreHardening}\nrender();`);
 
 // Pestaña independiente para la disponibilidad presupuestaria.
 if(!fs.existsSync('budget-portfolio-tab-v1.js')) throw new Error('No se encontró budget-portfolio-tab-v1.js.');
@@ -122,6 +129,7 @@ const lateModules=[
 ];
 for(const [module,version] of lateModules){
   if(!fs.existsSync(module)) throw new Error(`No se encontró ${module}.`);
+  try{new vm.Script(fs.readFileSync(module,'utf8'),{filename:module})}catch(err){throw new Error(`JavaScript inválido en ${module}: ${err.message}`)}
   const re=new RegExp(`<script\\s+src=["']${module.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&')}(?:\\?[^"']*)?["']\\s*></script>\\s*`,'gi');
   html=html.replace(re,'');
   const pos=html.toLowerCase().lastIndexOf('</body>');

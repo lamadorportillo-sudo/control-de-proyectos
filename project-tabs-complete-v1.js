@@ -73,6 +73,7 @@ function loadPortfolioModules(){
   const modules=[
     'portfolio-redesign-v1.js?v=20260821-portfolio3',
     'project-portfolio-detail-v1.js?v=20260821-projectdetail2',
+    'project-functional-actions-v1.js?v=20260821-actions1',
     'portfolio-gallery-v1.js?v=20260821-gallery2',
     'portfolio-screen-fix-v1.js?v=20260821-screenfix1',
     'project-photo-story-v1.js?v=20260821-photostory1'

@@ -1,4 +1,4 @@
-name: Reparar y publicar Control de Proyectos
+name: Construir y publicar Control de Proyectos
 
 on:
   push:
@@ -6,28 +6,16 @@ on:
       - main
     paths:
       - 'build-pages.cjs'
-      - 'bundle-*.js'
-      - 'estimate-scanner-v1.js'
-      - 'adaptive-learning-v1.js'
-      - 'contract-lifecycle-v1.js'
-      - 'contract-lifecycle-accordion-ui.js'
-      - 'search-display-fix.js'
-      - 'budget-control-v1.js'
-      - 'budget-project-link-v2.js'
-      - 'budget-portfolio-tab-v1.js'
-      - 'excel-backup-v1.js'
-      - 'alerts-compact-v1.js'
-      - 'workspace-access-v1.js'
-      - 'dashboard-executive-v1.js'
-      - 'engineering-ux-v1.js'
-      - 'procurement-award-fix-v1.js'
-      - 'visit-photos-v1.js'
-      - 'award-notices-v1.js'
+      - '*.js'
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: control-proyectos-build-main
+  cancel-in-progress: true
 
 jobs:
   build-direct:
@@ -38,175 +26,43 @@ jobs:
         with:
           ref: main
 
-      - name: Reconstruir, reparar y validar HTML
+      - name: Validar JavaScript fuente
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in ./*.js; do
+            [ -f "$f" ] || continue
+            node --check "$f"
+          done
+          node --check build-pages.cjs
+
+      - name: Reconstruir aplicación
         run: node build-pages.cjs
 
-      - name: Validar módulos
+      - name: Validar aplicación generada
+        shell: bash
         run: |
-          node --check contract-lifecycle-v1.js
-          node --check contract-lifecycle-accordion-ui.js
-          node --check search-display-fix.js
-          node --check budget-control-v1.js
-          node --check budget-project-link-v2.js
-          node --check budget-portfolio-tab-v1.js
-          node --check excel-backup-v1.js
-          node --check alerts-compact-v1.js
-          node --check workspace-access-v1.js
-          node --check dashboard-executive-v1.js
-          node --check engineering-ux-v1.js
-          node --check procurement-award-fix-v1.js
-          node --check visit-photos-v1.js
-          node --check award-notices-v1.js
+          set -euo pipefail
+          test -s index.html
+          grep -q 'NUCLEO DE INTEGRIDAD Y CONCURRENCIA V1' index.html
+          grep -q 'save_app_state' index.html
+          grep -q '</html>' index.html
+          if grep -q 'window.__CP_B64=' index.html; then
+            echo 'El HTML generado todavía contiene el cargador Base64.' >&2
+            exit 1
+          fi
+          echo 'Aplicación generada y núcleo contractual verificado.'
 
-      - name: Integrar ciclo contractual LCE-RLCE
+      - name: Publicar index.html en main
+        shell: bash
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          html_path = Path('index.html')
-          js_path = Path('contract-lifecycle-v1.js')
-          html = html_path.read_text(encoding='utf-8')
-          js = js_path.read_text(encoding='utf-8')
-          marker = '/* ===== CICLO CONTRACTUAL LCE/RLCE V1 ===== */'
-          new_block = '<script>\n' + js + '\n</script>'
-          marker_pos = html.find(marker)
-          if marker_pos >= 0:
-              block_start = html.rfind('<script', 0, marker_pos)
-              block_end = html.find('</script>', marker_pos)
-              if block_start < 0 or block_end < 0:
-                  raise SystemExit('No se pudo localizar el bloque contractual existente')
-              block_end += len('</script>')
-              html = html[:block_start] + new_block + html[block_end:]
-          else:
-              pos = html.lower().rfind('</body>')
-              if pos < 0: raise SystemExit('No se encontró </body> en index.html')
-              html = html[:pos] + new_block + '\n' + html[pos:]
-          html_path.write_text(html, encoding='utf-8')
-          PY
-
-      - name: Integrar interfaz desplegable contractual
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          html_path = Path('index.html')
-          js = Path('contract-lifecycle-accordion-ui.js').read_text(encoding='utf-8')
-          html = html_path.read_text(encoding='utf-8')
-          marker = '/* ===== UI DESPLEGABLE VISIBLE PARA FASES CONTRACTUALES ===== */'
-          new_block = '<script>\n' + js + '\n</script>'
-          marker_pos = html.find(marker)
-          if marker_pos >= 0:
-              block_start = html.rfind('<script', 0, marker_pos)
-              block_end = html.find('</script>', marker_pos)
-              if block_start < 0 or block_end < 0: raise SystemExit('No se pudo localizar la interfaz desplegable contractual')
-              block_end += len('</script>')
-              html = html[:block_start] + new_block + html[block_end:]
-          else:
-              pos = html.lower().rfind('</body>')
-              if pos < 0: raise SystemExit('No se encontró </body> en index.html')
-              html = html[:pos] + new_block + '\n' + html[pos:]
-          html_path.write_text(html, encoding='utf-8')
-          PY
-
-      - name: Integrar corrección de búsqueda
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          html_path = Path('index.html')
-          js = Path('search-display-fix.js').read_text(encoding='utf-8')
-          html = html_path.read_text(encoding='utf-8')
-          marker = '/* ===== PROJECT SEARCH DISPLAY FIX V1 ===== */'
-          new_block = '<script>\n' + js + '\n</script>'
-          marker_pos = html.find(marker)
-          if marker_pos >= 0:
-              block_start = html.rfind('<script', 0, marker_pos)
-              block_end = html.find('</script>', marker_pos)
-              if block_start < 0 or block_end < 0: raise SystemExit('No se pudo localizar la corrección del buscador')
-              block_end += len('</script>')
-              html = html[:block_start] + new_block + html[block_end:]
-          else:
-              pos = html.lower().rfind('</body>')
-              if pos < 0: raise SystemExit('No se encontró </body> en index.html')
-              html = html[:pos] + new_block + '\n' + html[pos:]
-          html_path.write_text(html, encoding='utf-8')
-          PY
-
-      - name: Integrar disponibilidad presupuestaria S.A.M.I.
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          html_path = Path('index.html')
-          js = Path('budget-control-v1.js').read_text(encoding='utf-8')
-          html = html_path.read_text(encoding='utf-8')
-          marker = '/* ===== DISPONIBILIDAD PRESUPUESTARIA S.A.M.I. V1 ===== */'
-          new_block = '<script>\n' + js + '\n</script>'
-          marker_pos = html.find(marker)
-          if marker_pos >= 0:
-              block_start = html.rfind('<script', 0, marker_pos)
-              block_end = html.find('</script>', marker_pos)
-              if block_start < 0 or block_end < 0: raise SystemExit('No se pudo localizar el módulo de disponibilidad presupuestaria')
-              block_end += len('</script>')
-              html = html[:block_start] + new_block + html[block_end:]
-          else:
-              pos = html.lower().rfind('</body>')
-              if pos < 0: raise SystemExit('No se encontró </body> en index.html')
-              html = html[:pos] + new_block + '\n' + html[pos:]
-          html_path.write_text(html, encoding='utf-8')
-          PY
-
-      - name: Vincular disponibilidad con cada proyecto
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          html_path = Path('index.html')
-          js = Path('budget-project-link-v2.js').read_text(encoding='utf-8')
-          html = html_path.read_text(encoding='utf-8')
-          marker = '/* ===== VINCULACION PRESUPUESTARIA POR PROYECTO V2 ===== */'
-          new_block = '<script>\n' + js + '\n</script>'
-          marker_pos = html.find(marker)
-          if marker_pos >= 0:
-              block_start = html.rfind('<script', 0, marker_pos)
-              block_end = html.find('</script>', marker_pos)
-              if block_start < 0 or block_end < 0: raise SystemExit('No se pudo localizar la vinculación presupuestaria')
-              block_end += len('</script>')
-              html = html[:block_start] + new_block + html[block_end:]
-          else:
-              pos = html.lower().rfind('</body>')
-              if pos < 0: raise SystemExit('No se encontró </body> en index.html')
-              html = html[:pos] + new_block + '\n' + html[pos:]
-          html_path.write_text(html, encoding='utf-8')
-          PY
-
-      - name: Integrar arquitectura ejecutiva maestra
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-          html_path = Path('index.html')
-          html = html_path.read_text(encoding='utf-8')
-          modules = ['workspace-access-v1.js','alerts-compact-v1.js','dashboard-executive-v1.js','engineering-ux-v1.js']
-          for module in modules:
-              pattern = r'<script\s+src=["\']' + re.escape(module) + r'(?:\?[^"\']*)?["\']\s*></script>\s*'
-              html = re.sub(pattern, '', html, flags=re.I)
-          pos = html.lower().rfind('</body>')
-          if pos < 0: raise SystemExit('No se encontró </body> en index.html')
-          block = (
-              '<script src="workspace-access-v1.js?v=20260820-master3"></script>\n'
-              '<script src="alerts-compact-v1.js?v=20260820-master3"></script>\n'
-              '<script src="dashboard-executive-v1.js?v=20260820-master3"></script>\n'
-              '<script src="engineering-ux-v1.js?v=20260820-master3"></script>\n'
-          )
-          html = html[:pos] + block + html[pos:]
-          html_path.write_text(html, encoding='utf-8')
-          print('Arquitectura maestra integrada en orden definitivo.')
-          PY
-
-      - name: Guardar index.html directo en main
-        run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if git diff --quiet -- index.html; then
             echo "index.html ya está actualizado."
           else
             git add index.html
-            git commit -m "Publicar arquitectura maestra definitiva [skip ci]"
+            git commit -m "Publicar núcleo contractual endurecido [skip ci]"
             git push origin HEAD:main
           fi

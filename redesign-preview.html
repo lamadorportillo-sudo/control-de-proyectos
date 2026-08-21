@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Vista previa · Control Contractual</title>
+<style>
+html,body{margin:0;height:100%;background:#111}body{overflow:hidden}.previewbar{height:42px;background:#18221a;color:#eef4eb;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font:600 12px/1.2 system-ui,sans-serif;box-sizing:border-box}.previewbar span{opacity:.8}.previewbar a{color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.25);padding:6px 9px;border-radius:8px}iframe{border:0;width:100%;height:calc(100% - 42px);display:block;background:#fff}@media(max-width:600px){.previewbar{height:38px;padding:0 9px;font-size:11px}.previewbar span{max-width:70%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}iframe{height:calc(100% - 38px)}}
+</style>
+</head>
+<body>
+<div class="previewbar"><span>VISTA PREVIA · REDISEÑO CONTROL CONTRACTUAL</span><a href="./index.html">Volver a versión actual</a></div>
+<iframe id="app" src="./index.html" title="Control Contractual"></iframe>
+<script>
+const frame=document.getElementById('app');
+frame.addEventListener('load',()=>{
+  try{
+    const d=frame.contentDocument;
+    if(!d||d.getElementById('portfolio-redesign-loader'))return;
+    const s=d.createElement('script');s.id='portfolio-redesign-loader';s.src='./portfolio-redesign-v1.js?v=20260821-preview1';d.body.appendChild(s);
+  }catch(e){console.error(e)}
+});
+</script>
+</body>
+</html>

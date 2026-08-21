@@ -74,7 +74,8 @@ function loadPortfolioModules(){
     'portfolio-redesign-v1.js?v=20260821-portfolio3',
     'project-portfolio-detail-v1.js?v=20260821-projectdetail2',
     'portfolio-gallery-v1.js?v=20260821-gallery2',
-    'portfolio-screen-fix-v1.js?v=20260821-screenfix1'
+    'portfolio-screen-fix-v1.js?v=20260821-screenfix1',
+    'project-photo-story-v1.js?v=20260821-photostory1'
   ];
   const current=document.currentScript?.src||'';
   const base=current?current.slice(0,current.lastIndexOf('/')+1):'';

@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'build-pages.cjs'
+      - 'inject-portfolio.cjs'
       - '*.js'
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
@@ -35,9 +36,12 @@ jobs:
             node --check "$f"
           done
           node --check build-pages.cjs
+          node --check inject-portfolio.cjs
 
       - name: Reconstruir aplicación
-        run: node build-pages.cjs
+        run: |
+          node build-pages.cjs
+          node inject-portfolio.cjs
 
       - name: Validar aplicación generada
         shell: bash
@@ -46,12 +50,13 @@ jobs:
           test -s index.html
           grep -q 'NUCLEO DE INTEGRIDAD Y CONCURRENCIA V1' index.html
           grep -q 'save_app_state' index.html
+          grep -q 'portfolio-redesign-v1.js' index.html
           grep -q '</html>' index.html
           if grep -q 'window.__CP_B64=' index.html; then
             echo 'El HTML generado todavía contiene el cargador Base64.' >&2
             exit 1
           fi
-          echo 'Aplicación generada y núcleo contractual verificado.'
+          echo 'Aplicación generada, núcleo contractual y rediseño verificados.'
 
       - name: Publicar index.html en main
         shell: bash
@@ -63,6 +68,6 @@ jobs:
             echo "index.html ya está actualizado."
           else
             git add index.html
-            git commit -m "Publicar núcleo contractual endurecido [skip ci]"
+            git commit -m "Publicar interfaz contractual renovada [skip ci]"
             git push origin HEAD:main
           fi

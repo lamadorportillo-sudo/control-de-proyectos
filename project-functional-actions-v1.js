@@ -65,7 +65,8 @@ function runAction(kind){
 function improveQuickButtons(){
   document.querySelectorAll('.project-portfolio-actions [data-project-jump]').forEach(b=>{
     const kind=b.dataset.projectJump;
-    if(LABELS[kind])b.textContent=LABELS[kind];
+    const label=LABELS[kind];
+    if(label&&b.textContent!==label)b.textContent=label;
     if(['estimates','visits','guarantees','changes'].includes(kind))b.classList.add('functional-action');
   });
 }

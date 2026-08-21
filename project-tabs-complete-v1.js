@@ -72,6 +72,7 @@ function loadPortfolioModules(){
   window.__CC_PORTFOLIO_LOADER_V1__=true;
   const modules=[
     'mobile-popup-fallback-v1.js?v=20260821-mobilepopup1',
+    'progress-separation-fix-v1.js?v=20260821-progresssep1',
     'portfolio-redesign-v1.js?v=20260821-portfolio4',
     'transparency-exec-bridge-v1.js?v=20260821-trbridge1',
     'transparency-portal-v1.js?v=20260821-transparency1',

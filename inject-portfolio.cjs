@@ -7,6 +7,7 @@ const modules=[
   ['project-portfolio-detail-v1.js','20260821-projectdetail2'],
   ['portfolio-gallery-v1.js','20260821-gallery2'],
   ['portfolio-screen-fix-v1.js','20260821-screenfix1'],
+  ['project-photo-story-v1.js','20260821-photostory1'],
 ];
 if(!fs.existsSync(htmlFile)) throw new Error('No se encontró index.html.');
 for(const [moduleFile] of modules){
@@ -24,4 +25,4 @@ for(const [moduleFile,version] of modules){
 }
 
 fs.writeFileSync(htmlFile,html,'utf8');
-console.log('Rediseño portafolio, ficha profesional, galería y control de pantalla integrados en index.html.');
+console.log('Rediseño portafolio, ficha profesional, galería, control de pantalla y evolución fotográfica integrados en index.html.');

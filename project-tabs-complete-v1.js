@@ -76,6 +76,7 @@ function loadPortfolioModules(){
     'portfolio-redesign-v1.js?v=20260821-portfolio4',
     'transparency-exec-bridge-v1.js?v=20260821-trbridge1',
     'transparency-portal-v1.js?v=20260821-transparency1',
+    'transparency-storage-v1.js?v=20260821-trstorage1',
     'budget-search-fix-v1.js?v=20260821-budgetsearch1',
     'project-portfolio-detail-v1.js?v=20260821-projectdetail2',
     'project-functional-actions-v1.js?v=20260821-actions2',

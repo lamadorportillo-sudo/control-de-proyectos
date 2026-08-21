@@ -72,6 +72,7 @@ function loadPortfolioModules(){
   window.__CC_PORTFOLIO_LOADER_V1__=true;
   const modules=[
     'portfolio-redesign-v1.js?v=20260821-portfolio4',
+    'transparency-exec-bridge-v1.js?v=20260821-trbridge1',
     'transparency-portal-v1.js?v=20260821-transparency1',
     'budget-search-fix-v1.js?v=20260821-budgetsearch1',
     'project-portfolio-detail-v1.js?v=20260821-projectdetail2',
@@ -80,7 +81,8 @@ function loadPortfolioModules(){
     'portfolio-gallery-v1.js?v=20260821-gallery2',
     'portfolio-screen-fix-v1.js?v=20260821-screenfix1',
     'project-photo-story-v1.js?v=20260821-photostory1',
-    'photo-gallery-polish-v2.js?v=20260821-photopolish2'
+    'photo-gallery-polish-v2.js?v=20260821-photopolish2',
+    'project-card-engineering-fix-v1.js?v=20260821-cardengfix1'
   ];
   const current=document.currentScript?.src||'';
   const base=current?current.slice(0,current.lastIndexOf('/')+1):'';

@@ -67,7 +67,32 @@ function keepActiveVisible(){
   }
 }
 
+function loadPortfolioModules(){
+  if(window.__CC_PORTFOLIO_LOADER_V1__)return;
+  window.__CC_PORTFOLIO_LOADER_V1__=true;
+  const modules=[
+    'portfolio-redesign-v1.js?v=20260821-portfolio3',
+    'project-portfolio-detail-v1.js?v=20260821-projectdetail2',
+    'portfolio-gallery-v1.js?v=20260821-gallery2'
+  ];
+  const current=document.currentScript?.src||'';
+  const base=current?current.slice(0,current.lastIndexOf('/')+1):'';
+  const load=i=>{
+    if(i>=modules.length)return;
+    const file=modules[i].split('?')[0];
+    if([...document.scripts].some(s=>(s.src||'').includes('/'+file))){load(i+1);return}
+    const s=document.createElement('script');
+    s.src=base+modules[i];
+    s.async=false;
+    s.onload=()=>load(i+1);
+    s.onerror=()=>{console.warn('No se pudo cargar módulo visual',file);load(i+1)};
+    document.body.appendChild(s);
+  };
+  load(0);
+}
+
 inject();
+loadPortfolioModules();
 document.addEventListener('click',e=>{
   if(e.target.closest?.('nav.tabs button'))setTimeout(keepActiveVisible,0);
 },true);

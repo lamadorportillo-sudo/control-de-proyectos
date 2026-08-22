@@ -88,7 +88,8 @@ function loadPortfolioModules(){
     'portfolio-screen-fix-v1.js?v=20260821-screenfix1',
     'project-photo-story-v1.js?v=20260821-photostory1',
     'photo-gallery-polish-v2.js?v=20260821-photopolish2',
-    'project-card-engineering-fix-v1.js?v=20260821-cardengfix1'
+    'project-card-engineering-fix-v1.js?v=20260821-cardengfix1',
+    'ui-visibility-audit-v1.js?v=20260821-visibility1'
   ];
   const current=document.currentScript?.src||'';
   const base=current?current.slice(0,current.lastIndexOf('/')+1):'';

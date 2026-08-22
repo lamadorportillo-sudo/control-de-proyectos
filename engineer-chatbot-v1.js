@@ -55,9 +55,14 @@ function answer(text){
   if(tab&&/abre|abrir|ir|ll[eé]vame|mostrar|ve a/i.test(q))return navigateTab(tab[1])?`Abrí ${tabLabels[tab[1]]||tab[1]} en el expediente actual.`:`Para abrir ${tabLabels[tab[1]]||tab[1]}, primero entra a un expediente desde Proyectos.`;
   const screen=screenWords.find(([rx])=>rx.test(q));
   if(screen&&/abre|abrir|ir|ll[eé]vame|mostrar|ve a/i.test(q))return navigateScreen(screen[1])?`Abrí ${screen[1]==='home'?'Inicio':screen[1]}.`:'No pude cambiar de pantalla desde el estado actual. Usa el menú superior.';
-  if(window.__ccLegalKnowledge&&(/\b(ley|legal|norma|decreto|reglamento|art[ií]culo|licitaci[oó]n|adjudicaci[oó]n|oferente|pliego|garant[ií]a|multa|sanci[oó]n|contratista|contrataci[oó]n|presupuesto|vigencia|plazo)\b/i.test(q)||/\?$/.test(q)))return window.__ccLegalKnowledge.answer(q);
+  const legalIntent=/\b(ley|legal|norma|decreto|reglamento|art[ií]culo|licitaci[oó]n|adjudicaci[oó]n|oferente|pliego|garant[ií]a|multa|sanci[oó]n|contratista|contrataci[oó]n|presupuesto|vigencia|plazo)\b/i.test(q);
+  if(window.__ccLegalKnowledge&&legalIntent){
+    const legal=window.__ccLegalKnowledge.answer(q);
+    return window.__ccWebKnowledge?window.__ccWebKnowledge.answer(q).then(web=>`${legal}\n\n${web}`):legal;
+  }
   if(/relacion|sincron|actualiza/i.test(q))return'Los módulos comparten la misma información relacionada. Al guardar un cambio se actualizan las vistas del expediente y el Centro de Control invalida su caché para consultar la versión más reciente.';
   if(/pestaña|m[oó]dulo|proceso/i.test(q))return'Resumen concentra el estado; Contrato y Modificaciones definen el monto vigente; Pagos/Estimaciones alimentan el avance financiero; Visitas alimentan el avance físico; Garantías generan alertas; Informes reúnen esos resultados.';
+  if(window.__ccWebKnowledge)return window.__ccWebKnowledge.answer(q);
   return'Puedo ayudarte con la normativa cargada y con el funcionamiento del sistema. Prueba: “¿qué regula la garantía de cumplimiento?”, “artículo 5 de la Ley”, “abre pagos” o “¿cómo se relacionan los módulos?”.';
 }
 function mount(){
@@ -67,7 +72,7 @@ function mount(){
   document.body.append(launch,box);
   const body=box.querySelector('.cc-eng-chat-body'),input=box.querySelector('input');
   const add=(kind,text)=>{const m=document.createElement('div');m.className=`cc-eng-msg ${kind}`;m.innerHTML=E(text);body.appendChild(m);body.scrollTop=body.scrollHeight};
-  const ask=text=>{const q=String(text||'').trim();if(!q)return;add('user',q);setTimeout(()=>add('bot',answer(q)),140)};
+  const ask=text=>{const q=String(text||'').trim();if(!q)return;add('user',q);setTimeout(()=>Promise.resolve(answer(q)).then(reply=>add('bot',reply)).catch(()=>add('bot','No pude completar la consulta. Intenta nuevamente.')),140)};
   launch.onclick=()=>{box.classList.toggle('open');if(box.classList.contains('open')){setTimeout(()=>input.focus(),0)}};
   box.querySelector('.cc-eng-chat-close').onclick=()=>box.classList.remove('open');
   box.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>ask(b.dataset.q));

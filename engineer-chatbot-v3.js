@@ -15,6 +15,7 @@ const tabWords=[
 ];
 const screenWords=[[/\b(inicio|panel principal|dashboard)\b/i,'home'],[/\bproyectos\b/i,'projects'],[/\bpresupuesto\b/i,'budget'],[/\balertas\b/i,'alerts'],[/\bauditor[ií]a\b/i,'audit'],[/\breportes\b/i,'reports']];
 const conversation={lastTopic:'',lastType:'',turns:0,userName:'',history:[]};
+let cloudAiAvailable=true;
 const FIELD_DRAFT_KEY='cc_halu_field_visit_draft_v1';
 let fieldVisit=(()=>{try{return JSON.parse(localStorage.getItem(FIELD_DRAFT_KEY)||'null')}catch{return null}})();
 function fieldNorm(value){return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
@@ -125,7 +126,7 @@ function haluCloudContext(){
 }
 async function answerWithAI(text){
   const q=String(text||'').trim();
-  if(!q||useLocalHaluAnswer(q)||!session?.accessToken)return answer(q);
+  if(!q||useLocalHaluAnswer(q)||!session?.accessToken||!cloudAiAvailable)return answer(q);
   const prior=conversation.history.slice(-10);
   try{
     const {data}=await sbFetch('/functions/v1/halu-chat',{method:'POST',body:{message:q,context:haluCloudContext(),history:prior}});
@@ -134,6 +135,8 @@ async function answerWithAI(text){
     conversation.turns+=1;rememberTurn('user',q);rememberTurn('assistant',reply);conversation.lastTopic=q;conversation.lastType='ai';
     return reply;
   }catch(error){
+    const status=Number(error?.status||error?.statusCode||0);
+    if(status===503||/503|no configurad|not configured|OPENAI_API_KEY/i.test(String(error?.message||'')))cloudAiAvailable=false;
     console.warn('Halu AI no disponible; usando respuesta local.',error?.message||error);
     return answer(q);
   }

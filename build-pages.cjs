@@ -109,6 +109,7 @@ const lateModules=[
   ['workspace-access-v1.js','20260820-master4'],
   ['private-access-v1.js','20260822-private1'],
   ['password-recovery-v1.js','20260822-password1'],
+  ['admin-users-v1.js','20260822-admin-users1'],
   ['alerts-compact-v1.js','20260820-master4'],
   ['dashboard-executive-v1.js','20260820-master4'],
   ['engineering-ux-v1.js','20260820-master4'],

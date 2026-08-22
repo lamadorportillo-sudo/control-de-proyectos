@@ -393,7 +393,7 @@ function financialMovements(p){return (db.payments||[]).filter(x=>x.projectId===
 function projectFinancials(p,c=null,estimates=null){const contract=c||db.contracts.find(x=>x.projectId===p.id),est=estimates||(contract?db.estimates.filter(e=>e.contractId===contract.id):[]),moves=financialMovements(p);const grossC=est.reduce((s,e)=>s+cents(e.gross||0),0),netC=est.reduce((s,e)=>s+cents(e.net||0),0),paidEstimatesC=est.filter(estimateIsPaid).reduce((s,e)=>s+cents(e.net||0),0),advancePaidC=cents(contract?.advancePaid||0),movementPaidC=moves.filter(x=>x.status==='Pagado').reduce((s,x)=>s+cents(x.amount||0),0),totalPaidC=advancePaidC+paidEstimatesC+movementPaidC,currentC=cents(contract?.currentAmount??p.budget),qualityRetainedC=est.reduce((s,e)=>s+cents(e.qualityApplied||0),0),qualityReturnedC=moves.filter(x=>x.status==='Pagado'&&/calidad/i.test(x.movementType||'')).reduce((s,x)=>s+cents(x.amount||0),0),advanceAmortizedC=est.reduce((s,e)=>s+cents(e.advanceApplied||0),0);return{contract,est,moves,grossC,netC,paidEstimatesC,advancePaidC,movementPaidC,totalPaidC,currentC,contractPendingC:Math.max(0,currentC-totalPaidC),saldoEstimarC:Math.max(0,currentC-grossC),qualityRetainedC,qualityReturnedC,qualityPendingC:Math.max(0,qualityRetainedC-qualityReturnedC),advanceAmortizedC,advancePendingC:Math.max(0,advancePaidC-advanceAmortizedC)}}
 function projectAutomaticProgress(p,c=null){const contract=c||db.contracts.find(x=>x.projectId===p.id),fin=projectFinancials(p,contract),baseC=fin.currentC||cents(contract?.currentAmount??p.budget??0),value=baseC>0?Math.max(0,Math.min(100,round2(fin.grossC/baseC*100))):0,last=(fin.est||[]).slice().sort((a,b)=>(a.end||a.start||'').localeCompare(b.end||b.start||'')).at(-1);return{physical:value,financial:value,source:fin.est?.length?'Total estimado acumulado':'Sin estimaciones',date:last?.end||last?.start||''}}
 function estimateAutomaticProgress(c,e,estimates=null){if(!c||!e)return 0;const list=(estimates||db.estimates.filter(x=>x.contractId===c.id)).slice().sort((a,b)=>Number(a.number)-Number(b.number));const baseC=cents(c.currentAmount||c.originalAmount||0);if(!baseC)return 0;let grossC=0;for(const x of list){grossC+=cents(x.gross||0);if(x.id===e.id)break}return Math.max(0,Math.min(100,round2(grossC/baseC*100)))}
-function syncAllProjectProgress(){(db.projects||[]).forEach(p=>{const c=db.contracts.find(x=>x.projectId===p.id),a=projectAutomaticProgress(p,c);p.physicalProgress=a.physical;p.financialProgress=a.financial;const qualityPaid=(db.payments||[]).some(x=>x.projectId===p.id&&x.status==='Pagado'&&/calidad/i.test(x.movementType||''));const complete=a.physical>=100||qualityPaid;if(complete&&!/finaliz|cerrad/i.test(p.status||'')){p.status='Finalizado';p.finalizedAt=p.finalizedAt||iso();p.finalizedReason=a.physical>=100?'Avance de ejecución 100%':'Garantía de calidad pagada/devuelta';if(c&&!/finaliz|cerrad/i.test(c.status||''))c.status='Finalizado'}})}
+function syncAllProjectProgress(){(db.projects||[]).forEach(p=>{const c=db.contracts.find(x=>x.projectId===p.id),a=projectAutomaticProgress(p,c);p.physicalProgress=a.physical;p.financialProgress=a.financial})}
 function addExecutionDays(start,days){if(!start||!Number(days))return'';const d=new Date(start+'T12:00:00');d.setDate(d.getDate()+Math.max(1,Math.trunc(Number(days)))-1);return d.toISOString().slice(0,10)}
 function addCalendarDays(date,days){if(!date||!Number.isFinite(Number(days)))return date||'';const d=new Date(date+'T12:00:00');d.setDate(d.getDate()+Math.trunc(Number(days)));return d.toISOString().slice(0,10)}
 function baseExecutionDays(amount,type='Obra'){const a=Math.max(0,round2(amount));if(type==='Consultoria'){if(a<=500000)return 30;if(a<=1000000)return 45;if(a<=2000000)return 60;if(a<=3500000)return 90;return 120}if(type==='BienesServicios'){if(a<=100000)return 15;if(a<=250000)return 20;if(a<=450000)return 30;if(a<=1500000)return 45;return 60}if(a<=500000)return 30;if(a<=1000000)return 45;if(a<=2000000)return 60;if(a<=4000000)return 90;if(a<=6000000)return 120;if(a<=10000000)return 150;if(a<=20000000)return 180;return 240}
@@ -702,6 +702,190 @@ function installProjectActionSafety(){
  },true);
 }
 installProjectActionSafety();
+/* ===== CONTROL CONTRACTUAL · NUCLEO DE INTEGRIDAD Y CONCURRENCIA V1 ===== */
+(()=>{
+'use strict';
+if(window.__CC_CORE_HARDENING_V1__)return;
+window.__CC_CORE_HARDENING_V1__=true;
+
+const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
+const eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+const arr=v=>Array.isArray(v)?v:[];
+const n=v=>Number(v)||0;
+const say=m=>{try{toast(m)}catch{console.log(m)}};
+const scopedKey=()=>{try{return cloudWorkspaceId&&session?.userId?`${STORE}:${cloudWorkspaceId}:${session.userId}`:STORE}catch{return STORE}};
+const safeLocal=v=>{try{return typeof window.__ccSafeSlimState==='function'?window.__ccSafeSlimState(v):v}catch{return v}};
+let baseState=clone(window.__ccCloudBaseState||null);
+let stateVersion=Number(window.__ccCloudVersion||0)||null;
+let conflictOpen=false;
+
+function stripSecrets(source){
+  const out=clone(source)||{};
+  out.users=arr(out.users).map(u=>{const x={...u};delete x.password;return x});
+  return out;
+}
+function saveLocalSnapshot(source=db){
+  const key=scopedKey(),payload=safeLocal(source);
+  try{localStorage.setItem(key,JSON.stringify(payload))}catch(e){console.warn('Copia local por espacio no disponible',e)}
+  try{localStorage.setItem(STORE,JSON.stringify(payload))}catch{}
+}
+function entityMap(list){const m=new Map();arr(list).forEach((x,i)=>m.set(x&&x.id!=null?String(x.id):`__idx_${i}`,x));return m}
+function mergeArray(base,local,server,path,conflicts){
+  const bm=entityMap(base),lm=entityMap(local),sm=entityMap(server),keys=new Set([...bm.keys(),...lm.keys(),...sm.keys()]),out=[];
+  for(const k of keys){
+    const b=bm.get(k),l=lm.get(k),s=sm.get(k),lc=!eq(l,b),sc=!eq(s,b);
+    if(!lc){if(s!==undefined)out.push(s);continue}
+    if(!sc){if(l!==undefined)out.push(l);continue}
+    if(eq(l,s)){if(l!==undefined)out.push(l);continue}
+    conflicts.push(`${path}:${k}`);
+    if(s!==undefined)out.push(s);
+  }
+  return out;
+}
+function threeWayMerge(base,local,server){
+  const b=base&&typeof base==='object'?base:{},l=local&&typeof local==='object'?local:{},s=server&&typeof server==='object'?server:{},out={},conflicts=[];
+  const keys=new Set([...Object.keys(b),...Object.keys(l),...Object.keys(s)]);
+  for(const key of keys){
+    const bv=b[key],lv=l[key],sv=s[key];
+    if(Array.isArray(bv)||Array.isArray(lv)||Array.isArray(sv)){out[key]=mergeArray(bv,lv,sv,key,conflicts);continue}
+    const lc=!eq(lv,bv),sc=!eq(sv,bv);
+    if(!lc)out[key]=sv;else if(!sc)out[key]=lv;else if(eq(lv,sv))out[key]=lv;else{conflicts.push(key);out[key]=sv}
+  }
+  return{data:out,conflicts};
+}
+async function readCloudRow(){
+  if(!cloudWorkspaceId)return null;
+  const r=await sbFetch(`/rest/v1/app_state?select=data,version,updated_at&workspace_id=eq.${encodeURIComponent(cloudWorkspaceId)}&limit=1`);
+  return r.data?.[0]||null;
+}
+function showConflict(serverData,serverVersion,conflicts){
+  window.__ccSyncConflict={serverData:clone(serverData),serverVersion,conflicts:[...conflicts],localData:clone(db),at:new Date().toISOString()};
+  if(conflictOpen)return;
+  conflictOpen=true;
+  setTimeout(()=>{
+    try{
+      if(typeof openModal!=='function'){say('Hay cambios simultáneos. Recarga el expediente antes de continuar.');conflictOpen=false;return}
+      const list=conflicts.slice(0,10).map(x=>`<li>${typeof esc==='function'?esc(x):x}</li>`).join('');
+      const m=openModal('Cambios simultáneos detectados',`<div class="alert danger"><b>No se sobrescribió información.</b> Otro usuario modificó el mismo expediente mientras trabajabas. Tu copia local quedó protegida.</div><p class="muted">Conflictos detectados: ${conflicts.length}.</p>${list?`<ul>${list}</ul>`:''}<div class="actions"><button class="btn" id="ccConflictBackup">Guardar respaldo local</button><button class="btn primary" id="ccConflictReload">Recargar versión de la nube</button></div>`);
+      const b=m.querySelector('#ccConflictBackup');if(b)b.onclick=()=>{try{exportBackup()}catch{} };
+      const r=m.querySelector('#ccConflictReload');if(r)r.onclick=()=>{if(!confirm('Se reemplazará la copia de trabajo actual por la versión más reciente de la nube. ¿Continuar?'))return;db=Object.assign(defaultDB(),clone(serverData)||{});stateVersion=Number(serverVersion)||stateVersion;baseState=clone(serverData)||{};window.__ccCloudVersion=stateVersion;window.__ccCloudBaseState=clone(baseState);saveLocalSnapshot(db);window.__ccSyncConflict=null;m.remove();conflictOpen=false;try{renderApp()}catch{render()}};
+      const close=m.querySelector('.close');if(close)close.addEventListener('click',()=>{conflictOpen=false},{once:true});
+    }catch(e){console.warn(e);conflictOpen=false}
+  },0);
+}
+
+async function hardenedLoadCloudData(){
+  const mem=(await sbFetch(`/rest/v1/workspace_members?select=workspace_id,role,active&user_id=eq.${encodeURIComponent(session.userId)}&limit=1`)).data?.[0];
+  if(!mem)throw new Error('No se encontró un espacio de trabajo para este usuario.');
+  cloudWorkspaceId=mem.workspace_id;cloudRole=mem.role||'consulta';
+  const prof=(await sbFetch(`/rest/v1/profiles?select=full_name,active&user_id=eq.${encodeURIComponent(session.userId)}&limit=1`)).data?.[0];
+  cloudProfile=prof||{full_name:session.email||'Usuario',active:true};
+  if(cloudProfile.active===false)throw new Error('Este acceso está desactivado.');
+  const row=await readCloudRow();
+  stateVersion=Number(row?.version||1);window.__ccCloudVersion=stateVersion;
+  if(row?.data&&!cloudStateEmpty(row.data)){
+    db=Object.assign(defaultDB(),clone(row.data));
+  }else{
+    let scoped=null;try{scoped=JSON.parse(localStorage.getItem(scopedKey())||'null')}catch{}
+    db=scoped&&typeof scoped==='object'?Object.assign(defaultDB(),scoped):defaultDB();
+  }
+  baseState=clone(row?.data||db||{});window.__ccCloudBaseState=clone(baseState);
+  cloudLoaded=true;
+  const u={id:session.userId,name:cloudProfile.full_name||session.email,email:session.email,role:cloudRole,active:true};
+  db.users=arr(db.users).filter(x=>x.id!==u.id);db.users.unshift(u);
+  saveLocalSnapshot(db);
+}
+
+async function hardenedSaveCloudNow(retryMerge=false){
+  if(!cloudLoaded||!cloudWorkspaceId||!session?.accessToken||cloudSaving)return false;
+  cloudSaving=true;
+  try{
+    if(!stateVersion){const row=await readCloudRow();stateVersion=Number(row?.version||1);baseState=clone(row?.data||{});window.__ccCloudVersion=stateVersion;window.__ccCloudBaseState=clone(baseState)}
+    const safe=stripSecrets(db);
+    const r=await sbFetch('/rest/v1/rpc/save_app_state',{method:'POST',body:{p_workspace_id:cloudWorkspaceId,p_expected_version:stateVersion,p_data:safe}});
+    const x=Array.isArray(r.data)?r.data[0]:r.data;
+    if(!x?.saved){
+      const serverData=clone(x?.server_data||{}),serverVersion=Number(x?.new_version||stateVersion);
+      const merged=threeWayMerge(baseState||{},safe,serverData);
+      stateVersion=serverVersion;window.__ccCloudVersion=stateVersion;
+      if(!merged.conflicts.length&&!retryMerge){
+        db=Object.assign(defaultDB(),merged.data);baseState=serverData;window.__ccCloudBaseState=clone(baseState);saveLocalSnapshot(db);
+        cloudSaving=false;
+        return hardenedSaveCloudNow(true);
+      }
+      saveLocalSnapshot(safe);showConflict(serverData,serverVersion,merged.conflicts.length?merged.conflicts:['estado_general']);
+      throw new Error('CONFLICTO_DE_VERSION: otro usuario guardó cambios sobre el mismo expediente.');
+    }
+    stateVersion=Number(x.new_version||stateVersion+1);window.__ccCloudVersion=stateVersion;
+    baseState=clone(safe);window.__ccCloudBaseState=clone(baseState);window.__ccSyncConflict=null;
+    cloudLastSaved=new Date();saveLocalSnapshot(safe);try{updateCloudBadge()}catch{}
+    return true;
+  }finally{cloudSaving=false}
+}
+function hardenedScheduleCloudSave(){
+  clearTimeout(cloudSaveTimer);
+  cloudSaveTimer=setTimeout(()=>hardenedSaveCloudNow().catch(e=>{console.error(e);if(!String(e?.message||e).includes('CONFLICTO_DE_VERSION'))say('No se pudo sincronizar con Supabase. Los cambios permanecen protegidos en este dispositivo.')}),450);
+}
+function hardenedSaveDB(){
+  try{syncAllProjectProgress()}catch(e){console.warn('No se pudo recalcular el avance',e)}
+  saveLocalSnapshot(db);
+  if(cloudLoaded&&session?.accessToken)hardenedScheduleCloudSave();
+}
+async function hardenedSignOut(){
+  try{if(session?.accessToken)await sbFetch('/auth/v1/logout',{method:'POST',body:{},retry:false})}catch{}
+  try{localStorage.removeItem(STORE)}catch{}
+  session=null;cloudLoaded=false;cloudWorkspaceId=null;cloudProfile=null;stateVersion=null;baseState=null;window.__ccCloudVersion=null;window.__ccCloudBaseState=null;window.__ccSyncConflict=null;
+  localStorage.removeItem(SESSION);render();
+}
+
+try{loadCloudData=hardenedLoadCloudData}catch{}
+try{saveCloudNow=hardenedSaveCloudNow}catch{}
+try{scheduleCloudSave=hardenedScheduleCloudSave}catch{}
+try{saveDB=hardenedSaveDB}catch{}
+try{cloudSignOut=hardenedSignOut}catch{}
+
+const certified=e=>!!e&&/^(aprobada|aprobado|pagada|pagado)$/i.test(String(e.status||''));
+function progressForProject(p,c=null){
+  const contract=c||arr(db.contracts).find(x=>x.projectId===p.id),es=contract?arr(db.estimates).filter(e=>e.contractId===contract.id):[],base=Math.max(0,n(contract?.currentAmount??p.budget)),allGross=es.reduce((s,e)=>s+n(e.gross),0),certGross=es.filter(certified).reduce((s,e)=>s+n(e.gross),0),paidNet=es.filter(e=>/^(pagada|pagado)$/i.test(String(e.status||''))).reduce((s,e)=>s+n(e.net),0),moves=arr(db.payments).filter(x=>x.projectId===p.id&&x.status==='Pagado').reduce((s,x)=>s+n(x.amount),0),advance=n(contract?.advancePaid),visits=arr(db.visits).filter(v=>v.projectId===p.id&&v.date&&Number.isFinite(Number(v.physical))).sort((a,b)=>String(a.date).localeCompare(String(b.date))||n(a.number)-n(b.number)),last=visits.at(-1),physical=last?Math.max(0,Math.min(100,n(last.physical))):0;
+  return{physical,physicalAvailable:!!last,financial:base?Math.max(0,Math.min(100,Math.round(certGross/base*10000)/100)):0,proposed:base?Math.max(0,Math.min(100,Math.round(allGross/base*10000)/100)):0,paid:base?Math.max(0,Math.min(100,Math.round((advance+paidNet+moves)/base*10000)/100)):0,source:last?`Visita N.º ${last.number||'—'} · ${last.date}`:'Sin avance físico de campo registrado',date:last?.date||'',certifiedGross:certGross,proposedGross:allGross};
+}
+function hardenedProjectAutomaticProgress(p,c=null){return progressForProject(p,c)}
+function hardenedSyncProgress(){
+  arr(db.projects).forEach(p=>{const c=arr(db.contracts).find(x=>x.projectId===p.id),a=progressForProject(p,c);p.physicalProgress=a.physicalAvailable?a.physical:null;p.financialProgress=a.financial;p.proposedFinancialProgress=a.proposed;p.paidProgress=a.paid;p.progressSource=a.source});
+}
+try{projectAutomaticProgress=hardenedProjectAutomaticProgress}catch{}
+try{syncAllProjectProgress=hardenedSyncProgress}catch{}
+
+try{procurementMode=function(){return 'Según Gaceta y año fiscal'}}catch{}
+
+async function hardenedAuditModal(){
+  try{
+    if(!cloudWorkspaceId||!navigator.onLine)throw new Error('Sin conexión');
+    const r=await sbFetch(`/rest/v1/audit_events?select=id,created_at,user_name,entity_type,entity_id,action,before_data,after_data,event_hash,hash_valid,chain_valid&workspace_id=eq.${encodeURIComponent(cloudWorkspaceId)}&order=created_at.desc&limit=200`),rows=arr(r.data);
+    openModal('Historial de cambios · PostgreSQL',`<div class="alert info">Historial oficial del servidor con validación de integridad.</div><div class="table-wrap"><table class="table"><thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Entidad</th><th>Integridad</th></tr></thead><tbody>${rows.map(a=>`<tr><td>${new Date(a.created_at).toLocaleString('es-HN')}</td><td>${typeof esc==='function'?esc(a.user_name||'Sistema'):a.user_name}</td><td>${typeof esc==='function'?esc(a.action):a.action}</td><td>${typeof esc==='function'?esc(`${a.entity_type||''} · ${a.entity_id||''}`):''}</td><td>${a.hash_valid&&a.chain_valid?'✓ Correcta':'⚠ Revisar'}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">Sin movimientos.</td></tr>'}</tbody></table></div>`);
+  }catch{say('La auditoría oficial requiere conexión con Supabase.')}
+}
+try{auditModal=hardenedAuditModal}catch{}
+
+function decorate(){
+  try{
+    const ef=document.getElementById('ePhysical');
+    if(ef){const field=ef.closest('.field'),sp=field?.querySelector('span'),sm=field?.querySelector('small');if(sp)sp.textContent='Avance financiero proyectado %';if(sm)sm.textContent='Proyección acumulada de estimaciones. No representa avance físico de obra.'}
+    document.querySelectorAll('.project-card-premium,.project-v3').forEach(card=>{
+      const open=card.querySelector('[data-open]');if(!open)return;const p=arr(db.projects).find(x=>x.id===open.dataset.open);if(!p)return;const a=progressForProject(p);const label=card.querySelector('.progress-label span');const val=card.querySelector('.progress-label b');const fill=card.querySelector('.progress-fill');if(label)label.textContent=a.physicalAvailable?'Avance físico observado · última visita':'Avance físico sin registrar';if(val)val.textContent=a.physicalAvailable?`${a.physical.toFixed(2)}%`:'—';if(fill)fill.style.width=`${a.physicalAvailable?a.physical:0}%`;
+    });
+    const body=document.getElementById('tabBody');if(body&&!body.dataset.ccProgressDecorated&&view?.screen==='project'&&view?.tab==='summary'){
+      const p=arr(db.projects).find(x=>x.id===view.projectId);if(p){const a=progressForProject(p),cells=[...body.querySelectorAll('.info')],auto=cells.find(x=>/Avance automático/i.test(x.querySelector('small')?.textContent||''));if(auto){auto.innerHTML=`<small>Avance físico observado</small><strong>${a.physicalAvailable?a.physical.toFixed(2)+'%':'Sin registrar'}</strong><small>${a.source}</small>`;auto.insertAdjacentHTML('afterend',`<div class="info"><small>Avance certificado</small><strong>${a.financial.toFixed(2)}%</strong><small>Solo estimaciones aprobadas o pagadas</small></div><div class="info"><small>Avance financiero propuesto</small><strong>${a.proposed.toFixed(2)}%</strong><small>Incluye estimaciones aún no certificadas</small></div><div class="info"><small>Avance pagado</small><strong>${a.paid.toFixed(2)}%</strong><small>Desembolsos registrados</small></div>`);body.dataset.ccProgressDecorated='1'}}
+    }
+    document.querySelectorAll('.field span').forEach(sp=>{if(sp.textContent.trim()==='Modalidad sugerida')sp.textContent='Modalidad de referencia'});
+  }catch(e){console.warn('Decoración de integridad',e)}
+}
+new MutationObserver(()=>setTimeout(decorate,0)).observe(document.documentElement,{subtree:true,childList:true});
+setTimeout(()=>{decorate();try{hardenedSyncProgress()}catch{}},0);
+window.ccProgressForProject=progressForProject;
+window.ccSaveCloudNow=hardenedSaveCloudNow;
+})();
+
 render();
 </script>
 
@@ -1162,6 +1346,10 @@ setTimeout(()=>{prof();button();estForm();visitForm()},0);window.openAdaptiveLea
 })();
 </script>
 <script src="budget-portfolio-tab-v1.js"></script>
+<script src="workspace-access-v1.js?v=20260820-master4"></script>
+<script src="alerts-compact-v1.js?v=20260820-master4"></script>
+<script src="dashboard-executive-v1.js?v=20260820-master4"></script>
+<script src="engineering-ux-v1.js?v=20260820-master4"></script>
 <script src="procurement-thresholds-v1.js?v=20260820-gacetas4"></script>
 <script src="contracts-center-v1.js?v=20260820-contracts2"></script>
 <script src="corporate-ui-v1.js?v=20260820-corporate3"></script>
@@ -1172,424 +1360,12 @@ setTimeout(()=>{prof();button();estForm();visitForm()},0);window.openAdaptiveLea
 <script src="visit-photo-persistence-v2.js?v=20260820-photopersist2"></script>
 <script src="visit-print-v3.js?v=20260820-visitprint3"></script>
 <script src="procurement-invitations-v2.js?v=20260820-invitations2"></script>
-<script src="procurement-offers-invitees-v1.js?v=20260820-offersinvitees1"></script>
+<script src="procurement-offers-invitees-v1.js?v=20260822-offersinvitees2"></script>
 <script src="summary-budget-law-v1.js?v=20260820-summarybudgetlaw1"></script>
 <script src="project-search-clean-v1.js?v=20260820-searchclean1"></script>
-<script>
-/* ===== CICLO CONTRACTUAL LCE/RLCE V1 ===== */
-(()=>{
-  if(window.__CP_LIFECYCLE_V1__) return;
-  window.__CP_LIFECYCLE_V1__=true;
-
-  const css=`
-  .lc-wrap{display:grid;gap:14px}.lc-hero{border:1px solid rgba(96,165,250,.18);border-radius:18px;background:linear-gradient(150deg,rgba(18,34,55,.98),rgba(8,15,25,.98));padding:17px}.lc-hero-top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.lc-hero h3{font-size:18px;margin:2px 0 5px}.lc-hero p{font-size:10px;line-height:1.5;color:#8297ae;margin:0}.lc-total{min-width:88px;text-align:right}.lc-total b{display:block;font-size:24px;color:#eaf2ff}.lc-total small{color:#7390ad;font-size:9px}.lc-bar{height:8px;border-radius:99px;background:#06101a;border:1px solid #17263a;overflow:hidden;margin-top:12px}.lc-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#2563eb,#38bdf8)}
-  .lc-legal-note{padding:10px 12px;border:1px solid rgba(245,158,11,.18);background:rgba(245,158,11,.06);border-radius:12px;color:#d8c58e;font-size:9px;line-height:1.5}.lc-phase-list{display:grid;gap:10px}.lc-phase{border:1px solid rgba(148,163,184,.11);background:linear-gradient(155deg,rgba(14,23,36,.98),rgba(7,13,22,.98));border-radius:16px;overflow:hidden}.lc-phase-head{display:grid;grid-template-columns:38px minmax(0,1fr) auto auto;gap:11px;align-items:center;padding:12px 13px;border-bottom:1px solid rgba(148,163,184,.08);cursor:pointer;user-select:none;transition:background .15s ease}.lc-phase-head:hover{background:rgba(59,130,246,.045)}.lc-num{width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:rgba(59,130,246,.1);border:1px solid rgba(96,165,250,.15);color:#bfdbfe;font-weight:900}.lc-phase-head h4{margin:0 0 2px;font-size:13px}.lc-phase-head p{margin:0;color:#72879d;font-size:9px}.lc-phase-pct{font-size:10px;color:#9fc1ff;font-weight:900}.lc-toggle{width:28px;height:28px;border:1px solid rgba(148,163,184,.12);border-radius:9px;background:#08111b;color:#9fc1ff;display:grid;place-items:center;font-size:14px;font-weight:900;transition:transform .18s ease,background .15s ease}.lc-phase.open .lc-toggle{transform:rotate(180deg);background:rgba(37,99,235,.12)}.lc-phase-body{display:none}.lc-phase.open .lc-phase-body{display:block}.lc-items{display:grid}.lc-item{display:grid;grid-template-columns:24px minmax(180px,1.2fr) minmax(140px,.7fr) minmax(180px,1fr);gap:9px;align-items:center;padding:9px 12px;border-bottom:1px solid rgba(148,163,184,.06)}.lc-item:last-child{border-bottom:0}.lc-check{width:18px;height:18px;accent-color:#3b82f6}.lc-name b{display:block;font-size:10px}.lc-name small{display:block;color:#6f849b;font-size:8px;margin-top:2px}.lc-date,.lc-note{min-height:34px!important;padding:7px 8px!important;border-radius:9px!important;font-size:9px!important}.lc-detected{display:inline-flex;margin-top:4px;padding:3px 6px;border-radius:999px;border:1px solid rgba(34,197,94,.15);background:rgba(34,197,94,.06);color:#a7f3d0;font-size:7px;font-weight:850}.lc-detected.warn{border-color:rgba(245,158,11,.18);background:rgba(245,158,11,.06);color:#fde68a}.lc-footer{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:11px 12px;border-top:1px solid rgba(148,163,184,.08);background:rgba(2,8,15,.28)}.lc-footer span{font-size:8px;color:#71869d}.lc-footer b{font-size:9px;color:#dce9f8}.lc-current{color:#a7f3d0!important}
-  @media(max-width:900px){.lc-item{grid-template-columns:24px minmax(0,1fr) 135px}.lc-note{grid-column:2/-1}.lc-hero-top{display:block}.lc-total{text-align:left;margin-top:10px}}
-  @media(max-width:620px){.lc-phase-head{grid-template-columns:34px 1fr auto}.lc-phase-pct{grid-column:2}.lc-toggle{grid-column:3;grid-row:1/3}.lc-item{grid-template-columns:24px 1fr}.lc-date,.lc-note{grid-column:2/-1}.lc-footer{display:block}.lc-footer b{display:block;margin-top:4px}}
-  `;
-  const style=document.createElement('style');style.id='contract-lifecycle-v1-css';style.textContent=css;document.head.appendChild(style);
-
-  const phases=[
-    {id:'planning',title:'Planificación y requisitos previos',subtitle:'Base técnica, presupuestaria, ambiental y de disponibilidad física del proyecto.',items:[
-      ['studies','Estudios y diseños','Estudios, planos, diseños y especificaciones técnicas concluidos.'],
-      ['budget','Presupuesto base','Presupuesto estimado y programación física definidos.'],
-      ['funding','Disponibilidad presupuestaria','Partida y asignación presupuestaria identificadas.'],
-      ['environment','Permisos y gestión ambiental','Licencias, permisos o instrumentos ambientales que correspondan.'],
-      ['land','Terrenos, servidumbres y derecho de vía','Disponibilidad física y legal necesaria para ejecutar la obra.'],
-      ['pliego','Pliego / bases del proceso','Pliego de condiciones o bases preparado y aprobado.']
-    ]},
-    {id:'selection',title:'Selección y adjudicación',subtitle:'Competencia, recepción, evaluación y decisión de adjudicación.',items:[
-      ['method','Modalidad de contratación','Modalidad definida de acuerdo con monto, objeto y normativa aplicable.'],
-      ['prequal','Precalificación, cuando aplique','Verificación previa de capacidad técnica, legal y financiera.'],
-      ['notice','Convocatoria / invitación','Publicidad o invitación realizada según la modalidad aplicable.'],
-      ['opening','Recepción y apertura de ofertas','Acta y documentación del acto de recepción/apertura.'],
-      ['evaluation','Evaluación técnica y económica','Análisis y recomendación de la comisión evaluadora.'],
-      ['award','Resolución de adjudicación','Decisión motivada y notificada conforme al procedimiento.']
-    ]},
-    {id:'formalization',title:'Formalización y perfeccionamiento',subtitle:'Del acto de adjudicación al contrato listo para ejecución.',items:[
-      ['contract','Contrato suscrito','Documento contractual firmado por las partes.'],
-      ['approval','Aprobación del órgano competente','Aprobación o ratificación superior cuando corresponda.'],
-      ['registration','Registro y control','Registro administrativo, presupuestario y de fiscalización aplicable.'],
-      ['compliance','Garantía de cumplimiento','Garantía constituida conforme al contrato y normativa aplicable.']
-    ]},
-    {id:'execution',title:'Ejecución contractual',subtitle:'Inicio, supervisión, avance físico-financiero, pagos y modificaciones.',items:[
-      ['workplan','Plan de trabajo / cronograma','Programa de ejecución, personal técnico y recursos definidos.'],
-      ['startorder','Orden de inicio','Notificación formal para comenzar la obra.'],
-      ['supervision','Supervisión e inspección','Seguimiento técnico documentado durante la ejecución.'],
-      ['estimates','Estimaciones y pagos parciales','Mediciones, aprobación y trámite de pagos de obra ejecutada.'],
-      ['changes','Modificaciones contractuales','Órdenes de cambio, ampliaciones o adendas debidamente justificadas.'],
-      ['timecontrol','Control de plazo y avance','Comparación continua de tiempo contractual contra avance ejecutado.']
-    ]},
-    {id:'closeout',title:'Recepción, liquidación y cierre',subtitle:'Recepciones, correcciones, calidad, liquidación y finiquito.',items:[
-      ['provisional','Recepción provisional','Inspección de terminación y acta con pendientes, si los hay.'],
-      ['corrections','Subsanación de pendientes','Correcciones o trabajos pendientes verificados.'],
-      ['definitive','Recepción definitiva','Acta final de recepción y aceptación de la obra.'],
-      ['quality','Garantía de calidad','Garantía de calidad constituida y controlada durante su vigencia.'],
-      ['liquidation','Liquidación final','Ajuste económico final, saldos, retenciones y cuentas.'],
-      ['finiquito','Finiquito y cierre del expediente','Cierre administrativo y documental del contrato.']
-    ]}
-  ];
-
-  const ensureData=p=>{if(!p.contractLifecycle||typeof p.contractLifecycle!=='object')p.contractLifecycle={};if(!p.contractLifecycle.items)p.contractLifecycle.items={};return p.contractLifecycle};
-  const key=(phase,item)=>phase+'.'+item;
-  const getEntry=(p,phase,item)=>ensureData(p).items[key(phase,item)]||{};
-  const setEntry=(p,phase,item,patch)=>{const lc=ensureData(p),k=key(phase,item);lc.items[k]={...(lc.items[k]||{}),...patch,updatedAt:iso()};p.updatedAt=iso();audit('ACTUALIZAR','Proceso contractual',p.id,{fase:phase,requisito:item,...patch});saveDB()};
-
-  function detected(p,c,phase,item){
-    const gs=(db.guarantees||[]).filter(g=>g.projectId===p.id),ests=(db.estimates||[]).filter(e=>e.projectId===p.id||(c&&e.contractId===c.id)),vis=(db.visits||[]).filter(v=>v.projectId===p.id),chs=(db.changes||[]).filter(x=>x.projectId===p.id||(c&&x.contractId===c.id));
-    if(phase==='formalization'&&item==='contract'&&c)return 'Contrato registrado en el expediente';
-    if(phase==='formalization'&&item==='compliance'&&gs.some(g=>/cumplimiento/i.test(g.type||'')))return 'Garantía de cumplimiento registrada';
-    if(phase==='execution'&&item==='supervision'&&vis.length)return `${vis.length} visita${vis.length===1?'':'s'} de supervisión registrada${vis.length===1?'':'s'}`;
-    if(phase==='execution'&&item==='estimates'&&ests.length)return `${ests.length} estimación${ests.length===1?'':'es'} registrada${ests.length===1?'':'s'}`;
-    if(phase==='execution'&&item==='changes'&&chs.length)return `${chs.length} modificación${chs.length===1?'':'es'} registrada${chs.length===1?'':'s'}`;
-    if(phase==='closeout'&&item==='quality'&&gs.some(g=>/calidad/i.test(g.type||'')))return 'Garantía de calidad registrada';
-    if(phase==='selection'&&item==='award'&&/adjudic|contrat|ejecuci|finaliz|cerrad/i.test(p.status||''))return 'El estado del proyecto indica avance posterior a adjudicación';
-    if(phase==='execution'&&item==='startorder'&&((c?.start)||p.start))return 'Fecha de inicio registrada en el expediente';
-    return '';
-  }
-
-  function stats(p){let done=0,total=0;const per={};phases.forEach(ph=>{let d=0;ph.items.forEach(([id])=>{total++;if(getEntry(p,ph.id,id).done){done++;d++}});per[ph.id]={done:d,total:ph.items.length,pct:Math.round(d/ph.items.length*100)}});return{done,total,pct:Math.round(done/total*100),per}};
-  function currentPhase(s){for(const ph of phases)if(s.per[ph.id].pct<100)return ph;return phases[phases.length-1]}
-  const openKey=p=>`cp_lifecycle_open_${p.id}`;
-  function getOpenPhases(p,cur){try{const raw=JSON.parse(localStorage.getItem(openKey(p))||'null');if(Array.isArray(raw))return new Set(raw)}catch{}return new Set([cur.id])}
-  function saveOpenPhases(p,set){localStorage.setItem(openKey(p),JSON.stringify([...set]))}
-
-  window.renderContractLifecycle=function(p,c){
-    const root=document.getElementById('tabBody');if(!root)return;
-    const s=stats(p),cur=currentPhase(s),can=typeof roleCanEdit==='function'?roleCanEdit():true,openPhases=getOpenPhases(p,cur);
-    root.innerHTML=`<div class="lc-wrap"><section class="lc-hero"><div class="lc-hero-top"><div><p class="eyebrow">RUTA CONTRACTUAL DE OBRA PÚBLICA</p><h3>Proceso de contratación y ejecución</h3><p>Control por cinco fases del expediente. Marca cada requisito únicamente cuando exista respaldo documental suficiente.</p></div><div class="lc-total"><b>${s.pct}%</b><small>${s.done} de ${s.total} controles</small></div></div><div class="lc-bar"><i style="width:${s.pct}%"></i></div></section><div class="lc-legal-note"><b>Criterio de control:</b> esta ruta organiza el expediente con base en la LCE/RLCE y el procedimiento de obra pública. Los plazos, porcentajes, publicaciones, garantías y límites específicos deben validarse según la modalidad, el pliego, el contrato y la normativa vigente aplicable al caso concreto.</div><div class="lc-phase-list">${phases.map((ph,idx)=>{const ps=s.per[ph.id],isOpen=openPhases.has(ph.id);return `<section class="lc-phase ${isOpen?'open':''}" data-lc-phase="${ph.id}"><div class="lc-phase-head" data-lc-toggle="${ph.id}" role="button" tabindex="0" aria-expanded="${isOpen?'true':'false'}"><span class="lc-num">${idx+1}</span><div><h4>${ph.title}</h4><p>${ph.subtitle}</p></div><span class="lc-phase-pct ${cur.id===ph.id?'lc-current':''}">${ps.pct}%</span><span class="lc-toggle" aria-hidden="true">⌄</span></div><div class="lc-phase-body"><div class="lc-items">${ph.items.map(([id,name,desc])=>{const e=getEntry(p,ph.id,id),det=detected(p,c,ph.id,id);return `<label class="lc-item"><input class="lc-check" type="checkbox" data-lc-check="${ph.id}|${id}" ${e.done?'checked':''} ${can?'':'disabled'}><span class="lc-name"><b>${name}</b><small>${desc}</small>${det?`<span class="lc-detected">${esc(det)}</span>`:''}</span><input class="lc-date" type="date" data-lc-date="${ph.id}|${id}" value="${esc(e.date||'')}" ${can?'':'disabled'}><input class="lc-note" type="text" data-lc-note="${ph.id}|${id}" value="${esc(e.note||'')}" placeholder="Documento, acta, resolución u observación" ${can?'':'disabled'}></label>`}).join('')}</div><div class="lc-footer"><span>${ps.done} de ${ps.total} requisitos marcados</span><b>${ps.pct===100?'Fase completada':cur.id===ph.id?'Fase actual / pendiente de completar':'Pendiente'}</b></div></div></section>`}).join('')}</div></div>`;
-    root.querySelectorAll('[data-lc-toggle]').forEach(el=>{
-      const toggle=()=>{const id=el.dataset.lcToggle,section=root.querySelector(`[data-lc-phase="${id}"]`);if(!section)return;section.classList.toggle('open');const isOpen=section.classList.contains('open');el.setAttribute('aria-expanded',isOpen?'true':'false');if(isOpen)openPhases.add(id);else openPhases.delete(id);saveOpenPhases(p,openPhases)};
-      el.onclick=toggle;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle()}};
-    });
-    root.querySelectorAll('[data-lc-check]').forEach(el=>el.onchange=()=>{const [ph,it]=el.dataset.lcCheck.split('|');setEntry(p,ph,it,{done:el.checked,date:el.checked?(getEntry(p,ph,it).date||today()):getEntry(p,ph,it).date||''});renderContractLifecycle(p,c)});
-    root.querySelectorAll('[data-lc-date]').forEach(el=>el.onchange=()=>{const [ph,it]=el.dataset.lcDate.split('|');setEntry(p,ph,it,{date:el.value})});
-    root.querySelectorAll('[data-lc-note]').forEach(el=>el.onchange=()=>{const [ph,it]=el.dataset.lcNote.split('|');setEntry(p,ph,it,{note:el.value.trim()})});
-  };
-
-  if(typeof renderProject==='function'){
-    const baseRenderProject=renderProject;
-    renderProject=function(){
-      baseRenderProject();
-      const p=db.projects.find(x=>x.id===view.projectId&&!x.deletedAt);if(!p)return;
-      const c=db.contracts.find(x=>x.projectId===p.id);
-      const nav=document.querySelector('nav.tabs');
-      if(nav&&!nav.querySelector('[data-tab="lifecycle"]')){
-        const b=document.createElement('button');b.dataset.tab='lifecycle';b.textContent='Proceso contractual';b.className=view.tab==='lifecycle'?'active':'';b.onclick=()=>{view.tab='lifecycle';renderProject()};nav.appendChild(b);
-      }
-      if(nav)nav.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===view.tab));
-      if(view.tab==='lifecycle')window.renderContractLifecycle(p,c);
-    };
-  }
-})();
-
-</script>
-<script>
-/* ===== UI DESPLEGABLE VISIBLE PARA FASES CONTRACTUALES ===== */
-(()=>{
-  if(window.__CP_LC_ACCORDION_UI__) return;
-  window.__CP_LC_ACCORDION_UI__=true;
-
-  const css=`
-  .lc-accordion-tools{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin:2px 0 4px}
-  .lc-accordion-tools button{border:1px solid rgba(96,165,250,.22);background:#0a1522;color:#cfe3ff;border-radius:10px;padding:8px 11px;font-size:9px;font-weight:850;cursor:pointer}
-  .lc-accordion-tools button:hover{background:#10233a;border-color:rgba(96,165,250,.38)}
-  .lc-phase-head{grid-template-columns:38px minmax(0,1fr) auto minmax(112px,auto)!important}
-  .lc-toggle{width:auto!important;min-width:108px!important;height:32px!important;padding:0 10px!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;border-color:rgba(96,165,250,.24)!important;background:#0a1726!important;color:#dbeafe!important;font-size:9px!important;font-weight:900!important;transform:none!important}
-  .lc-toggle::after{content:'▼';font-size:10px;color:#7db3ff;transition:transform .18s ease}
-  .lc-phase.open .lc-toggle{background:rgba(37,99,235,.14)!important;border-color:rgba(96,165,250,.38)!important;transform:none!important}
-  .lc-phase.open .lc-toggle::after{content:'▲'}
-  .lc-phase:not(.open) .lc-phase-head{border-bottom-color:transparent!important}
-  .lc-phase:not(.open) .lc-phase-head:hover{background:rgba(59,130,246,.07)}
-  .lc-phase.open{box-shadow:0 0 0 1px rgba(96,165,250,.07) inset}
-  @media(max-width:620px){
-    .lc-phase-head{grid-template-columns:34px minmax(0,1fr) 96px!important;gap:8px!important}
-    .lc-phase-pct{grid-column:2!important;grid-row:2!important}
-    .lc-toggle{grid-column:3!important;grid-row:1/3!important;min-width:92px!important;width:92px!important;padding:0 7px!important;font-size:8px!important}
-    .lc-accordion-tools{justify-content:stretch}.lc-accordion-tools button{flex:1}
-  }`;
-
-  if(!document.getElementById('lc-accordion-visible-css')){
-    const s=document.createElement('style');
-    s.id='lc-accordion-visible-css';
-    s.textContent=css;
-    document.head.appendChild(s);
-  }
-
-  function refreshLabels(root=document){
-    root.querySelectorAll('.lc-phase').forEach(section=>{
-      const t=section.querySelector('.lc-toggle');
-      if(t) t.childNodes[0] ? t.childNodes[0].nodeValue=(section.classList.contains('open')?'Ocultar ':'Ver ') : t.textContent=(section.classList.contains('open')?'Ocultar ':'Ver ');
-    });
-  }
-
-  function decorate(){
-    const wrap=document.querySelector('#tabBody .lc-wrap');
-    if(!wrap) return;
-    const list=wrap.querySelector('.lc-phase-list');
-    if(!list) return;
-
-    if(!wrap.querySelector('.lc-accordion-tools')){
-      const tools=document.createElement('div');
-      tools.className='lc-accordion-tools';
-      tools.innerHTML='<button type="button" data-lc-expand-all>Expandir todas las fases</button><button type="button" data-lc-collapse-all>Contraer todas las fases</button>';
-      list.parentNode.insertBefore(tools,list);
-      tools.querySelector('[data-lc-expand-all]').onclick=()=>{
-        list.querySelectorAll('.lc-phase').forEach(s=>s.classList.add('open'));
-        list.querySelectorAll('[data-lc-toggle]').forEach(h=>h.setAttribute('aria-expanded','true'));
-        refreshLabels(wrap);
-      };
-      tools.querySelector('[data-lc-collapse-all]').onclick=()=>{
-        list.querySelectorAll('.lc-phase').forEach(s=>s.classList.remove('open'));
-        list.querySelectorAll('[data-lc-toggle]').forEach(h=>h.setAttribute('aria-expanded','false'));
-        refreshLabels(wrap);
-      };
-    }
-
-    wrap.querySelectorAll('[data-lc-toggle]').forEach(head=>{
-      const section=head.closest('.lc-phase');
-      const toggle=head.querySelector('.lc-toggle');
-      if(toggle){
-        toggle.textContent=section?.classList.contains('open')?'Ocultar ':'Ver ';
-        toggle.title=section?.classList.contains('open')?'Ocultar requisitos de esta fase':'Ver requisitos de esta fase';
-      }
-      if(!head.dataset.lcVisibleUiBound){
-        head.dataset.lcVisibleUiBound='1';
-        head.addEventListener('click',()=>setTimeout(()=>refreshLabels(wrap),0));
-        head.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')setTimeout(()=>refreshLabels(wrap),0)});
-      }
-    });
-    refreshLabels(wrap);
-  }
-
-  const mo=new MutationObserver(()=>decorate());
-  mo.observe(document.documentElement,{subtree:true,childList:true});
-  setTimeout(decorate,0);
-  setTimeout(decorate,500);
-})();
-
-</script>
-<script>
-/* ===== PROJECT SEARCH DISPLAY FIX V1 ===== */
-(()=>{
-  if(document.getElementById('project-search-display-fix-v1')) return;
-  const style=document.createElement('style');
-  style.id='project-search-display-fix-v1';
-  style.textContent=`
-    .project-v3[hidden]{display:none!important}
-  `;
-  document.head.appendChild(style);
-})();
-
-</script>
-<script>
-/* ===== DISPONIBILIDAD PRESUPUESTARIA S.A.M.I. V1 ===== */
-(function(){
-'use strict';
-const SAMI_CUT='2026-07-16';
-const SAMI_ROWS=[
-['0132','SEG. PAVIMENTO Y ALCANTARILLADO CALLE HACIA EL CENTRO DE SALUD, CASCO URBANO SANTA MARÍA',0,0,55270.36,0,0,55270.36,1],
-['0161','MEJORAMIENTO KINDER MARCO TULIO REYES, CASCO URBANO SANTA MARÍA',0,0,171544.05,0,0,0,1],
-['0168','MEJORAMIENTO DE CAMPO DE FUTBOL, ARENALES / LAS TORRES',0,0,58993.98,0,0,58992.74,1],
-['0171','MEJORAMIENTO ESTADIO MUNICIPAL (NIVELADO, ENGRAMADO Y DRENAJE) CASCO URBANO, SANTA MARÍA',0,0,432520.45,0,46754.35,385766.10,1],
-['0217','TECHADO DE CANCHA DE USOS MULTIPLES CEB HERMAN GASTELL, LOS PLANES',0,0,256699.86,0,0,246699.86,1],
-['0219','CONSTRUCCION TANQUE DE AGUA POTABLE, ARENALES',0,0,444000,0,0,57917.19,1],
-['0220','MEJORAMIENTO DE RED DE DISTRIBUCION DE AGUA POTABLE, EL ROBLAR',0,0,650000,0,0,0,1],
-['0238','SEG. CONSTRUCCION DE CAJA PUENTE COMUNIDAD DE LAS PAVITAS',0,0,60289.96,0,0,14985.83,1],
-['0249','RESTAURACION DE IGLESIA CATOLICA, BO. EL CENTRO, SANTA MARÍA',0,0,2854809.37,0,0,1006799.17,1],
-['0265','CONSTRUCCION MODULO SANITARIO INSTITUTO TECNICO GABINO ARGUETA GALVEZ, BO. EL CAMPO SANTA MARÍA',0,0,47900.62,0,0,0,1],
-['0267','CONSTRUCCION AULA ESCUELA MELGHEN BONILLA / LOS POSOS',0,0,37973.56,0,0,0,1],
-['0269','CONSTRUCCION DE CANCHA DE USOS MULTIPLES INSTITUTO JENRRY SANTOS PADILLA, LOS PLANES',0,0,731808.90,0,0,715527.64,2],
-['0270','SEG. REPOSICION CENTRO INTEGRAL DE SALUD CIS GABINO ARGUETA, LOS PLANES',0,0,1878777.30,0,0,1872561.25,2],
-['0271','MEJORAMIENTO PROYECTO RED DE CONDUCCION DE AGUA POTABLE, EL POTRERO SANTA MARÍA',0,0,143956.07,0,0,0,2],
-['0272','CONSTRUCCION PROYECTO DE ELECTRIFICACION, GUASCOTORO',0,0,846860.92,0,0,0,2],
-['0273','AMPLIACION SISTEMA DE ENERGIA ELECTRICA / ESTANCIAS, SANTA MARÍA',0,0,1640305.47,0,0,0,2],
-['0278','MEJORAMIENTO CANCHA, ARENALITOS SANTA MARÍA',0,0,524008,0,0,392712,2],
-['0284','CONSTRUCCION PAVIMENTO CALLE HACIA EL CENTRO DE SALUD, LOS PLANES',0,0,135027.18,0,0,135027.18,2],
-['0286','CONSTRUCCION HERMITA CEMENTERIO MUNICIPAL, BO. EL CAMPO SANTA MARÍA',0,0,1095801.56,0,0,0,2],
-['0291','CONSTRUCCION DE BOULEVARD, CALLE SALIDA A PUEBLO VIEJO',0,0,1507602.81,0,0,1502248.50,2],
-['0297','REPARACION ESCUELA NUEVO ESFUERZO, COMUNIDAD DE PAVITAS',0,0,364178.50,0,0,363269.78,2],
-['0304','CONSTRUCCION MODULO SANITARIO ESC. LUIS ALONZO FLORES DE ESTANCIAS, SANTA MARÍA',0,0,105051.20,0,0,99704.40,2],
-['0305','CONSTRUCCION DE VIVIENDA BASICA / EXCEL GLOBAL',0,0,175071,0,0,69234,3],
-['0307','CONSTRUCCION DE AULA ESCUELA SIMON BOLIVAR, SIMPINULA',0,0,750125.24,0,0,738849.21,3],
-['0308','CONSTRUCCION DE PILAS CON RIVAL, LAS CRUCITAS SANTA MARÍA',0,0,380000,0,0,342570,3],
-['0309','MEJORAMIENTO ESCUELA TRINIDAD ALVARADO / LA TRINIDAD',646237.05,0,0,0,0,0,3],
-['0310','CONSTRUCCION DE SALA MATERNO INFANTIL, LOS PLANES',2000000,0,0,0,0,0,3],
-['0311','CONSTRUCCION DE PLANTA DE TRATAMIENTO DE AGUAS NEGRAS, LOS PLANES',2000000,0,0,0,0,0,3],
-['0312','MEJORAMIENTO DE VIVIENDAS: ZONA ALTA, ZONA MEDIA Y ZONA BAJA DE SANTA MARÍA',1000000,0,0,0,0,142116,3],
-['0313','CONSTRUCCION PROYECTO DE ELECTRIFICACION, LINDEROS',600000,0,0,0,0,0,3],
-['0314','AMPLIACION PROYECTO DE ELECTRIFICACION, ARENALES, SECTOR LOS GUZMAN',600000,0,290000,0,0,120024.09,3],
-['0315','CONSTRUCCION CANCHA DE USOS MULTIPLES, SANTA MARÍA',1500000,0,0,0,0,0,3],
-['0316','MEJORAMIENTO CAMPO DE FUTBOL COL. BRISAS DEL CAMPO, LOS PLANES',1583564.03,0,0,0,0,0,3],
-['0317','MEJORAMIENTO CAMPO DE FUTBOL, EL ROBLAR',750000,0,0,0,0,0,3],
-['0318','MEJORAMIENTO CAMPO DE FUTBOL, MIRATORO',750000,0,401603.12,0,0,0,4],
-['0319','MANTENIMIENTO DE CARRETERAS ZONA ALTA: MIRATORO, RIO NEGRO, LA UNION MIRATORO, LA TRINIDAD, LINDEROS',500000,0,300000,0,0,300000,4],
-['0320','MANTENIMIENTO DE CARRETERAS ZONA MEDIA: LOS PLANES, EL OCOTAL, PAVAS, SIMPINULA Y ESTANCIAS',700000,0,605872.99,0,0,971013.34,4],
-['0321','MANTENIMIENTO DE CARRETERAS ZONA BAJA: EL ROBLAR, CAMALOTES, SANTA MARÍA, LOS POSOS, EL NARANJO Y EL POTRERO',641782.01,0,526722.30,0,0,512736.18,4],
-['0322','CONSTRUCCION DE PAVIMENTO CALLE DEL COLEGIO HACIA CALLE PRINCIPAL, BO. EL CENTRO SANTA MARÍA',2057824.12,0,451603.12,0,0,0,4],
-['0323','CONSTRUCCION PLANTA DE TRATAMIENTO AGUAS NEGRAS, LOS PLANES',900500.74,0,0,0,0,0,4],
-['0324','CONSTRUCCION DE PAVIMENTO A ENTRADA DEL CENTRO SOCIAL, LOS PLANES',400000,0,0,0,0,0,4],
-['0325','CONSTRUCCION DE CONCRETO CICLOPEO DESVIO AL LIMON, CAMALOTE 02',300000,0,120811,0,0,405700.90,4],
-['0326','CONSTRUCCION Y MEJORAMIENTO DE VIVIENDAS, TODO EL MUNICIPIO',550000,0,3679.49,0,0,550000,5],
-['0327','MEJORAMIENTO ESCUELA ESFUERZO LOS LAURELES, LAURELES SANTA MARÍA',0,0,28008.67,0,0,0,5],
-['0328','CONTRAPARTE CONSTRUCCION DE PROYECTO SOLUCION HABITACIONAL (CASAS)',0,0,800000,0,0,0,5],
-['0329','REPOSICION PARQUE CENTRAL BARRIO EL CENTRO, SANTA MARÍA',0,0,4000000,0,0,2384014.62,5],
-['0330','MEJORAMIENTO DE HUELLAS DE CONCRETO CICLOPEO, CAMALOTE CENTRO',0,0,135801.56,0,0,0,5],
-['0331','CONSTRUCCION DE PILAS CON RIVAL, EL ARROZAL SANTA MARÍA',0,0,350000,0,0,322672.69,5],
-['0332','OBRAS DE DRENAJE (ALCANTARILLAS) ZONA ALTA, ZONA MEDIA Y ZONA BAJA SANTA MARÍA',0,0,195801.56,0,0,8000,5],
-['0333','CONTRAPARTE CONSTRUCCION DE ESTUFA 2X3 PROYECTO MIRADOR: ZONA ALTA, ZONA MEDIA Y ZONA BAJA',0,0,170610.93,0,0,0,5],
-['0334','CONSTRUCCION DE PILAS CON RIVAL, COL. BRISAS DEL CAMPO, LOS PLANES',0,0,118000,0,0,0,5],
-['0335','MANTENIMIENTO ESTADIO MUNICIPAL, CASCO URBANO, SANTA MARÍA',0,0,200000,46754.35,0,89487,6],
-['0336','CONSTRUCCION DE PILAS CON RIVAL, LAURELES Y PLANITOS SANTA MARÍA',0,0,307305.42,0,0,0,6],
-['0337','OBRAS ADICIONALES CIS GABINO ARGUETA, LOS PLANES',0,0,80000,0,0,0,6],
-['0338','CONTRAPARTE CONSTRUCCION DE TANQUE DE AGUA POTABLE, ARENALITOS',0,0,215000,0,0,0,6],
-['0339','SEGUNDA ETAPA REPOSICION PARQUE CENTRAL, BO. EL CENTRO SANTA MARÍA',0,0,211745.97,0,0,0,6],
-['0340','CONSTRUCCION ALCANTARILLADO DE AGUAS NEGRAS, BO. EL MIRADOR LOS PLANES',0,0,226289.22,0,0,0,6],
-['0341','CONTRAPARTE CONSTRUCCION CERCA PERIMETRAL CENTRO COMUNAL, EL ROBLAR',0,0,75000,0,0,0,6]
-];
-const round2=v=>Math.round((Number(v)||0)*100)/100;
-const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,' ').trim().toLowerCase();
-const money=v=>`L ${round2(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
-const htmlEsc=s=>typeof esc==='function'?esc(String(s??'')):String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const newId=()=>typeof uid==='function'?uid():'bc_'+Date.now().toString(36)+Math.random().toString(36).slice(2);
-const nowIso=()=>typeof iso==='function'?iso():new Date().toISOString();
-const canEdit=()=>typeof roleCanEdit==='function'?roleCanEdit():true;
-function currentUser(){try{if(typeof session!=='undefined'&&session)return session.name||session.email||session.username||'Usuario';}catch(_e){}return 'Usuario';}
-function baseControl(row){return{version:1,source:'S.A.M.I. - Ejecución de Proyectos',cutDate:SAMI_CUT,sourcePage:row[8],assigned:row[2],decrease:row[3],expansion:row[4],transferPositive:row[5],transferNegative:row[6],paid:row[7],movements:[],edits:[],importedAt:nowIso()};}
-function ensureControl(p){if(!p.budgetControl)p.budgetControl={version:1,source:'Registro manual',cutDate:'',sourcePage:null,assigned:Number(p.budget)||0,decrease:0,expansion:0,transferPositive:0,transferNegative:0,paid:0,movements:[],edits:[]};p.budgetControl.movements=Array.isArray(p.budgetControl.movements)?p.budgetControl.movements:[];p.budgetControl.edits=Array.isArray(p.budgetControl.edits)?p.budgetControl.edits:[];return p.budgetControl;}
-function snapshot(p){const b=ensureControl(p);let assigned=+b.assigned||0,decrease=+b.decrease||0,expansion=+b.expansion||0,tp=+b.transferPositive||0,tn=+b.transferNegative||0,paid=+b.paid||0;b.movements.forEach(m=>{const a=+m.amount||0;if(m.type==='Ampliación')expansion+=a;else if(m.type==='Disminución')decrease+=a;else if(m.type==='Transferencia +')tp+=a;else if(m.type==='Transferencia -')tn+=a;else if(m.type==='Pago')paid+=a;});const vigente=round2(assigned-decrease+expansion+tp-tn),disponible=round2(vigente-paid),pct=vigente?round2(paid/vigente*100):0;return{assigned:round2(assigned),decrease:round2(decrease),expansion:round2(expansion),transferPositive:round2(tp),transferNegative:round2(tn),vigente,paid:round2(paid),disponible,pct};}
-function findProject(row){const code=norm(row[0]),name=norm(row[1]);return (db.projects||[]).find(p=>norm(p.code)===code)||(db.projects||[]).find(p=>norm(p.name)===name);}
-function importSami(){if(typeof db==='undefined'||!db||!Array.isArray(db.projects)||db.samiBudgetImportV1?.version===1)return false;let created=0,linked=0;SAMI_ROWS.forEach(row=>{let p=findProject(row);if(!p){const vigente=round2(row[2]-row[3]+row[4]+row[5]-row[6]);p={id:newId(),code:row[0],name:row[1],description:'Importado del reporte S.A.M.I. de Ejecución de Proyectos, corte 16/07/2026.',location:'Santa María, La Paz',type:'Obra',budget:vigente,status:row[7]>0?'En ejecución':'Planificación',start:'',end:'',deletedAt:null,createdAt:nowIso()};db.projects.push(p);created++;}else linked++;if(!p.budgetControl||p.budgetControl.source==='Registro manual')p.budgetControl=baseControl(row);if(!(Number(p.budget)>0))p.budget=snapshot(p).vigente;});db.samiBudgetImportV1={version:1,source:'S.A.M.I. - Ejecución de Proyectos',cutDate:SAMI_CUT,count:SAMI_ROWS.length,created,linked,importedAt:nowIso()};try{if(typeof audit==='function')audit('IMPORTAR','Disponibilidad presupuestaria',null,{source:'S.A.M.I.',cutDate:SAMI_CUT,count:SAMI_ROWS.length,created,linked});}catch(_e){}try{if(typeof saveDB==='function')saveDB();}catch(_e){}return true;}
-function portfolio(){const ps=(db.projects||[]).filter(p=>!p.deletedAt&&p.budgetControl);return ps.reduce((a,p)=>{const s=snapshot(p);a.projects++;a.vigente=round2(a.vigente+s.vigente);a.paid=round2(a.paid+s.paid);a.available=round2(a.available+s.disponible);return a;},{projects:0,vigente:0,paid:0,available:0});}
-function injectStyles(){if(document.getElementById('budget-control-v1-style'))return;const s=document.createElement('style');s.id='budget-control-v1-style';s.textContent=`.budget-panel{border-color:#2b5b46!important;background:linear-gradient(180deg,rgba(11,36,28,.96),rgba(10,20,25,.98))!important}.budget-panel .budget-title{display:flex;align-items:center;gap:9px}.budget-badge{background:#123c2b;color:#bbf7d0;border:1px solid #2e6a4b;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:850}.budget-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:12px 0}.budget-kpi{background:#091710;border:1px solid #1f4d37;border-radius:12px;padding:11px}.budget-kpi small{display:block;color:#8fb9a4;margin-bottom:4px}.budget-kpi strong{font-size:17px}.budget-kpi.available{background:linear-gradient(135deg,#0d2b1c,#0a2117);border-color:#2f7a50}.budget-kpi.available strong{color:#86efac;font-size:20px}.budget-table .available{font-weight:850;color:#86efac}.budget-table .negative{color:#fca5a5}.budget-search{max-width:520px}.budget-breakdown{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-bottom:12px}.budget-source{font-size:11px;color:#94a3b8;margin-top:4px}.budget-actions{display:flex;gap:7px;flex-wrap:wrap}.budget-row-btn{border:0;background:transparent;color:#9fc1ff;padding:0;font-weight:800;text-align:left}.budget-row-btn:hover{text-decoration:underline}.budget-modal .modal{width:min(720px,100%)}.budget-history{margin-top:14px}.budget-notice{border:1px solid #28533d;background:#0c2117;color:#bbf7d0;border-radius:10px;padding:10px 12px;margin:10px 0}.budget-correction-log{font-size:11px;color:#8297ad;margin-top:10px}@media(max-width:900px){.budget-kpis,.budget-breakdown{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.budget-kpis,.budget-breakdown{grid-template-columns:1fr}.budget-kpi strong{font-size:16px}}`;document.head.appendChild(s);}
-function dashboardPanel(){if(view?.trash||!document.getElementById('content'))return;const old=document.getElementById('budgetPortfolioPanel');if(old)old.remove();const ps=(db.projects||[]).filter(p=>!p.deletedAt&&p.budgetControl).sort((a,b)=>String(a.code).localeCompare(String(b.code))),t=portfolio();if(!ps.length)return;const sec=document.createElement('section');sec.className='panel budget-panel';sec.id='budgetPortfolioPanel';sec.innerHTML=`<div class="panel-head"><div><div class="budget-title"><p class="eyebrow" style="margin:0">DISPONIBILIDAD PRESUPUESTARIA</p><span class="budget-badge">S.A.M.I. ${SAMI_CUT.split('-').reverse().join('/')}</span></div><h2 style="margin-top:6px">Saldos disponibles por proyecto</h2><p class="muted">Base inicial del reporte de Ejecución de Proyectos. Las ampliaciones y demás movimientos quedan guardados en historial.</p></div></div><div class="budget-kpis"><div class="budget-kpi"><small>Proyectos con control</small><strong>${t.projects}</strong></div><div class="budget-kpi"><small>Presupuesto vigente</small><strong>${money(t.vigente)}</strong></div><div class="budget-kpi"><small>Pagado</small><strong>${money(t.paid)}</strong></div><div class="budget-kpi available"><small>DISPONIBLE</small><strong>${money(t.available)}</strong></div></div><div class="toolbar"><input id="budgetSearch" class="search budget-search" placeholder="Buscar saldo por código o proyecto…"></div><div class="table-wrap"><table class="table budget-table" style="min-width:900px"><thead><tr><th>Código</th><th>Proyecto</th><th>Vigente</th><th>Pagado</th><th>Disponible</th><th>% pagado</th><th></th></tr></thead><tbody>${ps.map(p=>{const s=snapshot(p);return `<tr data-budget-search="${htmlEsc(norm(`${p.code} ${p.name}`))}"><td><button class="budget-row-btn" data-budget-open="${htmlEsc(p.id)}">${htmlEsc(p.code||'—')}</button></td><td>${htmlEsc(p.name)}</td><td>${money(s.vigente)}</td><td>${money(s.paid)}</td><td class="available ${s.disponible<0?'negative':''}">${money(s.disponible)}</td><td>${s.pct.toFixed(2)}%</td><td><button class="btn" data-budget-open="${htmlEsc(p.id)}">Ver saldo</button></td></tr>`}).join('')}</tbody></table></div>`;const anchor=document.querySelector('#content .grid-kpi');if(anchor)anchor.insertAdjacentElement('afterend',sec);else document.getElementById('content').prepend(sec);sec.querySelectorAll('[data-budget-open]').forEach(b=>b.onclick=()=>{view.projectId=b.dataset.budgetOpen;view.screen='project';view.tab='budget';renderApp();});const q=sec.querySelector('#budgetSearch');q.oninput=()=>{const n=norm(q.value);sec.querySelectorAll('tbody tr').forEach(tr=>tr.hidden=!!n&&!tr.dataset.budgetSearch.includes(n));};}
-function addProjectBudgetUI(p){if(!p?.budgetControl)return;const nav=document.querySelector('#content .tabs'),body=document.getElementById('tabBody');if(!nav||!body)return;let btn=nav.querySelector('[data-tab="budget"]');if(!btn){btn=document.createElement('button');btn.dataset.tab='budget';btn.textContent='Disponibilidad';nav.appendChild(btn);btn.onclick=()=>{view.tab='budget';renderProject();};}nav.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x.dataset.tab===view.tab));const s=snapshot(p),grid=document.querySelector('#content > .grid-kpi');if(grid&&!grid.querySelector('[data-budget-kpi]')){const k=document.createElement('article');k.className='kpi';k.dataset.budgetKpi='1';k.innerHTML=`<small>Disponible presupuestario</small><strong style="color:${s.disponible<0?'#fca5a5':'#86efac'}">${money(s.disponible)}</strong><div class="budget-source">Vigente − pagado S.A.M.I.</div>`;grid.appendChild(k);}if(view.tab==='budget')renderBudgetTab(p);}
-function renderBudgetTab(p){const b=ensureControl(p),s=snapshot(p),mov=[...b.movements].sort((a,z)=>String(z.date||'').localeCompare(String(a.date||''))),edit=canEdit();document.getElementById('tabBody').innerHTML=`<div class="budget-notice"><b>Saldo disponible = Presupuesto vigente − Pagado.</b> El presupuesto vigente se actualiza automáticamente con ampliaciones, disminuciones y transferencias.</div><div class="budget-kpis"><div class="budget-kpi"><small>Asignado</small><strong>${money(s.assigned)}</strong></div><div class="budget-kpi"><small>Ampliaciones</small><strong>${money(s.expansion)}</strong></div><div class="budget-kpi"><small>Presupuesto vigente</small><strong>${money(s.vigente)}</strong></div><div class="budget-kpi available"><small>DISPONIBLE</small><strong>${money(s.disponible)}</strong></div></div><div class="budget-breakdown"><div class="info"><small>Disminuciones</small><strong>${money(s.decrease)}</strong></div><div class="info"><small>Transferencia +</small><strong>${money(s.transferPositive)}</strong></div><div class="info"><small>Transferencia -</small><strong>${money(s.transferNegative)}</strong></div><div class="info"><small>Pagado</small><strong>${money(s.paid)} · ${s.pct.toFixed(2)}%</strong></div></div><div class="row spread wrap"><div><b>Fuente:</b> ${htmlEsc(b.source||'—')}<div class="budget-source">Corte ${b.cutDate?b.cutDate.split('-').reverse().join('/'):'—'}${b.sourcePage?' · página '+b.sourcePage:''}</div></div>${edit?`<div class="budget-actions"><button class="btn" id="budgetEditBase">Editar saldo base</button><button class="btn primary" id="budgetAddMove">＋ Registrar movimiento</button></div>`:''}</div><div class="budget-history"><h3>Historial de ampliaciones y movimientos</h3><div class="table-wrap"><table class="table" style="min-width:800px"><thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th>Documento / referencia</th><th>Observación</th><th>Usuario</th>${edit?'<th></th>':''}</tr></thead><tbody>${mov.length?mov.map(m=>`<tr><td>${htmlEsc(m.date||'—')}</td><td>${htmlEsc(m.type)}</td><td>${money(m.amount)}</td><td>${htmlEsc(m.reference||'—')}</td><td>${htmlEsc(m.note||'—')}</td><td>${htmlEsc(m.user||'—')}</td>${edit?`<td><div class="actions"><button class="btn" data-budget-edit-move="${m.id}">Editar</button><button class="btn danger" data-budget-delete-move="${m.id}">Eliminar</button></div></td>`:''}</tr>`).join(''):`<tr><td colspan="${edit?7:6}" class="empty">No hay movimientos posteriores al corte S.A.M.I. registrados todavía.</td></tr>`}</tbody></table></div>${b.edits?.length?`<div class="budget-correction-log">Correcciones al saldo base registradas: ${b.edits.length}. La última fue ${htmlEsc((b.edits[b.edits.length-1]?.at||'').slice(0,10))}.</div>`:''}</div>`;if(edit){document.getElementById('budgetAddMove').onclick=()=>movementModal(p);document.getElementById('budgetEditBase').onclick=()=>baseModal(p);document.querySelectorAll('[data-budget-edit-move]').forEach(x=>x.onclick=()=>movementModal(p,x.dataset.budgetEditMove));document.querySelectorAll('[data-budget-delete-move]').forEach(x=>x.onclick=()=>{const id=x.dataset.budgetDeleteMove,m=b.movements.find(y=>y.id===id);if(!m||!confirm(`¿Eliminar el movimiento ${m.type} por ${money(m.amount)}?`))return;b.movements=b.movements.filter(y=>y.id!==id);try{audit('ELIMINAR','Movimiento presupuestario',id,{projectId:p.id,type:m.type,amount:m.amount});}catch(_e){}saveDB();renderProject();});}}
-function modalShell(title,content){const bg=document.createElement('div');bg.className='modal-bg budget-modal';bg.innerHTML=`<div class="modal"><div class="modal-head"><h2>${htmlEsc(title)}</h2><button class="icon-btn" data-close>✕</button></div><div class="modal-body">${content}</div></div>`;document.body.appendChild(bg);bg.querySelector('[data-close]').onclick=()=>bg.remove();bg.addEventListener('click',e=>{if(e.target===bg)bg.remove();});return bg;}
-function movementModal(p,id){const b=ensureControl(p),m=id?b.movements.find(x=>x.id===id):null;const bg=modalShell(m?'Editar movimiento presupuestario':'Registrar movimiento presupuestario',`<form id="budgetMoveForm" class="form-grid"><label class="field"><span>Fecha</span><input name="date" type="date" required value="${htmlEsc(m?.date||new Date().toISOString().slice(0,10))}"></label><label class="field"><span>Tipo de movimiento</span><select name="type" required>${['Ampliación','Disminución','Transferencia +','Transferencia -','Pago'].map(t=>`<option ${m?.type===t?'selected':''}>${t}</option>`).join('')}</select></label><label class="field"><span>Monto (L)</span><input name="amount" type="number" min="0" step="0.01" required value="${m?.amount??''}"></label><label class="field"><span>Documento / referencia</span><input name="reference" value="${htmlEsc(m?.reference||'')}"></label><label class="field wide"><span>Observación</span><textarea name="note" rows="3">${htmlEsc(m?.note||'')}</textarea></label><div class="modal-actions"><button type="button" class="btn" data-cancel>Cancelar</button><button class="btn primary">Guardar movimiento</button></div></form>`);bg.querySelector('[data-cancel]').onclick=()=>bg.remove();bg.querySelector('#budgetMoveForm').onsubmit=e=>{e.preventDefault();const f=new FormData(e.currentTarget),amount=round2(f.get('amount'));if(!(amount>=0))return alert('Ingrese un monto válido.');const obj=m||{id:newId(),createdAt:nowIso()};Object.assign(obj,{date:f.get('date'),type:f.get('type'),amount,reference:String(f.get('reference')||'').trim(),note:String(f.get('note')||'').trim(),user:currentUser(),updatedAt:nowIso()});if(!m)b.movements.push(obj);const s=snapshot(p);if(!(Number(p.budget)>0)||/S\.A\.M\.I\./i.test(b.source||''))p.budget=s.vigente;try{audit(m?'EDITAR':'CREAR','Movimiento presupuestario',obj.id,{projectId:p.id,type:obj.type,amount:obj.amount});}catch(_e){}saveDB();bg.remove();renderProject();};}
-function baseModal(p){const b=ensureControl(p),before={assigned:b.assigned,decrease:b.decrease,expansion:b.expansion,transferPositive:b.transferPositive,transferNegative:b.transferNegative,paid:b.paid};const bg=modalShell('Editar saldo base S.A.M.I.',`<div class="alert info">Use esta opción para corregir el dato base del reporte. Las ampliaciones nuevas deben registrarse como movimientos para conservar el historial.</div><form id="budgetBaseForm" class="form-grid"><label class="field"><span>Asignado</span><input name="assigned" type="number" step="0.01" min="0" value="${b.assigned||0}"></label><label class="field"><span>Disminución</span><input name="decrease" type="number" step="0.01" min="0" value="${b.decrease||0}"></label><label class="field"><span>Ampliación base</span><input name="expansion" type="number" step="0.01" min="0" value="${b.expansion||0}"></label><label class="field"><span>Transferencia +</span><input name="transferPositive" type="number" step="0.01" min="0" value="${b.transferPositive||0}"></label><label class="field"><span>Transferencia -</span><input name="transferNegative" type="number" step="0.01" min="0" value="${b.transferNegative||0}"></label><label class="field"><span>Pagado base</span><input name="paid" type="number" step="0.01" min="0" value="${b.paid||0}"></label><label class="field wide"><span>Motivo de la corrección</span><textarea name="reason" rows="3" required></textarea></label><div class="modal-actions"><button type="button" class="btn" data-cancel>Cancelar</button><button class="btn primary">Guardar corrección</button></div></form>`);bg.querySelector('[data-cancel]').onclick=()=>bg.remove();bg.querySelector('#budgetBaseForm').onsubmit=e=>{e.preventDefault();const f=new FormData(e.currentTarget),after={};['assigned','decrease','expansion','transferPositive','transferNegative','paid'].forEach(k=>after[k]=round2(f.get(k)));Object.assign(b,after);b.edits.push({id:newId(),at:nowIso(),user:currentUser(),reason:String(f.get('reason')||'').trim(),before,after});const s=snapshot(p);if(!(Number(p.budget)>0)||/S\.A\.M\.I\./i.test(b.source||''))p.budget=s.vigente;try{audit('EDITAR','Saldo presupuestario base',p.id,{before,after,reason:String(f.get('reason')||'')});}catch(_e){}saveDB();bg.remove();renderProject();};}
-function verifySeed(){const totals=SAMI_ROWS.reduce((a,r)=>{a.assigned+=r[2];a.expansion+=r[4];a.tp+=r[5];a.tn+=r[6];a.paid+=r[7];return a;},{assigned:0,expansion:0,tp:0,tn:0,paid:0});totals.vigente=round2(totals.assigned+totals.expansion+totals.tp-totals.tn);totals.available=round2(totals.vigente-totals.paid);if(SAMI_ROWS.length!==58||Math.abs(totals.vigente-42642339.66)>.01||Math.abs(totals.paid-13863900.03)>.01||Math.abs(totals.available-28778439.63)>.01)console.error('Control S.A.M.I.: verificación de totales falló',totals);else console.info('Control S.A.M.I. verificado:',SAMI_ROWS.length,'proyectos',totals);}
-injectStyles();verifySeed();let busy=false;const originalRenderApp=typeof renderApp==='function'?renderApp:null;if(originalRenderApp){renderApp=function(){if(!busy){busy=true;try{importSami();}finally{busy=false;}}return originalRenderApp.apply(this,arguments);};}const originalRenderProjects=typeof renderProjects==='function'?renderProjects:null;if(originalRenderProjects){renderProjects=function(){const r=originalRenderProjects.apply(this,arguments);try{dashboardPanel();}catch(e){console.error('Disponibilidad dashboard',e);}return r;};}const originalRenderProject=typeof renderProject==='function'?renderProject:null;if(originalRenderProject){renderProject=function(){const r=originalRenderProject.apply(this,arguments);try{const p=(db.projects||[]).find(x=>x.id===view.projectId&&!x.deletedAt);addProjectBudgetUI(p);}catch(e){console.error('Disponibilidad proyecto',e);}return r;};}setTimeout(()=>{try{if(importSami()&&typeof renderApp==='function')renderApp();else if(typeof view!=='undefined'&&view?.screen==='projects')dashboardPanel();}catch(e){console.error('Disponibilidad S.A.M.I.',e);}},0);
-})();
-</script>
-<script>
-/* ===== VINCULACION PRESUPUESTARIA POR PROYECTO V2 ===== */
-(()=>{
-  'use strict';
-  if(window.__CP_BUDGET_PROJECT_LINK_V2__) return;
-  window.__CP_BUDGET_PROJECT_LINK_V2__=true;
-
-  const round2=v=>Math.round((Number(v)||0)*100)/100;
-  const money=v=>`L ${round2(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
-  const esc2=s=>typeof esc==='function'?esc(String(s??'')):String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-
-  function values(p){
-    const b=p?.budgetControl;
-    if(!b) return null;
-    let assigned=+b.assigned||0,decrease=+b.decrease||0,expansion=+b.expansion||0,tp=+b.transferPositive||0,tn=+b.transferNegative||0,paid=+b.paid||0;
-    (Array.isArray(b.movements)?b.movements:[]).forEach(m=>{
-      const a=+m.amount||0;
-      if(m.type==='Ampliación') expansion+=a;
-      else if(m.type==='Disminución') decrease+=a;
-      else if(m.type==='Transferencia +') tp+=a;
-      else if(m.type==='Transferencia -') tn+=a;
-      else if(m.type==='Pago') paid+=a;
-    });
-    const vigente=round2(assigned-decrease+expansion+tp-tn);
-    return {vigente,paid:round2(paid),disponible:round2(vigente-paid)};
-  }
-
-  function ensureLinks(){
-    if(typeof db==='undefined'||!db||!Array.isArray(db.projects)) return false;
-    let changed=false;
-    db.projects.forEach(p=>{
-      if(!p?.budgetControl) return;
-      const b=p.budgetControl;
-      const next={projectId:p.id,projectCode:p.code||'',linked:true};
-      if(b.projectId!==next.projectId||b.projectCode!==next.projectCode||b.linked!==true){
-        b.projectId=next.projectId;
-        b.projectCode=next.projectCode;
-        b.linked=true;
-        b.linkedAt=b.linkedAt||new Date().toISOString();
-        changed=true;
-      }
-    });
-    if(changed&&typeof saveDB==='function'){
-      try{saveDB();}catch(_e){}
-    }
-    return changed;
-  }
-
-  function injectStyle(){
-    if(document.getElementById('budget-project-link-v2-style')) return;
-    const s=document.createElement('style');
-    s.id='budget-project-link-v2-style';
-    s.textContent=`
-      .budget-linked-strip{display:grid;grid-template-columns:minmax(180px,1.5fr) repeat(3,minmax(140px,.65fr));gap:8px;margin:0 0 12px;padding:10px;border:1px solid rgba(34,197,94,.28);border-radius:13px;background:linear-gradient(135deg,rgba(10,39,27,.92),rgba(8,20,25,.96))}
-      .budget-linked-strip .bl-main,.budget-linked-strip .bl-metric{min-width:0;padding:7px 9px}
-      .budget-linked-strip .bl-main small,.budget-linked-strip .bl-metric small{display:block;color:#8fb9a4;font-size:9px;text-transform:uppercase;letter-spacing:.05em}
-      .budget-linked-strip .bl-main b{display:block;margin-top:3px;color:#bbf7d0;font-size:12px}.budget-linked-strip .bl-main span{display:block;color:#759387;font-size:9px;margin-top:3px}
-      .budget-linked-strip .bl-metric{border-left:1px solid rgba(134,239,172,.12)}.budget-linked-strip .bl-metric b{display:block;margin-top:3px;font-size:13px}.budget-linked-strip .bl-metric.available b{color:#86efac;font-size:15px}
-      .budget-linked-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 7px;border-radius:999px;border:1px solid rgba(34,197,94,.3);background:rgba(34,197,94,.08);color:#bbf7d0;font-size:8px;font-weight:900;margin-left:6px;vertical-align:middle}
-      @media(max-width:760px){.budget-linked-strip{grid-template-columns:1fr 1fr}.budget-linked-strip .bl-main{grid-column:1/-1}.budget-linked-strip .bl-metric{border-left:0;border-top:1px solid rgba(134,239,172,.1)}}
-      @media(max-width:440px){.budget-linked-strip{grid-template-columns:1fr}}
-    `;
-    document.head.appendChild(s);
-  }
-
-  function decorateProject(){
-    if(typeof db==='undefined'||!db||typeof view==='undefined'||view.screen!=='project') return;
-    const p=(db.projects||[]).find(x=>x.id===view.projectId&&!x.deletedAt);
-    if(!p?.budgetControl) return;
-    const v=values(p);if(!v)return;
-    const content=document.getElementById('content');if(!content)return;
-    const old=content.querySelector('[data-budget-linked-strip]');if(old)old.remove();
-    const strip=document.createElement('section');
-    strip.className='budget-linked-strip';strip.dataset.budgetLinkedStrip='1';
-    strip.innerHTML=`<div class="bl-main"><small>Vinculación presupuestaria</small><b>✓ S.A.M.I. vinculado a este expediente</b><span>BIPM ${esc2(p.code||'—')} · ${esc2(p.budgetControl.source||'Control presupuestario')}</span></div><div class="bl-metric"><small>Vigente</small><b>${money(v.vigente)}</b></div><div class="bl-metric"><small>Pagado</small><b>${money(v.paid)}</b></div><div class="bl-metric available"><small>Disponible</small><b>${money(v.disponible)}</b></div>`;
-    const panel=content.querySelector('.panel');
-    if(panel) panel.insertAdjacentElement('beforebegin',strip); else content.prepend(strip);
-
-    const title=content.querySelector('.panel-head h2');
-    if(title&&!title.parentElement.querySelector('.budget-linked-badge')){
-      const badge=document.createElement('span');badge.className='budget-linked-badge';badge.textContent='✓ S.A.M.I. vinculado';title.insertAdjacentElement('afterend',badge);
-    }
-  }
-
-  function decorateCards(){
-    if(typeof db==='undefined'||!db||typeof view==='undefined'||view.screen==='project') return;
-    document.querySelectorAll('[data-open], [data-dashboard-open], .project-v3').forEach(el=>{
-      let id=el.dataset?.open||el.dataset?.dashboardOpen||el.dataset?.projectId||el.closest?.('[data-open]')?.dataset?.open;
-      if(!id&&el.classList?.contains('project-v3')){
-        const b=el.querySelector('[data-open]');id=b?.dataset?.open;
-      }
-      if(!id)return;
-      const p=(db.projects||[]).find(x=>x.id===id&&!x.deletedAt);if(!p?.budgetControl)return;
-      if(el.querySelector?.('.budget-linked-badge'))return;
-      const target=el.querySelector?.('h3')||el.querySelector?.('.project-v3-code');if(!target)return;
-      const badge=document.createElement('span');badge.className='budget-linked-badge';badge.textContent='S.A.M.I.';target.insertAdjacentElement('afterend',badge);
-    });
-  }
-
-  function decorate(){ensureLinks();injectStyle();decorateProject();decorateCards();}
-
-  const observer=new MutationObserver(()=>setTimeout(decorate,0));
-  observer.observe(document.documentElement,{subtree:true,childList:true});
-  setTimeout(decorate,0);setTimeout(decorate,500);setTimeout(decorate,1500);
-
-  if(typeof renderApp==='function'){
-    const base=renderApp;
-    renderApp=function(){const r=base.apply(this,arguments);setTimeout(decorate,0);return r;};
-  }
-})();
-
-</script>
-<script src="workspace-access-v1.js?v=20260820-master3"></script>
-<script src="alerts-compact-v1.js?v=20260820-master3"></script>
-<script src="dashboard-executive-v1.js?v=20260820-master3"></script>
-<script src="engineering-ux-v1.js?v=20260820-master3"></script>
 <script src="storage-quota-fix-v1.js?v=20260820-storagequota2"></script>
+<script src="project-tabs-complete-v1.js?v=20260822-tabscomplete2"></script>
 <script src="procurement-process-save-v4.js?v=20260820-procsave4"></script>
-<script src="project-tabs-complete-v1.js?v=20260820-tabscomplete1"></script>
+<script src="contract-integrity-fix-v1.js?v=20260822-integrity1"></script>
 </body>
 </html>

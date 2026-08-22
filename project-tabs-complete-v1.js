@@ -75,6 +75,7 @@ function loadPortfolioModules(){
     'progress-separation-fix-v1.js?v=20260821-progresssep1',
     'change-order-fix-v1.js?v=20260821-changefix1',
     'report-professional-v1.js?v=20260821-reportpro1',
+    'report-export-css-fix-v1.js?v=20260821-reportcss1',
     'portfolio-redesign-v1.js?v=20260821-portfolio4',
     'transparency-exec-bridge-v1.js?v=20260821-trbridge1',
     'transparency-portal-v1.js?v=20260821-transparency1',

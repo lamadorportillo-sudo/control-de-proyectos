@@ -11,11 +11,13 @@ assert.ok(performanceIndex>=0,'falta el coordinador de rendimiento');
 assert.ok(performanceIndex<firstFeatureIndex,'el coordinador debe cargarse antes de los modulos funcionales');
 assert.match(src,/const NativeObserver=window\.MutationObserver/,'conserva el observador nativo');
 assert.match(src,/this\.records\.push\(\.\.\.records\)/,'agrupa las mutaciones pendientes');
-assert.match(src,/requestAnimationFrame/,'coordina el trabajo con el ciclo de pintura');
+assert.match(src,/requestIdleCallback/,'ejecuta decoraciones cuando el navegador queda libre');
 assert.match(src,/if\(this\.queued\)return/,'evita programar revisiones duplicadas');
+assert.match(src,/const pending=new Set/,'comparte una sola cola entre todos los observadores');
+assert.match(src,/for\(const item of batch\)item\.flush\(\)/,'procesa cada observador una sola vez por lote');
 assert.match(src,/takeRecords\(\)/,'mantiene la API esperada de MutationObserver');
 assert.match(src,/window\.MutationObserver=BatchedMutationObserver/,'activa la optimizacion para los modulos posteriores');
 assert.match(builder,/performanceModule='performance-runtime-v1\.js'/,'el generador debe conservar el coordinador de rendimiento');
 assert.match(builder,/html\.replace\(firstFeature/,'el generador debe cargarlo antes del primer modulo funcional');
 
-console.log('performance-runtime: 10 verificaciones superadas');
+console.log('performance-runtime: 12 verificaciones superadas');

@@ -18,4 +18,5 @@ assert.match(src,/const r=el\.getBoundingClientRect\(\);moveTo/,'recalcula el de
 assert.match(src,/chat\?\.classList\.remove\('open'\);roam\(true\)/,'cierra el dialogo antes de iniciar el recorrido');
 assert.match(src,/ccHaluLegLeft/,'alterna el movimiento del pie izquierdo');
 assert.match(src,/ccHaluLegRight/,'alterna el movimiento del pie derecho');
-console.log('halu-avatar-motion: 16 verificaciones superadas');
+assert.match(src,/e\.clientX-r\.width\/2,e\.clientY-r\.height\/2/,'centra el avatar grande en el punto elegido');
+console.log('halu-avatar-motion: 17 verificaciones superadas');

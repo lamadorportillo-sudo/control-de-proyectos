@@ -24,11 +24,18 @@ function excerpt(text,query,max=620){
   const start=Math.max(0,at-90),end=Math.min(clean.length,start+max);
   return`${start?'…':''}${clean.slice(start,end).trim()}${end<clean.length?'…':''}`;
 }
+function plainSummary(text,max=430){
+  const clean=String(text||'').replace(/^ART[IÍ]CULO\s*\d+(?:\s*[-A-Z])?\s*[.,-]*\s*/i,'').replace(/\s+/g,' ').trim();
+  const sentences=clean.match(/[^.!?]+[.!?]+/g)||[clean];
+  const summary=sentences.slice(0,2).join(' ').trim();
+  return summary.length<=max?summary:`${summary.slice(0,max).replace(/\s+\S*$/,'')}…`;
+}
 function answer(query){
   const found=search(query,3);
-  if(!found.length)return'No encontré un artículo suficientemente relacionado en las tres normas cargadas. Reformula la consulta indicando el tema o el número de artículo. No completaré la respuesta con datos no respaldados.';
-  const blocks=found.map(item=>{const source=item.sourceInfo||{};return`${source.title||item.source} (${source.instrument||''}), artículo ${item.article}, pág. PDF ${item.page}:\n${excerpt(item.text,query)}`});
-  return`Encontré estas disposiciones relacionadas:\n\n${blocks.join('\n\n')}\n\nOrientación informativa basada en los documentos cargados; confirma el texto completo y su vigencia antes de tomar una decisión jurídica o contractual.`;
+  if(!found.length)return'Entiendo la consulta, pero no encontré un artículo que la responda con suficiente claridad en las tres normas cargadas. Prefiero no darte una respuesta dudosa. Si me indicas el tema con otras palabras o un número de artículo, lo reviso de nuevo.';
+  const main=found[0],source=main.sourceInfo||{};
+  const support=found.slice(1).map(item=>{const info=item.sourceInfo||{};return`• ${info.title||item.source}, artículo ${item.article}, pág. PDF ${item.page}.`}).join('\n');
+  return`Claro. La disposición que encuentro más relacionada con tu consulta está en ${source.title||main.source}, artículo ${main.article}.\n\nEn términos sencillos: ${plainSummary(main.text)}\n\nFundamento principal\n${source.instrument||''}, artículo ${main.article}, pág. PDF ${main.page}:\n${excerpt(main.text,query,500)}${support?`\n\nTambién conviene revisar:\n${support}`:''}\n\nEsta es una orientación basada en los documentos cargados. Antes de tomar una decisión jurídica o contractual, confirma el texto completo y su vigencia. Si quieres, dime en qué etapa del proyecto estás y te ayudo a aplicarlo al proceso.`;
 }
 window.__ccLegalKnowledge={data,search,answer,norm};
 })();

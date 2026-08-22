@@ -49,6 +49,8 @@ function navigateScreen(section){
 function answer(text){
   const q=String(text||'').trim();
   if(!q)return'Escribe una consulta legal o dime qué pestaña deseas abrir.';
+  if(/^(hola|buenos d[ií]as|buenas tardes|buenas noches|qu[eé] tal)[!.\s]*$/i.test(q))return'¡Hola! Claro que sí, estoy aquí para ayudarte. Puedes preguntarme sobre una ley, un proceso contractual o cualquier módulo del sistema. ¿Qué necesitas revisar?';
+  if(/^(gracias|muchas gracias|perfecto|entendido)[!.\s]*$/i.test(q))return'Con gusto. Si quieres, seguimos con otra consulta o revisamos juntos una etapa del proyecto.';
   if(/d[oó]nde estoy|ubicaci[oó]n actual|pantalla actual/i.test(q))return contextText();
   if(/qu[eé] puedes hacer|ayuda|opciones/i.test(q))return'Puedo buscar disposiciones en el Decreto 62-2026, la Ley de Contratación del Estado y su Reglamento; también puedo explicar el sistema y abrir sus módulos. Las respuestas legales incluyen documento, artículo y página del PDF.';
   const tab=tabWords.find(([rx])=>rx.test(q));
@@ -60,8 +62,8 @@ function answer(text){
     const legal=window.__ccLegalKnowledge.answer(q);
     return window.__ccWebKnowledge?window.__ccWebKnowledge.answer(q).then(web=>`${legal}\n\n${web}`):legal;
   }
-  if(/relacion|sincron|actualiza/i.test(q))return'Los módulos comparten la misma información relacionada. Al guardar un cambio se actualizan las vistas del expediente y el Centro de Control invalida su caché para consultar la versión más reciente.';
-  if(/pestaña|m[oó]dulo|proceso/i.test(q))return'Resumen concentra el estado; Contrato y Modificaciones definen el monto vigente; Pagos/Estimaciones alimentan el avance financiero; Visitas alimentan el avance físico; Garantías generan alertas; Informes reúnen esos resultados.';
+  if(/relacion|sincron|actualiza/i.test(q))return'Claro. Los módulos trabajan con la misma información del expediente. Por ejemplo, si actualizas el monto mediante una modificación contractual, ese cambio se refleja en el resumen, los pagos y los informes. Así evitas registrar el mismo dato varias veces. ¿Quieres que te explique una relación específica?';
+  if(/pestaña|m[oó]dulo|proceso/i.test(q))return'Te lo explico de forma sencilla: Resumen muestra el estado general; Contrato y Modificaciones determinan el monto vigente; Pagos registra el avance financiero; Visitas refleja el avance físico; Garantías genera alertas; e Informes reúne los resultados. Dime qué etapa estás trabajando y te indico por dónde empezar.';
   if(window.__ccWebKnowledge)return window.__ccWebKnowledge.answer(q);
   return'Puedo ayudarte con la normativa cargada y con el funcionamiento del sistema. Prueba: “¿qué regula la garantía de cumplimiento?”, “artículo 5 de la Ley”, “abre pagos” o “¿cómo se relacionan los módulos?”.';
 }

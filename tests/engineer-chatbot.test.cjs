@@ -17,9 +17,11 @@ assert.match(bot.answer('¿Dónde estoy?'),/P-001/,'reconoce el expediente activ
 assert.match(bot.answer('abre pagos'),/Abrí Pagos/,'abre la pestaña solicitada');
 assert.equal(context.view.tab,'estimates');
 assert.equal(context.rendered,1,'renderiza el expediente al navegar');
-assert.match(bot.answer('¿Cómo se relacionan los módulos?'),/misma información relacionada/,'explica la sincronización');
+assert.match(bot.answer('¿Cómo se relacionan los módulos?'),/misma información del expediente/,'explica la sincronización');
 assert.match(bot.answer('ayuda'),/Puedo buscar disposiciones/,'ofrece ayuda legal y funcional');
 assert.match(bot.answer('consulta desconocida'),/Puedo ayudarte/,'responde sin inventar contenido');
+assert.match(bot.answer('hola'),/estoy aquí para ayudarte/i,'saluda de forma natural');
+assert.match(bot.answer('gracias'),/Con gusto/i,'responde con cortesía');
 assert.ok(fs.statSync('engineer-assistant-avatar.png').size>1000,'el avatar del ingeniero existe');
 
-console.log('engineer-chatbot: 8 verificaciones superadas');
+console.log('engineer-chatbot: 10 verificaciones superadas');

@@ -17,11 +17,12 @@ async function search(query){
 async function answer(query){
   try{
     const results=await search(query);
-    if(!results.length)return'CONOCIMIENTO DE LA RED — NO ES LEY\nNo encontré una fuente web abierta suficientemente relacionada. Esto no modifica ni reemplaza la respuesta normativa.';
-    const blocks=results.map(item=>`${item.title}: ${item.extract}\nFuente web: ${item.url}`);
-    return`CONOCIMIENTO DE LA RED — NO ES LEY\n${blocks.join('\n\n')}\n\nContenido informativo recuperado de la red; puede estar incompleto, desactualizado o no ser aplicable a Honduras.`;
+    if(!results.length)return'CONOCIMIENTO DE LA RED — NO ES LEY\nTambién busqué una explicación en la red, pero no encontré una fuente abierta suficientemente relacionada. Esto no cambia ni reemplaza la respuesta normativa.';
+    const [main,...others]=results;
+    const support=others.map(item=>`• ${item.title}: ${item.url}`).join('\n');
+    return`CONOCIMIENTO DE LA RED — NO ES LEY\nPara complementar la respuesta, encontré esta explicación general: ${main.extract}\n\nFuente web: ${main.title}\n${main.url}${support?`\n\nOtra fuente relacionada:\n${support}`:''}\n\nTómalo como contexto informativo: puede estar incompleto, desactualizado o no ser aplicable a Honduras.`;
   }catch{
-    return'CONOCIMIENTO DE LA RED — NO ES LEY\nLa consulta web no está disponible en este momento. La respuesta legal local sigue funcionando sin conexión.';
+    return'CONOCIMIENTO DE LA RED — NO ES LEY\nEn este momento no pude consultar la red. No te preocupes: la respuesta basada en las leyes cargadas sigue disponible sin conexión.';
   }
 }
 window.__ccWebKnowledge={search,answer};

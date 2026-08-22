@@ -21,7 +21,7 @@ function currentAmount(p,c){
   const delta=A(d.changes).filter(x=>x.contractId===c.id&&/aprobado/i.test(String(x.status||''))&&!x.voidedAt&&!x.voided_at).reduce((s,x)=>s+N(x.amountDelta),0);
   return Math.max(0,base+delta);
 }
-function grossFor(c){const d=getDB();if(!d||!c)return 0;return A(d.estimates).filter(e=>e.contractId===c.id&&!/anulad/i.test(String(e.status||''))).reduce((s,e)=>s+N(e.gross),0)}
+function grossFor(c){const d=getDB();if(!d||!c)return 0;return A(d.estimates).filter(e=>e.contractId===c.id&&/^(aprobada|aprobado|pagada|pagado)$/i.test(String(e.status||'').trim())&&!e.voidedAt&&!e.voided_at).reduce((s,e)=>s+N(e.gross),0)}
 function paidFor(p,c){
   try{if(typeof projectFinancials==='function'){const f=projectFinancials(p,c),cc=N(f?.totalPaidC);return typeof fromCents==='function'?N(fromCents(cc)):cc/100}}catch{}
   const d=getDB();if(!d)return 0;
@@ -50,7 +50,7 @@ function snapshot(){
   return{rows,execution,finalized,pre,portfolio,paid,execAmount,execGross,execPaid,financial,physical,time,balance:Math.max(0,execAmount-execGross)};
 }
 function topIssue(ps){
-  try{if(typeof dashboardFollowups==='function'){const x=A(dashboardFollowups(ps)?.items)[0];if(x)return{title:x.title||'Seguimiento requerido',detail:x.detail||'',projectId:x.projectId,tab:x.tab||'summary',level:x.level||'attention'}}catch{}
+  try{if(typeof dashboardFollowups==='function'){const x=A(dashboardFollowups(ps)?.items)[0];if(x)return{title:x.title||'Seguimiento requerido',detail:x.detail||'',projectId:x.projectId,tab:x.tab||'summary',level:x.level||'attention'}}}catch{}
   const d=getDB();if(!d)return null;let best=null;
   for(const p of ps){const c=contractFor(p),phys=physicalFor(p,c);for(const g of A(d.guarantees).filter(g=>g.projectId===p.id)){let a=null;try{a=typeof guaranteeAlert==='function'?guaranteeAlert(g.end):null}catch{}if(a&&['expired','urgent','critical','attention','warning'].includes(a.level)){const score={expired:0,urgent:1,critical:2,attention:3,warning:4}[a.level]??5,item={score,title:`Garantía ${g.type||''}: ${a.label||'revisar vigencia'}`,detail:`${p.code||''} · ${g.number||'Sin número'}`,projectId:p.id,tab:'guarantees',level:a.level};if(!best||score<best.score)best=item}}if(c?.end&&!/finaliz|cerrad/i.test(String(p.status||''))){const days=Math.ceil((new Date(c.end+'T12:00:00')-new Date())/86400000);if(days<0&&phys<100){const item={score:0,title:'Proyecto con plazo vencido',detail:`${p.code||''} · avance físico ${P(phys)}`,projectId:p.id,tab:'summary',level:'expired'};if(!best||item.score<best.score)best=item}}}
   return best;

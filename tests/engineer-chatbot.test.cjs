@@ -4,7 +4,8 @@ const vm=require('node:vm');
 
 const context={
   console,window:null,setTimeout(fn){fn()},crypto:{randomUUID:()=>`id-${Date.now()}`},saveDB(){},
-  db:{projects:[{id:'p1',code:'P-001'}]},view:{screen:'project',projectId:'p1',tab:'summary'},
+  localStorage:{getItem(){return null},setItem(){},removeItem(){}},
+  db:{projects:[{id:'p1',code:'P-001',name:'Pavimento calle central'}],contracts:[],visits:[]},view:{screen:'project',projectId:'p1',tab:'summary'},
   document:{readyState:'loading',addEventListener(){},querySelector(){return null}},
   renderProject(){context.rendered=(context.rendered||0)+1},renderApp(){}
 };
@@ -31,7 +32,12 @@ assert.match(bot.answer('recuerda que el acarreo del tramo norte quedó pendient
 assert.match(bot.answer('qué recuerdas del tramo norte'),/acarreo del tramo norte/i,'retoma recuerdos compartidos');
 assert.match(bot.answer('eres una inteligencia artificial'),/asistente digital/i,'mantiene transparencia cuando se le pregunta directamente');
 assert.match(bot.answer('a que bueno espero me ayudes a llevar un buen control'),/lo contratado, lo ejecutado y lo pagado/i,'responde de inmediato a compromisos conversacionales');
+assert.match(bot.answer('voy a registrar una visita'),/abierta la visita/i,'activa el modo de visita en el proyecto actual');
+assert.match(bot.answer('avance físico de 35 por ciento, hay 12 trabajadores y el clima está nublado'),/Anotado/i,'captura una observación dictada en campo');
+assert.match(bot.answer('resumen'),/avance 35\.00%.*12 personas.*Nublado/i,'resume los datos estructurados de la visita');
+assert.match(bot.answer('guardar visita'),/Visita N.º 1 guardada/i,'guarda la bitácora en el módulo de visitas');
+assert.equal(context.db.visits.length,1,'crea una visita vinculada al expediente');
 assert.ok(fs.statSync('engineer-assistant-avatar.png').size>1000,'el avatar del ingeniero existe');
 assert.match(fs.readFileSync('engineer-chatbot-v3.js','utf8'),/Halu · Ingeniero Civil/,'presenta la identidad profesional de Halu');
 
-console.log('engineer-chatbot: 19 verificaciones superadas');
+console.log('engineer-chatbot: 24 verificaciones superadas');

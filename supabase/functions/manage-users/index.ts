@@ -15,9 +15,10 @@ Deno.serve(async(req:Request)=>{
   if(action==="complete_password_change"){const {error}=await admin.from("profiles").update({must_change_password:false,temporary_password_expires_at:null,updated_at:new Date().toISOString()}).eq("user_id",auth.user.id);if(error)throw error;return json({ok:true},200,origin)}
   if(membership.role!=="admin")return json({error:"Solo un administrador puede gestionar usuarios."},403,origin);
   if(action==="list"){
-   const {data:members,error}=await admin.from("workspace_members").select("user_id,role,active,profiles(full_name,must_change_password,temporary_password_expires_at)").eq("workspace_id",membership.workspace_id).order("created_at");if(error)throw error;
+   const {data:members,error}=await admin.from("workspace_members").select("user_id,role,active").eq("workspace_id",membership.workspace_id).order("created_at");if(error)throw error;
+   const memberIds=(members||[]).map((m:any)=>m.user_id);const {data:profiles,error:profileListError}=memberIds.length?await admin.from("profiles").select("user_id,full_name,must_change_password,temporary_password_expires_at").in("user_id",memberIds):{data:[],error:null};if(profileListError)throw profileListError;const profileById=new Map((profiles||[]).map((p:any)=>[p.user_id,p]));
    const {data:authUsers,error:userError}=await admin.auth.admin.listUsers({page:1,perPage:1000});if(userError)throw userError;const emails=new Map(authUsers.users.map(u=>[u.id,u.email]));
-   return json({users:(members||[]).map((m:any)=>({user_id:m.user_id,email:emails.get(m.user_id)||"",role:m.role,active:m.active,full_name:m.profiles?.full_name||"",must_change_password:!!m.profiles?.must_change_password,temporary_password_expires_at:m.profiles?.temporary_password_expires_at||null}))},200,origin);
+   return json({users:(members||[]).map((m:any)=>{const p:any=profileById.get(m.user_id)||{};return{user_id:m.user_id,email:emails.get(m.user_id)||"",role:m.role,active:m.active,full_name:p.full_name||"",must_change_password:!!p.must_change_password,temporary_password_expires_at:p.temporary_password_expires_at||null}})},200,origin);
   }
   if(action!=="create")return json({error:"Accion no valida."},400,origin);
   const fullName=String(body.full_name||"").trim(),email=String(body.email||"").trim().toLowerCase(),password=String(body.password||""),role=["admin","editor","consulta"].includes(body.role)?body.role:"consulta",hours=Math.min(168,Math.max(1,Number(body.expires_in_hours)||24));

@@ -103,6 +103,14 @@ if(!html.includes('budget-portfolio-tab-v1.js')){
   html=html.slice(0,bodyEnd)+'<script src="budget-portfolio-tab-v1.js"></script>\n'+html.slice(bodyEnd);
 }
 
+// Coordina los observadores antes de cargar cualquier módulo funcional.
+const performanceModule='performance-runtime-v1.js',performanceVersion='20260822-perf1';
+if(!fs.existsSync(performanceModule)) throw new Error(`No se encontró ${performanceModule}.`);
+try{new vm.Script(fs.readFileSync(performanceModule,'utf8'),{filename:performanceModule})}catch(err){throw new Error(`JavaScript inválido en ${performanceModule}: ${err.message}`)}
+html=html.replace(/<script\s+src=["']performance-runtime-v1\.js(?:\?[^"']*)?["']\s*><\/script>\s*/gi,'');
+const firstFeature='<script src="budget-portfolio-tab-v1.js"></script>';
+html=html.replace(firstFeature,`<script src="${performanceModule}?v=${performanceVersion}"></script>\n${firstFeature}`);
+
 // Arquitectura ejecutiva, normativa histórica, documentos de adjudicación y diseño corporativo.
 // Los módulos funcionales se cargan de forma directa para no depender de cachés o cargadores secundarios.
 const lateModules=[

@@ -3,6 +3,7 @@ const fs=require('node:fs');
 
 const html=fs.readFileSync('index.html','utf8');
 const src=fs.readFileSync('performance-runtime-v1.js','utf8');
+const builder=fs.readFileSync('build-pages.cjs','utf8');
 const performanceIndex=html.indexOf('performance-runtime-v1.js');
 const firstFeatureIndex=html.indexOf('budget-portfolio-tab-v1.js');
 
@@ -14,5 +15,7 @@ assert.match(src,/requestAnimationFrame/,'coordina el trabajo con el ciclo de pi
 assert.match(src,/if\(this\.queued\)return/,'evita programar revisiones duplicadas');
 assert.match(src,/takeRecords\(\)/,'mantiene la API esperada de MutationObserver');
 assert.match(src,/window\.MutationObserver=BatchedMutationObserver/,'activa la optimizacion para los modulos posteriores');
+assert.match(builder,/performanceModule='performance-runtime-v1\.js'/,'el generador debe conservar el coordinador de rendimiento');
+assert.match(builder,/html\.replace\(firstFeature/,'el generador debe cargarlo antes del primer modulo funcional');
 
-console.log('performance-runtime: 8 verificaciones superadas');
+console.log('performance-runtime: 10 verificaciones superadas');

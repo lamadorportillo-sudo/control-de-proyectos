@@ -28,7 +28,9 @@ function socialReply(q,spoken){
   if(/\b(como estas|como te va|y tu|que haces)\b/.test(spoken)){conversation.lastType='social';return`Bien${name}, gracias. Revisando números, plazos y esas cosas que en escritorio parecen fáciles, pero en campo siempre traen sorpresa. ¿Cómo va tu día?`}
   if(/^(necesito ayuda|ayudame|no se por donde empezar|no se por donde comenzar)$/.test(spoken)){conversation.lastType='help';return'Mira, cuéntame qué tienes trabado. Lo ordenamos por partes y vemos qué se resuelve primero, porque en obra querer atacar todo de una vez casi nunca sale bien.'}
   if(/^(quiero hablar|conversemos|hablemos|cuentame algo)$/.test(spoken)){conversation.lastType='social';return`Dale${name}, conversemos. Puede ser de obra, contratos, proveedores o de ese atraso que nadie quiere poner por escrito. ¿Qué anda pasando?`}
-  if(conversation.lastType==='social'&&spoken.split(/\s+/).length<=10&&!/\b(ley|contrato|proyecto|articulo|busca|explica|como hago|que es|cuando|donde)\b/.test(spoken)){return`Te escucho${name}. Cuéntame un poco más para seguir el hilo contigo: ¿qué pasó después o qué te gustaría hacer ahora?`}
+  if(/\b(espero (?:que )?me ayudes|cuento contigo|llevar un buen control|trabajemos juntos|quiero que me ayudes)\b/.test(spoken)){conversation.lastType='work';return`Esa es la idea${name}. Para llevar buen control hay que cuidar tres cosas desde el inicio: qué se contrató, qué se ejecutó realmente y qué se pagó. Si una de esas tres no cuadra, después vienen los dolores de cabeza con estimaciones y cierre. ¿Qué proyecto vamos a controlar primero?`}
+  if(/\b(que bueno|me alegro|excelente|perfecto)\b/.test(spoken)&&conversation.lastType==='social'){return`Pues sí${name}, aquí vamos a llevarlo con orden y sin tanta vuelta. Lo importante es registrar las cosas cuando pasan, no reconstruir la historia tres meses después. ¿Con qué proyecto arrancamos?`}
+  if(conversation.lastType==='social'&&spoken.split(/\s+/).length<=25&&!/\b(ley|contrato|proyecto|articulo|busca|investiga|explica|como hago|que es|cuando|donde|cuanto)\b/.test(spoken)){return`Te sigo${name}. La conversación va por buen camino; dime cómo están trabajando ahora y de ahí sacamos el siguiente paso. ¿Qué tienen en marcha?`}
   return'';
 }
 
@@ -96,8 +98,9 @@ function answer(text){
     if(conversation.lastType==='legal'&&window.__ccLegalKnowledge){const legal=window.__ccLegalKnowledge.answer(follow);return window.__ccWebKnowledge?window.__ccWebKnowledge.answer(follow).then(web=>`${legal}\n\n${web}`):legal}
     if(window.__ccWebKnowledge)return window.__ccWebKnowledge.answer(follow);
   }
-  if(window.__ccWebKnowledge){conversation.lastTopic=q;conversation.lastType='web';return window.__ccWebKnowledge.answer(q)}
-  return'Mira, dime el problema como lo explicarías en una reunión de obra. Si es legal reviso la norma; si es del sistema te llevo al módulo; y si es algo de campo, vemos la salida práctica. ¿Qué está pasando?';
+  const infoIntent=/[?¿]|\b(busca|investiga|consulta|explica|que es|que significa|como se|como hago|cuando|donde|cuanto|quien|por que|informacion)\b/i.test(q);
+  if(window.__ccWebKnowledge&&infoIntent){conversation.lastTopic=q;conversation.lastType='web';return window.__ccWebKnowledge.answer(q)}
+  return'Mira, te sigo. Para no mandarte una respuesta genérica ni ponerme a buscar algo que no preguntaste, dime qué parte quieres trabajar primero. ¿Hablamos del control, del contrato o de la ejecución en campo?';
 }
 function mount(){
   css();if(document.getElementById('ccEngineerChat'))return;

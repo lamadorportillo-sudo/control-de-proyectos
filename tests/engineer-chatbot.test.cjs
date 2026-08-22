@@ -20,7 +20,7 @@ assert.equal(context.view.tab,'estimates');
 assert.equal(context.rendered,1,'renderiza el expediente al navegar');
 assert.match(bot.answer('¿Cómo se relacionan los módulos?'),/trabajan con el mismo expediente/,'explica la sincronización');
 assert.match(bot.answer('ayuda'),/puedo revisar el Decreto 62-2026/i,'ofrece ayuda legal y funcional con voz de Halu');
-assert.match(bot.answer('consulta desconocida'),/dime el problema/i,'responde sin inventar contenido');
+assert.match(bot.answer('consulta desconocida'),/Para no mandarte una respuesta genérica/i,'responde sin inventar contenido');
 assert.match(bot.answer('bien y tu'),/Me alegra saberlo/i,'responde a una continuación social');
 assert.match(bot.answer('necesito ayuda'),/qué tienes trabado/i,'invita a explicar la necesidad');
 assert.match(bot.answer('hola'),/¿Cómo estás tú\?/i,'reinicia una conversación cordial');
@@ -30,7 +30,8 @@ assert.match(bot.answer('gracias'),/A la orden/i,'responde con cortesía');
 assert.match(bot.answer('recuerda que el acarreo del tramo norte quedó pendiente'),/Anotado/i,'acepta memoria explícita');
 assert.match(bot.answer('qué recuerdas del tramo norte'),/acarreo del tramo norte/i,'retoma recuerdos compartidos');
 assert.match(bot.answer('eres una inteligencia artificial'),/asistente digital/i,'mantiene transparencia cuando se le pregunta directamente');
+assert.match(bot.answer('a que bueno espero me ayudes a llevar un buen control'),/qué se contrató/i,'responde de inmediato a compromisos conversacionales');
 assert.ok(fs.statSync('engineer-assistant-avatar.png').size>1000,'el avatar del ingeniero existe');
 assert.match(fs.readFileSync('engineer-chatbot-v1.js','utf8'),/Halu · Ingeniero Civil/,'presenta la identidad profesional de Halu');
 
-console.log('engineer-chatbot: 18 verificaciones superadas');
+console.log('engineer-chatbot: 19 verificaciones superadas');

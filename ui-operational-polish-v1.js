@@ -137,12 +137,8 @@ function inject(){
       background:#fff!important;
       border:1px solid #d8e1d5!important;
     }
-    body:not(.print-report) .cp-budget-progress{
-      background:#e5ebe2!important;
-    }
-    body:not(.print-report) .cp-budget-progress i{
-      background:linear-gradient(90deg,#587747,#87a66f)!important;
-    }
+    body:not(.print-report) .cp-budget-progress{background:#e5ebe2!important}
+    body:not(.print-report) .cp-budget-progress i{background:linear-gradient(90deg,#587747,#87a66f)!important}
 
     /* Tablas operativas: alineación coherente y lectura rápida */
     body:not(.print-report) .table th,
@@ -179,18 +175,14 @@ function inject(){
       white-space:nowrap!important;
     }
     body:not(.print-report) .table .action,
-    body:not(.print-report) .cp-budget-table .action{
-      text-align:center!important;
-    }
+    body:not(.print-report) .cp-budget-table .action{text-align:center!important}
 
-    /* Controles táctiles y estados de foco */
+    /* Controles táctiles: no altera checkbox ni radio */
     body:not(.print-report) button,
     body:not(.print-report) .btn,
-    body:not(.print-report) input,
+    body:not(.print-report) input:not([type='checkbox']):not([type='radio']),
     body:not(.print-report) select,
-    body:not(.print-report) textarea{
-      min-height:40px;
-    }
+    body:not(.print-report) textarea{min-height:40px}
     body:not(.print-report) button:focus-visible,
     body:not(.print-report) .btn:focus-visible,
     body:not(.print-report) input:focus-visible,
@@ -208,37 +200,23 @@ function inject(){
       body:not(.print-report) #ccxNav button{width:100%!important}
     }
     @media(max-width:680px){
-      body:not(.print-report) #ccxNav{
-        grid-template-columns:repeat(2,minmax(0,1fr))!important;
-      }
-      body:not(.print-report) .cp-main-tabs{
-        display:grid!important;
-        grid-template-columns:1fr!important;
-      }
-      body:not(.print-report) .cp-main-tabs button{
-        width:100%!important;
-        justify-content:center!important;
-      }
+      body:not(.print-report) #ccxNav{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+      body:not(.print-report) .cp-main-tabs{display:grid!important;grid-template-columns:1fr!important}
+      body:not(.print-report) .cp-main-tabs button{width:100%!important;justify-content:center!important}
       body:not(.print-report) .cp-budget-table tr{
         background:#fff!important;
         border-color:#dfe6dc!important;
         box-shadow:0 5px 16px rgba(31,50,35,.04)!important;
       }
-      body:not(.print-report) .cp-budget-table td{
-        border-bottom-color:#e7ece5!important;
-      }
-      body:not(.print-report) .cp-budget-table td:before{
-        color:#607066!important;
-      }
+      body:not(.print-report) .cp-budget-table td{border-bottom-color:#e7ece5!important}
+      body:not(.print-report) .cp-budget-table td:before{color:#607066!important}
       body:not(.print-report) .cp-budget-table .num,
       body:not(.print-report) .cp-budget-table .available{
         text-align:left!important;
         white-space:normal!important;
       }
     }
-    @media(max-width:420px){
-      body:not(.print-report) #ccxNav{grid-template-columns:1fr!important}
-    }
+    @media(max-width:420px){body:not(.print-report) #ccxNav{grid-template-columns:1fr!important}}
   `;
   document.head.appendChild(s);
 }

@@ -92,6 +92,7 @@ function loadPortfolioModules(){
     'ui-theme-unifier-v1.js?v=20260821-theme1',
     'engineering-visibility-fix-v1.js?v=20260821-engvisibility1',
     'ui-operational-polish-v1.js?v=20260821-operational2',
+    'home-executive-fix-v1.js?v=20260821-homeexec1',
     'ui-visibility-audit-v1.js?v=20260821-visibility1'
   ];
   const current=document.currentScript?.src||'';

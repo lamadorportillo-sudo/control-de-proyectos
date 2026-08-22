@@ -12,4 +12,10 @@ assert.equal(learning.record('qué dice la ley de garantías','respuesta legal',
 assert.equal(learning.stats().examples,1,'no aprende correcciones legales como hechos');
 assert.equal(learning.stats().feedback,2,'conserva las valoraciones');
 assert.ok(context.saved>=2,'sincroniza la memoria mediante el guardado existente');
-console.log('adaptive-chat-learning: 7 verificaciones superadas');
+assert.equal(learning.rememberFact('El tramo norte quedó suspendido por lluvia.').saved,true,'guarda un recuerdo aprobado');
+assert.match(learning.recall('tramo norte')[0].text,/suspendido por lluvia/,'recupera contexto entre consultas');
+assert.equal(learning.rememberFact('La contraseña es secreta').reason,'sensitive','rechaza secretos y contraseñas');
+learning.observeStyle('Mira, pues revisemos el frente de obra.');
+assert.equal(learning.styleProfile().preferredMarker,'mira','adapta patrones de estilo sin guardar el mensaje completo');
+assert.equal(learning.forget('tramo norte'),1,'permite eliminar recuerdos');
+console.log('adaptive-chat-learning: 12 verificaciones superadas');

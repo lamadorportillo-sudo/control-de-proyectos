@@ -3,13 +3,14 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 
 const context={
-  console,window:null,setTimeout(fn){fn()},
+  console,window:null,setTimeout(fn){fn()},crypto:{randomUUID:()=>`id-${Date.now()}`},saveDB(){},
   db:{projects:[{id:'p1',code:'P-001'}]},view:{screen:'project',projectId:'p1',tab:'summary'},
   document:{readyState:'loading',addEventListener(){},querySelector(){return null}},
   renderProject(){context.rendered=(context.rendered||0)+1},renderApp(){}
 };
 context.window=context;
 vm.createContext(context);
+vm.runInContext(fs.readFileSync('adaptive-chat-learning-v1.js','utf8'),context,{filename:'adaptive-chat-learning-v1.js'});
 vm.runInContext(fs.readFileSync('engineer-chatbot-v1.js','utf8'),context,{filename:'engineer-chatbot-v1.js'});
 const bot=context.__ccEngineerChat;
 
@@ -26,7 +27,10 @@ assert.match(bot.answer('hola'),/¿Cómo estás tú\?/i,'reinicia una conversaci
 assert.match(bot.answer('pues aquí tranquilo y tu'),/pendiente de la obra/i,'comprende una frase social natural');
 assert.match(bot.answer('me llamo Luis'),/Mucho gusto, Luis/i,'recuerda el nombre durante la conversación');
 assert.match(bot.answer('gracias'),/A la orden/i,'responde con cortesía');
+assert.match(bot.answer('recuerda que el acarreo del tramo norte quedó pendiente'),/Anotado/i,'acepta memoria explícita');
+assert.match(bot.answer('qué recuerdas del tramo norte'),/acarreo del tramo norte/i,'retoma recuerdos compartidos');
+assert.match(bot.answer('eres una inteligencia artificial'),/asistente digital/i,'mantiene transparencia cuando se le pregunta directamente');
 assert.ok(fs.statSync('engineer-assistant-avatar.png').size>1000,'el avatar del ingeniero existe');
 assert.match(fs.readFileSync('engineer-chatbot-v1.js','utf8'),/Halu · Ingeniero Civil/,'presenta la identidad profesional de Halu');
 
-console.log('engineer-chatbot: 15 verificaciones superadas');
+console.log('engineer-chatbot: 18 verificaciones superadas');

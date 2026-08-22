@@ -108,6 +108,36 @@ function navigateScreen(section){
   }catch{}
   return false;
 }
+function useLocalHaluAnswer(text){
+  const q=String(text||''),spoken=conversationalNorm(q);
+  if(fieldVisit||conversation.lastType==='field')return true;
+  return /\b(ponte|coloca|avatar|camina|caminar|detente|para de caminar|visita|foto|recuerda|que recuerdas|olvida|abre|abrir|ve a|llevame|pantalla actual|donde estoy)\b/.test(spoken)||/\b(ley|legal|norma|decreto|reglamento|articulo|licitacion|adjudicacion|garantia|multa|sancion)\b/.test(spoken);
+}
+function haluCloudContext(){
+  const parts=[contextText()];
+  try{
+    if(view?.screen==='project'){
+      const p=A(db?.projects).find(x=>x.id===view.projectId);
+      if(p)parts.push(`Proyecto: ${p.code||'sin código'} · ${p.name||p.title||'sin nombre'} · estado ${p.status||'sin estado'}.`);
+    }
+  }catch{}
+  return parts.join('\n').slice(0,1800);
+}
+async function answerWithAI(text){
+  const q=String(text||'').trim();
+  if(!q||useLocalHaluAnswer(q)||!session?.accessToken)return answer(q);
+  const prior=conversation.history.slice(-10);
+  try{
+    const {data}=await sbFetch('/functions/v1/halu-chat',{method:'POST',body:{message:q,context:haluCloudContext(),history:prior}});
+    const reply=String(data?.reply||'').trim();
+    if(!reply)throw new Error('Respuesta vacía');
+    conversation.turns+=1;rememberTurn('user',q);rememberTurn('assistant',reply);conversation.lastTopic=q;conversation.lastType='ai';
+    return reply;
+  }catch(error){
+    console.warn('Halu AI no disponible; usando respuesta local.',error?.message||error);
+    return answer(q);
+  }
+}
 function answer(text){
   const q=String(text||'').trim();
   const spoken=conversationalNorm(q);conversation.turns+=1;
@@ -155,7 +185,7 @@ function mount(){
   document.body.append(launch,box);
   const body=box.querySelector('.cc-eng-chat-body'),input=box.querySelector('input[type="text"]'),photoInput=box.querySelector('[data-photo-input]');
   const add=(kind,text,query='')=>{const wrap=document.createElement('div'),m=document.createElement('div');wrap.className=`cc-eng-msg-wrap ${kind}`;m.className=`cc-eng-msg ${kind}`;m.innerHTML=E(text);wrap.appendChild(m);if(kind==='bot'&&query&&window.__ccChatLearning){const rate=document.createElement('div');rate.className='cc-eng-rate';rate.innerHTML='<span>¿Te ayudó?</span><button type="button" data-rate="yes" aria-label="Respuesta útil">👍</button><button type="button" data-rate="no" aria-label="Corregir respuesta">👎</button>';rate.onclick=event=>{const vote=event.target.closest('[data-rate]');if(!vote)return;let correction='';if(vote.dataset.rate==='no')correction=prompt('¿Cómo debería responder la próxima vez? No incluyas contraseñas ni datos personales.','')||'';const result=window.__ccChatLearning.record(query,text,vote.dataset.rate==='yes',correction);rate.innerHTML=result.learned?'<span>Gracias. Aprendí la corrección.</span>':result.legalProtected?'<span>Gracias. Registré tu valoración; la ley no será reemplazada.</span>':'<span>Gracias por ayudarme a mejorar.</span>'};wrap.appendChild(rate)}body.appendChild(wrap);body.scrollTop=body.scrollHeight};
-  const ask=text=>{const q=String(text||'').trim();if(!q)return;add('user',q);const typing=document.createElement('div');typing.className='cc-eng-msg bot';typing.textContent='Estoy revisando…';body.appendChild(typing);body.scrollTop=body.scrollHeight;setTimeout(()=>Promise.resolve(answer(q)).then(reply=>{typing.remove();add('bot',reply,q)}).catch(()=>{typing.remove();add('bot','No pude completar la consulta. Intenta nuevamente.',q)}),140)};
+  const ask=text=>{const q=String(text||'').trim();if(!q)return;add('user',q);const typing=document.createElement('div');typing.className='cc-eng-msg bot';typing.textContent='Halu está pensando…';body.appendChild(typing);body.scrollTop=body.scrollHeight;setTimeout(()=>Promise.resolve(answerWithAI(q)).then(reply=>{typing.remove();add('bot',reply,q)}).catch(()=>{typing.remove();add('bot','No pude completar la consulta. Intenta nuevamente.',q)}),140)};
   box.querySelector('[data-photo]').onclick=()=>{if(!fieldVisit)return add('bot','Primero abre una visita y luego vamos agregando las fotos.');photoInput.click()};
   photoInput.onchange=async()=>{const files=[...photoInput.files];for(const file of files){try{const src=await compactPhoto(file);fieldVisit.photos=fieldVisit.photos||[];fieldVisit.photos.push({src,name:file.name,caption:`Evidencia de campo ${fieldVisit.photos.length+1}`,createdAt:new Date().toISOString()});saveFieldDraft();add('bot',fieldPhotoCrossCheck())}catch{add('bot','No pude leer esa foto; prueba con otra imagen.')}}photoInput.value=''};
   box.querySelector('[data-mic]').onclick=()=>{const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SpeechRecognition)return add('bot','El dictado no está disponible en este navegador; puedes usar el micrófono del teclado.');const recognition=new SpeechRecognition();recognition.lang='es-HN';recognition.interimResults=false;recognition.onstart=()=>add('bot','Te escucho; dicta la observación.');recognition.onresult=e=>{input.value=e.results[0][0].transcript;input.focus()};recognition.onerror=()=>add('bot','No pude tomar el dictado; inténtalo de nuevo o escríbelo.');recognition.start()};
@@ -165,5 +195,5 @@ function mount(){
   box.querySelector('form').onsubmit=e=>{e.preventDefault();const q=input.value;input.value='';ask(q)};
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
-window.__ccEngineerChat={answer,navigateTab,navigateScreen,contextText,conversation};
+window.__ccEngineerChat={answer,answerWithAI,navigateTab,navigateScreen,contextText,conversation};
 })();

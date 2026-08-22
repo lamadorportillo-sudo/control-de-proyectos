@@ -145,7 +145,7 @@ const lateModules=[
   ['web-knowledge-v2.js','20260822-short1'],
   ['adaptive-chat-learning-v1.js','20260822-global1'],
   ['engineer-chatbot-v3.js','20260822-ai1'],
-  ['halu-avatar-motion-v1.js','20260822-place9'],
+  ['halu-avatar-motion-v1.js','20260822-place11'],
   ['transparency-portal-v1.js','20260822-transparency1'],
   ['portfolio-redesign-v1.js','20260821-portfolio3'],
   ['project-portfolio-detail-v1.js','20260821-projectdetail2'],

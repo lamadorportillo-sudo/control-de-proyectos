@@ -28,8 +28,8 @@ function chatFollow(x,y){if(!chat||!launch)return;const r=launch.getBoundingClie
 function repositionChat(){if(!els()||!chat.classList.contains('open'))return false;const r=launch.getBoundingClientRect();chatFollow(r.left,r.top);return true}
 function remember(x,y){try{localStorage.setItem(KEY,JSON.stringify({x:x/innerWidth,y:y/innerHeight}))}catch{}}
 function overlapArea(a,b){const w=Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left)),h=Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));return w*h}
-function obstacles(){return[...document.querySelectorAll('button,input,select,textarea,a,[role="button"],.modal-box,.top-actions,.tabs,.panel-head')].filter(el=>el!==launch&&!el.closest?.('#ccEngineerChat,#ccEngineerChatLaunch')&&el.offsetParent!==null)}
-function obstruction(rect){return obstacles().reduce((total,el)=>total+overlapArea(rect,el.getBoundingClientRect()),0)}
+function obstacles(){return[...document.querySelectorAll('button,input,select,textarea,a,[role="button"],h1,h2,h3,p,strong,small,.eyebrow,.modal-box,.top-actions,.tabs,.panel-head')].filter(el=>el!==launch&&!el.closest?.('#ccEngineerChat,#ccEngineerChatLaunch')&&el.offsetParent!==null)}
+function obstruction(rect){return obstacles().reduce((total,el)=>{const r=el.getBoundingClientRect(),gap=10,padded={left:r.left-gap,top:r.top-gap,right:r.right+gap,bottom:r.bottom+gap};return total+overlapArea(rect,padded)},0)}
 function avoidObstruction(){
   clearTimeout(avoidTimer);avoidTimer=0;if(!els()||drag||placing||autoAvoiding||launch.classList.contains('cc-halu-moving')||chat?.classList.contains('open'))return false;
   const current=launch.getBoundingClientRect(),covered=obstruction(current);if(covered<Math.min(900,current.width*current.height*.12))return false;

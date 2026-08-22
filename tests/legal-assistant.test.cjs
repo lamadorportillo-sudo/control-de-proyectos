@@ -16,8 +16,8 @@ assert.ok(legal.data.records.some(x=>x.source==='RLCE'),'incluye Reglamento');
 assert.match(legal.answer('garantía de cumplimiento'),/artículo/i,'responde con artículos');
 assert.match(legal.answer('garantía de cumplimiento'),/pág\. PDF/i,'incluye página de origen');
 assert.match(legal.answer('artículo 5 de la Ley'),/Ley de Contratación del Estado/i,'recupera por artículo y fuente');
-assert.match(legal.answer('garantía de cumplimiento'),/En términos sencillos/i,'explica con lenguaje claro');
-assert.match(legal.answer('garantía de cumplimiento'),/Si quieres/i,'ofrece continuar la conversación');
+assert.match(legal.answer('garantía de cumplimiento'),/En lenguaje de obra/i,'explica con lenguaje claro y práctico');
+assert.match(legal.answer('garantía de cumplimiento'),/¿En qué etapa del proyecto/i,'ofrece continuar la conversación');
 assert.match(legal.answer('xyzqv inexistente'),/no encontré/i,'no inventa cuando no hay respaldo');
 
 console.log('legal-assistant: 11 verificaciones superadas');

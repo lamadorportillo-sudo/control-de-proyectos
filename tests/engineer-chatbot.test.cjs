@@ -17,15 +17,16 @@ assert.match(bot.answer('¿Dónde estoy?'),/P-001/,'reconoce el expediente activ
 assert.match(bot.answer('abre pagos'),/Abrí Pagos/,'abre la pestaña solicitada');
 assert.equal(context.view.tab,'estimates');
 assert.equal(context.rendered,1,'renderiza el expediente al navegar');
-assert.match(bot.answer('¿Cómo se relacionan los módulos?'),/misma información del expediente/,'explica la sincronización');
-assert.match(bot.answer('ayuda'),/Puedo buscar disposiciones/,'ofrece ayuda legal y funcional');
-assert.match(bot.answer('consulta desconocida'),/Puedo ayudarte/,'responde sin inventar contenido');
+assert.match(bot.answer('¿Cómo se relacionan los módulos?'),/trabajan con el mismo expediente/,'explica la sincronización');
+assert.match(bot.answer('ayuda'),/puedo revisar el Decreto 62-2026/i,'ofrece ayuda legal y funcional con voz de Halu');
+assert.match(bot.answer('consulta desconocida'),/dime el problema/i,'responde sin inventar contenido');
 assert.match(bot.answer('bien y tu'),/Me alegra saberlo/i,'responde a una continuación social');
-assert.match(bot.answer('necesito ayuda'),/cuenta conmigo/i,'invita a explicar la necesidad');
+assert.match(bot.answer('necesito ayuda'),/qué tienes trabado/i,'invita a explicar la necesidad');
 assert.match(bot.answer('hola'),/¿Cómo estás tú\?/i,'reinicia una conversación cordial');
-assert.match(bot.answer('pues aquí tranquilo y tu'),/me alegra que estés tranquilo/i,'comprende una frase social natural');
+assert.match(bot.answer('pues aquí tranquilo y tu'),/pendiente de la obra/i,'comprende una frase social natural');
 assert.match(bot.answer('me llamo Luis'),/Mucho gusto, Luis/i,'recuerda el nombre durante la conversación');
-assert.match(bot.answer('gracias'),/Con gusto/i,'responde con cortesía');
+assert.match(bot.answer('gracias'),/A la orden/i,'responde con cortesía');
 assert.ok(fs.statSync('engineer-assistant-avatar.png').size>1000,'el avatar del ingeniero existe');
+assert.match(fs.readFileSync('engineer-chatbot-v1.js','utf8'),/Halu · Ingeniero Civil/,'presenta la identidad profesional de Halu');
 
-console.log('engineer-chatbot: 14 verificaciones superadas');
+console.log('engineer-chatbot: 15 verificaciones superadas');

@@ -34,8 +34,8 @@ function answer(query){
   const found=search(query,3);
   if(!found.length)return'Entiendo la consulta, pero no encontré un artículo que la responda con suficiente claridad en las tres normas cargadas. Prefiero no darte una respuesta dudosa. Si me indicas el tema con otras palabras o un número de artículo, lo reviso de nuevo.';
   const main=found[0],source=main.sourceInfo||{};
-  const support=found.slice(1).map(item=>{const info=item.sourceInfo||{};return`• ${info.title||item.source}, artículo ${item.article}, pág. PDF ${item.page}.`}).join('\n');
-  return`Claro. La disposición que encuentro más relacionada con tu consulta está en ${source.title||main.source}, artículo ${main.article}.\n\nEn términos sencillos: ${plainSummary(main.text)}\n\nFundamento principal\n${source.instrument||''}, artículo ${main.article}, pág. PDF ${main.page}:\n${excerpt(main.text,query,500)}${support?`\n\nTambién conviene revisar:\n${support}`:''}\n\nEsta es una orientación basada en los documentos cargados. Antes de tomar una decisión jurídica o contractual, confirma el texto completo y su vigencia. Si quieres, dime en qué etapa del proyecto estás y te ayudo a aplicarlo al proceso.`;
+  const support=found.slice(1).map(item=>{const info=item.sourceInfo||{};return`${info.title||item.source}, artículo ${item.article}, pág. PDF ${item.page}`}).join('; ');
+  return`Mira, la disposición más cercana está en ${source.title||main.source}, artículo ${main.article}.\n\nEn lenguaje de obra: ${plainSummary(main.text)}\n\nEl respaldo es ${source.instrument||''}, artículo ${main.article}, pág. PDF ${main.page}:\n${excerpt(main.text,query,500)}${support?`\n\nTambién revisaría esto antes de cerrar criterio:\n${support}`:''}\n\nEsto sale de los documentos cargados. Antes de firmar, aprobar o rechazar algo, conviene confirmar el texto completo y su vigencia. ¿En qué etapa del proyecto te cayó este asunto?`;
 }
 window.__ccLegalKnowledge={data,search,answer,norm};
 })();

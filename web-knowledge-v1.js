@@ -19,8 +19,8 @@ async function answer(query){
     const results=await search(query);
     if(!results.length)return'CONOCIMIENTO DE LA RED — NO ES LEY\nTambién busqué una explicación en la red, pero no encontré una fuente abierta suficientemente relacionada. Esto no cambia ni reemplaza la respuesta normativa.';
     const [main,...others]=results;
-    const support=others.map(item=>`• ${item.title}: ${item.url}`).join('\n');
-    return`CONOCIMIENTO DE LA RED — NO ES LEY\nPara complementar la respuesta, encontré esta explicación general: ${main.extract}\n\nFuente web: ${main.title}\n${main.url}${support?`\n\nOtra fuente relacionada:\n${support}`:''}\n\nTómalo como contexto informativo: puede estar incompleto, desactualizado o no ser aplicable a Honduras.`;
+    const support=others.map(item=>`${item.title}: ${item.url}`).join('; ');
+    return`CONOCIMIENTO DE LA RED — NO ES LEY\nMira, para completar la idea encontré esto en la red: ${main.extract}\n\nLa fuente es ${main.title}: ${main.url}${support?`\n\nTambién aparece relacionado ${support}.`:''}\n\nTómalo como contexto, no como norma. Puede estar incompleto, desactualizado o no aplicar a Honduras. ¿Esto se parece al problema que tienes en el proyecto?`;
   }catch{
     return'CONOCIMIENTO DE LA RED — NO ES LEY\nEn este momento no pude consultar la red. No te preocupes: la respuesta basada en las leyes cargadas sigue disponible sin conexión.';
   }

@@ -70,7 +70,7 @@
     return '';
   }
 
-  function stats(p){let done=0,total=0;const per={};phases.forEach(ph=>{let d=0;ph.items.forEach(([id])=>{total++;if(getEntry(p,ph.id,id).done){done++;d++}});per[ph.id]={done:d,total:ph.items.length,pct:Math.round(d/ph.items.length*100)}});return{done,total,pct:Math.round(done/total*100),per}};
+  function stats(p){let done=0,total=0;const per={};phases.forEach(ph=>{let d=0,t=0,na=0;ph.items.forEach(([id])=>{const e=getEntry(p,ph.id,id);if(e.notApplicable){na++;return}total++;t++;if(e.done){done++;d++}});per[ph.id]={done:d,total:t,na,pct:t?Math.round(d/t*100):100}});return{done,total,pct:total?Math.round(done/total*100):100,per}};
   function currentPhase(s){for(const ph of phases)if(s.per[ph.id].pct<100)return ph;return phases[phases.length-1]}
   const openKey=p=>`cp_lifecycle_open_${p.id}`;
   function getOpenPhases(p,cur){try{const raw=JSON.parse(localStorage.getItem(openKey(p))||'null');if(Array.isArray(raw))return new Set(raw)}catch{}return new Set([cur.id])}
@@ -84,7 +84,7 @@
       const toggle=()=>{const id=el.dataset.lcToggle,section=root.querySelector(`[data-lc-phase="${id}"]`);if(!section)return;section.classList.toggle('open');const isOpen=section.classList.contains('open');el.setAttribute('aria-expanded',isOpen?'true':'false');if(isOpen)openPhases.add(id);else openPhases.delete(id);saveOpenPhases(p,openPhases)};
       el.onclick=toggle;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle()}};
     });
-    root.querySelectorAll('[data-lc-check]').forEach(el=>el.onchange=()=>{const [ph,it]=el.dataset.lcCheck.split('|');setEntry(p,ph,it,{done:el.checked,date:el.checked?(getEntry(p,ph,it).date||today()):getEntry(p,ph,it).date||''});renderContractLifecycle(p,c)});
+    root.querySelectorAll('[data-lc-check]').forEach(el=>el.onchange=()=>{const [ph,it]=el.dataset.lcCheck.split('|');setEntry(p,ph,it,{done:el.checked,notApplicable:false,date:el.checked?(getEntry(p,ph,it).date||today()):getEntry(p,ph,it).date||''});renderContractLifecycle(p,c)});
     root.querySelectorAll('[data-lc-date]').forEach(el=>el.onchange=()=>{const [ph,it]=el.dataset.lcDate.split('|');setEntry(p,ph,it,{date:el.value})});
     root.querySelectorAll('[data-lc-note]').forEach(el=>el.onchange=()=>{const [ph,it]=el.dataset.lcNote.split('|');setEntry(p,ph,it,{note:el.value.trim()})});
   };

@@ -159,7 +159,9 @@ function contractSituation(p,c){
 function smartAnalysis(p,c){
   const visits=A(db?.visits).filter(v=>v.projectId===p.id).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
   const latest=visits.at(-1)||null,physical=clamp(latest?.physical||p.physicalProgress||0);
-  const est=c?A(db?.estimates).filter(e=>e.contractId===c.id):[],gross=est.reduce((s,e)=>s+n(e.gross),0),current=n(c?.currentAmount??p.budget),financial=current?clamp(gross/current*100):0;
+  const allEst=c?A(db?.estimates).filter(e=>e.contractId===c.id&&!e.voidedAt&&!e.voided_at&&!/anulad/i.test(String(e.status||''))):[];
+  const est=allEst.filter(e=>/^(aprobada|aprobado|pagada|pagado)$/i.test(String(e.status||'').trim()));
+  const gross=est.reduce((s,e)=>s+n(e.gross),0),current=n(c?.currentAmount??p.budget),financial=current?clamp(gross/current*100):0;
   const fin=typeof projectFinancials==='function'?projectFinancials(p,c,est):null,paid=fin?Number(fin.totalPaidC||0)/100:est.filter(e=>/pagad/i.test(String(e.status||''))).reduce((s,e)=>s+n(e.net),0),paidPct=current?clamp(paid/current*100):0;
   const gs=A(db?.guarantees).filter(g=>g.projectId===p.id),alerts=gs.map(g=>({g,a:typeof guaranteeAlert==='function'?guaranteeAlert(g.end):{level:'good',days:999,label:'VIGENTE'}})).filter(x=>['warning','attention','critical','urgent','expired'].includes(x.a.level));
   const pendingObs=visits.reduce((s,v)=>s+A(v.observations).filter(o=>!/^atendida$/i.test(String(o.status||''))).length,0);
@@ -172,7 +174,7 @@ function smartAnalysis(p,c){
   else conclusions.push(`El proyecto presenta información contractual registrada${c.number?` bajo el contrato N.º ${c.number}`:''}, con estado actual “${p.status||c.status||'En seguimiento'}”.`);
   if(visits.length)conclusions.push(`La última visita de campo registrada (${dmyx(latest.date)}) reporta un avance físico observado de ${pctv(physical)}${latest.activities?` y documenta actividades de ejecución en sitio`:''}.`);
   else conclusions.push('No se registran visitas de supervisión de campo; por tanto, el informe no dispone de una referencia reciente de avance físico observado.');
-  if(est.length)conclusions.push(`Las estimaciones acumuladas ascienden a ${money(gross)}, equivalentes al ${pctv(financial)} del monto contractual vigente. El desembolso registrado representa aproximadamente ${pctv(paidPct)}.`);
+  if(est.length)conclusions.push(`Las estimaciones aprobadas o pagadas acumuladas ascienden a ${money(gross)}, equivalentes al ${pctv(financial)} del monto contractual vigente. El desembolso registrado representa aproximadamente ${pctv(paidPct)}.`);
   else conclusions.push('No se registran estimaciones periódicas en el expediente, por lo que no existe todavía avance financiero certificado mediante estimaciones.');
   if(physical>0&&financial===0)conclusions.push('Existe avance físico de campo registrado sin avance financiero certificado en estimaciones; ambos indicadores deben mantenerse separados hasta que exista documentación financiera aprobada.');
   else if(Math.abs(physical-financial)>=10)conclusions.push(`Se observa una diferencia de ${Math.abs(physical-financial).toFixed(2)} puntos porcentuales entre el avance físico observado y el avance financiero estimado.`);

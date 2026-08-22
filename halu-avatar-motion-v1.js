@@ -6,12 +6,20 @@ const KEY='cc_halu_avatar_position_v1',clamp=(n,min,max)=>Math.max(min,Math.min(
 let launch=null,chat=null,placing=false,drag=null,roamTimer=0;
 function css(){if(document.getElementById('ccHaluMotionStyle'))return;const s=document.createElement('style');s.id='ccHaluMotionStyle';s.textContent=`
 #ccEngineerChatLaunch.cc-halu-moving{transition:left 1.15s cubic-bezier(.22,.8,.3,1),top 1.15s cubic-bezier(.22,.8,.3,1),transform .18s ease;animation:ccHaluWalk .36s ease-in-out infinite alternate;right:auto!important;bottom:auto!important}
+#ccEngineerChatLaunch .cc-halu-layer{position:absolute;width:100%;height:100%;inset:0;object-fit:contain;object-position:center bottom;max-width:none}
+#ccEngineerChatLaunch .cc-halu-torso{clip-path:polygon(0 0,100% 0,100% 58%,0 58%)}
+#ccEngineerChatLaunch .cc-halu-leg-left{clip-path:polygon(10% 44%,53% 44%,57% 100%,0 100%);transform-origin:48% 47%}
+#ccEngineerChatLaunch .cc-halu-leg-right{clip-path:polygon(47% 44%,88% 44%,100% 100%,43% 100%);transform-origin:52% 47%}
+#ccEngineerChatLaunch.cc-halu-moving .cc-halu-leg-left{animation:ccHaluLegLeft .44s ease-in-out infinite alternate}
+#ccEngineerChatLaunch.cc-halu-moving .cc-halu-leg-right{animation:ccHaluLegRight .44s ease-in-out infinite alternate}
 #ccEngineerChatLaunch.cc-halu-gesture{overflow:visible;animation:ccHaluHello .42s ease-in-out 3 alternate}
 #ccEngineerChatLaunch.cc-halu-gesture:after{content:'☝';position:absolute;right:-22px;top:-18px;font-size:27px;filter:drop-shadow(0 3px 5px rgba(0,0,0,.4));transform-origin:bottom center;animation:ccHaluPoint .5s ease-in-out 4 alternate}
 #ccEngineerChatLaunch.cc-halu-place{box-shadow:0 0 0 8px rgba(56,189,248,.22),0 16px 40px rgba(0,0,0,.5)}
 #ccEngineerChatLaunch.cc-halu-dragging{cursor:grabbing!important;transition:none!important;animation:ccHaluWalk .28s ease-in-out infinite alternate;touch-action:none;user-select:none}
 body.cc-halu-placing,body.cc-halu-placing *{cursor:crosshair!important}
-@keyframes ccHaluWalk{from{transform:translateY(0) rotate(-2deg)}to{transform:translateY(-7px) rotate(2deg)}}
+@keyframes ccHaluWalk{from{transform:translateY(0)}to{transform:translateY(-5px)}}
+@keyframes ccHaluLegLeft{from{transform:rotate(-7deg) translateY(1px)}to{transform:rotate(9deg) translateY(-2px)}}
+@keyframes ccHaluLegRight{from{transform:rotate(8deg) translateY(-2px)}to{transform:rotate(-8deg) translateY(1px)}}
 @keyframes ccHaluHello{from{transform:rotate(-4deg)}to{transform:rotate(4deg)}}
 @keyframes ccHaluPoint{from{transform:rotate(-15deg) translateY(2px)}to{transform:rotate(12deg) translateY(-4px)}}`;document.head.appendChild(s)}
 function els(){launch=document.getElementById('ccEngineerChatLaunch');chat=document.getElementById('ccEngineerChat');return!!launch}

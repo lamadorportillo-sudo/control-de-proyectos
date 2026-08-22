@@ -16,4 +16,6 @@ assert.match(src,/ArrowLeft/,'permite mover el avatar con teclado');
 assert.match(src,/function roam/,'permite recorrido autónomo por la pantalla');
 assert.match(src,/const r=el\.getBoundingClientRect\(\);moveTo/,'recalcula el destino después del desplazamiento');
 assert.match(src,/chat\?\.classList\.remove\('open'\);roam\(true\)/,'cierra el dialogo antes de iniciar el recorrido');
-console.log('halu-avatar-motion: 14 verificaciones superadas');
+assert.match(src,/ccHaluLegLeft/,'alterna el movimiento del pie izquierdo');
+assert.match(src,/ccHaluLegRight/,'alterna el movimiento del pie derecho');
+console.log('halu-avatar-motion: 16 verificaciones superadas');

@@ -3,9 +3,15 @@
 'use strict';
 if(window.__CC_PERFORMANCE_RUNTIME_V1__)return;window.__CC_PERFORMANCE_RUNTIME_V1__=true;
 const NativeObserver=window.MutationObserver;if(!NativeObserver)return;
-const pending=new Set();let flushScheduled=false;
+const pending=new Set();let flushScheduled=false,passes=0;
+const MAX_PASSES=4;
 const schedule=callback=>window.requestIdleCallback?requestIdleCallback(callback,{timeout:180}):setTimeout(callback,32);
-function queue(observer){pending.add(observer);if(flushScheduled)return;flushScheduled=true;schedule(()=>{flushScheduled=false;const batch=[...pending];pending.clear();for(const item of batch)item.flush()})}
+function queue(observer){
+  if(passes>=MAX_PASSES){observer.discard();return}
+  pending.add(observer);if(flushScheduled)return;flushScheduled=true;schedule(()=>{flushScheduled=false;passes+=1;const batch=[...pending];pending.clear();for(const item of batch)item.flush()})
+}
+function resetBudget(){passes=0}
+for(const event of ['click','input','change','submit'])document.addEventListener(event,resetBudget,true);
 class BatchedMutationObserver{
   constructor(callback){
     if(typeof callback!=='function')throw new TypeError('MutationObserver callback must be a function');
@@ -13,6 +19,7 @@ class BatchedMutationObserver{
     this.native=new NativeObserver(records=>{this.records.push(...records);if(this.queued)return;this.queued=true;queue(this)});
   }
   flush(){this.queued=false;const batch=this.records.splice(0);if(batch.length)this.callback(batch,this)}
+  discard(){this.records.length=0;this.queued=false}
   observe(target,options){return this.native.observe(target,options)}
   disconnect(){pending.delete(this);this.records.length=0;this.queued=false;return this.native.disconnect()}
   takeRecords(){return this.records.splice(0).concat(this.native.takeRecords())}

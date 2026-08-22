@@ -15,9 +15,12 @@ assert.match(src,/requestIdleCallback/,'ejecuta decoraciones cuando el navegador
 assert.match(src,/if\(this\.queued\)return/,'evita programar revisiones duplicadas');
 assert.match(src,/const pending=new Set/,'comparte una sola cola entre todos los observadores');
 assert.match(src,/for\(const item of batch\)item\.flush\(\)/,'procesa cada observador una sola vez por lote');
+assert.match(src,/const MAX_PASSES=4/,'limita las cascadas de decoracion por interaccion');
+assert.match(src,/passes>=MAX_PASSES/,'corta ciclos de mutacion que no se estabilizan');
+assert.match(src,/\['click','input','change','submit'\]/,'reinicia el presupuesto con cada accion real del usuario');
 assert.match(src,/takeRecords\(\)/,'mantiene la API esperada de MutationObserver');
 assert.match(src,/window\.MutationObserver=BatchedMutationObserver/,'activa la optimizacion para los modulos posteriores');
 assert.match(builder,/performanceModule='performance-runtime-v1\.js'/,'el generador debe conservar el coordinador de rendimiento');
 assert.match(builder,/html\.replace\(firstFeature/,'el generador debe cargarlo antes del primer modulo funcional');
 
-console.log('performance-runtime: 12 verificaciones superadas');
+console.log('performance-runtime: 15 verificaciones superadas');

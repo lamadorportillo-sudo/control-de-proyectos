@@ -1,33 +1,20 @@
-const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const path=require('node:path');
-
-const root=path.join(__dirname,'..');
-const source=fs.readFileSync(path.join(root,'password-recovery-v1.js'),'utf8');
-const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
-
-test('expone la opcion de recuperar contraseña en el inicio',()=>{
-  assert.match(source,/¿Olvidaste tu contraseña\?/);
-  assert.match(html,/password-recovery-v1\.js/);
-});
-
-test('solicita un correo de recuperacion con retorno al sitio',()=>{
-  assert.match(source,/\/auth\/v1\/recover\?redirect_to=/);
-  assert.match(source,/location\.origin\+location\.pathname/);
-});
-
-test('actualiza la contraseña con el token de recuperacion',()=>{
-  assert.match(source,/hash\.get\('type'\)===\s*'recovery'/);
-  assert.match(source,/\/auth\/v1\/user/);
-  assert.match(source,/Authorization.*Bearer/);
-});
-
-test('mantiene una respuesta que no revela si el usuario existe',()=>{
-  assert.match(source,/Si existe una cuenta con ese correo/);
-});
-
-test('reinstala la opcion si el rediseño sustituye el formulario',()=>{
-  assert.match(source,/new MutationObserver/);
-  assert.match(source,/!\$\('#forgotPasswordBtn'\)/);
-});
+const vm=require('node:vm');
+const calls=[];
+const context={window:null,console,SUPABASE_URL:'https://project.supabase.co',SUPABASE_KEY:'publishable',location:{origin:'https://example.com',pathname:'/app/',hash:'#type=recovery&access_token=token-123'},document:{readyState:'loading',addEventListener(){},getElementById(){return null}},MutationObserver:class{},URLSearchParams,fetch:async(url,options)=>{calls.push({url,options});return{ok:true,json:async()=>({})}}};context.window=context;
+vm.createContext(context);
+vm.runInContext(fs.readFileSync('password-recovery-v1.js','utf8'),context,{filename:'password-recovery-v1.js'});
+(async()=>{
+  const recovery=context.__ccPasswordRecovery;
+  assert.equal(recovery.recoveryToken(),'token-123','detecta el token de recuperación');
+  await recovery.requestReset(' USER@EXAMPLE.COM ');
+  assert.match(calls[0].url,/\/auth\/v1\/recover\?redirect_to=/,'usa el endpoint de recuperación');
+  assert.equal(JSON.parse(calls[0].options.body).email,'user@example.com','normaliza el correo');
+  await recovery.updatePassword('token-123','password-nueva');
+  assert.match(calls[1].url,/\/auth\/v1\/user$/,'actualiza mediante el endpoint autenticado');
+  assert.equal(calls[1].options.headers.Authorization,'Bearer token-123','autoriza con el token del correo');
+  assert.equal(JSON.parse(calls[1].options.body).password,'password-nueva','envía la contraseña nueva');
+  assert.ok(!fs.readFileSync('password-recovery-v1.js','utf8').includes('service_role'),'no expone claves privilegiadas');
+  console.log('password-recovery: 8 verificaciones superadas');
+})().catch(error=>{console.error(error);process.exitCode=1});

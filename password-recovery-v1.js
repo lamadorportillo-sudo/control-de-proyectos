@@ -1,83 +1,33 @@
-/* Recuperacion segura de contrasena con Supabase Auth. */
+/* ===== RECUPERACIÓN SEGURA DE CONTRASEÑA SUPABASE V1 ===== */
 (()=>{
 'use strict';
-if(window.__passwordRecoveryV1)return;window.__passwordRecoveryV1=1;
-
-const $=s=>document.querySelector(s);
-const authHeaders=()=>({'apikey':SUPABASE_KEY,'Content-Type':'application/json','Accept':'application/json'});
-const messageFrom=(data,fallback)=>data?.error_description||data?.msg||data?.message||data?.error||fallback;
-const cleanReturnUrl=()=>location.origin+location.pathname;
-
-function recoveryToken(){
-  const hash=new URLSearchParams(location.hash.replace(/^#/,''));
-  return hash.get('type')==='recovery'?hash.get('access_token')||'':'';
+if(window.__CC_PASSWORD_RECOVERY_V1__)return;window.__CC_PASSWORD_RECOVERY_V1__=true;
+const apiBase=()=>typeof SUPABASE_URL!=='undefined'?SUPABASE_URL:'';
+const publicKey=()=>typeof SUPABASE_KEY!=='undefined'?SUPABASE_KEY:'';
+const redirectUrl=()=>`${location.origin}${location.pathname}`;
+async function requestReset(email){
+  const response=await fetch(`${apiBase()}/auth/v1/recover?redirect_to=${encodeURIComponent(redirectUrl())}`,{method:'POST',headers:{apikey:publicKey(),'Content-Type':'application/json'},body:JSON.stringify({email:String(email||'').trim().toLowerCase()})});
+  if(!response.ok){const data=await response.json().catch(()=>({}));throw new Error(response.status===429?'Demasiados intentos. Espera unos minutos antes de volver a solicitar el correo.':(data?.msg||data?.message||'No se pudo enviar el correo de recuperación.'))}
+  return true;
 }
-
-function addForgotPasswordOption(){
-  const form=$('#authForm'),pass=$('#authPass'),loginTab=$('#loginTab');
-  if(!form||!pass||$('#forgotPasswordBtn'))return;
-  const link=document.createElement('button');
-  link.type='button';link.id='forgotPasswordBtn';link.className='btn cp-login-forgot';
-  link.style.cssText='display:block;width:100%;margin:-2px 0 4px;background:transparent;border:0;color:#5ba7e8;padding:8px 10px;text-align:center;font-weight:700;text-decoration:underline;text-underline-offset:3px';
-  link.textContent='¿Olvidaste tu contraseña?';
-  pass.closest('.field')?.insertAdjacentElement('afterend',link);
-  const sync=()=>link.classList.toggle('hidden',!loginTab?.classList.contains('active'));
-  loginTab?.addEventListener('click',sync);
-  $('#registerTab')?.addEventListener('click',sync);
-  sync();
-  link.onclick=()=>renderRecoveryRequest();
+async function updatePassword(accessToken,password){
+  const response=await fetch(`${apiBase()}/auth/v1/user`,{method:'PUT',headers:{apikey:publicKey(),Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({password})});
+  if(!response.ok){const data=await response.json().catch(()=>({}));throw new Error(data?.msg||data?.message||'No se pudo actualizar la contraseña.')}
+  return response.json().catch(()=>({}));
 }
-
-function renderRecoveryRequest(){
-  const email=$('#authEmail')?.value.trim().toLowerCase()||'';
-  document.getElementById('app').innerHTML=`<div class="auth"><div class="auth-card"><div class="logo">CP</div><p class="eyebrow">RECUPERAR ACCESO</p><h1>Recupera tu contraseña</h1><p class="muted">Escribe tu correo y te enviaremos un enlace seguro para crear una nueva contraseña.</p><form id="recoveryRequestForm" class="stack"><label class="field"><span>Correo</span><input id="recoveryEmail" type="email" required autocomplete="email" value="${typeof esc==='function'?esc(email):''}"></label><button class="btn primary" id="recoverySend">Enviar enlace al correo</button><button class="btn" type="button" id="recoveryBack">Volver al inicio</button><p class="notice" id="recoveryMessage">Por seguridad, la respuesta será la misma aunque el correo no esté registrado.</p></form></div></div>`;
-  $('#recoveryBack').onclick=()=>renderAuth();
-  $('#recoveryRequestForm').onsubmit=async e=>{
-    e.preventDefault();const btn=$('#recoverySend'),msg=$('#recoveryMessage'),address=$('#recoveryEmail').value.trim().toLowerCase();
-    btn.disabled=true;msg.textContent='Enviando enlace…';
-    try{
-      const redirectTo=cleanReturnUrl();
-      const r=await fetch(`${SUPABASE_URL}/auth/v1/recover?redirect_to=${encodeURIComponent(redirectTo)}`,{method:'POST',headers:authHeaders(),body:JSON.stringify({email:address})});
-      const data=await r.json().catch(()=>({}));
-      if(!r.ok)throw new Error(messageFrom(data,'No se pudo enviar el enlace. Inténtalo nuevamente.'));
-      msg.textContent='Si existe una cuenta con ese correo, recibirás un enlace para cambiar la contraseña. Revisa también la carpeta de correo no deseado.';
-      btn.textContent='Enlace solicitado';
-    }catch(err){msg.textContent=err.message||'No se pudo enviar el enlace. Inténtalo nuevamente.';btn.disabled=false}
-  };
+function injectLink(){
+  const form=document.getElementById('authForm'),email=document.getElementById('authEmail');if(!form||!email||document.getElementById('ccForgotPassword'))return;
+  const button=document.createElement('button');button.type='button';button.id='ccForgotPassword';button.textContent='¿Olvidaste tu contraseña?';button.style.cssText='display:block;margin:2px 0 10px auto;padding:2px;border:0;background:transparent;color:#60a5fa;font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:3px';
+  const pass=document.getElementById('authPass');(pass?.closest('label')||pass?.parentElement||email).insertAdjacentElement('afterend',button);
+  button.onclick=async()=>{const value=email.value.trim(),msg=document.getElementById('authMessage');if(!value||!/^\S+@\S+\.\S+$/.test(value)){if(msg)msg.textContent='Escribe primero el correo de tu cuenta.';email.focus();return}button.disabled=true;button.textContent='Enviando…';try{await requestReset(value);if(msg)msg.textContent='Si el correo pertenece a una cuenta, recibirás un enlace para crear una contraseña nueva. Revisa también la carpeta de spam.';button.textContent='Correo solicitado'}catch(error){if(msg)msg.textContent=error.message||'No se pudo solicitar la recuperación.';button.textContent='Intentar nuevamente';button.disabled=false}}
 }
-
-function renderNewPassword(token){
-  session=null;localStorage.removeItem(SESSION);
-  document.getElementById('app').innerHTML=`<div class="auth"><div class="auth-card"><div class="logo">CP</div><p class="eyebrow">NUEVA CONTRASEÑA</p><h1>Crea una nueva contraseña</h1><p class="muted">Elige una contraseña de al menos 8 caracteres para recuperar tu acceso.</p><form id="newPasswordForm" class="stack"><label class="field"><span>Nueva contraseña</span><input id="newPassword" type="password" minlength="8" required autocomplete="new-password"></label><label class="field"><span>Confirmar contraseña</span><input id="confirmPassword" type="password" minlength="8" required autocomplete="new-password"></label><button class="btn primary" id="newPasswordSubmit">Guardar nueva contraseña</button><p class="notice" id="newPasswordMessage">El enlace es temporal y solo debe abrirlo su destinatario.</p></form></div></div>`;
-  $('#newPasswordForm').onsubmit=async e=>{
-    e.preventDefault();const password=$('#newPassword').value,confirm=$('#confirmPassword').value,btn=$('#newPasswordSubmit'),msg=$('#newPasswordMessage');
-    if(password.length<8){msg.textContent='La contraseña debe tener al menos 8 caracteres.';return}
-    if(password!==confirm){msg.textContent='Las contraseñas no coinciden.';return}
-    btn.disabled=true;msg.textContent='Actualizando contraseña…';
-    try{
-      const r=await fetch(`${SUPABASE_URL}/auth/v1/user`,{method:'PUT',headers:{...authHeaders(),'Authorization':`Bearer ${token}`},body:JSON.stringify({password})});
-      const data=await r.json().catch(()=>({}));
-      if(!r.ok)throw new Error(messageFrom(data,'No se pudo actualizar la contraseña.'));
-      try{await fetch(`${SUPABASE_URL}/auth/v1/logout`,{method:'POST',headers:{...authHeaders(),'Authorization':`Bearer ${token}`}})}catch{}
-      history.replaceState(null,'',location.pathname+location.search);
-      document.getElementById('app').innerHTML=`<div class="auth"><div class="auth-card"><div class="logo">CP</div><p class="eyebrow">ACCESO RECUPERADO</p><h1>Contraseña actualizada</h1><p class="muted">Ya puedes ingresar con tu correo y la nueva contraseña.</p><button class="btn primary" id="recoveryDone" style="width:100%">Ir al inicio de sesión</button></div></div>`;
-      $('#recoveryDone').onclick=()=>renderAuth();
-    }catch(err){msg.textContent=err.message||'El enlace venció o ya fue utilizado. Solicita uno nuevo.';btn.disabled=false}
-  };
+function recoveryToken(){const params=new URLSearchParams(location.hash.replace(/^#/,''));return params.get('type')==='recovery'?params.get('access_token'):null}
+function showResetForm(token){
+  if(!token||document.getElementById('ccPasswordReset'))return;
+  const box=document.createElement('div');box.id='ccPasswordReset';box.style.cssText='position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:20px;background:#06101deF;color:#eaf3fc';box.innerHTML='<form style="width:min(430px,100%);padding:26px;border:1px solid #29405a;border-radius:18px;background:#091522;box-shadow:0 24px 70px #0009"><p style="margin:0 0 5px;color:#60a5fa;font-size:11px;font-weight:800;letter-spacing:.12em">RECUPERACIÓN DE ACCESO</p><h2 style="margin:0 0 8px">Crear contraseña nueva</h2><p style="margin:0 0 18px;color:#9fb5ca;font-size:13px">Utiliza al menos ocho caracteres y no compartas tu clave.</p><label style="display:grid;gap:6px;margin-bottom:12px"><span>Nueva contraseña</span><input id="ccNewPassword" type="password" minlength="8" required autocomplete="new-password" style="padding:12px;border:1px solid #35506e;border-radius:10px"></label><label style="display:grid;gap:6px;margin-bottom:14px"><span>Confirmar contraseña</span><input id="ccConfirmPassword" type="password" minlength="8" required autocomplete="new-password" style="padding:12px;border:1px solid #35506e;border-radius:10px"></label><button style="width:100%;padding:12px;border:0;border-radius:10px;background:#2563eb;color:white;font-weight:800">Actualizar contraseña</button><p id="ccResetMessage" style="min-height:18px;margin:12px 0 0;color:#a9c0d5;font-size:12px"></p></form>';
+  document.body.appendChild(box);const form=box.querySelector('form'),message=box.querySelector('#ccResetMessage');form.onsubmit=async event=>{event.preventDefault();const password=box.querySelector('#ccNewPassword').value,confirmPassword=box.querySelector('#ccConfirmPassword').value,button=form.querySelector('button');if(password.length<8){message.textContent='La contraseña debe tener al menos ocho caracteres.';return}if(password!==confirmPassword){message.textContent='Las contraseñas no coinciden.';return}button.disabled=true;message.textContent='Actualizando…';try{await updatePassword(token,password);history.replaceState(null,'',redirectUrl());message.textContent='Contraseña actualizada. Ya puedes iniciar sesión con tu nueva clave.';setTimeout(()=>location.reload(),1800)}catch(error){message.textContent=error.message||'No se pudo actualizar la contraseña.';button.disabled=false}}
 }
-
-try{
-  if(typeof renderAuth==='function'&&!renderAuth.__passwordRecovery){
-    const original=renderAuth;
-    renderAuth=function(){const result=original.apply(this,arguments);setTimeout(addForgotPasswordOption,0);return result};
-    renderAuth.__passwordRecovery=true;
-  }
-  const token=recoveryToken();
-  if(token)setTimeout(()=>renderNewPassword(token),0);else setTimeout(addForgotPasswordOption,0);
-  // Varios modulos visuales sustituyen el formulario base despues de cargar.
-  // Reinsertar la opcion cuando eso ocurra evita que el rediseño la elimine.
-  new MutationObserver(()=>{
-    if(!recoveryToken()&&$('#authForm')&&!$('#forgotPasswordBtn'))addForgotPasswordOption();
-  }).observe(document.documentElement,{subtree:true,childList:true});
-}catch(error){console.warn('No se pudo inicializar la recuperación de contraseña.',error)}
+function start(){const token=recoveryToken();if(token)showResetForm(token);injectLink();new MutationObserver(injectLink).observe(document.documentElement,{childList:true,subtree:true})}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+window.__ccPasswordRecovery={requestReset,updatePassword,recoveryToken,injectLink};
 })();

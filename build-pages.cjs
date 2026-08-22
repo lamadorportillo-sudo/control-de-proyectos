@@ -107,6 +107,8 @@ if(!html.includes('budget-portfolio-tab-v1.js')){
 // Los módulos funcionales se cargan de forma directa para no depender de cachés o cargadores secundarios.
 const lateModules=[
   ['workspace-access-v1.js','20260820-master4'],
+  ['private-access-v1.js','20260822-private1'],
+  ['password-recovery-v1.js','20260822-password1'],
   ['alerts-compact-v1.js','20260820-master4'],
   ['dashboard-executive-v1.js','20260820-master4'],
   ['engineering-ux-v1.js','20260820-master4'],
@@ -124,9 +126,28 @@ const lateModules=[
   ['summary-budget-law-v1.js','20260820-summarybudgetlaw1'],
   ['project-search-clean-v1.js','20260820-searchclean1'],
   ['storage-quota-fix-v1.js','20260820-storagequota2'],
-  ['project-tabs-complete-v1.js','20260822-tabscomplete2'],
+  ['project-tabs-complete-v1.js','20260821-tabscomplete12'],
   ['procurement-process-save-v4.js','20260820-procsave4'],
   ['contract-integrity-fix-v1.js','20260822-integrity1'],
+  ['integrity-hardening-v2.js','20260822-integrity2'],
+  ['cross-module-sync-v1.js','20260822-relations1'],
+  ['law-knowledge-v1.js','20260822-law1'],
+  ['legal-assistant-v2.js','20260822-short1'],
+  ['web-knowledge-v2.js','20260822-short1'],
+  ['adaptive-chat-learning-v1.js','20260822-global1'],
+  ['engineer-chatbot-v3.js','20260822-field1'],
+  ['transparency-portal-v1.js','20260822-transparency1'],
+  ['portfolio-redesign-v1.js','20260821-portfolio3'],
+  ['project-portfolio-detail-v1.js','20260821-projectdetail2'],
+  ['portfolio-gallery-v1.js','20260821-gallery2'],
+  ['portfolio-screen-fix-v1.js','20260821-screenfix1'],
+  ['project-photo-story-v1.js','20260821-photostory1'],
+  ['photo-gallery-polish-v2.js','20260822-photopolish2'],
+  ['ui-theme-unifier-v1.js','20260822-theme1'],
+  ['engineering-visibility-fix-v1.js','20260822-visibility1'],
+  ['ui-operational-polish-v1.js','20260822-operational1'],
+  ['home-executive-fix-v2.js','20260822-home2'],
+  ['ui-visibility-audit-v1.js','20260822-uiaudit1'],
 ];
 for(const [module,version] of lateModules){
   if(!fs.existsSync(module)) throw new Error(`No se encontró ${module}.`);

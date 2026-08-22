@@ -10,4 +10,9 @@ assert.match(src,/localStorage\.setItem\(KEY/,'conserva la posición entre sesio
 assert.match(src,/scrollIntoView/,'puede buscar y señalar controles visibles');
 assert.match(src,/no te veo\|no estas visible/,'responde a órdenes de aparición');
 assert.match(src,/window\.__ccHaluAvatar/,'expone el controlador al chat');
-console.log('halu-avatar-motion: 8 verificaciones superadas');
+assert.match(src,/pointerdown/,'permite arrastrar el avatar con mouse o toque');
+assert.match(src,/setPointerCapture/,'mantiene el arrastre fuera del avatar');
+assert.match(src,/ArrowLeft/,'permite mover el avatar con teclado');
+assert.match(src,/function roam/,'permite recorrido autónomo por la pantalla');
+assert.match(src,/const r=el\.getBoundingClientRect\(\);moveTo/,'recalcula el destino después del desplazamiento');
+console.log('halu-avatar-motion: 13 verificaciones superadas');

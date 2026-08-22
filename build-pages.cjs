@@ -104,7 +104,7 @@ if(!html.includes('budget-portfolio-tab-v1.js')){
 }
 
 // Coordina los observadores antes de cargar cualquier módulo funcional.
-const performanceModule='performance-runtime-v1.js',performanceVersion='20260822-perf3';
+const performanceModule='performance-runtime-v1.js',performanceVersion='20260822-perf4';
 if(!fs.existsSync(performanceModule)) throw new Error(`No se encontró ${performanceModule}.`);
 try{new vm.Script(fs.readFileSync(performanceModule,'utf8'),{filename:performanceModule})}catch(err){throw new Error(`JavaScript inválido en ${performanceModule}: ${err.message}`)}
 html=html.replace(/<script\s+src=["']performance-runtime-v1\.js(?:\?[^"']*)?["']\s*><\/script>\s*/gi,'');

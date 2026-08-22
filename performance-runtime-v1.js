@@ -12,6 +12,10 @@ function queue(observer){
 }
 function resetBudget(){passes=0}
 for(const event of ['click','input','change','submit'])document.addEventListener(event,resetBudget,true);
+const style=document.createElement('style');style.id='ccPerformanceContainment';style.textContent=`
+.project-v3,.project-card,.project-photo-item,.portfolio-project-card{content-visibility:auto;contain-intrinsic-size:1px 260px}
+.table tbody tr{content-visibility:auto;contain-intrinsic-size:1px 48px}
+`;(document.head||document.documentElement).appendChild(style);
 class BatchedMutationObserver{
   constructor(callback){
     if(typeof callback!=='function')throw new TypeError('MutationObserver callback must be a function');

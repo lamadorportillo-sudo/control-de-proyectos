@@ -1,0 +1,15 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const context={window:null,console,crypto:{randomUUID:()=>`id-${Date.now()}`},db:{},saveDB(){context.saved=(context.saved||0)+1}};context.window=context;
+vm.createContext(context);
+vm.runInContext(fs.readFileSync('adaptive-chat-learning-v1.js','utf8'),context,{filename:'adaptive-chat-learning-v1.js'});
+const learning=context.__ccChatLearning;
+assert.equal(learning.answer('cómo genero un informe'),null,'no inventa memoria inicial');
+assert.equal(learning.record('cómo genero un informe','respuesta anterior',false,'Abre el expediente y entra en Informes.').learned,true,'acepta corrección supervisada');
+assert.match(learning.answer('como puedo generar un informe'),/entra en Informes/,'recupera una corrección similar');
+assert.equal(learning.record('qué dice la ley de garantías','respuesta legal',false,'La ley dice otra cosa').legalProtected,true,'protege la fuente legal');
+assert.equal(learning.stats().examples,1,'no aprende correcciones legales como hechos');
+assert.equal(learning.stats().feedback,2,'conserva las valoraciones');
+assert.ok(context.saved>=2,'sincroniza la memoria mediante el guardado existente');
+console.log('adaptive-chat-learning: 7 verificaciones superadas');

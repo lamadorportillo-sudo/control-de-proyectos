@@ -26,3 +26,8 @@ test('actualiza la contraseña con el token de recuperacion',()=>{
 test('mantiene una respuesta que no revela si el usuario existe',()=>{
   assert.match(source,/Si existe una cuenta con ese correo/);
 });
+
+test('reinstala la opcion si el rediseño sustituye el formulario',()=>{
+  assert.match(source,/new MutationObserver/);
+  assert.match(source,/!\$\('#forgotPasswordBtn'\)/);
+});

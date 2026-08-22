@@ -17,8 +17,8 @@ function addForgotPasswordOption(){
   const form=$('#authForm'),pass=$('#authPass'),loginTab=$('#loginTab');
   if(!form||!pass||$('#forgotPasswordBtn'))return;
   const link=document.createElement('button');
-  link.type='button';link.id='forgotPasswordBtn';link.className='btn';
-  link.style.cssText='width:100%;background:transparent;border-color:transparent;color:#9fc1ff;padding:7px 10px';
+  link.type='button';link.id='forgotPasswordBtn';link.className='btn cp-login-forgot';
+  link.style.cssText='display:block;width:100%;margin:-2px 0 4px;background:transparent;border:0;color:#5ba7e8;padding:8px 10px;text-align:center;font-weight:700;text-decoration:underline;text-underline-offset:3px';
   link.textContent='¿Olvidaste tu contraseña?';
   pass.closest('.field')?.insertAdjacentElement('afterend',link);
   const sync=()=>link.classList.toggle('hidden',!loginTab?.classList.contains('active'));
@@ -74,5 +74,10 @@ try{
   }
   const token=recoveryToken();
   if(token)setTimeout(()=>renderNewPassword(token),0);else setTimeout(addForgotPasswordOption,0);
+  // Varios modulos visuales sustituyen el formulario base despues de cargar.
+  // Reinsertar la opcion cuando eso ocurra evita que el rediseño la elimine.
+  new MutationObserver(()=>{
+    if(!recoveryToken()&&$('#authForm')&&!$('#forgotPasswordBtn'))addForgotPasswordOption();
+  }).observe(document.documentElement,{subtree:true,childList:true});
 }catch(error){console.warn('No se pudo inicializar la recuperación de contraseña.',error)}
 })();

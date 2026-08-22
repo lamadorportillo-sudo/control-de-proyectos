@@ -1,14 +1,25 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+const allowedOrigins = new Set([
+  "https://lamadorportillo-sudo.github.io",
+  "http://localhost:8000",
+  "http://127.0.0.1:8000",
+]);
+const requestBuckets = new Map<string, { startedAt: number; count: number }>();
+
+function corsHeaders(req: Request) {
+  const origin = req.headers.get("origin") ?? "";
+  return {
+  "Access-Control-Allow-Origin": allowedOrigins.has(origin) ? origin : "https://lamadorportillo-sudo.github.io",
+  "Vary": "Origin",
   "Access-Control-Allow-Headers": "authorization, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+  };
+}
 
-const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+const json = (req: Request, body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
-  headers: { ...corsHeaders, "Content-Type": "application/json; charset=utf-8" },
+  headers: { ...corsHeaders(req), "Content-Type": "application/json; charset=utf-8" },
 });
 
 type Turn = { role: "user" | "assistant"; text: string };
@@ -28,16 +39,27 @@ function extractOutputText(data: any): string {
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Método no permitido." }, 405);
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(req) });
+  if (req.method !== "POST") return json(req, { error: "Método no permitido." }, 405);
+
+  const declaredSize = Number(req.headers.get("content-length") || 0);
+  if (declaredSize > 24_000) return json(req, { error: "La solicitud es demasiado grande." }, 413);
+  const authKey = req.headers.get("authorization")?.slice(-48) || "unknown";
+  const now = Date.now();
+  const bucket = requestBuckets.get(authKey);
+  if (!bucket || now - bucket.startedAt >= 60_000) requestBuckets.set(authKey, { startedAt: now, count: 1 });
+  else {
+    bucket.count += 1;
+    if (bucket.count > 15) return json(req, { error: "Demasiadas consultas. Espera un minuto." }, 429);
+  }
 
   const apiKey = Deno.env.get("OPENAI_API_KEY");
-  if (!apiKey) return json({ error: "Halu todavía no tiene habilitado el servicio de IA." }, 503);
+  if (!apiKey) return json(req, { error: "Halu todavía no tiene habilitado el servicio de IA." }, 503);
 
   try {
     const body = await req.json();
     const message = cleanText(body?.message, 1000);
-    if (!message) return json({ error: "Escribe un mensaje." }, 400);
+    if (!message) return json(req, { error: "Escribe un mensaje." }, 400);
 
     const context = cleanText(body?.context, 1800);
     const history: Turn[] = (Array.isArray(body?.history) ? body.history : [])
@@ -68,13 +90,13 @@ Deno.serve(async (req: Request) => {
     const data = await response.json();
     if (!response.ok) {
       console.error("OpenAI response error", response.status, data?.error?.code || "unknown");
-      return json({ error: "No pude consultar el modelo en este momento." }, 502);
+      return json(req, { error: "No pude consultar el modelo en este momento." }, 502);
     }
     const reply = extractOutputText(data);
-    if (!reply) return json({ error: "El modelo no devolvió una respuesta." }, 502);
-    return json({ reply });
+    if (!reply) return json(req, { error: "El modelo no devolvió una respuesta." }, 502);
+    return json(req, { reply });
   } catch (error) {
     console.error("halu-chat error", error instanceof Error ? error.message : "unknown");
-    return json({ error: "No pude procesar la consulta." }, 400);
+    return json(req, { error: "No pude procesar la consulta." }, 400);
   }
 });

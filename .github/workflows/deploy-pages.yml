@@ -55,14 +55,14 @@ jobs:
           html = path.read_text(encoding='utf-8')
           html, count = re.subn(
               r'project-tabs-complete-v1\.js\?v[^\"\']*',
-              'project-tabs-complete-v1.js?v=20260821-tabscomplete8',
+              'project-tabs-complete-v1.js?v=20260821-tabscomplete9',
               html
           )
           if count == 0:
               raise SystemExit('No se encontró project-tabs-complete-v1.js para renovar su versión.')
           path.write_text(html, encoding='utf-8')
           PY
-          grep -q 'project-tabs-complete-v1.js?v=20260821-tabscomplete8' index.html
+          grep -q 'project-tabs-complete-v1.js?v=20260821-tabscomplete9' index.html
 
       - name: Validar aplicación generada
         shell: bash
@@ -80,8 +80,9 @@ jobs:
           grep -q 'photo-gallery-polish-v2.js' index.html
           grep -q 'ui-theme-unifier-v1.js' index.html
           grep -q 'engineering-visibility-fix-v1.js' index.html
+          grep -q 'ui-operational-polish-v1.js' index.html
           grep -q 'ui-visibility-audit-v1.js' index.html
-          grep -q 'project-tabs-complete-v1.js?v=20260821-tabscomplete8' index.html
+          grep -q 'project-tabs-complete-v1.js?v=20260821-tabscomplete9' index.html
           grep -q '</html>' index.html
           if grep -q 'window.__CP_B64=' index.html; then
             echo 'El HTML generado todavía contiene el cargador Base64.' >&2

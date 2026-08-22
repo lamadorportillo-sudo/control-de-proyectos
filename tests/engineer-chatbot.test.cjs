@@ -20,8 +20,10 @@ assert.equal(context.rendered,1,'renderiza el expediente al navegar');
 assert.match(bot.answer('¿Cómo se relacionan los módulos?'),/misma información del expediente/,'explica la sincronización');
 assert.match(bot.answer('ayuda'),/Puedo buscar disposiciones/,'ofrece ayuda legal y funcional');
 assert.match(bot.answer('consulta desconocida'),/Puedo ayudarte/,'responde sin inventar contenido');
-assert.match(bot.answer('hola'),/estoy aquí para ayudarte/i,'saluda de forma natural');
+assert.match(bot.answer('hola'),/¿Cómo estás\?/i,'saluda y continúa la conversación');
+assert.match(bot.answer('bien y tu'),/Me alegra saberlo/i,'responde a una continuación social');
+assert.match(bot.answer('necesito ayuda'),/cuenta conmigo/i,'invita a explicar la necesidad');
 assert.match(bot.answer('gracias'),/Con gusto/i,'responde con cortesía');
 assert.ok(fs.statSync('engineer-assistant-avatar.png').size>1000,'el avatar del ingeniero existe');
 
-console.log('engineer-chatbot: 10 verificaciones superadas');
+console.log('engineer-chatbot: 12 verificaciones superadas');

@@ -14,6 +14,8 @@ const tabWords=[
   [/\b(proceso contractual|ciclo contractual)\b/i,'lifecycle'],[/\b(galer[ií]a|foto|fotos)\b/i,'gallery']
 ];
 const screenWords=[[/\b(inicio|panel principal|dashboard)\b/i,'home'],[/\bproyectos\b/i,'projects'],[/\bpresupuesto\b/i,'budget'],[/\balertas\b/i,'alerts'],[/\bauditor[ií]a\b/i,'audit'],[/\breportes\b/i,'reports']];
+const conversation={lastTopic:'',lastType:'',turns:0};
+const conversationalNorm=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-zñ0-9]+/g,' ').trim();
 
 function css(){
   if(document.getElementById('ccEngineerChatStyle'))return;
@@ -48,8 +50,13 @@ function navigateScreen(section){
 }
 function answer(text){
   const q=String(text||'').trim();
+  const spoken=conversationalNorm(q);conversation.turns+=1;
   if(!q)return'Escribe una consulta legal o dime qué pestaña deseas abrir.';
-  if(/^(hola|buenos d[ií]as|buenas tardes|buenas noches|qu[eé] tal)[!.\s]*$/i.test(q))return'¡Hola! Claro que sí, estoy aquí para ayudarte. Puedes preguntarme sobre una ley, un proceso contractual o cualquier módulo del sistema. ¿Qué necesitas revisar?';
+  if(/^(hola+|hola+ como estas|buenas|buenos dias|buenas tardes|buenas noches|hey|que tal)$/.test(spoken)){conversation.lastType='social';return'¡Hola! Estoy muy bien, gracias por saludarme. ¿Cómo estás? Cuéntame, ¿en qué puedo ayudarte hoy?';}
+  if(/^(como estas|como te va|todo bien)$/.test(spoken)){conversation.lastType='social';return'Estoy muy bien, gracias. Listo para ayudarte con el proyecto, con el sistema o con una consulta legal. ¿Qué te gustaría revisar?';}
+  if(/^(bien|muy bien|todo bien|bien y tu|excelente|ahi vamos)$/.test(spoken)){conversation.lastType='social';return'¡Me alegra saberlo! Yo estoy muy bien y listo para ayudarte. ¿Quieres revisar una ley, un proceso contractual o alguna parte del programa?';}
+  if(/^(mal|no muy bien|cansado|cansada|preocupado|preocupada)$/.test(spoken)){conversation.lastType='social';return'Lo siento. Vamos paso a paso para hacerlo más sencillo. Dime qué necesitas resolver y te ayudo a ordenarlo.';}
+  if(/^(necesito ayuda|ayudame|no se por donde empezar|no se por donde comenzar)$/.test(spoken)){conversation.lastType='help';return'Claro, cuenta conmigo. Podemos revisar una duda legal, ubicar una pestaña, comprobar un proceso contractual o entender cómo se relacionan los datos. Cuéntame qué estás intentando hacer y empezamos por ahí.';}
   if(/^(gracias|muchas gracias|perfecto|entendido)[!.\s]*$/i.test(q))return'Con gusto. Si quieres, seguimos con otra consulta o revisamos juntos una etapa del proyecto.';
   if(/d[oó]nde estoy|ubicaci[oó]n actual|pantalla actual/i.test(q))return contextText();
   if(/qu[eé] puedes hacer|ayuda|opciones/i.test(q))return'Puedo buscar disposiciones en el Decreto 62-2026, la Ley de Contratación del Estado y su Reglamento; también puedo explicar el sistema y abrir sus módulos. Las respuestas legales incluyen documento, artículo y página del PDF.';
@@ -59,12 +66,18 @@ function answer(text){
   if(screen&&/abre|abrir|ir|ll[eé]vame|mostrar|ve a/i.test(q))return navigateScreen(screen[1])?`Abrí ${screen[1]==='home'?'Inicio':screen[1]}.`:'No pude cambiar de pantalla desde el estado actual. Usa el menú superior.';
   const legalIntent=/\b(ley|legal|norma|decreto|reglamento|art[ií]culo|licitaci[oó]n|adjudicaci[oó]n|oferente|pliego|garant[ií]a|multa|sanci[oó]n|contratista|contrataci[oó]n|presupuesto|vigencia|plazo)\b/i.test(q);
   if(window.__ccLegalKnowledge&&legalIntent){
+    conversation.lastTopic=q;conversation.lastType='legal';
     const legal=window.__ccLegalKnowledge.answer(q);
     return window.__ccWebKnowledge?window.__ccWebKnowledge.answer(q).then(web=>`${legal}\n\n${web}`):legal;
   }
   if(/relacion|sincron|actualiza/i.test(q))return'Claro. Los módulos trabajan con la misma información del expediente. Por ejemplo, si actualizas el monto mediante una modificación contractual, ese cambio se refleja en el resumen, los pagos y los informes. Así evitas registrar el mismo dato varias veces. ¿Quieres que te explique una relación específica?';
   if(/pestaña|m[oó]dulo|proceso/i.test(q))return'Te lo explico de forma sencilla: Resumen muestra el estado general; Contrato y Modificaciones determinan el monto vigente; Pagos registra el avance financiero; Visitas refleja el avance físico; Garantías genera alertas; e Informes reúne los resultados. Dime qué etapa estás trabajando y te indico por dónde empezar.';
-  if(window.__ccWebKnowledge)return window.__ccWebKnowledge.answer(q);
+  if(/^(si|claro|por favor|continua|sigue|explicame mas|mas detalles)$/.test(spoken)&&conversation.lastTopic){
+    const follow=`${conversation.lastTopic} ${q}`;
+    if(conversation.lastType==='legal'&&window.__ccLegalKnowledge){const legal=window.__ccLegalKnowledge.answer(follow);return window.__ccWebKnowledge?window.__ccWebKnowledge.answer(follow).then(web=>`${legal}\n\n${web}`):legal}
+    if(window.__ccWebKnowledge)return window.__ccWebKnowledge.answer(follow);
+  }
+  if(window.__ccWebKnowledge){conversation.lastTopic=q;conversation.lastType='web';return window.__ccWebKnowledge.answer(q)}
   return'Puedo ayudarte con la normativa cargada y con el funcionamiento del sistema. Prueba: “¿qué regula la garantía de cumplimiento?”, “artículo 5 de la Ley”, “abre pagos” o “¿cómo se relacionan los módulos?”.';
 }
 function mount(){
@@ -81,5 +94,5 @@ function mount(){
   box.querySelector('form').onsubmit=e=>{e.preventDefault();const q=input.value;input.value='';ask(q)};
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
-window.__ccEngineerChat={answer,navigateTab,navigateScreen,contextText};
+window.__ccEngineerChat={answer,navigateTab,navigateScreen,contextText,conversation};
 })();

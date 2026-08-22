@@ -23,6 +23,10 @@ assert.match(src,/function avoidObstruction/,'se aparta cuando cubre controles i
 assert.match(src,/button,input,select,textarea/,'detecta elementos interactivos que no debe tapar');
 assert.match(src,/h1,h2,h3,p,strong,small/,'detecta encabezados y textos que no debe tapar');
 assert.match(src,/gap=10/,'mantiene separacion alrededor de las letras');
+assert.match(src,/function sitAt/,'puede sentarse cuando no existe una zona libre');
+assert.match(src,/cc-halu-seated/,'incluye una postura visual sentada y compacta');
+assert.match(src,/best\.blocked>=freeLimit/,'se sienta solamente cuando ninguna posicion admite el cuerpo completo');
+assert.match(src,/remove\('cc-halu-seated'\)/,'vuelve a ponerse de pie antes de caminar');
 assert.match(src,/new MutationObserver\(\(\)=>scheduleAvoid/,'revisa su posicion cuando cambia la interfaz');
 assert.match(src,/addEventListener\('scroll'/,'revisa su posicion al desplazarse por la pagina');
-console.log('halu-avatar-motion: 23 verificaciones superadas');
+console.log('halu-avatar-motion: 27 verificaciones superadas');

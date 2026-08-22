@@ -2,6 +2,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 
 const src=fs.readFileSync('halu-avatar-motion-v1.js','utf8');
+const chatbot=fs.readFileSync('engineer-chatbot-v3.js','utf8');
 assert.match(src,/cc-halu-moving/,'incluye animación de desplazamiento');
 assert.match(src,/ccHaluWalk/,'simula pasos al cambiar de posición');
 assert.match(src,/cc-halu-gesture/,'incluye gesto al llegar');
@@ -27,6 +28,9 @@ assert.match(src,/function sitAt/,'puede sentarse cuando no existe una zona libr
 assert.match(src,/cc-halu-seated/,'incluye una postura visual sentada y compacta');
 assert.match(src,/best\.blocked>=freeLimit/,'se sienta solamente cuando ninguna posicion admite el cuerpo completo');
 assert.match(src,/remove\('cc-halu-seated'\)/,'vuelve a ponerse de pie antes de caminar');
+assert.match(src,/cc-halu-seated-image/,'muestra una imagen sentada dedicada sin deformar el cuerpo');
+assert.ok(fs.existsSync('halu-engineer-seated-v1.png'),'existe el recurso gráfico del ingeniero sentado');
+assert.match(chatbot,/halu-engineer-seated-v1\.png/,'el avatar carga la postura sentada dedicada');
 assert.match(src,/new MutationObserver\(\(\)=>scheduleAvoid/,'revisa su posicion cuando cambia la interfaz');
 assert.match(src,/addEventListener\('scroll'/,'revisa su posicion al desplazarse por la pagina');
-console.log('halu-avatar-motion: 27 verificaciones superadas');
+console.log('halu-avatar-motion: 30 verificaciones superadas');

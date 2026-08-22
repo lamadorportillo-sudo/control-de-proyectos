@@ -17,9 +17,9 @@ function css(){if(document.getElementById('ccHaluMotionStyle'))return;const s=do
 #ccEngineerChatLaunch.cc-halu-place{box-shadow:0 0 0 8px rgba(56,189,248,.22),0 16px 40px rgba(0,0,0,.5)}
 #ccEngineerChatLaunch.cc-halu-dragging{cursor:grabbing!important;transition:none!important;animation:ccHaluWalk .28s ease-in-out infinite alternate;touch-action:none;user-select:none}
 #ccEngineerChatLaunch.cc-halu-seated{height:168px!important;filter:drop-shadow(0 9px 8px rgba(0,0,0,.3));transition:left .7s ease,top .7s ease,height .35s ease}
-#ccEngineerChatLaunch.cc-halu-seated .cc-halu-torso{transform:translateY(15%) scale(.96);transform-origin:center bottom}
-#ccEngineerChatLaunch.cc-halu-seated .cc-halu-leg-left{transform:translate(-9%,18%) rotate(38deg) scaleY(.72)}
-#ccEngineerChatLaunch.cc-halu-seated .cc-halu-leg-right{transform:translate(10%,18%) rotate(-36deg) scaleY(.72)}
+#ccEngineerChatLaunch .cc-halu-seated-image{display:none;object-fit:contain;object-position:center bottom}
+#ccEngineerChatLaunch.cc-halu-seated .cc-halu-torso,#ccEngineerChatLaunch.cc-halu-seated .cc-halu-leg{display:none}
+#ccEngineerChatLaunch.cc-halu-seated .cc-halu-seated-image{display:block}
 body.cc-halu-placing,body.cc-halu-placing *{cursor:crosshair!important}
 @keyframes ccHaluWalk{from{transform:translateY(0)}to{transform:translateY(-5px)}}
 @keyframes ccHaluLegLeft{from{transform:rotate(-7deg) translateY(1px)}to{transform:rotate(9deg) translateY(-2px)}}

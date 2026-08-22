@@ -37,6 +37,6 @@ assert(halu.includes('store: false'),'Las respuestas de Halu deben desactivar el
 assert(halu.includes('allowedOrigins'),'La función de Halu debe restringir CORS.');
 assert(halu.includes('requestBuckets'),'La función de Halu debe limitar la frecuencia por sesión.');
 assert(halu.includes('declaredSize > 24_000'),'La función de Halu debe rechazar solicitudes excesivas.');
-assert(html.includes('engineer-chatbot-v3.js?v=20260822-ai1'),'La versión publicada de Halu no coincide.');
+assert(html.includes('engineer-chatbot-v3.js?v=20260822-ai2'),'La versión publicada de Halu no coincide.');
 
 console.log(`structure-security: ${localRefs.length} referencias, ${scripts.length} scripts, ${staticIds.length} ID y ${sourceFiles.length} fuentes verificadas`);

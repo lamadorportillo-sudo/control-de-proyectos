@@ -19,4 +19,8 @@ assert.match(src,/chat\?\.classList\.remove\('open'\);roam\(true\)/,'cierra el d
 assert.match(src,/ccHaluLegLeft/,'alterna el movimiento del pie izquierdo');
 assert.match(src,/ccHaluLegRight/,'alterna el movimiento del pie derecho');
 assert.match(src,/e\.clientX-r\.width\/2,e\.clientY-r\.height\/2/,'centra el avatar grande en el punto elegido');
-console.log('halu-avatar-motion: 17 verificaciones superadas');
+assert.match(src,/function avoidObstruction/,'se aparta cuando cubre controles importantes');
+assert.match(src,/button,input,select,textarea/,'detecta elementos interactivos que no debe tapar');
+assert.match(src,/new MutationObserver\(\(\)=>scheduleAvoid/,'revisa su posicion cuando cambia la interfaz');
+assert.match(src,/addEventListener\('scroll'/,'revisa su posicion al desplazarse por la pagina');
+console.log('halu-avatar-motion: 21 verificaciones superadas');

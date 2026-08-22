@@ -11,7 +11,7 @@ const context={
 context.window=context;
 vm.createContext(context);
 vm.runInContext(fs.readFileSync('adaptive-chat-learning-v1.js','utf8'),context,{filename:'adaptive-chat-learning-v1.js'});
-vm.runInContext(fs.readFileSync('engineer-chatbot-v1.js','utf8'),context,{filename:'engineer-chatbot-v1.js'});
+vm.runInContext(fs.readFileSync('engineer-chatbot-v2.js','utf8'),context,{filename:'engineer-chatbot-v2.js'});
 const bot=context.__ccEngineerChat;
 
 assert.match(bot.answer('¿Dónde estoy?'),/P-001/,'reconoce el expediente activo');
@@ -32,6 +32,6 @@ assert.match(bot.answer('qué recuerdas del tramo norte'),/acarreo del tramo nor
 assert.match(bot.answer('eres una inteligencia artificial'),/asistente digital/i,'mantiene transparencia cuando se le pregunta directamente');
 assert.match(bot.answer('a que bueno espero me ayudes a llevar un buen control'),/qué se contrató/i,'responde de inmediato a compromisos conversacionales');
 assert.ok(fs.statSync('engineer-assistant-avatar.png').size>1000,'el avatar del ingeniero existe');
-assert.match(fs.readFileSync('engineer-chatbot-v1.js','utf8'),/Halu · Ingeniero Civil/,'presenta la identidad profesional de Halu');
+assert.match(fs.readFileSync('engineer-chatbot-v2.js','utf8'),/Halu · Ingeniero Civil/,'presenta la identidad profesional de Halu');
 
 console.log('engineer-chatbot: 19 verificaciones superadas');

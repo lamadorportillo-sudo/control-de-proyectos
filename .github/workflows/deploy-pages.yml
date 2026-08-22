@@ -69,6 +69,7 @@ jobs:
         run: |
           set -euo pipefail
           test -s index.html
+          test -s home-executive-fix-v1.js
           grep -q 'NUCLEO DE INTEGRIDAD Y CONCURRENCIA V1' index.html
           grep -q 'save_app_state' index.html
           grep -q 'portfolio-redesign-v1.js' index.html
@@ -81,7 +82,7 @@ jobs:
           grep -q 'ui-theme-unifier-v1.js' index.html
           grep -q 'engineering-visibility-fix-v1.js' index.html
           grep -q 'ui-operational-polish-v1.js' index.html
-          grep -q 'home-executive-fix-v1.js' index.html
+          grep -q 'home-executive-fix-v1.js' project-tabs-complete-v1.js
           grep -q 'ui-visibility-audit-v1.js' index.html
           grep -q 'project-tabs-complete-v1.js?v=20260821-tabscomplete11' index.html
           grep -q '</html>' index.html

@@ -15,4 +15,5 @@ assert.match(src,/setPointerCapture/,'mantiene el arrastre fuera del avatar');
 assert.match(src,/ArrowLeft/,'permite mover el avatar con teclado');
 assert.match(src,/function roam/,'permite recorrido autónomo por la pantalla');
 assert.match(src,/const r=el\.getBoundingClientRect\(\);moveTo/,'recalcula el destino después del desplazamiento');
-console.log('halu-avatar-motion: 13 verificaciones superadas');
+assert.match(src,/chat\?\.classList\.remove\('open'\);roam\(true\)/,'cierra el dialogo antes de iniciar el recorrido');
+console.log('halu-avatar-motion: 14 verificaciones superadas');

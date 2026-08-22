@@ -48,21 +48,22 @@ function navigateScreen(section){
 }
 function answer(text){
   const q=String(text||'').trim();
-  if(!q)return'Escribe una consulta o dime qué pestaña deseas abrir.';
+  if(!q)return'Escribe una consulta legal o dime qué pestaña deseas abrir.';
   if(/d[oó]nde estoy|ubicaci[oó]n actual|pantalla actual/i.test(q))return contextText();
-  if(/qu[eé] puedes hacer|ayuda|opciones/i.test(q))return'Puedo indicarte dónde estás, explicar para qué sirve cada módulo y abrir Inicio, Proyectos, Presupuesto, Alertas, Auditoría, Reportes o una pestaña del expediente actual.';
+  if(/qu[eé] puedes hacer|ayuda|opciones/i.test(q))return'Puedo buscar disposiciones en el Decreto 62-2026, la Ley de Contratación del Estado y su Reglamento; también puedo explicar el sistema y abrir sus módulos. Las respuestas legales incluyen documento, artículo y página del PDF.';
   const tab=tabWords.find(([rx])=>rx.test(q));
   if(tab&&/abre|abrir|ir|ll[eé]vame|mostrar|ve a/i.test(q))return navigateTab(tab[1])?`Abrí ${tabLabels[tab[1]]||tab[1]} en el expediente actual.`:`Para abrir ${tabLabels[tab[1]]||tab[1]}, primero entra a un expediente desde Proyectos.`;
   const screen=screenWords.find(([rx])=>rx.test(q));
   if(screen&&/abre|abrir|ir|ll[eé]vame|mostrar|ve a/i.test(q))return navigateScreen(screen[1])?`Abrí ${screen[1]==='home'?'Inicio':screen[1]}.`:'No pude cambiar de pantalla desde el estado actual. Usa el menú superior.';
+  if(window.__ccLegalKnowledge&&(/\b(ley|legal|norma|decreto|reglamento|art[ií]culo|licitaci[oó]n|adjudicaci[oó]n|oferente|pliego|garant[ií]a|multa|sanci[oó]n|contratista|contrataci[oó]n|presupuesto|vigencia|plazo)\b/i.test(q)||/\?$/.test(q)))return window.__ccLegalKnowledge.answer(q);
   if(/relacion|sincron|actualiza/i.test(q))return'Los módulos comparten la misma información relacionada. Al guardar un cambio se actualizan las vistas del expediente y el Centro de Control invalida su caché para consultar la versión más reciente.';
   if(/pestaña|m[oó]dulo|proceso/i.test(q))return'Resumen concentra el estado; Contrato y Modificaciones definen el monto vigente; Pagos/Estimaciones alimentan el avance financiero; Visitas alimentan el avance físico; Garantías generan alertas; Informes reúnen esos resultados.';
-  return'Puedo ayudarte a navegar y entender el funcionamiento del sistema. Prueba: “abre pagos”, “abre garantías”, “¿dónde estoy?” o “¿cómo se relacionan los módulos?”.';
+  return'Puedo ayudarte con la normativa cargada y con el funcionamiento del sistema. Prueba: “¿qué regula la garantía de cumplimiento?”, “artículo 5 de la Ley”, “abre pagos” o “¿cómo se relacionan los módulos?”.';
 }
 function mount(){
   css();if(document.getElementById('ccEngineerChat'))return;
   const launch=document.createElement('button');launch.id='ccEngineerChatLaunch';launch.className='cc-eng-chat-launch';launch.title='Abrir asistente ingeniero';launch.setAttribute('aria-label','Abrir asistente ingeniero');launch.innerHTML='<img src="engineer-assistant-avatar.png" alt="Asistente ingeniero"><span class="dot"></span>';
-  const box=document.createElement('section');box.id='ccEngineerChat';box.className='cc-eng-chat';box.setAttribute('aria-label','Chatbot Asistente Ingeniero');box.innerHTML=`<header class="cc-eng-chat-head"><img src="engineer-assistant-avatar.png" alt=""><div><b>Ingeniero Asistente</b><small>Orientación del sistema · sin modificar expedientes</small></div><button class="cc-eng-chat-close" aria-label="Cerrar">×</button></header><div class="cc-eng-chat-body"><div class="cc-eng-msg bot">Hola. Soy tu Ingeniero Asistente. Puedo orientarte y abrir módulos del sistema.</div><div class="cc-eng-quick"><button data-q="¿Dónde estoy?">¿Dónde estoy?</button><button data-q="Abre proyectos">Proyectos</button><button data-q="¿Cómo se relacionan los módulos?">Relaciones</button><button data-q="Ayuda">Ayuda</button></div></div><form class="cc-eng-chat-form"><input autocomplete="off" maxlength="300" placeholder="Escribe: abre pagos…" aria-label="Mensaje"><button>Enviar</button></form>`;
+  const box=document.createElement('section');box.id='ccEngineerChat';box.className='cc-eng-chat';box.setAttribute('aria-label','Chatbot Asistente Ingeniero');box.innerHTML=`<header class="cc-eng-chat-head"><img src="engineer-assistant-avatar.png" alt=""><div><b>Ingeniero Asistente</b><small>Apoyo legal y operativo · sin modificar expedientes</small></div><button class="cc-eng-chat-close" aria-label="Cerrar">×</button></header><div class="cc-eng-chat-body"><div class="cc-eng-msg bot">Hola. Puedo orientarte en el sistema y consultar las tres normas cargadas, citando documento, artículo y página.</div><div class="cc-eng-quick"><button data-q="¿Dónde estoy?">¿Dónde estoy?</button><button data-q="¿Qué regula la garantía de cumplimiento?">Consulta legal</button><button data-q="Abre proyectos">Proyectos</button><button data-q="Ayuda">Ayuda</button></div></div><form class="cc-eng-chat-form"><input autocomplete="off" maxlength="500" placeholder="Pregunta por una norma o módulo…" aria-label="Mensaje"><button>Enviar</button></form>`;
   document.body.append(launch,box);
   const body=box.querySelector('.cc-eng-chat-body'),input=box.querySelector('input');
   const add=(kind,text)=>{const m=document.createElement('div');m.className=`cc-eng-msg ${kind}`;m.innerHTML=E(text);body.appendChild(m);body.scrollTop=body.scrollHeight};

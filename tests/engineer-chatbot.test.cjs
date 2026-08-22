@@ -18,7 +18,7 @@ assert.match(bot.answer('abre pagos'),/Abrí Pagos/,'abre la pestaña solicitada
 assert.equal(context.view.tab,'estimates');
 assert.equal(context.rendered,1,'renderiza el expediente al navegar');
 assert.match(bot.answer('¿Cómo se relacionan los módulos?'),/misma información relacionada/,'explica la sincronización');
-assert.match(bot.answer('ayuda'),/Puedo indicarte/,'ofrece ayuda funcional');
+assert.match(bot.answer('ayuda'),/Puedo buscar disposiciones/,'ofrece ayuda legal y funcional');
 assert.match(bot.answer('consulta desconocida'),/Puedo ayudarte/,'responde sin inventar contenido');
 assert.ok(fs.statSync('engineer-assistant-avatar.png').size>1000,'el avatar del ingeniero existe');
 

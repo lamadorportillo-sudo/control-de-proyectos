@@ -45,6 +45,14 @@ function extractOutputText(data: any): string {
     .filter(Boolean)
     .join("\n");
 }
+function jwtClaims(token:string):any{
+  try{
+    const part=token.split(".")[1]||"";
+    const normalized=part.replace(/-/g,"+").replace(/_/g,"/");
+    const padded=normalized+"=".repeat((4-normalized.length%4)%4);
+    return JSON.parse(atob(padded));
+  }catch{return {}}
+}
 
 Deno.serve(async (req: Request) => {
   const origin=req.headers.get("origin");
@@ -60,9 +68,14 @@ Deno.serve(async (req: Request) => {
   const {data:auth,error:authError}=await admin.auth.getUser(token);
   if(authError||!auth.user)return json(req,{error:"Sesión no válida."},401);
   const {data:membership}=await admin.from("workspace_members").select("workspace_id,role,active").eq("user_id",auth.user.id).eq("active",true).limit(1).maybeSingle();
-  const {data:profile}=await admin.from("profiles").select("active,must_change_password,temporary_password_expires_at").eq("user_id",auth.user.id).maybeSingle();
+  const {data:profile}=await admin.from("profiles").select("active,must_change_password,temporary_password_expires_at,security_force_reauth,security_valid_after").eq("user_id",auth.user.id).maybeSingle();
   if(!membership||profile?.active===false)return json(req,{error:"Acceso no autorizado."},403);
   if(profile?.must_change_password&&(!profile.temporary_password_expires_at||Date.now()>new Date(profile.temporary_password_expires_at).getTime()))return json(req,{error:"La contraseña temporal venció. Cambie o renueve su acceso."},403);
+
+  const claims=jwtClaims(token),issuedAt=Number(claims?.iat||0)*1000,validAfter=profile?.security_valid_after?new Date(profile.security_valid_after).getTime():0;
+  const {data:hasMfa}=await admin.rpc("service_user_has_verified_mfa",{p_user_id:auth.user.id});
+  if(profile?.security_force_reauth===true||issuedAt<validAfter)return json(req,{error:"Debe autenticarse nuevamente antes de usar Halu."},403);
+  if(hasMfa&&claims?.aal!=="aal2")return json(req,{error:"Complete la verificación en dos pasos antes de usar Halu."},403);
 
   const authKey = auth.user.id;
   const now = Date.now();

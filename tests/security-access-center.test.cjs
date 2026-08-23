@@ -53,7 +53,7 @@ assert.match(center,/security_lockdown_other_users/,'el cierre general debe ejec
 assert.match(center,/mfa_failure/,'el centro de seguridad debe identificar fallos 2FA');
 assert.match(center,/mfa_enrolled/,'el centro de seguridad debe identificar activaciones 2FA');
 assert.match(loader,/security-center-v1\.js/,'el cargador principal debe cargar el panel de seguridad');
-assert.match(loader,/securitycenter3/,'el cargador debe renovar caché del centro de seguridad');
+assert.match(loader,/securitycenter4/,'el cargador debe renovar caché del centro de seguridad');
 assert.match(loader,/security-runtime-v1\.js\?v=20260823-security3/,'el cargador debe usar la versión que limpia el dispositivo al cerrar sesión');
 
 for(const object of ['security_sessions','security_events','security_force_reauth','security_sessions_admin_select','security_events_admin_select'])assert.match(migration,new RegExp(object),`la migración debe incluir ${object}`);

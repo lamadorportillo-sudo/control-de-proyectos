@@ -12,6 +12,7 @@ assert.match(runtime,/pagehide.*cleanConsultaCache/s,'falta limpieza de caché l
 
 const loader=read('project-tabs-complete-v1.js');
 assert.match(loader,/security-runtime-v1\.js\?v=/,'el módulo de seguridad no se carga con la aplicación');
+assert.match(loader,/mfa-security-v1\.js\?v=/,'el módulo 2FA no se carga con la aplicación');
 
 const users=read('admin-users-v1.js');
 assert.match(users,/minlength=\"12\"/,'las contraseñas temporales no exigen 12 caracteres');
@@ -23,6 +24,7 @@ assert.match(users,/reset_password/,'falta restablecimiento seguro de contraseñ
 const access=read('private-access-v1.js');
 assert.match(access,/strongPassword/,'el alta por código no valida contraseña fuerte');
 assert.match(access,/p\.length>=12/,'el alta por código no exige mínimo 12 caracteres');
+assert.match(access,/verify_login/,'el acceso no completa el segundo factor cuando corresponde');
 
 const migration=read('supabase/migrations/202608220002_security_hardening_users_and_content_v1.sql');
 assert.match(migration,/private\.account_access_allowed/,'falta bloqueo server-side de cuentas inactivas o vencidas');
@@ -32,11 +34,13 @@ assert.match(migration,/project_files_read/,'faltan políticas privadas de archi
 assert.match(migration,/public=false/,'el bucket de documentos debe permanecer privado');
 
 const manage=read('supabase/functions/manage-users/index.ts');
-assert.match(manage,/action===\"set_active\"/,'falta control de desactivación de cuentas');
-assert.match(manage,/action===\"reset_password\"/,'falta rotación administrativa de clave temporal');
-assert.match(manage,/action===\"change_password\"/,'falta cambio protegido de clave propia');
-assert.match(manage,/groups<3/,'la función de usuarios no valida complejidad de contraseña');
+assert.match(manage,/action\s*===\s*\"set_active\"/,'falta control de desactivación de cuentas');
+assert.match(manage,/action\s*===\s*\"reset_password\"/,'falta rotación administrativa de clave temporal');
+assert.match(manage,/action\s*===\s*\"change_password\"/,'falta cambio protegido de clave propia');
+assert.match(manage,/groups\s*<\s*3/,'la función de usuarios no valida complejidad de contraseña');
 assert.match(manage,/Cache-Control.*no-store/s,'faltan cabeceras anti-cache en gestión de usuarios');
+assert.match(manage,/service_user_has_verified_mfa/,'la gestión privilegiada debe respetar MFA');
+assert.match(manage,/security_valid_after/,'la gestión privilegiada debe rechazar tokens revocados');
 
 const halu=read('supabase/functions/halu-chat/index.ts');
 assert.match(halu,/workspace_members/,'Halu no valida pertenencia al espacio de trabajo');
@@ -44,5 +48,7 @@ assert.match(halu,/profiles/,'Halu no valida estado de la cuenta');
 assert.match(halu,/redactSecrets/,'Halu no filtra credenciales antes de enviar contexto');
 assert.match(halu,/store:\s*false/,'las consultas IA no deben solicitar almacenamiento');
 assert.match(halu,/Origen no autorizado/,'Halu no rechaza orígenes externos');
+assert.match(halu,/service_user_has_verified_mfa/,'Halu debe respetar 2FA cuando está activo');
+assert.match(halu,/security_valid_after/,'Halu debe respetar la revocación de tokens');
 
-console.log('security-guards: controles de usuarios, sesiones, archivos y Halu verificados');
+console.log('security-guards: controles de usuarios, sesiones, 2FA, archivos y Halu verificados');

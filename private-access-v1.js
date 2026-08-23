@@ -1,4 +1,4 @@
-/* ===== CONTROL CONTRACTUAL · ACCESO PRIVADO CON APROBACIÓN V3 ===== */
+/* ===== CONTROL CONTRACTUAL · ACCESO PRIVADO CON APROBACIÓN V4 ===== */
 (()=>{
 'use strict';
 if(window.__CC_PRIVATE_ACCESS_V1__)return;
@@ -7,15 +7,45 @@ window.__CC_PRIVATE_ACCESS_V1__=true;
 const E=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const endpoint=()=>`${SUPABASE_URL}/functions/v1/request-access`;
 const loginEndpoint=()=>`${SUPABASE_URL}/functions/v1/secure-login`;
+const mfaEndpoint=()=>`${SUPABASE_URL}/functions/v1/secure-mfa`;
 const authHeaders=()=>({'apikey':SUPABASE_KEY,'Content-Type':'application/json'});
 const strongPassword=p=>{p=String(p||'');let g=0;if(/[a-z]/.test(p))g++;if(/[A-Z]/.test(p))g++;if(/[0-9]/.test(p))g++;if(/[^A-Za-z0-9]/.test(p))g++;return p.length>=12&&p.length<=128&&g>=3};
 let authMode='login',requestRegistered=false,requestEmail='';
+
+function secondFactorPrompt(seed){
+ return new Promise((resolve,reject)=>{
+  const bg=document.createElement('div');bg.className='modal-bg';bg.style.zIndex='9999';
+  bg.innerHTML=`<section class="modal small" role="dialog" aria-modal="true" aria-labelledby="ccMfaLoginTitle"><div class="modal-head"><div><div class="eyebrow">SEGURIDAD DE ACCESO</div><h2 id="ccMfaLoginTitle" style="margin:0">Verificación en dos pasos</h2></div></div><div class="modal-body"><div class="alert info">Abra su aplicación autenticadora e ingrese el código temporal para completar el acceso.</div><label class="field"><span>Código de autenticación</span><input id="ccMfaLoginCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="000000" style="font-size:22px;letter-spacing:.18em;text-align:center"></label><div id="ccMfaLoginMsg" class="notice" style="margin-top:8px">La contraseña ya fue validada. Falta comprobar el segundo factor.</div><div class="modal-actions" style="margin-top:14px"><button type="button" class="btn" id="ccMfaCancel">Cancelar</button><button type="button" class="btn primary" id="ccMfaVerify">Verificar y entrar</button></div></div></section>`;
+  document.body.appendChild(bg);
+  const input=bg.querySelector('#ccMfaLoginCode'),verify=bg.querySelector('#ccMfaVerify'),cancel=bg.querySelector('#ccMfaCancel'),msg=bg.querySelector('#ccMfaLoginMsg');
+  const close=()=>bg.remove();
+  const cancelLogin=async()=>{try{await fetch(SUPABASE_URL+'/auth/v1/logout',{method:'POST',headers:{...authHeaders(),Authorization:`Bearer ${seed.access_token}`},cache:'no-store'})}catch{}close();reject(new Error('Verificación en dos pasos cancelada.'))};
+  cancel.onclick=cancelLogin;
+  bg.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();cancelLogin()}if(e.key==='Enter'){e.preventDefault();verify.click()}});
+  verify.onclick=async()=>{
+   const code=String(input.value||'').replace(/\D/g,'');
+   if(code.length<6){msg.textContent='Escriba el código de su aplicación autenticadora.';input.focus();return}
+   verify.disabled=true;cancel.disabled=true;msg.textContent='Comprobando segundo factor…';
+   try{
+    const r=await fetch(mfaEndpoint(),{method:'POST',headers:{...authHeaders(),Authorization:`Bearer ${seed.access_token}`},body:JSON.stringify({action:'verify_login',factor_id:seed.mfa_factor_id||'',code,refresh_token:seed.refresh_token}),cache:'no-store'});const d=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(d.error||'No se pudo verificar el código.');
+    close();resolve(d);
+   }catch(e){msg.textContent=e.message||'Código incorrecto.';input.value='';input.focus();verify.disabled=false;cancel.disabled=false}
+  };
+  setTimeout(()=>input.focus(),50);
+ });
+}
 
 async function protectedLogin(email,password){
  const r=await fetch(loginEndpoint(),{method:'POST',headers:authHeaders(),body:JSON.stringify({email,password}),cache:'no-store'});const d=await r.json().catch(()=>({}));
  if(!r.ok)throw new Error(d.error||'Correo o contraseña incorrectos.');
  if(!d.user?.id||!d.access_token)throw new Error('No se pudo iniciar una sesión protegida.');
- session={userId:d.user.id,email:d.user.email,accessToken:d.access_token,refreshToken:d.refresh_token,expiresAt:Date.now()+(d.expires_in||3600)*1000,securitySessionId:d.security_session_id||'',deviceLabel:d.device_label||''};
+ let final=d;
+ if(d.mfa_required===true){
+  if(d.mfa_factor_type&&d.mfa_factor_type!=='totp')throw new Error('Esta cuenta usa un segundo factor que todavía no está habilitado en esta pantalla.');
+  final=await secondFactorPrompt(d);
+ }
+ session={userId:d.user.id,email:d.user.email,accessToken:final.access_token,refreshToken:final.refresh_token,expiresAt:Date.now()+(final.expires_in||3600)*1000,securitySessionId:final.security_session_id||'',deviceLabel:final.device_label||d.device_label||''};
  localStorage.setItem(SESSION,JSON.stringify(session));cloudLoaded=false;await render();
 }
 

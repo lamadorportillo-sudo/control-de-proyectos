@@ -9,6 +9,7 @@ const loader=read('project-tabs-complete-v1.js');
 const login=read('supabase/functions/secure-login/index.ts');
 const users=read('supabase/functions/manage-users/index.ts');
 const migration=read('supabase/migrations/20260823022530_security_sessions_and_access_audit.sql');
+const hardening=read('supabase/migrations/20260823033156_security_audit_immutability_and_emergency_lockdown.sql');
 
 assert.match(access,/functions\/v1\/secure-login/,'el acceso debe pasar por secure-login');
 assert.match(access,/securitySessionId/,'la sesión local debe conservar el identificador de seguridad');
@@ -29,9 +30,20 @@ assert.match(runtime,/end_session/,'debe registrar el cierre de sesión');
 assert.match(center,/Seguridad y accesos/,'debe existir panel administrativo de seguridad');
 assert.match(center,/Intentos fallidos/,'el panel debe mostrar intentos fallidos');
 assert.match(center,/data-sec-revoke/,'el panel debe permitir cerrar sesiones de otro usuario');
+assert.match(center,/data-sec-lockdown/,'el panel debe ofrecer cierre general de sesiones');
+assert.match(center,/security_lockdown_other_users/,'el cierre general debe ejecutarse mediante RPC protegido');
 assert.match(loader,/security-center-v1\.js/,'el cargador principal debe cargar el panel de seguridad');
+assert.match(loader,/securitycenter2/,'el cargador debe renovar caché del centro de seguridad');
 
 for(const object of ['security_sessions','security_events','security_force_reauth','security_sessions_admin_select','security_events_admin_select'])assert.match(migration,new RegExp(object),`la migración debe incluir ${object}`);
 assert.match(migration,/enable row level security/,'las tablas de seguridad deben usar RLS');
 
-console.log('security-access-center: controles de login, sesiones, auditoría y panel verificados');
+assert.match(hardening,/security_events_immutable_trg/,'la auditoría de seguridad debe ser inmutable');
+assert.match(hardening,/block_security_event_mutation/,'debe bloquear modificación o borrado de eventos');
+assert.match(hardening,/security_lockdown_other_users/,'debe existir cierre general protegido');
+assert.match(hardening,/private\.is_control_admin\(\)/,'el cierre general debe exigir administrador');
+assert.match(hardening,/security_force_reauth = true/,'el cierre general debe bloquear acceso de datos hasta reautenticar');
+assert.match(hardening,/emergency_lockdown/,'el cierre general debe quedar auditado');
+assert.match(hardening,/revoke insert, update, delete, truncate on public\.security_events from anon, authenticated/,'clientes normales no deben modificar la auditoría');
+
+console.log('security-access-center: login, sesiones, auditoría inmutable y cierre general verificados');

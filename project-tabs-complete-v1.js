@@ -71,6 +71,7 @@ function loadPortfolioModules(){
   if(window.__CC_PORTFOLIO_LOADER_V1__)return;
   window.__CC_PORTFOLIO_LOADER_V1__=true;
   const modules=[
+    'engineering-manual-reference-v1.js?v=20260823-manual1',
     'security-runtime-v1.js?v=20260823-security3',
     'security-center-v1.js?v=20260823-securitycenter2',
     'mobile-popup-fallback-v1.js?v=20260821-mobilepopup1',

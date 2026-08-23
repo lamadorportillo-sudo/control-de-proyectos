@@ -4,7 +4,7 @@
 if(window.__CC_PRIVATE_ACCESS_V1__)return;
 window.__CC_PRIVATE_ACCESS_V1__=true;
 
-const E=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m]));
+const E=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const endpoint=()=>`${SUPABASE_URL}/functions/v1/request-access`;
 const loginEndpoint=()=>`${SUPABASE_URL}/functions/v1/secure-login`;
 const authHeaders=()=>({'apikey':SUPABASE_KEY,'Content-Type':'application/json'});
@@ -99,7 +99,7 @@ async function requestRows(){
 }
 
 async function privateTeamModal(){
-  if(typeof openModal!=='function')return;
+  if(typeof openModal!=='function'||String(cloudRole||'')!=='admin')return;
   const m=openModal('Solicitudes y accesos',`<div class="alert info">Solo el administrador puede aprobar solicitudes y entregar el código. Cada código queda ligado al correo, vence y funciona una sola vez.</div><div id="privateRequests"><div class="empty">Cargando solicitudes…</div></div>`);
   const host=m.querySelector('#privateRequests');
   try{
@@ -122,7 +122,12 @@ async function privateTeamModal(){
   }catch(e){host.innerHTML=`<div class="alert danger">${E(e.message||'No se pudieron cargar las solicitudes.')}</div>`}
 }
 
-function bindTeam(){const b=document.getElementById('ccTeamBtn');if(b&&!b.dataset.privateAccess){b.dataset.privateAccess='1';b.textContent='Solicitudes';b.onclick=privateTeamModal}}
+function bindTeam(){
+ const team=document.getElementById('ccTeamBtn'),existing=document.getElementById('ccAccessRequestsBtn');
+ if(String(cloudRole||'')!=='admin'||!session?.accessToken){existing?.remove();return}
+ if(existing||!team?.parentElement)return;
+ const b=document.createElement('button');b.id='ccAccessRequestsBtn';b.type='button';b.className='btn';b.textContent='Solicitudes';b.title='Solicitudes de acceso pendientes';b.onclick=privateTeamModal;team.parentElement.insertBefore(b,team);
+}
 
 try{if(typeof renderAuth==='function'&&!renderAuth.__privateAccess){const base=renderAuth;renderAuth=function(){const r=base.apply(this,arguments);setTimeout(enhanceAuth,0);return r};renderAuth.__privateAccess=true}}catch(e){console.warn(e)}
 try{if(typeof renderApp==='function'&&!renderApp.__privateAccess){const base=renderApp;renderApp=function(){const r=base.apply(this,arguments);setTimeout(bindTeam,0);return r};renderApp.__privateAccess=true}}catch(e){console.warn(e)}

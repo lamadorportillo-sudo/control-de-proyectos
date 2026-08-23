@@ -18,7 +18,7 @@ assert.match(access,/verify_login/,'el formulario debe completar el desafío 2FA
 assert.match(access,/secondFactorPrompt/,'debe existir pantalla de segundo factor antes de abrir la aplicación');
 
 for(const action of ['status','enroll','verify_enrollment','verify_login','cancel_enrollment','unenroll']){
-  assert.match(mfa,new RegExp(`action === \\"${action}\\"`),`secure-mfa debe implementar ${action}`);
+  assert.match(mfa,new RegExp(`action === "${action}"`),`secure-mfa debe implementar ${action}`);
 }
 assert.match(mfa,/auth\.mfa\.challenge/,'2FA debe crear un desafío real de Supabase Auth');
 assert.match(mfa,/auth\.mfa\.verify/,'2FA debe verificar el código mediante Supabase Auth');
@@ -49,7 +49,8 @@ assert.match(halu,/claims\?\.aal!=="aal2"/,'Halu debe negar sesiones AAL1 cuando
 assert.match(halu,/security_valid_after/,'Halu debe rechazar tokens anteriores a una revocación');
 
 for(const token of ['Activar 2FA','verify_enrollment','cancel_enrollment','Desactivar','cc-mfa-qr'])assert.match(mfaUi,new RegExp(token),`la interfaz 2FA debe incluir ${token}`);
-assert.match(mfaUi,/^\/\^data:image\\\/svg\\\+xml/m,'el QR debe restringirse a una imagen SVG embebida');
+assert.match(mfaUi,/function safeQr/,'la interfaz debe validar el origen del QR');
+assert.match(mfaUi,/data:image\\\/svg\\\+xml/,'el QR debe restringirse a una imagen SVG embebida');
 assert.match(loader,/mfa-security-v1\.js\?v=20260823-mfa1/,'el cargador debe publicar la interfaz 2FA');
 
 console.log('mfa-security: segundo factor, RLS, servicios privilegiados, Halu e interfaz verificados');

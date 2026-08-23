@@ -1,4 +1,4 @@
-/* ===== SEGURIDAD DE SESIÓN Y CONTENIDO V2 ===== */
+/* ===== SEGURIDAD DE SESIÓN Y CONTENIDO V3 ===== */
 (()=>{
 'use strict';
 if(window.__CC_SECURITY_RUNTIME_V1__)return;
@@ -59,11 +59,19 @@ async function endSecuritySession(reason='manual_logout'){
  try{await securityCall('end_session',{security_session_id:s.securitySessionId,reason:String(reason||'logout').slice(0,100)})}catch{}
 }
 
+function clearLocalContractCache(activity=activityKey(),login=loginKey()){
+ try{localStorage.removeItem(STORE_KEY);localStorage.removeItem(activity);localStorage.removeItem(login)}catch{}
+}
+
 function wrapSignOut(){
  try{
   if(typeof cloudSignOut!=='function'||cloudSignOut.__ccSecurityWrapped)return;
   const base=cloudSignOut;
-  const wrapped=async function(){await endSecuritySession(pendingLogoutReason||'manual_logout');pendingLogoutReason='';return base.apply(this,arguments)};
+  const wrapped=async function(){
+   const activity=activityKey(),login=loginKey();
+   await endSecuritySession(pendingLogoutReason||'manual_logout');pendingLogoutReason='';
+   try{return await base.apply(this,arguments)}finally{clearLocalContractCache(activity,login)}
+  };
   wrapped.__ccSecurityWrapped=true;cloudSignOut=wrapped;
  }catch{}
 }
@@ -74,7 +82,8 @@ async function logout(reason){
  await new Promise(r=>setTimeout(r,250));
  try{if(typeof cloudSignOut==='function'){await cloudSignOut();return}}catch{}
  try{await endSecuritySession(pendingLogoutReason)}catch{}
- try{localStorage.removeItem(SESSION_KEY);localStorage.removeItem(STORE_KEY)}catch{}
+ clearLocalContractCache();
+ try{localStorage.removeItem(SESSION_KEY)}catch{}
  location.reload();
 }
 
@@ -102,5 +111,5 @@ document.addEventListener('click',e=>{const b=e.target.closest?.('[data-ccx-back
 new MutationObserver(()=>{stampReports();restrictBulkExport();wrapSignOut()}).observe(document.documentElement,{subtree:true,childList:true});
 setInterval(enforce,30000);setInterval(heartbeat,HEARTBEAT_EVERY);setInterval(()=>{stampReports();restrictBulkExport();wrapSignOut()},2500);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run();
-window.__ccSecurity={enforce,touch,logout,heartbeat,stampReports,restrictBulkExport};
+window.__ccSecurity={enforce,touch,logout,heartbeat,stampReports,restrictBulkExport,clearLocalContractCache};
 })();

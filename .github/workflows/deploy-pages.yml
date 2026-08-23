@@ -58,7 +58,7 @@ jobs:
           html = path.read_text(encoding='utf-8')
 
           replacements = [
-              (r'project-tabs-complete-v1\.js\?v[^\"\']*', 'project-tabs-complete-v1.js?v=20260823-tabscomplete17', 'project-tabs-complete-v1.js'),
+              (r'project-tabs-complete-v1\.js\?v[^\"\']*', 'project-tabs-complete-v1.js?v=20260823-tabscomplete18', 'project-tabs-complete-v1.js'),
               (r'private-access-v1\.js\?v[^\"\']*', 'private-access-v1.js?v=20260823-private3', 'private-access-v1.js'),
               (r'admin-users-v1\.js\?v[^\"\']*', 'admin-users-v1.js?v=20260823-admin-users3', 'admin-users-v1.js'),
           ]
@@ -70,7 +70,7 @@ jobs:
 
           path.write_text(html, encoding='utf-8')
           PY
-          grep -q 'project-tabs-complete-v1.js?v=20260823-tabscomplete17' index.html
+          grep -q 'project-tabs-complete-v1.js?v=20260823-tabscomplete18' index.html
           grep -q 'private-access-v1.js?v=20260823-private3' index.html
           grep -q 'admin-users-v1.js?v=20260823-admin-users3' index.html
 
@@ -101,7 +101,7 @@ jobs:
           grep -q "securitySessionId:priorSession.securitySessionId||''" index.html
           grep -q "deviceLabel:priorSession.deviceLabel||''" index.html
           grep -q "cache:'no-store'" index.html
-          grep -q 'project-tabs-complete-v1.js?v=20260823-tabscomplete17' index.html
+          grep -q 'project-tabs-complete-v1.js?v=20260823-tabscomplete18' index.html
           grep -q 'private-access-v1.js?v=20260823-private3' index.html
           grep -q 'admin-users-v1.js?v=20260823-admin-users3' index.html
           grep -q '</html>' index.html

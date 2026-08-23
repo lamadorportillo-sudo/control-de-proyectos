@@ -12,6 +12,7 @@ const users=read('supabase/functions/manage-users/index.ts');
 const migration=read('supabase/migrations/20260823022530_security_sessions_and_access_audit.sql');
 const hardening=read('supabase/migrations/20260823033156_security_audit_immutability_and_emergency_lockdown.sql');
 const lockdownWrapper=read('supabase/migrations/20260823033351_move_lockdown_definer_to_private_schema.sql');
+const tokenCutoff=read('supabase/migrations/20260823034205_security_token_cutoff_revocation.sql');
 
 assert.match(access,/functions\/v1\/secure-login/,'el acceso debe pasar por secure-login');
 assert.match(access,/securitySessionId/,'la sesión local debe conservar el identificador de seguridad');
@@ -61,4 +62,11 @@ assert.match(lockdownWrapper,/private\.security_lockdown_other_users_impl/,'la i
 assert.match(lockdownWrapper,/security definer/,'la implementación privada debe ejecutar con privilegios controlados');
 assert.match(lockdownWrapper,/public\.security_lockdown_other_users\(\)[\s\S]*security invoker/,'el RPC público debe ser security invoker');
 
-console.log('security-access-center: login, sesiones, caché local, auditoría inmutable y cierre general verificados');
+assert.match(tokenCutoff,/security_valid_after/,'el perfil debe guardar el corte mínimo de emisión del token');
+assert.match(tokenCutoff,/profiles_security_valid_after_trg/,'debe actualizar el corte al revocar o desactivar');
+assert.match(tokenCutoff,/auth\.jwt\(\)->>'iat'/,'RLS debe comparar la fecha de emisión del JWT');
+assert.match(tokenCutoff,/security_force_reauth is true/,'el corte debe activarse al forzar reautenticación');
+assert.match(tokenCutoff,/date_trunc\('second', now\(\)\)/,'el corte debe registrar el instante de revocación');
+assert.match(tokenCutoff,/>= p\.security_valid_after/,'un token anterior al corte debe quedar rechazado permanentemente');
+
+console.log('security-access-center: login, sesiones, caché local, auditoría inmutable, cierre general y corte de tokens verificados');

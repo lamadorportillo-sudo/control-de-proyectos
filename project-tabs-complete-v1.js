@@ -71,7 +71,7 @@ function loadPortfolioModules(){
   if(window.__CC_PORTFOLIO_LOADER_V1__)return;
   window.__CC_PORTFOLIO_LOADER_V1__=true;
   const modules=[
-    'security-runtime-v1.js?v=20260823-security2',
+    'security-runtime-v1.js?v=20260823-security3',
     'security-center-v1.js?v=20260823-securitycenter2',
     'mobile-popup-fallback-v1.js?v=20260821-mobilepopup1',
     'progress-separation-fix-v1.js?v=20260821-progresssep1',

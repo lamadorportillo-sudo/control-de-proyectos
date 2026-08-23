@@ -9,6 +9,7 @@ on:
       - '*.js'
       - 'tests/**'
       - 'playwright.config.cjs'
+      - 'package.json'
       - '.github/workflows/responsive-audit.yml'
   pull_request:
     branches:
@@ -25,7 +26,7 @@ concurrency:
 jobs:
   responsive-audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Descargar repositorio
@@ -67,10 +68,10 @@ jobs:
           cat /tmp/control-proyectos-http.log
           exit 1
 
-      - name: Probar celular tablet y PC
+      - name: Probar acceso público e interfaz autenticada
         env:
           APP_URL: http://127.0.0.1:4173/
-        run: npx playwright test tests/responsive-audit.spec.cjs
+        run: npx playwright test tests/responsive-audit.spec.cjs tests/authenticated-responsive.spec.cjs
 
       - name: Guardar reporte visual
         if: always()

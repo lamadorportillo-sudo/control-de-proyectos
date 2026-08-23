@@ -75,6 +75,7 @@ function loadPortfolioModules(){
     'security-center-v1.js?v=20260823-securitycenter2',
     'mobile-popup-fallback-v1.js?v=20260821-mobilepopup1',
     'progress-separation-fix-v1.js?v=20260821-progresssep1',
+    'programacion-control-v1.js?v=20260823-programacion1',
     'change-order-fix-v1.js?v=20260821-changefix1',
     'report-professional-v1.js?v=20260821-reportpro1',
     'report-export-css-fix-v1.js?v=20260821-reportcss1',

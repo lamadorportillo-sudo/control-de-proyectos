@@ -134,11 +134,43 @@ Deno.serve(async (req: Request) => {
       return json({ error: "La contraseña temporal venció. Solicite al administrador una nueva clave." }, 403, origin);
     }
 
+    const factorsResult = await authClient.auth.mfa.listFactors();
+    const factorData: any = factorsResult.data || {};
+    const factorList = !factorsResult.error
+      ? (Array.isArray(factorData.all) ? factorData.all : [...(factorData.totp || []), ...(factorData.phone || [])])
+      : (Array.isArray((data.user as any).factors) ? (data.user as any).factors : []);
+    if (factorsResult.error && factorList.length === 0 && Array.isArray((data.user as any).factors) === false) {
+      return json({ error: "No se pudo comprobar la protección en dos pasos. Intente nuevamente." }, 503, origin);
+    }
+    const verifiedFactors = factorList.filter((f: any) => f?.status === "verified");
+    const aalResult = await authClient.auth.mfa.getAuthenticatorAssuranceLevel(data.session.access_token);
+    const currentAal = aalResult.data?.currentLevel || "aal1";
+    const mfaRequired = verifiedFactors.length > 0 && currentAal !== "aal2";
+
+    if (mfaRequired) {
+      const now = new Date().toISOString();
+      await admin.from("profiles").update({ security_force_reauth: true, updated_at: now }).eq("user_id", userId);
+      const preferred = verifiedFactors.find((f: any) => f?.factor_type === "totp") || verifiedFactors[0];
+      await admin.from("security_events").insert({ workspace_id: workspaceId, user_id: userId, email, event_type: "mfa_challenge_required", success: true, severity: "info", device_label: device, user_agent: ua, network_fingerprint: network || null, metadata: { factor_type: preferred?.factor_type || "totp" } });
+      return json({
+        user: { id: data.user.id, email: data.user.email },
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+        expires_in: data.session.expires_in,
+        expires_at: data.session.expires_at,
+        token_type: data.session.token_type,
+        mfa_required: true,
+        mfa_factor_id: preferred?.id || "",
+        mfa_factor_type: preferred?.factor_type || "totp",
+        device_label: device,
+      }, 200, origin);
+    }
+
     const now = new Date().toISOString();
     await admin.from("profiles").update({ security_force_reauth: false, last_login_at: now, updated_at: now }).eq("user_id", userId);
     const { data: securitySession, error: sessionError } = await admin.from("security_sessions").insert({ workspace_id: workspaceId, user_id: userId, email, device_label: device, user_agent: ua, started_at: now, last_seen_at: now }).select("id").single();
     if (sessionError || !securitySession) throw sessionError || new Error("No se pudo registrar la sesión.");
-    await admin.from("security_events").insert({ workspace_id: workspaceId, user_id: userId, email, event_type: "login_success", success: true, severity: "info", device_label: device, user_agent: ua, network_fingerprint: network || null, session_id: securitySession.id, metadata: { role: membership.role || "consulta" } });
+    await admin.from("security_events").insert({ workspace_id: workspaceId, user_id: userId, email, event_type: "login_success", success: true, severity: "info", device_label: device, user_agent: ua, network_fingerprint: network || null, session_id: securitySession.id, metadata: { role: membership.role || "consulta", mfa: false } });
 
     return json({
       user: { id: data.user.id, email: data.user.email },
@@ -149,6 +181,7 @@ Deno.serve(async (req: Request) => {
       token_type: data.session.token_type,
       security_session_id: securitySession.id,
       device_label: device,
+      mfa_required: false,
     }, 200, origin);
   } catch (error) {
     console.error("secure-login", error instanceof Error ? error.message : "unknown");

@@ -2,7 +2,9 @@
   "name": "control-de-proyectos",
   "private": true,
   "scripts": {
-    "test:responsive": "playwright test tests/responsive-audit.spec.cjs"
+    "test:responsive": "playwright test tests/responsive-audit.spec.cjs tests/authenticated-responsive.spec.cjs",
+    "test:responsive:public": "playwright test tests/responsive-audit.spec.cjs",
+    "test:responsive:authenticated": "playwright test tests/authenticated-responsive.spec.cjs"
   },
   "devDependencies": {
     "@playwright/test": "1.55.0"

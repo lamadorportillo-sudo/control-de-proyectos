@@ -2,7 +2,7 @@
 (()=>{
 'use strict';
 if(window.__CC_SECURITY_CENTER_V1__)return;window.__CC_SECURITY_CENTER_V1__=true;
-const E=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m]));
+const E=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const A=v=>Array.isArray(v)?v:[];
 const apiEndpoint=()=>`${SUPABASE_URL}/functions/v1/manage-users`;
 const headers=()=>({apikey:SUPABASE_KEY,Authorization:`Bearer ${session?.accessToken||''}`,'Content-Type':'application/json'});

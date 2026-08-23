@@ -28,9 +28,10 @@ assert.match(login,/crypto\.subtle\.digest\("SHA-256"/,'la red debe convertirse 
 assert.match(login,/network_fingerprint/,'los eventos deben asociar únicamente la huella de red');
 assert.doesNotMatch(login,/ip_address\s*:/i,'no debe persistirse una dirección IP en claro');
 
-for(const action of ['heartbeat','end_session','security_overview','revoke_sessions','set_active','reset_password'])assert.match(users,new RegExp(`action===\\"${action}\\"`),`manage-users debe implementar ${action}`);
-assert.match(users,/security_force_reauth:true/,'revocar/restablecer debe exigir nueva autenticación');
+for(const action of ['heartbeat','end_session','security_overview','revoke_sessions','set_active','reset_password'])assert.match(users,new RegExp(`action\\s*===\\s*"${action}"`),`manage-users debe implementar ${action}`);
+assert.match(users,/security_force_reauth\s*:\s*true/,'revocar/restablecer debe exigir nueva autenticación');
 assert.match(users,/session_revoked/,'debe auditar el cierre administrativo de sesiones');
+assert.match(users,/security_valid_after/,'las operaciones privilegiadas deben respetar la revocación de tokens antiguos');
 
 assert.match(runtime,/SEGURIDAD DE SESIÓN Y CONTENIDO V3/,'debe estar activa la tercera capa de seguridad local');
 assert.match(runtime,/HEARTBEAT_EVERY/,'debe existir verificación periódica de sesión');
@@ -49,8 +50,10 @@ assert.match(center,/Intentos fallidos/,'el panel debe mostrar intentos fallidos
 assert.match(center,/data-sec-revoke/,'el panel debe permitir cerrar sesiones de otro usuario');
 assert.match(center,/data-sec-lockdown/,'el panel debe ofrecer cierre general de sesiones');
 assert.match(center,/security_lockdown_other_users/,'el cierre general debe ejecutarse mediante RPC protegido');
+assert.match(center,/mfa_failure/,'el centro de seguridad debe identificar fallos 2FA');
+assert.match(center,/mfa_enrolled/,'el centro de seguridad debe identificar activaciones 2FA');
 assert.match(loader,/security-center-v1\.js/,'el cargador principal debe cargar el panel de seguridad');
-assert.match(loader,/securitycenter2/,'el cargador debe renovar caché del centro de seguridad');
+assert.match(loader,/securitycenter3/,'el cargador debe renovar caché del centro de seguridad');
 assert.match(loader,/security-runtime-v1\.js\?v=20260823-security3/,'el cargador debe usar la versión que limpia el dispositivo al cerrar sesión');
 
 for(const object of ['security_sessions','security_events','security_force_reauth','security_sessions_admin_select','security_events_admin_select'])assert.match(migration,new RegExp(object),`la migración debe incluir ${object}`);
@@ -79,4 +82,4 @@ assert.match(networkRate,/network_fingerprint/,'la auditoría debe soportar huel
 assert.match(networkRate,/security_events_network_created_idx/,'la comprobación por red debe estar indexada');
 assert.match(networkRate,/No almacena la IP sin procesar/,'la migración debe documentar la minimización de datos');
 
-console.log('security-access-center: login, sesiones, caché local, auditoría inmutable, cierre general, corte de tokens y límite de red verificados');
+console.log('security-access-center: login, sesiones, caché local, auditoría inmutable, cierre general, corte de tokens, 2FA y límite de red verificados');

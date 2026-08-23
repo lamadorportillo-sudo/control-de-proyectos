@@ -10,6 +10,7 @@ const login=read('supabase/functions/secure-login/index.ts');
 const users=read('supabase/functions/manage-users/index.ts');
 const migration=read('supabase/migrations/20260823022530_security_sessions_and_access_audit.sql');
 const hardening=read('supabase/migrations/20260823033156_security_audit_immutability_and_emergency_lockdown.sql');
+const lockdownWrapper=read('supabase/migrations/20260823033351_move_lockdown_definer_to_private_schema.sql');
 
 assert.match(access,/functions\/v1\/secure-login/,'el acceso debe pasar por secure-login');
 assert.match(access,/securitySessionId/,'la sesión local debe conservar el identificador de seguridad');
@@ -45,5 +46,9 @@ assert.match(hardening,/private\.is_control_admin\(\)/,'el cierre general debe e
 assert.match(hardening,/security_force_reauth = true/,'el cierre general debe bloquear acceso de datos hasta reautenticar');
 assert.match(hardening,/emergency_lockdown/,'el cierre general debe quedar auditado');
 assert.match(hardening,/revoke insert, update, delete, truncate on public\.security_events from anon, authenticated/,'clientes normales no deben modificar la auditoría');
+
+assert.match(lockdownWrapper,/private\.security_lockdown_other_users_impl/,'la implementación privilegiada debe vivir en esquema privado');
+assert.match(lockdownWrapper,/security definer/,'la implementación privada debe ejecutar con privilegios controlados');
+assert.match(lockdownWrapper,/public\.security_lockdown_other_users\(\)[\s\S]*security invoker/,'el RPC público debe ser security invoker');
 
 console.log('security-access-center: login, sesiones, auditoría inmutable y cierre general verificados');

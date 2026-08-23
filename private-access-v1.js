@@ -1,4 +1,4 @@
-/* ===== CONTROL CONTRACTUAL · ACCESO PRIVADO CON APROBACIÓN V1 ===== */
+/* ===== CONTROL CONTRACTUAL · ACCESO PRIVADO CON APROBACIÓN V2 ===== */
 (()=>{
 'use strict';
 if(window.__CC_PRIVATE_ACCESS_V1__)return;
@@ -7,6 +7,7 @@ window.__CC_PRIVATE_ACCESS_V1__=true;
 const E=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const endpoint=()=>`${SUPABASE_URL}/functions/v1/request-access`;
 const authHeaders=()=>({'apikey':SUPABASE_KEY,'Content-Type':'application/json'});
+const strongPassword=p=>{p=String(p||'');let g=0;if(/[a-z]/.test(p))g++;if(/[A-Z]/.test(p))g++;if(/[0-9]/.test(p))g++;if(/[^A-Za-z0-9]/.test(p))g++;return p.length>=12&&p.length<=128&&g>=3};
 let authMode='login',requestRegistered=false,requestEmail='';
 
 function field(id,label,attrs='',help=''){
@@ -35,8 +36,7 @@ function enhanceAuth(){
     loginTab.classList.toggle('active',next==='login');registerTab.classList.toggle('active',next==='register');
     document.querySelectorAll('#authForm .reg').forEach(x=>x.classList.toggle('hidden',next!=='register'));
     document.getElementById('authSubmit').textContent=next==='login'?'Ingresar':'Enviar solicitud';
-    document.getElementById('authPass').closest('.field').classList.toggle('hidden',next==='register');
-    document.getElementById('authPass').required=next==='login';
+    const pass=document.getElementById('authPass');pass.closest('.field').classList.toggle('hidden',next==='register');pass.required=next==='login';pass.removeAttribute('minlength');pass.removeAttribute('maxlength');
     document.getElementById('accessCodeField').classList.toggle('hidden',true);
     document.getElementById('authMessage').textContent=next==='login'
       ?'Acceso privado. Ingrese con una cuenta previamente autorizada.'
@@ -66,18 +66,17 @@ function enhanceAuth(){
         if(!r.ok)throw new Error(d.error||'No se pudo enviar la solicitud.');
         requestRegistered=true;requestEmail=email;
         document.getElementById('accessCodeField').classList.remove('hidden');
-        document.getElementById('authPass').closest('.field').classList.remove('hidden');
-        document.getElementById('authPass').required=true;document.getElementById('authPass').autocomplete='new-password';
+        const pass=document.getElementById('authPass');pass.closest('.field').classList.remove('hidden');pass.required=true;pass.autocomplete='new-password';pass.minLength=12;pass.maxLength=128;
         btn.textContent='Confirmar código y crear acceso';
-        msg.textContent=d.email_sent
+        msg.textContent=(d.email_sent
           ?'Solicitud enviada. El administrador fue notificado por correo. Cuando le entregue el código, escríbalo aquí junto con su contraseña.'
-          :'Solicitud registrada. El administrador podrá verla en el sistema. Cuando le entregue el código, escríbalo aquí junto con su contraseña.';
+          :'Solicitud registrada. El administrador podrá verla en el sistema. Cuando le entregue el código, escríbalo aquí junto con su contraseña.')+' La contraseña debe tener al menos 12 caracteres y combinar tres tipos: mayúsculas, minúsculas, números o símbolos.';
         document.getElementById('privateAccessCode').focus();return;
       }
       if(email!==requestEmail)throw new Error('El correo fue cambiado. Envíe nuevamente la solicitud para ese correo.');
       const code=document.getElementById('privateAccessCode').value.trim().toUpperCase();
       if(code.length!==12)throw new Error('Escriba el código de 12 caracteres proporcionado por el administrador.');
-      if(password.length<8)throw new Error('La contraseña debe tener al menos 8 caracteres.');
+      if(!strongPassword(password))throw new Error('Use una contraseña de al menos 12 caracteres y combine tres tipos: mayúsculas, minúsculas, números o símbolos.');
       const r=await fetch(SUPABASE_URL+'/auth/v1/signup',{method:'POST',headers:authHeaders(),body:JSON.stringify({email,password,data:{full_name:nameValue,workspace_invite_code:code}})});const d=await r.json();
       if(!r.ok)throw new Error(d.msg||d.message||d.error_description||'Código incorrecto, vencido o asignado a otro correo.');
       if(!d.access_token){msg.textContent='Cuenta autorizada. Revise su correo para confirmarla y luego ingrese.';mode('login');return}

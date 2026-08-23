@@ -13,6 +13,7 @@ const migration=read('supabase/migrations/20260823022530_security_sessions_and_a
 const hardening=read('supabase/migrations/20260823033156_security_audit_immutability_and_emergency_lockdown.sql');
 const lockdownWrapper=read('supabase/migrations/20260823033351_move_lockdown_definer_to_private_schema.sql');
 const tokenCutoff=read('supabase/migrations/20260823034205_security_token_cutoff_revocation.sql');
+const networkRate=read('supabase/migrations/20260823034450_security_privacy_preserving_network_rate_limit.sql');
 
 assert.match(access,/functions\/v1\/secure-login/,'el acceso debe pasar por secure-login');
 assert.match(access,/securitySessionId/,'la sesión local debe conservar el identificador de seguridad');
@@ -20,7 +21,12 @@ assert.doesNotMatch(access,/token\?grant_type=password/,'el formulario no debe a
 
 for(const token of ['login_success','login_failure','login_rate_limited','security_sessions','security_events'])assert.match(login,new RegExp(token),`secure-login debe incluir ${token}`);
 assert.match(login,/Cache-Control[^\n]*no-store/,'secure-login debe evitar caché');
-assert.match(login,/recentFails[\s\S]*>= 12/,'secure-login debe limitar intentos repetidos');
+assert.match(login,/recentFails[\s\S]*>= 12/,'secure-login debe limitar intentos repetidos por cuenta');
+assert.match(login,/networkFingerprint/,'secure-login debe derivar una huella de red no reversible');
+assert.match(login,/networkFails[\s\S]*>= 30/,'secure-login debe limitar ataques repetidos desde una misma red');
+assert.match(login,/crypto\.subtle\.digest\("SHA-256"/,'la red debe convertirse a hash antes de registrarse');
+assert.match(login,/network_fingerprint/,'los eventos deben asociar únicamente la huella de red');
+assert.doesNotMatch(login,/ip_address\s*:/i,'no debe persistirse una dirección IP en claro');
 
 for(const action of ['heartbeat','end_session','security_overview','revoke_sessions','set_active','reset_password'])assert.match(users,new RegExp(`action===\\"${action}\\"`),`manage-users debe implementar ${action}`);
 assert.match(users,/security_force_reauth:true/,'revocar/restablecer debe exigir nueva autenticación');
@@ -69,4 +75,8 @@ assert.match(tokenCutoff,/security_force_reauth is true/,'el corte debe activars
 assert.match(tokenCutoff,/date_trunc\('second', now\(\)\)/,'el corte debe registrar el instante de revocación');
 assert.match(tokenCutoff,/>= p\.security_valid_after/,'un token anterior al corte debe quedar rechazado permanentemente');
 
-console.log('security-access-center: login, sesiones, caché local, auditoría inmutable, cierre general y corte de tokens verificados');
+assert.match(networkRate,/network_fingerprint/,'la auditoría debe soportar huella de red');
+assert.match(networkRate,/security_events_network_created_idx/,'la comprobación por red debe estar indexada');
+assert.match(networkRate,/No almacena la IP sin procesar/,'la migración debe documentar la minimización de datos');
+
+console.log('security-access-center: login, sesiones, caché local, auditoría inmutable, cierre general, corte de tokens y límite de red verificados');

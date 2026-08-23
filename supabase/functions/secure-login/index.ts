@@ -22,7 +22,15 @@ function cors(origin: string | null) {
 function json(body: unknown, status: number, origin: string | null) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...cors(origin), "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
+    headers: {
+      ...cors(origin),
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store, max-age=0",
+      "Pragma": "no-cache",
+      "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "no-referrer",
+      "X-Frame-Options": "DENY",
+    },
   });
 }
 
@@ -35,6 +43,14 @@ function deviceLabel(ua: string) {
   const os = /iphone|ipad|ipod/.test(s) ? "iOS/iPadOS" : /android/.test(s) ? "Android" : /windows/.test(s) ? "Windows" : /mac os|macintosh/.test(s) ? "macOS" : /linux/.test(s) ? "Linux" : "Dispositivo";
   const browser = /edg\//.test(s) ? "Edge" : /opr\//.test(s) ? "Opera" : /chrome\//.test(s) && !/edg\//.test(s) ? "Chrome" : /firefox\//.test(s) ? "Firefox" : /safari\//.test(s) && !/chrome\//.test(s) ? "Safari" : "Navegador";
   return `${os} · ${browser}`;
+}
+
+async function networkFingerprint(req: Request, secret: string) {
+  const forwarded = clean(req.headers.get("cf-connecting-ip") || req.headers.get("x-forwarded-for")?.split(",")[0] || req.headers.get("x-real-ip") || "", 96);
+  if (!forwarded) return "";
+  const input = new TextEncoder().encode(`control-contractual-network-v1|${secret.slice(-48)}|${forwarded}`);
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", input));
+  return Array.from(digest.slice(0, 16)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 Deno.serve(async (req: Request) => {
@@ -52,6 +68,7 @@ Deno.serve(async (req: Request) => {
   const authClient = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const ua = clean(req.headers.get("user-agent"), 220);
   const device = deviceLabel(ua);
+  const network = await networkFingerprint(req, serviceKey);
 
   try {
     const body = await req.json();
@@ -62,20 +79,44 @@ Deno.serve(async (req: Request) => {
     }
 
     const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-    const { count: recentFails } = await admin
+    const emailFailsQuery = admin
       .from("security_events")
       .select("id", { count: "exact", head: true })
       .eq("event_type", "login_failure")
       .eq("email", email)
       .gte("created_at", since);
-    if ((recentFails || 0) >= 12) {
-      await admin.from("security_events").insert({ email, event_type: "login_rate_limited", success: false, severity: "warning", device_label: device, user_agent: ua, metadata: { origin: origin || "direct" } });
+    const networkFailsQuery = network
+      ? admin.from("security_events").select("id", { count: "exact", head: true }).eq("event_type", "login_failure").eq("network_fingerprint", network).gte("created_at", since)
+      : Promise.resolve({ count: 0, error: null } as any);
+    const [{ count: recentFails }, { count: networkFails }] = await Promise.all([emailFailsQuery, networkFailsQuery]);
+    const emailLimited = (recentFails || 0) >= 12;
+    const networkLimited = (networkFails || 0) >= 30;
+    if (emailLimited || networkLimited) {
+      await admin.from("security_events").insert({
+        email,
+        event_type: "login_rate_limited",
+        success: false,
+        severity: networkLimited ? "critical" : "warning",
+        device_label: device,
+        user_agent: ua,
+        network_fingerprint: network || null,
+        metadata: { origin: origin || "direct", scope: networkLimited ? "network" : "account" },
+      });
       return json({ error: "Demasiados intentos de ingreso. Espere unos minutos antes de intentarlo nuevamente." }, 429, origin);
     }
 
     const { data, error } = await authClient.auth.signInWithPassword({ email, password });
     if (error || !data.user || !data.session) {
-      await admin.from("security_events").insert({ email, event_type: "login_failure", success: false, severity: "warning", device_label: device, user_agent: ua, metadata: { reason: "invalid_credentials", origin: origin || "direct" } });
+      await admin.from("security_events").insert({
+        email,
+        event_type: "login_failure",
+        success: false,
+        severity: "warning",
+        device_label: device,
+        user_agent: ua,
+        network_fingerprint: network || null,
+        metadata: { reason: "invalid_credentials", origin: origin || "direct" },
+      });
       return json({ error: "Correo o contraseña incorrectos." }, 401, origin);
     }
 
@@ -85,11 +126,11 @@ Deno.serve(async (req: Request) => {
     const workspaceId = membership?.workspace_id || null;
 
     if (!profile?.active || !membership?.active) {
-      await admin.from("security_events").insert({ workspace_id: workspaceId, user_id: userId, email, event_type: "login_blocked", success: false, severity: "critical", device_label: device, user_agent: ua, metadata: { reason: "inactive_account" } });
+      await admin.from("security_events").insert({ workspace_id: workspaceId, user_id: userId, email, event_type: "login_blocked", success: false, severity: "critical", device_label: device, user_agent: ua, network_fingerprint: network || null, metadata: { reason: "inactive_account" } });
       return json({ error: "Este acceso está desactivado. Comuníquese con el administrador." }, 403, origin);
     }
     if (profile.must_change_password && (!profile.temporary_password_expires_at || Date.now() > new Date(profile.temporary_password_expires_at).getTime())) {
-      await admin.from("security_events").insert({ workspace_id: workspaceId, user_id: userId, email, event_type: "login_blocked", success: false, severity: "warning", device_label: device, user_agent: ua, metadata: { reason: "temporary_password_expired" } });
+      await admin.from("security_events").insert({ workspace_id: workspaceId, user_id: userId, email, event_type: "login_blocked", success: false, severity: "warning", device_label: device, user_agent: ua, network_fingerprint: network || null, metadata: { reason: "temporary_password_expired" } });
       return json({ error: "La contraseña temporal venció. Solicite al administrador una nueva clave." }, 403, origin);
     }
 
@@ -97,7 +138,7 @@ Deno.serve(async (req: Request) => {
     await admin.from("profiles").update({ security_force_reauth: false, last_login_at: now, updated_at: now }).eq("user_id", userId);
     const { data: securitySession, error: sessionError } = await admin.from("security_sessions").insert({ workspace_id: workspaceId, user_id: userId, email, device_label: device, user_agent: ua, started_at: now, last_seen_at: now }).select("id").single();
     if (sessionError || !securitySession) throw sessionError || new Error("No se pudo registrar la sesión.");
-    await admin.from("security_events").insert({ workspace_id: workspaceId, user_id: userId, email, event_type: "login_success", success: true, severity: "info", device_label: device, user_agent: ua, session_id: securitySession.id, metadata: { role: membership.role || "consulta" } });
+    await admin.from("security_events").insert({ workspace_id: workspaceId, user_id: userId, email, event_type: "login_success", success: true, severity: "info", device_label: device, user_agent: ua, network_fingerprint: network || null, session_id: securitySession.id, metadata: { role: membership.role || "consulta" } });
 
     return json({
       user: { id: data.user.id, email: data.user.email },

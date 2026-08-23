@@ -53,16 +53,23 @@ jobs:
 
           path = Path('index.html')
           html = path.read_text(encoding='utf-8')
-          html, count = re.subn(
-              r'project-tabs-complete-v1\.js\?v[^\"\']*',
-              'project-tabs-complete-v1.js?v=20260823-tabscomplete14',
-              html
-          )
-          if count == 0:
-              raise SystemExit('No se encontró project-tabs-complete-v1.js para renovar su versión.')
+
+          replacements = [
+              (r'project-tabs-complete-v1\.js\?v[^\"\']*', 'project-tabs-complete-v1.js?v=20260823-tabscomplete15', 'project-tabs-complete-v1.js'),
+              (r'private-access-v1\.js\?v[^\"\']*', 'private-access-v1.js?v=20260823-private2', 'private-access-v1.js'),
+              (r'admin-users-v1\.js\?v[^\"\']*', 'admin-users-v1.js?v=20260823-admin-users2', 'admin-users-v1.js'),
+          ]
+
+          for pattern, replacement, label in replacements:
+              html, count = re.subn(pattern, replacement, html)
+              if count == 0:
+                  raise SystemExit(f'No se encontró {label} para renovar su versión.')
+
           path.write_text(html, encoding='utf-8')
           PY
-          grep -q 'project-tabs-complete-v1.js?v=20260823-tabscomplete14' index.html
+          grep -q 'project-tabs-complete-v1.js?v=20260823-tabscomplete15' index.html
+          grep -q 'private-access-v1.js?v=20260823-private2' index.html
+          grep -q 'admin-users-v1.js?v=20260823-admin-users2' index.html
 
       - name: Validar aplicación generada
         shell: bash
@@ -86,15 +93,17 @@ jobs:
           grep -q 'ui-operational-polish-v1.js' index.html
           grep -q 'home-executive-fix-v2.js' project-tabs-complete-v1.js
           grep -q 'security-runtime-v1.js' project-tabs-complete-v1.js
-          grep -q 'security-center-v1.js' project-tabs-complete-v1.js
+          grep -q 'security-center-v1.js?v=20260823-securitycenter2' project-tabs-complete-v1.js
           grep -q 'ui-visibility-audit-v1.js' index.html
-          grep -q 'project-tabs-complete-v1.js?v=20260823-tabscomplete14' index.html
+          grep -q 'project-tabs-complete-v1.js?v=20260823-tabscomplete15' index.html
+          grep -q 'private-access-v1.js?v=20260823-private2' index.html
+          grep -q 'admin-users-v1.js?v=20260823-admin-users2' index.html
           grep -q '</html>' index.html
           if grep -q 'window.__CP_B64=' index.html; then
             echo 'El HTML generado todavía contiene el cargador Base64.' >&2
             exit 1
           fi
-          echo 'Aplicación generada, núcleo contractual, sesiones y panel de seguridad verificados.'
+          echo 'Aplicación generada, núcleo contractual, accesos y seguridad verificados.'
 
       - name: Publicar index.html en main
         shell: bash

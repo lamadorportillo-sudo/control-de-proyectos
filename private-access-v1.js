@@ -1,14 +1,23 @@
-/* ===== CONTROL CONTRACTUAL · ACCESO PRIVADO CON APROBACIÓN V2 ===== */
+/* ===== CONTROL CONTRACTUAL · ACCESO PRIVADO CON APROBACIÓN V3 ===== */
 (()=>{
 'use strict';
 if(window.__CC_PRIVATE_ACCESS_V1__)return;
 window.__CC_PRIVATE_ACCESS_V1__=true;
 
-const E=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const E=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m]));
 const endpoint=()=>`${SUPABASE_URL}/functions/v1/request-access`;
+const loginEndpoint=()=>`${SUPABASE_URL}/functions/v1/secure-login`;
 const authHeaders=()=>({'apikey':SUPABASE_KEY,'Content-Type':'application/json'});
 const strongPassword=p=>{p=String(p||'');let g=0;if(/[a-z]/.test(p))g++;if(/[A-Z]/.test(p))g++;if(/[0-9]/.test(p))g++;if(/[^A-Za-z0-9]/.test(p))g++;return p.length>=12&&p.length<=128&&g>=3};
 let authMode='login',requestRegistered=false,requestEmail='';
+
+async function protectedLogin(email,password){
+ const r=await fetch(loginEndpoint(),{method:'POST',headers:authHeaders(),body:JSON.stringify({email,password}),cache:'no-store'});const d=await r.json().catch(()=>({}));
+ if(!r.ok)throw new Error(d.error||'Correo o contraseña incorrectos.');
+ if(!d.user?.id||!d.access_token)throw new Error('No se pudo iniciar una sesión protegida.');
+ session={userId:d.user.id,email:d.user.email,accessToken:d.access_token,refreshToken:d.refresh_token,expiresAt:Date.now()+(d.expires_in||3600)*1000,securitySessionId:d.security_session_id||'',deviceLabel:d.device_label||''};
+ localStorage.setItem(SESSION,JSON.stringify(session));cloudLoaded=false;await render();
+}
 
 function field(id,label,attrs='',help=''){
   return `<label class="field reg hidden"><span>${label}</span><input id="${id}" ${attrs}>${help?`<small>${help}</small>`:''}</label>`;
@@ -39,7 +48,7 @@ function enhanceAuth(){
     const pass=document.getElementById('authPass');pass.closest('.field').classList.toggle('hidden',next==='register');pass.required=next==='login';pass.removeAttribute('minlength');pass.removeAttribute('maxlength');
     document.getElementById('accessCodeField').classList.toggle('hidden',true);
     document.getElementById('authMessage').textContent=next==='login'
-      ?'Acceso privado. Ingrese con una cuenta previamente autorizada.'
+      ?'Acceso privado y auditado. Ingrese con una cuenta previamente autorizada.'
       :'Complete sus datos. El administrador recibirá la solicitud y le proporcionará un código personal.';
   }
   loginTab.onclick=()=>mode('login');registerTab.onclick=()=>mode('register');
@@ -51,13 +60,10 @@ function enhanceAuth(){
     const password=document.getElementById('authPass').value;
     const nameValue=document.getElementById('authName').value.trim();
     const btn=document.getElementById('authSubmit'),msg=document.getElementById('authMessage');
-    btn.disabled=true;msg.textContent='Procesando…';
+    btn.disabled=true;msg.textContent='Procesando de forma segura…';
     try{
       if(authMode==='login'){
-        const r=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=password',{method:'POST',headers:authHeaders(),body:JSON.stringify({email,password})});
-        const d=await r.json();if(!r.ok)throw new Error(d.error_description||d.msg||d.message||'Correo o contraseña incorrectos.');
-        session={userId:d.user.id,email:d.user.email,accessToken:d.access_token,refreshToken:d.refresh_token,expiresAt:Date.now()+(d.expires_in||3600)*1000};
-        localStorage.setItem(SESSION,JSON.stringify(session));cloudLoaded=false;await render();return;
+        await protectedLogin(email,password);return;
       }
       if(!requestRegistered){
         if(nameValue.length<3)throw new Error('Escriba su nombre completo.');
@@ -80,8 +86,8 @@ function enhanceAuth(){
       const r=await fetch(SUPABASE_URL+'/auth/v1/signup',{method:'POST',headers:authHeaders(),body:JSON.stringify({email,password,data:{full_name:nameValue,workspace_invite_code:code}})});const d=await r.json();
       if(!r.ok)throw new Error(d.msg||d.message||d.error_description||'Código incorrecto, vencido o asignado a otro correo.');
       if(!d.access_token){msg.textContent='Cuenta autorizada. Revise su correo para confirmarla y luego ingrese.';mode('login');return}
-      session={userId:d.user.id,email:d.user.email,accessToken:d.access_token,refreshToken:d.refresh_token,expiresAt:Date.now()+(d.expires_in||3600)*1000};
-      localStorage.setItem(SESSION,JSON.stringify(session));cloudLoaded=false;await render();
+      try{await fetch(SUPABASE_URL+'/auth/v1/logout',{method:'POST',headers:{...authHeaders(),Authorization:`Bearer ${d.access_token}`}})}catch{}
+      await protectedLogin(email,password);
     }catch(err){msg.textContent=err.message||'No se pudo completar la operación.'}
     finally{btn.disabled=false}
   };
@@ -94,7 +100,7 @@ async function requestRows(){
 
 async function privateTeamModal(){
   if(typeof openModal!=='function')return;
-  const m=openModal('Solicitudes y accesos',`<div class="alert info">Solo usted puede aprobar solicitudes y entregar el código. Cada código queda ligado al correo, vence y funciona una sola vez.</div><div id="privateRequests"><div class="empty">Cargando solicitudes…</div></div>`);
+  const m=openModal('Solicitudes y accesos',`<div class="alert info">Solo el administrador puede aprobar solicitudes y entregar el código. Cada código queda ligado al correo, vence y funciona una sola vez.</div><div id="privateRequests"><div class="empty">Cargando solicitudes…</div></div>`);
   const host=m.querySelector('#privateRequests');
   try{
     const rows=await requestRows();

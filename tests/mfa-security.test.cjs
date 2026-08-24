@@ -71,6 +71,7 @@ assert.match(halu,/adminMfaPastDueMissing/,'Halu debe respetar la obligación 2F
 for(const token of ['Activar 2FA','verify_enrollment','cancel_enrollment','cc-mfa-qr','2FA será obligatoria para administradores','Recuperación'])assert.match(mfaUi,new RegExp(token),`la interfaz 2FA debe incluir ${token}`);
 assert.match(mfaUi,/function safeQr/,'la interfaz debe validar el origen del QR');
 assert.match(mfaUi,/data:image\\\/svg\\\+xml/,'el QR debe restringirse a una imagen SVG embebida');
-assert.match(loader,/mfa-security-v1\.js\?v=20260823-mfa2/,'el cargador debe publicar la interfaz 2FA obligatoria');
+assert.match(mfaUi,/noticeCheckedAt<30000|now-noticeCheckedAt<30000/,'el aviso 2FA debe limitar consultas repetidas');
+assert.match(loader,/mfa-security-v1\.js\?v=20260823-mfa3/,'el cargador debe publicar la interfaz 2FA obligatoria final');
 
 console.log('mfa-security: segundo factor, periodo de preparación, obligatoriedad administrativa, recuperación, RLS, Halu e interfaz verificados');

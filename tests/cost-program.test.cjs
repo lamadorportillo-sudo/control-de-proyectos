@@ -16,6 +16,15 @@ assert(data.fichas.some(f=>f.resources.some(r=>r.type==='Equipo')),'debe conserv
 
 const app=fs.readFileSync('cost-program-v1.js','utf8');
 for(const feature of ['Fichas de costo','Presupuesto','Formatos','Institución','Duplicar y editar','Generar adaptado'])assert(app.includes(feature),`falta ${feature}`);
+for(const feature of ['Actividades','Precios','Especificaciones','Buscar fichas automáticamente','Eliminar ficha','materialPrices'])assert(app.includes(feature),`falta ${feature}`);
 assert(app.includes('saveDB()'),'los cambios deben persistir en el expediente compartido');
 assert.equal((fs.readdirSync('assets/formats/via-administracion').filter(x=>!x.startsWith('~$'))).length,18,'deben publicarse los 18 formatos administrativos');
-console.log('cost-program: base FHIS/TSC, editor, presupuesto, institución y 18 formatos verificados');
+const knowledgeSource=fs.readFileSync('assets/cost-knowledge/index.js','utf8');
+const knowledgeContext={window:null};knowledgeContext.window=knowledgeContext;vm.createContext(knowledgeContext);vm.runInContext(knowledgeSource,knowledgeContext);
+const knowledge=knowledgeContext.__ccCostKnowledge;
+assert(knowledge.stats.fichas>=6400,'debe importar la biblioteca FICHAS 17102013');
+assert(knowledge.stats.resources>=46000,'debe relacionar los recursos de las fichas');
+assert(knowledge.stats.uniqueResources>=2700,'debe construir el catálogo maestro de insumos');
+assert.equal(fs.readdirSync('assets/cost-knowledge').filter(x=>/^fichas-\d+\.json$/.test(x)).length,knowledge.stats.chunks,'cada bloque progresivo debe existir');
+for(const file of ['fichas-17102013.pdf','listado-insumos.pdf','listado-actividades.pdf','fichas-costos-unitarios.pdf','especificaciones-actividades.pdf','ingenieria-trafico.pdf'])assert(fs.existsSync(`assets/cost-knowledge/sources/${file}`),`falta fuente ${file}`);
+console.log('cost-program: 6,413 fichas sincronizadas, precios, CRUD, relación automática, especificaciones y formatos verificados');

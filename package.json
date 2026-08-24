@@ -4,9 +4,11 @@
   "scripts": {
     "test:responsive": "playwright test tests/responsive-audit.spec.cjs tests/authenticated-responsive.spec.cjs",
     "test:responsive:public": "playwright test tests/responsive-audit.spec.cjs",
-    "test:responsive:authenticated": "playwright test tests/authenticated-responsive.spec.cjs"
+    "test:responsive:authenticated": "playwright test tests/authenticated-responsive.spec.cjs",
+    "optimize:images": "node scripts/optimize-images.cjs"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.1"
+    "@playwright/test": "^1.62.1",
+    "sharp": "^0.35.3"
   }
 }

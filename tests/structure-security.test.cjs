@@ -37,7 +37,7 @@ assert(/\bstore\s*:\s*false\b/.test(halu),'Las respuestas de Halu deben desactiv
 assert(halu.includes('allowedOrigins'),'La función de Halu debe restringir CORS.');
 assert(halu.includes('requestBuckets'),'La función de Halu debe limitar la frecuencia por sesión.');
 assert(/content-length[\s\S]{0,160}>\s*24_?000/.test(halu),'La función de Halu debe rechazar solicitudes excesivas.');
-assert(html.includes('engineer-chatbot-v3.js?v=20260823-ai3'),'La versión publicada de Halu no coincide.');
+assert(html.includes('engineer-chatbot-v3.js?v=20260823-ai4'),'La versión publicada de Halu no coincide.');
 assert(html.includes('programacion-control-v1.js?v=20260823-programacion4'),'Programación y Control debe estar activa.');
 const lazyLoader=fs.readFileSync(path.join(root,'feature-lazy-loader-v1.js'),'utf8');
 assert(html.includes('feature-lazy-loader-v1.js?v=20260823-lazy1'),'La carga progresiva debe estar activa.');

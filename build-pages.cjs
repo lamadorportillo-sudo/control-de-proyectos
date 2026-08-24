@@ -77,6 +77,11 @@ const listCss=`<style id="projects-list-fix-v1">
 </style>`;
 if(!html.includes('projects-list-fix-v1')) html=html.replace('</head>',listCss+'\n</head>');
 
+// Descubre antes los recursos críticos mientras termina de analizar el HTML histórico.
+html=html.replace(/<!-- cc-critical-hints:start -->[\s\S]*?<!-- cc-critical-hints:end -->\s*/gi,'');
+const criticalHints='<!-- cc-critical-hints:start --><link rel="preconnect" href="https://flethujkrharehjikwgj.supabase.co" crossorigin><link rel="preload" href="performance-runtime-v1.js?v=20260823-perf5" as="script"><link rel="preload" href="private-access-v1.js?v=20260823-private5" as="script"><link rel="preload" href="workspace-access-v1.js?v=20260820-master4" as="script"><link rel="preload" href="engineer-chatbot-v3.js?v=20260823-ai4" as="script"><link rel="preload" href="halu-engineer-cutout-v4.webp" as="image" type="image/webp"><!-- cc-critical-hints:end -->';
+html=html.replace('</head>',criticalHints+'\n</head>');
+
 // El avance nunca cambia por sí solo el estado contractual del proyecto.
 const progressOld="function syncAllProjectProgress(){(db.projects||[]).forEach(p=>{const c=db.contracts.find(x=>x.projectId===p.id),a=projectAutomaticProgress(p,c);p.physicalProgress=a.physical;p.financialProgress=a.financial})}";
 const progressNew="function syncAllProjectProgress(){(db.projects||[]).forEach(p=>{const c=db.contracts.find(x=>x.projectId===p.id),a=projectAutomaticProgress(p,c);p.physicalProgress=a.physical;p.financialProgress=a.financial})}";
@@ -122,7 +127,7 @@ if(!html.includes('budget-portfolio-tab-v1.js')){
 }
 
 // Coordina los observadores antes de cargar cualquier módulo funcional.
-const performanceModule='performance-runtime-v1.js',performanceVersion='20260822-perf4';
+const performanceModule='performance-runtime-v1.js',performanceVersion='20260823-perf5';
 if(!fs.existsSync(performanceModule)) throw new Error(`No se encontró ${performanceModule}.`);
 try{new vm.Script(fs.readFileSync(performanceModule,'utf8'),{filename:performanceModule})}catch(err){throw new Error(`JavaScript inválido en ${performanceModule}: ${err.message}`)}
 html=html.replace(/<script\s+src=["']performance-runtime-v1\.js(?:\?[^"']*)?["']\s*><\/script>\s*/gi,'');
@@ -166,7 +171,7 @@ const lateModules=[
   ['web-knowledge-v2.js','20260822-short1'],
   ['engineering-manual-reference-v1.js','20260823-manual1'],
   ['adaptive-chat-learning-v1.js','20260822-global1'],
-  ['engineer-chatbot-v3.js','20260823-ai3'],
+['engineer-chatbot-v3.js','20260823-ai4'],
   ['halu-avatar-motion-v1.js','20260822-place13'],
   ['transparency-portal-v1.js','20260822-transparency1'],
   ['photo-gallery-polish-v2.js','20260822-photopolish2'],

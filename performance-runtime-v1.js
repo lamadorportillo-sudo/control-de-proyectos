@@ -30,4 +30,8 @@ class BatchedMutationObserver{
 }
 window.MutationObserver=BatchedMutationObserver;
 window.__ccNativeMutationObserver=NativeObserver;
+if('serviceWorker'in navigator&&location.protocol==='https:'){
+  const scope=new URL('.',location.href).pathname;
+  addEventListener('load',()=>navigator.serviceWorker.register(`${scope}service-worker-v1.js`,{scope,updateViaCache:'none'}).catch(error=>console.warn('Caché sin conexión no disponible.',error?.message||error)),{once:true});
+}
 })();

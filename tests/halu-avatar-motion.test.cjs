@@ -29,8 +29,8 @@ assert.match(src,/cc-halu-seated/,'incluye una postura visual sentada y compacta
 assert.match(src,/best\.blocked>=freeLimit/,'se sienta solamente cuando ninguna posicion admite el cuerpo completo');
 assert.match(src,/remove\('cc-halu-seated'\)/,'vuelve a ponerse de pie antes de caminar');
 assert.match(src,/cc-halu-seated-image/,'muestra una imagen sentada dedicada sin deformar el cuerpo');
-assert.ok(fs.existsSync('halu-engineer-seated-v1.png'),'existe el recurso gráfico del ingeniero sentado');
-assert.match(chatbot,/halu-engineer-seated-v1\.png/,'el avatar carga la postura sentada dedicada');
+assert.ok(fs.existsSync('halu-engineer-seated-v1.webp'),'existe el recurso gráfico optimizado del ingeniero sentado');
+assert.match(chatbot,/halu-engineer-seated-v1\.webp/,'el avatar carga la postura sentada optimizada');
 assert.match(src,/new MutationObserver\(\(\)=>scheduleAvoid/,'revisa su posicion cuando cambia la interfaz');
 assert.match(src,/addEventListener\('scroll'/,'revisa su posicion al desplazarse por la pagina');
 console.log('halu-avatar-motion: 30 verificaciones superadas');

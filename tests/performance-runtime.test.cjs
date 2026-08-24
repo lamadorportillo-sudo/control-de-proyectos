@@ -23,6 +23,11 @@ assert.match(src,/contain-intrinsic-size/,'reserva espacio sin calcular el conte
 assert.match(src,/takeRecords\(\)/,'mantiene la API esperada de MutationObserver');
 assert.match(src,/window\.MutationObserver=BatchedMutationObserver/,'activa la optimizacion para los modulos posteriores');
 assert.match(builder,/performanceModule='performance-runtime-v1\.js'/,'el generador debe conservar el coordinador de rendimiento');
+assert.match(src,/serviceWorker\.register/,'debe registrar caché estática para visitas posteriores');
+assert(fs.existsSync('service-worker-v1.js'),'debe publicar el trabajador de caché estática');
+const worker=fs.readFileSync('service-worker-v1.js','utf8');
+assert.match(worker,/request\.method!==['"]GET['"]/,'la caché no debe interceptar escrituras');
+assert.match(worker,/url\.origin!==self\.location\.origin/,'la caché debe limitarse al mismo origen');
 assert.match(builder,/html\.replace\(firstFeature/,'el generador debe cargarlo antes del primer modulo funcional');
 
 console.log('performance-runtime: 17 verificaciones superadas');

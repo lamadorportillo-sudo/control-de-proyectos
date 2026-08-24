@@ -178,7 +178,7 @@ function bindBody(pid){
 }
 
 function addTab(){
-  const pid=projectId(),nav=document.querySelector('nav.tabs');
+  const pid=projectId(),nav=document.querySelector('nav.tabs')||document.querySelector('button[data-tab]')?.closest('nav');
   if(!pid||!nav)return;
   let btn=nav.querySelector('[data-cc-programacion-control]');
   if(!btn){btn=document.createElement('button');btn.type='button';btn.dataset.ccProgramacionControl='1';btn.textContent='Programación y Control';const visits=nav.querySelector('[data-tab="visits"]');nav.insertBefore(btn,visits||nav.lastElementChild?.nextSibling||null)}
@@ -188,7 +188,7 @@ function schedule(){requestAnimationFrame(addTab)}
 injectStyle();
 new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});
 document.addEventListener('click',e=>{if(e.target.closest?.('[data-open],[data-tab],#backBtn'))setTimeout(addTab,30)},true);
-window.addEventListener('cc:data-changed',()=>{const btn=document.querySelector('nav.tabs [data-cc-programacion-control].active');if(btn){const pid=projectId();if(pid)render(pid)}});
+window.addEventListener('cc:data-changed',()=>{const btn=document.querySelector('[data-cc-programacion-control].active');if(btn){const pid=projectId();if(pid)render(pid)}});
 setTimeout(addTab,120);
 window.__ccProgramacionControl={render,metrics,state};
 })();

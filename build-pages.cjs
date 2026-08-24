@@ -153,7 +153,7 @@ const lateModules=[
   ['contract-integrity-fix-v1.js','20260822-integrity1'],
   ['integrity-hardening-v2.js','20260822-integrity2'],
   ['cross-module-sync-v1.js','20260822-relations1'],
-  ['programacion-control-v1.js','20260823-programacion1'],
+  ['programacion-control-v1.js','20260823-programacion2'],
   ['law-knowledge-v1.js','20260822-law1'],
   ['legal-assistant-v2.js','20260822-short1'],
   ['web-knowledge-v2.js','20260822-short1'],

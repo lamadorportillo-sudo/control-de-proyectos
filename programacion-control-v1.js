@@ -44,6 +44,7 @@ function injectStyle(){
 }
 
 function projectId(){
+  try{const active=window.ccCurrentProjectId?.();if(active)return active}catch{}
   try{if(typeof view!=='undefined'&&view?.screen==='project'&&view.projectId)return view.projectId}catch{}
   try{
     if(!document.querySelector('nav.tabs')||!document.getElementById('tabBody'))return'';

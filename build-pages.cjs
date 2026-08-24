@@ -18,6 +18,11 @@ if(!b64.startsWith('H4sI')) throw new Error('Paquete Base64/GZIP inválido');
 let html=zlib.gunzipSync(Buffer.from(b64,'base64')).toString('utf8');
 if(!html.includes('</body>')) throw new Error('HTML base incompleto');
 
+const viewStateOld="let db=loadDB();let session=JSON.parse(localStorage.getItem(SESSION)||'null');let view={screen:'projects',projectId:null,tab:'summary',search:'',trash:false};";
+const viewStateBridge=viewStateOld+"window.ccCurrentProjectId=()=>view.screen==='project'?view.projectId||'':'';";
+if(!html.includes(viewStateOld)) throw new Error('No se encontró el estado de navegación para exponer el proyecto activo.');
+html=html.replace(viewStateOld,viewStateBridge);
+
 // Conserva el endurecimiento de red y los datos de la sesión de seguridad.
 // La base comprimida es histórica, por lo que toda reconstrucción debe aplicar
 // explícitamente estas protecciones antes de publicar el HTML resultante.
@@ -153,7 +158,7 @@ const lateModules=[
   ['contract-integrity-fix-v1.js','20260822-integrity1'],
   ['integrity-hardening-v2.js','20260822-integrity2'],
   ['cross-module-sync-v1.js','20260822-relations1'],
-  ['programacion-control-v1.js','20260823-programacion3'],
+  ['programacion-control-v1.js','20260823-programacion4'],
   ['law-knowledge-v1.js','20260822-law1'],
   ['legal-assistant-v2.js','20260822-short1'],
   ['web-knowledge-v2.js','20260822-short1'],

@@ -8,7 +8,7 @@ const manifests={
   costs:[
     'fhis-cost-data-v1.js?v=20260823-fhis1',
     'assets/cost-knowledge/index.js?v=20260823-costsync2',
-    'cost-program-v1.js?v=20260823-costs4',
+    'cost-program-v1.js?v=20260823-costs5',
   ],
   legal:[
     'law-knowledge-v1.js?v=20260822-law1',

@@ -30,6 +30,7 @@ for(const file of ['fichas-17102013.pdf','listado-insumos.pdf','listado-activida
 assert(fs.existsSync('assets/cost-knowledge/sources/formato-fichas-presupuestos.pdf'),'debe conservar el formato PDF institucional proporcionado');
 for(const feature of ['CANON_INDEX','seenKnowledgeCodes','seenKnowledgeNames','printFicha','printBudget','FICHA DE COSTOS','PRESUPUESTO DE OBRA','GASTOS ADMINISTRATIVOS','costSettings'])assert(app.includes(feature),`falta ${feature}`);
 for(const feature of ['functionalFicha','pendingDefinition','Recurso y precio pendientes de definir','Ficha operable con datos pendientes'])assert(app.includes(feature),`falta tolerancia funcional: ${feature}`);
+for(const feature of ['resourceIdentity','aliases','current.uses+='])assert(app.includes(feature),`falta consolidación de insumos: ${feature}`);
 assert(fs.existsSync('scripts/audit-cost-library.cjs'),'debe existir la auditoría exhaustiva de fichas');
 const normalizeIdentity=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,'');
 const baseSeenCodes=new Set(),baseSeenNames=new Set();
@@ -41,4 +42,9 @@ const canonical=[...knowledge.index].sort((a,b)=>(/^F/i.test(b.code)?1:0)-(/^F/i
 const combined=[...canonicalBase,...canonical];
 assert.equal(new Set(combined.map(x=>normalizeIdentity(x.code)).filter(Boolean)).size,combined.filter(x=>normalizeIdentity(x.code)).length,'no debe publicar códigos duplicados');
 assert.equal(new Set(combined.map(x=>`${normalizeIdentity(x.description)}|${normalizeIdentity(x.unit)}`)).size,combined.length,'no debe publicar fichas duplicadas por descripción y unidad');
+const resourceKeys=knowledge.resources.map(x=>`${normalizeIdentity(x.description)}|${normalizeIdentity(x.unit)}|${normalizeIdentity(x.type)}`);
+const duplicateResourceGroups=resourceKeys.length-new Set(resourceKeys).size;
+assert(duplicateResourceGroups>0,'la fuente debe contener duplicados para validar la consolidación en pantalla');
+const albañiles=knowledge.resources.filter(x=>normalizeIdentity(x.description)==='ALBANIL'&&normalizeIdentity(x.unit)==='JDR'&&normalizeIdentity(x.type)==='MANODEOBRA');
+assert(albañiles.length>1,'la fuente debe conservar la trazabilidad de los códigos duplicados de albañil');
 console.log('cost-program: 6,254 fichas únicas y funcionales, precios, CRUD, impresión, presupuesto y especificaciones verificados');

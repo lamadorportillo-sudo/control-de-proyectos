@@ -5,7 +5,8 @@ const vm=require('node:vm');
 const source=fs.readFileSync('engineering-manual-reference-v1.js','utf8');
 const context={
   window:null,
-  document:{getElementById(){return null},createElement(){return{style:{},appendChild(){}}},head:{appendChild(){}},documentElement:{},querySelectorAll(){return[]}},
+  session:null,
+  document:{getElementById(){return null},querySelector(){return null},createElement(){return{style:{},appendChild(){}}},head:{appendChild(){}},documentElement:{},querySelectorAll(){return[]}},
   MutationObserver:class{observe(){}},requestAnimationFrame(fn){fn()},setTimeout(fn){fn()},setInterval(){return 1},clearInterval(){},addEventListener(){},fetch(){return Promise.resolve()},console
 };
 context.window=context;

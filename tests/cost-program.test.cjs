@@ -8,11 +8,15 @@ const data=context.__ccFhisCostData;
 assert(data,'la base FHIS/TSC debe exponer datos');
 assert.equal(data.stats.sheets,780,'debe conservar las 780 hojas del libro');
 assert(data.stats.fichas>=770,'debe importar la colección completa de fichas');
-assert(data.stats.resources>=3600,'debe importar los recursos de análisis unitario');
+assert(data.stats.resources>=6900,'debe importar los recursos y precios completos del análisis unitario');
 assert(data.fichas.some(f=>f.code==='F102009'),'debe incluir instalación de tubería PVC de 6 pulgadas');
 assert(data.fichas.some(f=>f.resources.some(r=>r.type==='Mano de obra')),'debe conservar mano de obra');
 assert(data.fichas.some(f=>f.resources.some(r=>r.type==='Material')),'debe conservar materiales');
 assert(data.fichas.some(f=>f.resources.some(r=>r.type==='Equipo')),'debe conservar equipo');
+assert.equal(data.catalogs.labor.find(x=>x.description==='Albañil')?.price,380,'debe leer la jornada de albañil de la tabla Excel FHIS');
+assert.equal(data.catalogs.materials.find(x=>x.description==='Cemento gris')?.price,152,'debe leer el precio del cemento de la tabla Excel FHIS');
+assert(data.catalogs.equipment.length>=30,'debe leer la tabla completa de precios de equipo FHIS');
+assert(data.catalogs.equipment.every(x=>x.source==='Tabla Excel FHIS/TSC · referencia 2021'),'cada precio de equipo debe conservar su fuente y período');
 
 const app=fs.readFileSync('cost-program-v1.js','utf8');
 for(const feature of ['Fichas de costo','Presupuesto','Formatos','Institución','Duplicar y editar','Generar adaptado'])assert(app.includes(feature),`falta ${feature}`);
@@ -30,7 +34,7 @@ for(const file of ['fichas-17102013.pdf','listado-insumos.pdf','listado-activida
 assert(fs.existsSync('assets/cost-knowledge/sources/formato-fichas-presupuestos.pdf'),'debe conservar el formato PDF institucional proporcionado');
 for(const feature of ['CANON_INDEX','seenKnowledgeCodes','seenKnowledgeNames','printFicha','printBudget','FICHA DE COSTOS','PRESUPUESTO DE OBRA','GASTOS ADMINISTRATIVOS','costSettings'])assert(app.includes(feature),`falta ${feature}`);
 for(const feature of ['functionalFicha','pendingDefinition','Recurso y precio pendientes de definir','Ficha operable con datos pendientes'])assert(app.includes(feature),`falta tolerancia funcional: ${feature}`);
-for(const feature of ['resourceIdentity','aliases','current.uses+='])assert(app.includes(feature),`falta consolidación de insumos: ${feature}`);
+for(const feature of ['resourceIdentity','canonicalUnit','fhisPriceRows','Tabla Excel FHIS/TSC','aliases','current.uses+='])assert(app.includes(feature),`falta consolidación o precio FHIS: ${feature}`);
 assert(fs.existsSync('scripts/audit-cost-library.cjs'),'debe existir la auditoría exhaustiva de fichas');
 const normalizeIdentity=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,'');
 const baseSeenCodes=new Set(),baseSeenNames=new Set();

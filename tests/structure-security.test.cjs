@@ -40,10 +40,10 @@ assert(/content-length[\s\S]{0,160}>\s*24_?000/.test(halu),'La función de Halu 
 assert(html.includes('engineer-chatbot-v3.js?v=20260823-ai4'),'La versión publicada de Halu no coincide.');
 assert(html.includes('programacion-control-v1.js?v=20260823-programacion4'),'Programación y Control debe estar activa.');
 const lazyLoader=fs.readFileSync(path.join(root,'feature-lazy-loader-v1.js'),'utf8');
-assert(html.includes('feature-lazy-loader-v1.js?v=20260823-lazy2'),'La carga progresiva debe estar activa.');
-assert(lazyLoader.includes('fhis-cost-data-v1.js?v=20260823-fhis1'),'La base FHIS/TSC debe estar disponible bajo demanda.');
+assert(html.includes('feature-lazy-loader-v1.js?v=20260824-lazy3'),'La carga progresiva debe estar activa.');
 assert(lazyLoader.includes('assets/cost-knowledge/index.js?v=20260823-costsync2'),'El índice completo de fichas debe estar disponible bajo demanda.');
-assert(lazyLoader.includes('cost-program-v1.js?v=20260823-costs5'),'El Programa de costos debe estar disponible bajo demanda.');
+assert(lazyLoader.includes('fhis-cost-data-v1.js?v=20260824-fhis2'),'La tabla de precios FHIS debe estar disponible bajo demanda.');
+assert(lazyLoader.includes('cost-program-v1.js?v=20260824-costs6'),'El Programa de costos debe estar disponible bajo demanda.');
 assert(lazyLoader.includes('law-knowledge-v1.js?v=20260822-law1'),'La biblioteca legal debe estar disponible bajo demanda.');
 assert(html.includes('engineering-manual-reference-v1.js?v=20260823-manual1'),'La referencia técnica del manual debe estar activa.');
 

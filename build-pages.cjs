@@ -162,7 +162,7 @@ const lateModules=[
   ['project-search-clean-v1.js','20260820-searchclean1'],
   ['storage-quota-fix-v1.js','20260820-storagequota2'],
   ['project-tabs-complete-v1.js','20260823-tabscomplete24'],
-  ['feature-lazy-loader-v1.js','20260823-lazy2'],
+  ['feature-lazy-loader-v1.js','20260824-lazy3'],
   ['procurement-process-save-v4.js','20260820-procsave4'],
   ['contract-integrity-fix-v1.js','20260822-integrity1'],
   ['integrity-hardening-v2.js','20260822-integrity2'],

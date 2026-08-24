@@ -6,9 +6,9 @@ const base=new URL('.',document.currentScript?.src||location.href).href;
 const pending=new Map();
 const manifests={
   costs:[
-    'fhis-cost-data-v1.js?v=20260823-fhis1',
+    'fhis-cost-data-v1.js?v=20260824-fhis2',
     'assets/cost-knowledge/index.js?v=20260823-costsync2',
-    'cost-program-v1.js?v=20260823-costs5',
+    'cost-program-v1.js?v=20260824-costs6',
   ],
   legal:[
     'law-knowledge-v1.js?v=20260822-law1',

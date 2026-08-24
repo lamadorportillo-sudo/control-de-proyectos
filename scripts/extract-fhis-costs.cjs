@@ -24,7 +24,7 @@ for(const m of wb.matchAll(/<sheet name="([^"]+)"[^>]*r:id="([^"]+)"\/>/g))sheet
 
 function cells(file){
   const src=xml(file),map={};
-  for(const m of src.matchAll(/<c\s+([^>]*\br="([A-Z]+\d+)"[^>]*)>([\s\S]*?)<\/c>/g)){
+  for(const m of src.matchAll(/<c\s+([^>]*\br="([A-Z]+\d+)"[^>]*)(?<!\/)>([\s\S]*?)<\/c>/g)){
     const attrs=m[1],body=m[3],type=(attrs.match(/\bt="([^"]+)"/)||[])[1]||'';
     const value=(body.match(/<v>([\s\S]*?)<\/v>/)||[])[1];
     const inline=[...body.matchAll(/<t(?: [^>]*)?>([\s\S]*?)<\/t>/g)].map(x=>x[1]).join('');
@@ -41,19 +41,22 @@ const num=v=>Number.isFinite(Number(v))?Number(v):0;
 const text=v=>String(v??'').trim();
 const norm=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
 
-function catalog(sheet,kind){
+function catalog(sheet,kind,prefix){
   const c=cells(sheet.file),rows=[];
   for(let r=1;r<2500;r++){
-    const vals=['A','B','C','D','E','F','G'].map(x=>V(c,x+r));
-    if(!vals.some(x=>text(x)))continue;
-    const code=text(vals[0]),description=text(vals[1]||vals[2]);
-    const candidates=vals.slice(2).filter(x=>Number.isFinite(Number(x))&&Number(x)>0);
-    if(description&&candidates.length)rows.push({code,description,unit:text(vals[2]),price:num(candidates.at(-1)),kind});
+    const name=text(V(c,`A${r}`)),b=V(c,`B${r}`),cValue=V(c,`C${r}`),d=V(c,`D${r}`),e=V(c,`E${r}`);
+    if(!name)continue;
+    let unit='',price=0;
+    if(kind==='Mano de obra'){unit='JDR';price=num(b)}
+    else if(kind==='Equipo'){unit=text(b);price=num(cValue)}
+    else{unit=typeof b==='string'?text(b):'';price=num(cValue)||num(e)||num(d)||(typeof b==='number'?num(b):0)}
+    if(!(price>0))continue;
+    rows.push({code:`FHIS-${prefix}-${String(rows.length+1).padStart(3,'0')}`,description:name,unit:unit||'UND',price,kind,source:'Tabla Excel FHIS/TSC · referencia 2021',sourceSheet:sheet.name,sourceRow:r,date:'2021'});
   }
   return rows;
 }
 
-const catalogs={labor:catalog(sheets[1],'Mano de obra'),materials:catalog(sheets[2],'Material'),equipment:catalog(sheets[3],'Equipo')};
+const catalogs={labor:catalog(sheets[1],'Mano de obra','MO'),materials:catalog(sheets[2],'Material','MAT'),equipment:catalog(sheets[3],'Equipo','EQ')};
 const fichas=[];
 for(const sheet of sheets.slice(4)){
   const m=cells(sheet.file),code=text(V(m,'B14'))||sheet.name.replace(/\s*\(\d+\)$/,''),description=text(V(m,'B12'))||text(V(m,'A12'));

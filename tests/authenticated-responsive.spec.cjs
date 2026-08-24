@@ -150,8 +150,13 @@ async function assertNoGlobalOverflow(page, label) {
     scrollWidth: document.documentElement.scrollWidth,
     clientWidth: document.documentElement.clientWidth,
     bodyWidth: document.body.scrollWidth,
+    offenders: [...document.querySelectorAll('body *')].map(el => {
+      const r = el.getBoundingClientRect();
+      return { tag: el.tagName, id: el.id, cls: String(el.className || '').slice(0, 90), left: Math.round(r.left), right: Math.round(r.right), width: Math.round(r.width), scrollWidth: el.scrollWidth };
+    }).filter(x => x.right > document.documentElement.clientWidth + 3 || x.left < -3)
+      .sort((a, b) => Math.max(b.right - document.documentElement.clientWidth, -b.left) - Math.max(a.right - document.documentElement.clientWidth, -a.left)).slice(0, 6),
   }));
-  expect(dims.scrollWidth, `${label}: desbordamiento global`).toBeLessThanOrEqual(dims.clientWidth + 3);
+  expect(dims.scrollWidth, `${label}: desbordamiento global; ${JSON.stringify(dims.offenders)}`).toBeLessThanOrEqual(dims.clientWidth + 3);
   expect(dims.bodyWidth, `${label}: desbordamiento del body`).toBeLessThanOrEqual(dims.clientWidth + 3);
 }
 
@@ -200,7 +205,9 @@ for (const vp of viewports) {
       await page.waitForTimeout(500);
       await assertNoGlobalOverflow(page, `${vp.name} expediente`);
 
-      const tabs = page.locator('nav.tabs button, .tabs button');
+      // Only exercise real project tabs. Auxiliary actions such as
+      // "Invitaciones" intentionally live beside the tabs but open a modal.
+      const tabs = page.locator('nav.tabs button[data-tab], .tabs button[data-tab]');
       const count = await tabs.count();
       expect(count, `${vp.name}: cantidad de pestañas`).toBeGreaterThanOrEqual(9);
 

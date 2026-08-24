@@ -13,6 +13,7 @@ const rpcReferences=[...new Set([...sources.matchAll(/\/rest\/v1\/rpc\/([a-z0-9_
 const publishedRpcs=[
   'acknowledge_alert','approve_access_request','archive_project','create_workspace_invite',
   'get_control_center','record_reconciliation_review','reject_access_request','restore_project','save_app_state',
+  'security_lockdown_other_users',
 ].sort();
 assert.deepEqual(rpcReferences,publishedRpcs,'La interfaz cambio sus RPC; hay que validar el contrato en Supabase antes de publicar');
 

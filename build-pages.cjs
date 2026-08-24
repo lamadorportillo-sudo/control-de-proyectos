@@ -126,8 +126,8 @@ const performanceModule='performance-runtime-v1.js',performanceVersion='20260822
 if(!fs.existsSync(performanceModule)) throw new Error(`No se encontró ${performanceModule}.`);
 try{new vm.Script(fs.readFileSync(performanceModule,'utf8'),{filename:performanceModule})}catch(err){throw new Error(`JavaScript inválido en ${performanceModule}: ${err.message}`)}
 html=html.replace(/<script\s+src=["']performance-runtime-v1\.js(?:\?[^"']*)?["']\s*><\/script>\s*/gi,'');
-const firstFeature='<script src="budget-portfolio-tab-v1.js"></script>';
-html=html.replace(firstFeature,`<script src="${performanceModule}?v=${performanceVersion}"></script>\n${firstFeature}`);
+const firstFeature=/<script src="budget-portfolio-tab-v1\.js(?:\?v=[^"]+)?"><\/script>/;
+html=html.replace(firstFeature,`<script src="${performanceModule}?v=${performanceVersion}"></script>\n<script src="budget-portfolio-tab-v1.js?v=20260823-budget5"></script>`);
 
 // Arquitectura ejecutiva, normativa histórica, documentos de adjudicación y diseño corporativo.
 // Los módulos funcionales se cargan de forma directa para no depender de cachés o cargadores secundarios.
@@ -136,6 +136,9 @@ const lateModules=[
   ['private-access-v1.js','20260823-private5'],
   ['password-recovery-v1.js','20260822-password1'],
   ['admin-users-v1.js','20260823-admin-users4'],
+  ['security-runtime-v1.js','20260823-security1'],
+  ['security-center-v1.js','20260823-security-center1'],
+  ['mfa-security-v1.js','20260823-mfa1'],
   ['alerts-compact-v1.js','20260820-master4'],
   ['dashboard-executive-v1.js','20260820-master4'],
   ['engineering-ux-v1.js','20260820-master4'],

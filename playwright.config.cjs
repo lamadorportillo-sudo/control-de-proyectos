@@ -11,6 +11,7 @@ module.exports = defineConfig({
   reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
   use: {
     browserName: 'chromium',
+    channel: 'chrome',
     headless: true,
     ignoreHTTPSErrors: true,
     actionTimeout: 12000,

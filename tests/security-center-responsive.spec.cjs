@@ -43,6 +43,9 @@ async function install(page){
       return route.fulfill({status:200,contentType:'application/json',body:'{}'});
     }
     if(path.includes('/auth/v1/logout'))return route.fulfill({status:200,contentType:'application/json',body:'{}'});
+    if(path.includes('/rest/v1/workspace_members'))return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([{workspace_id:WORKSPACE_ID,role:'admin',active:true}])});
+    if(path.includes('/rest/v1/profiles'))return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([{full_name:'Administrador QA',active:true}])});
+    if(path.includes('/rest/v1/app_state'))return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([{data:fixture,version:1,updated_at:'2026-08-23T01:00:00Z'}])});
     return route.fulfill({status:200,contentType:'application/json',body:'[]'});
   });
 }
@@ -67,8 +70,8 @@ for(const vp of [{name:'seguridad-mobile',width:390,height:844,touch:true},{name
 
       await expect(page.getByText('Ingresos correctos · 24 h')).toBeVisible();
       await expect(page.getByText('Intentos fallidos · 24 h')).toBeVisible();
-      await expect(page.getByText('Editor QA')).toBeVisible();
-      await expect(page.getByText('Android · Chrome')).toBeVisible();
+      await expect(page.getByText('Editor QA').first()).toBeVisible();
+      await expect(page.getByText('Android · Chrome').first()).toBeVisible();
       await expect(page.getByText('Intento fallido')).toBeVisible();
       await noOverflow(page,vp.name);
 

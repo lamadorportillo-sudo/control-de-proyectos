@@ -59,7 +59,7 @@ jobs:
           html = path.read_text(encoding='utf-8')
 
           replacements = [
-              (r'project-tabs-complete-v1\.js\?v[^\"\']*', 'project-tabs-complete-v1.js?v=20260823-tabscomplete23', 'project-tabs-complete-v1.js'),
+              (r'project-tabs-complete-v1\.js\?v[^\"\']*', 'project-tabs-complete-v1.js?v=20260823-tabscomplete24', 'project-tabs-complete-v1.js'),
               (r'private-access-v1\.js\?v[^\"\']*', 'private-access-v1.js?v=20260823-private5', 'private-access-v1.js'),
               (r'admin-users-v1\.js\?v[^\"\']*', 'admin-users-v1.js?v=20260823-admin-users4', 'admin-users-v1.js'),
           ]
@@ -71,7 +71,7 @@ jobs:
 
           path.write_text(html, encoding='utf-8')
           PY
-          grep -q 'project-tabs-complete-v1.js?v=20260823-tabscomplete23' index.html
+          grep -q 'project-tabs-complete-v1.js?v=20260823-tabscomplete24' index.html
           grep -q 'private-access-v1.js?v=20260823-private5' index.html
           grep -q 'admin-users-v1.js?v=20260823-admin-users4' index.html
 
@@ -84,6 +84,7 @@ jobs:
           test -s security-runtime-v1.js
           test -s security-center-v1.js
           test -s mfa-security-v1.js
+          test -s engineering-manual-reference-v1.js
           grep -q 'NUCLEO DE INTEGRIDAD Y CONCURRENCIA V1' index.html
           grep -q 'save_app_state' index.html
           grep -q 'portfolio-redesign-v1.js' index.html
@@ -97,6 +98,11 @@ jobs:
           grep -q 'engineering-visibility-fix-v1.js' index.html
           grep -q 'ui-operational-polish-v1.js' index.html
           grep -q 'home-executive-fix-v2.js' project-tabs-complete-v1.js
+          grep -q 'engineering-manual-reference-v1.js?v=20260823-manual2' project-tabs-complete-v1.js
+          grep -q 'REFERENCIA TECNICA DEL MANUAL DE INGENIERIA V2' engineering-manual-reference-v1.js
+          grep -q 'Manual técnico' engineering-manual-reference-v1.js
+          grep -q '150 páginas' engineering-manual-reference-v1.js
+          grep -q 'jurisdictionNote' engineering-manual-reference-v1.js
           grep -q 'security-runtime-v1.js?v=20260823-security3' project-tabs-complete-v1.js
           grep -q 'mfa-security-v1.js?v=20260823-mfa3' project-tabs-complete-v1.js
           grep -q 'security-center-v1.js?v=20260823-securitycenter4' project-tabs-complete-v1.js
@@ -108,7 +114,7 @@ jobs:
           grep -q "securitySessionId:priorSession.securitySessionId||''" index.html
           grep -q "deviceLabel:priorSession.deviceLabel||''" index.html
           grep -q "cache:'no-store'" index.html
-          grep -q 'project-tabs-complete-v1.js?v=20260823-tabscomplete23' index.html
+          grep -q 'project-tabs-complete-v1.js?v=20260823-tabscomplete24' index.html
           grep -q 'private-access-v1.js?v=20260823-private5' index.html
           grep -q 'admin-users-v1.js?v=20260823-admin-users4' index.html
           grep -q '</html>' index.html
@@ -116,7 +122,7 @@ jobs:
             echo 'El HTML generado todavía contiene el cargador Base64.' >&2
             exit 1
           fi
-          echo 'Aplicación generada, caché local, renovación de token, accesos, 2FA administrativa y seguridad verificados.'
+          echo 'Aplicación generada, Manual técnico, caché local, renovación de token, accesos, 2FA administrativa y seguridad verificados.'
 
       - name: Publicar index.html en main
         shell: bash

@@ -41,7 +41,8 @@ function readSheet(index) {
 
 const workbook = read('xl/workbook.xml');
 const count = [...workbook.matchAll(/<sheet\s/g)].length;
-const sampleIndexes = [...new Set([1, 2, 3, 10, 50, 100, 500, 1000, 5000, 10000, count])].filter((n) => n <= count);
+const requestedIndexes = process.argv.slice(4).map(Number).filter(Number.isFinite);
+const sampleIndexes = [...new Set(requestedIndexes.length ? requestedIndexes : [1, 2, 3, 10, 50, 100, 500, 1000, 5000, 10000, count])].filter((n) => n <= count);
 const samples = sampleIndexes.map((index) => ({ index, rows: readSheet(index) }));
 fs.writeFileSync(output, JSON.stringify({ count, sharedCount: shared.length, shared: shared.slice(0, 100), samples }, null, 2));
 console.log(JSON.stringify({ count, sharedCount: shared.length, samples: sampleIndexes }));

@@ -62,17 +62,22 @@ for (let index = 1; index <= sheetCount; index += 1) {
     const a = text(value(map, `A${row}`));
     const b = text(value(map, `B${row}`));
     const c = text(value(map, `C${row}`));
+    const dRaw = value(map, `D${row}`);
+    const eRaw = value(map, `E${row}`);
     const marker = `${a} ${b}`.toUpperCase();
     if (/MATERIA/.test(marker) && !b) { type = 'Material'; continue; }
     if (/MANO DE OBRA/.test(marker)) { type = 'Mano de obra'; continue; }
     if (/HERRAMIENTA|EQUIPO/.test(marker)) { type = 'Equipo'; continue; }
     if (!a || !b || /TOTAL|RENDIMIENTO|DESPERDICIO/.test(marker)) continue;
-    const quantity = number(value(map, `D${row}`));
-    const waste = number(value(map, `E${row}`));
+    const legacyLayout = typeof dRaw === 'string' && dRaw.trim() !== '' && !Number.isFinite(Number(dRaw));
+    const resourceDescription = legacyLayout && c && !Number.isFinite(Number(c)) ? `${b} ${c}`.trim() : b;
+    const resourceUnit = legacyLayout ? text(dRaw) : c;
+    const quantity = legacyLayout ? number(eRaw) : number(dRaw);
+    const waste = legacyLayout ? 0 : number(eRaw);
     if (!quantity && !waste) continue;
-    const item = { type, code: a, description: b, unit: c, quantity, waste };
+    const item = { type, code: a, description: resourceDescription, unit: resourceUnit, quantity, waste };
     rows.push(item);
-    const old = resources.get(a) || { code: a, description: b, unit: c, type, uses: 0 };
+    const old = resources.get(a) || { code: a, description: resourceDescription, unit: resourceUnit, type, uses: 0 };
     old.uses += 1;
     resources.set(a, old);
   }

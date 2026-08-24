@@ -11,6 +11,6 @@ assert(builder.includes("['project-tabs-complete-v1.js','20260823-tabscomplete24
 
 assert(builder.includes("['security-runtime-v1.js','20260823-security1']"),'El generador debe publicar el control de sesiones.');
 assert(builder.includes("['security-center-v1.js','20260823-security-center1']"),'El generador debe publicar el Centro de Seguridad.');
-assert(builder.includes("['mfa-security-v1.js','20260823-mfa1']"),'El generador debe publicar la configuracion 2FA.');
+assert(builder.includes("['mfa-security-v1.js','20260824-mfa4']"),'El generador debe publicar la configuracion 2FA.');
 
 console.log('OK build pipeline security');

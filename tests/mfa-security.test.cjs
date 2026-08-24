@@ -68,10 +68,11 @@ assert.match(halu,/claims\?\.aal!=="aal2"/,'Halu debe negar sesiones AAL1 cuando
 assert.match(halu,/security_valid_after/,'Halu debe rechazar tokens anteriores a una revocación');
 assert.match(halu,/adminMfaPastDueMissing/,'Halu debe respetar la obligación 2FA administrativa');
 
-for(const token of ['Activar 2FA','verify_enrollment','cancel_enrollment','cc-mfa-qr','2FA será obligatoria para administradores','Recuperación'])assert.match(mfaUi,new RegExp(token),`la interfaz 2FA debe incluir ${token}`);
+for(const token of ['Activar 2FA','verify_enrollment','cancel_enrollment','cc-mfa-qr','Recuperación'])assert.match(mfaUi,new RegExp(token),`la interfaz 2FA debe incluir ${token}`);
+assert.doesNotMatch(mfaUi,/Activar 2FA ahora|2FA será obligatoria para administradores/,'no debe mostrar el aviso permanente de activación 2FA');
 assert.match(mfaUi,/function safeQr/,'la interfaz debe validar el origen del QR');
 assert.match(mfaUi,/data:image\\\/svg\\\+xml/,'el QR debe restringirse a una imagen SVG embebida');
 assert.match(mfaUi,/noticeCheckedAt<30000|now-noticeCheckedAt<30000/,'el aviso 2FA debe limitar consultas repetidas');
-assert.match(loader,/mfa-security-v1\.js\?v=20260823-mfa3/,'el cargador debe publicar la interfaz 2FA obligatoria final');
+assert.match(loader,/mfa-security-v1\.js\?v=20260824-mfa4/,'el cargador debe publicar la interfaz 2FA sin aviso permanente');
 
 console.log('mfa-security: segundo factor, periodo de preparación, obligatoriedad administrativa, recuperación, RLS, Halu e interfaz verificados');

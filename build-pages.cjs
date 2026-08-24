@@ -143,7 +143,7 @@ const lateModules=[
   ['admin-users-v1.js','20260823-admin-users4'],
   ['security-runtime-v1.js','20260823-security1'],
   ['security-center-v1.js','20260823-security-center1'],
-  ['mfa-security-v1.js','20260823-mfa1'],
+  ['mfa-security-v1.js','20260824-mfa4'],
   ['alerts-compact-v1.js','20260820-master4'],
   ['dashboard-executive-v1.js','20260820-master4'],
   ['engineering-ux-v1.js','20260820-master4'],

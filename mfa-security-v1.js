@@ -13,13 +13,12 @@ function css(){if(document.getElementById('cc-mfa-style'))return;const s=documen
 
 async function refreshAdminNotice(force=false){
  css();const old=document.getElementById('ccMfaAdminNotice'),btn=document.getElementById('ccMfaBtn');
+ old?.remove();
  if(!session?.accessToken||String(cloudRole||'')!=='admin'){old?.remove();if(btn)btn.textContent='2FA';return}
  const now=Date.now();if(!force&&now-noticeCheckedAt<30000)return;if(noticeBusy)return;noticeBusy=true;noticeCheckedAt=now;
  try{
   const d=await call('status');
   if(btn){btn.textContent=d.enabled?'2FA ✓':'2FA · pendiente';btn.classList.toggle('good',!!d.enabled)}
-  if(!d.required||d.enabled){old?.remove();return}
-  const notice=old||document.createElement('div');notice.id='ccMfaAdminNotice';notice.className=d.past_due?'danger':'';notice.innerHTML=`<div><b>${d.past_due?'2FA obligatoria: acceso administrativo restringido':'2FA será obligatoria para administradores'}</b><small>${d.past_due?'Debe activarla para conservar las funciones administrativas.':`Actívela antes de ${E(when(d.required_after))}. Hasta entonces la cuenta continúa funcionando durante el periodo de preparación.`}</small></div><button class="btn primary" type="button">Activar 2FA ahora</button>`;notice.querySelector('button').onclick=mfaModal;if(!old){const top=document.querySelector('.topbar');top?.insertAdjacentElement('afterend',notice)}
  }catch{}finally{noticeBusy=false}
 }
 

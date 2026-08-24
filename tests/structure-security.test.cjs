@@ -49,6 +49,6 @@ assert(html.includes('engineering-manual-reference-v1.js?v=20260823-manual1'),'L
 
 assert(html.includes('security-runtime-v1.js?v=20260823-security1'),'El control de sesiones debe estar activo.');
 assert(html.includes('security-center-v1.js?v=20260823-security-center1'),'El Centro de Seguridad debe estar activo.');
-assert(html.includes('mfa-security-v1.js?v=20260823-mfa1'),'La configuracion 2FA debe estar activa.');
+assert(html.includes('mfa-security-v1.js?v=20260824-mfa4'),'La configuracion 2FA debe estar activa.');
 
 console.log(`structure-security: ${localRefs.length} referencias, ${scripts.length} scripts, ${staticIds.length} ID y ${sourceFiles.length} fuentes verificadas`);

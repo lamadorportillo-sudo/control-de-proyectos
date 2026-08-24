@@ -1,166 +1,58 @@
-/* ===== CONTROL CONTRACTUAL · ACCESO PRIVADO CON APROBACIÓN V4 ===== */
+/* ===== CONTROL CONTRACTUAL · ACCESO PRIVADO CON APROBACIÓN V5 ===== */
 (()=>{
 'use strict';
-if(window.__CC_PRIVATE_ACCESS_V1__)return;
-window.__CC_PRIVATE_ACCESS_V1__=true;
-
+if(window.__CC_PRIVATE_ACCESS_V1__)return;window.__CC_PRIVATE_ACCESS_V1__=true;
 const E=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const endpoint=()=>`${SUPABASE_URL}/functions/v1/request-access`;
-const loginEndpoint=()=>`${SUPABASE_URL}/functions/v1/secure-login`;
-const mfaEndpoint=()=>`${SUPABASE_URL}/functions/v1/secure-mfa`;
-const authHeaders=()=>({'apikey':SUPABASE_KEY,'Content-Type':'application/json'});
+const endpoint=()=>`${SUPABASE_URL}/functions/v1/request-access`,loginEndpoint=()=>`${SUPABASE_URL}/functions/v1/secure-login`,mfaEndpoint=()=>`${SUPABASE_URL}/functions/v1/secure-mfa`;
+const authHeaders=()=>({apikey:SUPABASE_KEY,'Content-Type':'application/json'});
 const strongPassword=p=>{p=String(p||'');let g=0;if(/[a-z]/.test(p))g++;if(/[A-Z]/.test(p))g++;if(/[0-9]/.test(p))g++;if(/[^A-Za-z0-9]/.test(p))g++;return p.length>=12&&p.length<=128&&g>=3};
+const safeQr=src=>/^data:image\/svg\+xml(?:;charset=[^;,]+)?(?:;base64)?,/i.test(String(src||''))?String(src):'';
 let authMode='login',requestRegistered=false,requestEmail='';
+
+async function logoutSeed(seed){try{await fetch(SUPABASE_URL+'/auth/v1/logout',{method:'POST',headers:{...authHeaders(),Authorization:`Bearer ${seed.access_token}`},cache:'no-store'})}catch{}}
+async function mfaCall(seed,action,payload={}){const r=await fetch(mfaEndpoint(),{method:'POST',headers:{...authHeaders(),Authorization:`Bearer ${seed.access_token}`},body:JSON.stringify({action,refresh_token:seed.refresh_token,...payload}),cache:'no-store'}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'No se pudo completar la verificación en dos pasos.');return d}
 
 function secondFactorPrompt(seed){
  return new Promise((resolve,reject)=>{
-  const bg=document.createElement('div');bg.className='modal-bg';bg.style.zIndex='9999';
-  bg.innerHTML=`<section class="modal small" role="dialog" aria-modal="true" aria-labelledby="ccMfaLoginTitle"><div class="modal-head"><div><div class="eyebrow">SEGURIDAD DE ACCESO</div><h2 id="ccMfaLoginTitle" style="margin:0">Verificación en dos pasos</h2></div></div><div class="modal-body"><div class="alert info">Abra su aplicación autenticadora e ingrese el código temporal para completar el acceso.</div><label class="field"><span>Código de autenticación</span><input id="ccMfaLoginCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="000000" style="font-size:22px;letter-spacing:.18em;text-align:center"></label><div id="ccMfaLoginMsg" class="notice" style="margin-top:8px">La contraseña ya fue validada. Falta comprobar el segundo factor.</div><div class="modal-actions" style="margin-top:14px"><button type="button" class="btn" id="ccMfaCancel">Cancelar</button><button type="button" class="btn primary" id="ccMfaVerify">Verificar y entrar</button></div></div></section>`;
-  document.body.appendChild(bg);
-  const input=bg.querySelector('#ccMfaLoginCode'),verify=bg.querySelector('#ccMfaVerify'),cancel=bg.querySelector('#ccMfaCancel'),msg=bg.querySelector('#ccMfaLoginMsg');
-  const close=()=>bg.remove();
-  const cancelLogin=async()=>{try{await fetch(SUPABASE_URL+'/auth/v1/logout',{method:'POST',headers:{...authHeaders(),Authorization:`Bearer ${seed.access_token}`},cache:'no-store'})}catch{}close();reject(new Error('Verificación en dos pasos cancelada.'))};
-  cancel.onclick=cancelLogin;
-  bg.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();cancelLogin()}if(e.key==='Enter'){e.preventDefault();verify.click()}});
-  verify.onclick=async()=>{
-   const code=String(input.value||'').replace(/\D/g,'');
-   if(code.length<6){msg.textContent='Escriba el código de su aplicación autenticadora.';input.focus();return}
-   verify.disabled=true;cancel.disabled=true;msg.textContent='Comprobando segundo factor…';
-   try{
-    const r=await fetch(mfaEndpoint(),{method:'POST',headers:{...authHeaders(),Authorization:`Bearer ${seed.access_token}`},body:JSON.stringify({action:'verify_login',factor_id:seed.mfa_factor_id||'',code,refresh_token:seed.refresh_token}),cache:'no-store'});const d=await r.json().catch(()=>({}));
-    if(!r.ok)throw new Error(d.error||'No se pudo verificar el código.');
-    close();resolve(d);
-   }catch(e){msg.textContent=e.message||'Código incorrecto.';input.value='';input.focus();verify.disabled=false;cancel.disabled=false}
-  };
-  setTimeout(()=>input.focus(),50);
+  const bg=document.createElement('div');bg.className='modal-bg';bg.style.zIndex='9999';bg.innerHTML=`<section class="modal small" role="dialog" aria-modal="true" aria-labelledby="ccMfaLoginTitle"><div class="modal-head"><div><div class="eyebrow">SEGURIDAD DE ACCESO</div><h2 id="ccMfaLoginTitle" style="margin:0">Verificación en dos pasos</h2></div></div><div class="modal-body"><div class="alert info">Abra su aplicación autenticadora e ingrese el código temporal para completar el acceso.</div><label class="field"><span>Código de autenticación</span><input id="ccMfaLoginCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="000000" style="font-size:22px;letter-spacing:.18em;text-align:center"></label><div id="ccMfaLoginMsg" class="notice" style="margin-top:8px">La contraseña ya fue validada. Falta comprobar el segundo factor.</div><div class="modal-actions" style="margin-top:14px"><button type="button" class="btn" id="ccMfaCancel">Cancelar</button><button type="button" class="btn primary" id="ccMfaVerify">Verificar y entrar</button></div></div></section>`;document.body.appendChild(bg);
+  const input=bg.querySelector('#ccMfaLoginCode'),verify=bg.querySelector('#ccMfaVerify'),cancel=bg.querySelector('#ccMfaCancel'),msg=bg.querySelector('#ccMfaLoginMsg'),close=()=>bg.remove();
+  const cancelLogin=async()=>{await logoutSeed(seed);close();reject(new Error('Verificación en dos pasos cancelada.'))};cancel.onclick=cancelLogin;bg.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();cancelLogin()}if(e.key==='Enter'){e.preventDefault();verify.click()}});
+  verify.onclick=async()=>{const code=String(input.value||'').replace(/\D/g,'');if(code.length<6){msg.textContent='Escriba el código de su aplicación autenticadora.';input.focus();return}verify.disabled=true;cancel.disabled=true;msg.textContent='Comprobando segundo factor…';try{const d=await mfaCall(seed,'verify_login',{factor_id:seed.mfa_factor_id||'',code});close();resolve(d)}catch(e){msg.textContent=e.message||'Código incorrecto.';input.value='';input.focus();verify.disabled=false;cancel.disabled=false}};setTimeout(()=>input.focus(),50);
+ });
+}
+
+function mandatoryEnrollmentPrompt(seed){
+ return new Promise((resolve,reject)=>{
+  const bg=document.createElement('div');bg.className='modal-bg';bg.style.zIndex='10000';bg.innerHTML=`<section class="modal" role="dialog" aria-modal="true"><div class="modal-head"><div><div class="eyebrow">PROTECCIÓN ADMINISTRATIVA</div><h2 style="margin:0">Active la verificación en dos pasos</h2></div></div><div class="modal-body"><div class="alert danger"><b>2FA es obligatoria para las cuentas administradoras.</b><br>La fecha de preparación terminó. Debe registrar su aplicación autenticadora antes de abrir el contenido.</div><div id="ccMandatoryMfa"><div class="empty">Preparando código QR seguro…</div></div></div></section>`;document.body.appendChild(bg);const host=bg.querySelector('#ccMandatoryMfa');let factorId='';
+  const cancel=async()=>{try{if(factorId)await mfaCall(seed,'cancel_enrollment',{factor_id:factorId})}catch{}await logoutSeed(seed);bg.remove();reject(new Error('Debe configurar 2FA para ingresar como administrador.'))};
+  (async()=>{try{const d=await mfaCall(seed,'enroll');factorId=d.factor_id||'';const qr=safeQr(d.qr_code);host.innerHTML=`<div class="form-grid"><div class="field wide"><div class="alert info"><b>1. Escanee este QR</b><br>Use una aplicación autenticadora compatible con códigos TOTP.</div>${qr?`<div style="display:grid;place-items:center;background:#fff;border-radius:14px;padding:14px;width:min(290px,100%);margin:12px auto"><img src="${E(qr)}" alt="Código QR para activar 2FA" style="width:100%;height:auto"></div>`:''}<small>Clave manual</small><div style="font-family:monospace;overflow-wrap:anywhere;border:1px solid var(--line);border-radius:10px;padding:10px">${E(d.secret||'')}</div></div><label class="field wide"><span>2. Código de su aplicación</span><input id="ccMandatoryCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="000000" style="font-size:22px;letter-spacing:.18em;text-align:center"></label><p id="ccMandatoryMsg" class="notice wide">Confirme el código para activar 2FA y abrir la aplicación.</p><div class="modal-actions"><button type="button" class="btn" data-cancel>Cancelar ingreso</button><button type="button" class="btn primary" data-confirm>Activar 2FA y entrar</button></div></div>`;
+    host.querySelector('[data-cancel]').onclick=cancel;host.querySelector('[data-confirm]').onclick=async e=>{const b=e.currentTarget,code=String(host.querySelector('#ccMandatoryCode').value||'').replace(/\D/g,''),msg=host.querySelector('#ccMandatoryMsg');if(code.length<6){msg.textContent='Escriba el código generado por su aplicación autenticadora.';return}b.disabled=true;msg.textContent='Activando protección y abriendo sesión…';try{const x=await mfaCall(seed,'verify_enrollment',{factor_id:factorId,code,complete_login:true});bg.remove();resolve(x)}catch(err){msg.textContent=err.message||'No se pudo activar 2FA.';b.disabled=false}};setTimeout(()=>host.querySelector('#ccMandatoryCode')?.focus(),50);
+   }catch(e){host.innerHTML=`<div class="alert danger"><b>No se pudo iniciar la configuración 2FA.</b><br>${E(e.message)}</div><div class="actions"><button class="btn" data-cancel>Cancelar ingreso</button></div>`;host.querySelector('[data-cancel]').onclick=cancel}}
+  )();
  });
 }
 
 async function protectedLogin(email,password){
- const r=await fetch(loginEndpoint(),{method:'POST',headers:authHeaders(),body:JSON.stringify({email,password}),cache:'no-store'});const d=await r.json().catch(()=>({}));
- if(!r.ok)throw new Error(d.error||'Correo o contraseña incorrectos.');
- if(!d.user?.id||!d.access_token)throw new Error('No se pudo iniciar una sesión protegida.');
- let final=d;
- if(d.mfa_required===true){
-  if(d.mfa_factor_type&&d.mfa_factor_type!=='totp')throw new Error('Esta cuenta usa un segundo factor que todavía no está habilitado en esta pantalla.');
-  final=await secondFactorPrompt(d);
- }
- session={userId:d.user.id,email:d.user.email,accessToken:final.access_token,refreshToken:final.refresh_token,expiresAt:Date.now()+(final.expires_in||3600)*1000,securitySessionId:final.security_session_id||'',deviceLabel:final.device_label||d.device_label||''};
- localStorage.setItem(SESSION,JSON.stringify(session));cloudLoaded=false;await render();
+ const r=await fetch(loginEndpoint(),{method:'POST',headers:authHeaders(),body:JSON.stringify({email,password}),cache:'no-store'}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Correo o contraseña incorrectos.');if(!d.user?.id||!d.access_token)throw new Error('No se pudo iniciar una sesión protegida.');let final=d;
+ if(d.mfa_enrollment_required===true)final=await mandatoryEnrollmentPrompt(d);else if(d.mfa_required===true){if(d.mfa_factor_type&&d.mfa_factor_type!=='totp')throw new Error('Esta cuenta usa un segundo factor que todavía no está habilitado en esta pantalla.');final=await secondFactorPrompt(d)}
+ session={userId:d.user.id,email:d.user.email,accessToken:final.access_token,refreshToken:final.refresh_token,expiresAt:Date.now()+(Number(final.expires_in)||3600)*1000,securitySessionId:final.security_session_id||'',deviceLabel:final.device_label||d.device_label||'',mfaSetupRecommended:d.mfa_setup_recommended===true,mfaRequiredAfter:d.mfa_required_after||null};localStorage.setItem(SESSION,JSON.stringify(session));cloudLoaded=false;await render();
 }
 
-function field(id,label,attrs='',help=''){
-  return `<label class="field reg hidden"><span>${label}</span><input id="${id}" ${attrs}>${help?`<small>${help}</small>`:''}</label>`;
-}
-
+function field(id,label,attrs='',help=''){return `<label class="field reg hidden"><span>${label}</span><input id="${id}" ${attrs}>${help?`<small>${help}</small>`:''}</label>`}
 function enhanceAuth(){
-  const form=document.getElementById('authForm');
-  if(!form||form.dataset.privateAccess==='1')return;
-  form.dataset.privateAccess='1';
-  const name=document.getElementById('authName')?.closest('.field');
-  if(!name)return;
-  document.getElementById('authInvite')?.closest('.field')?.remove();
-  name.insertAdjacentHTML('afterend',
-    field('authPhone','Teléfono','type="tel" autocomplete="tel" placeholder="Ej. 9999-9999"')+
-    field('authPosition','Cargo o institución','autocomplete="organization-title" placeholder="Ej. Supervisor de obra"')+
-    `<label class="field reg hidden"><span>Tipo de acceso solicitado</span><select id="authRequestedRole"><option value="consulta">Consulta · solo lectura</option><option value="editor">Editor · registrar y actualizar</option></select></label>`+
-    `<label class="field reg hidden" id="accessCodeField"><span>Código de acceso</span><input id="privateAccessCode" autocomplete="one-time-code" maxlength="12" placeholder="Código proporcionado por el administrador"><small>El código es personal, temporal y solo funciona con el correo solicitado.</small></label>`+
-    `<label class="field reg hidden" style="position:absolute;left:-9999px" aria-hidden="true"><span>Sitio web</span><input id="authWebsite" tabindex="-1" autocomplete="off"></label>`
-  );
-  const loginTab=document.getElementById('loginTab'),registerTab=document.getElementById('registerTab');
-  registerTab.textContent='Solicitar acceso';
-
-  function mode(next){
-    authMode=next;requestRegistered=false;requestEmail='';
-    loginTab.classList.toggle('active',next==='login');registerTab.classList.toggle('active',next==='register');
-    document.querySelectorAll('#authForm .reg').forEach(x=>x.classList.toggle('hidden',next!=='register'));
-    document.getElementById('authSubmit').textContent=next==='login'?'Ingresar':'Enviar solicitud';
-    const pass=document.getElementById('authPass');pass.closest('.field').classList.toggle('hidden',next==='register');pass.required=next==='login';pass.removeAttribute('minlength');pass.removeAttribute('maxlength');
-    document.getElementById('accessCodeField').classList.toggle('hidden',true);
-    document.getElementById('authMessage').textContent=next==='login'
-      ?'Acceso privado y auditado. Ingrese con una cuenta previamente autorizada.'
-      :'Complete sus datos. El administrador recibirá la solicitud y le proporcionará un código personal.';
-  }
-  loginTab.onclick=()=>mode('login');registerTab.onclick=()=>mode('register');
-  mode('login');
-
-  form.onsubmit=async ev=>{
-    ev.preventDefault();ev.stopPropagation();
-    const email=document.getElementById('authEmail').value.trim().toLowerCase();
-    const password=document.getElementById('authPass').value;
-    const nameValue=document.getElementById('authName').value.trim();
-    const btn=document.getElementById('authSubmit'),msg=document.getElementById('authMessage');
-    btn.disabled=true;msg.textContent='Procesando de forma segura…';
-    try{
-      if(authMode==='login'){
-        await protectedLogin(email,password);return;
-      }
-      if(!requestRegistered){
-        if(nameValue.length<3)throw new Error('Escriba su nombre completo.');
-        const payload={full_name:nameValue,email,phone:document.getElementById('authPhone').value.trim(),position:document.getElementById('authPosition').value.trim(),requested_role:document.getElementById('authRequestedRole').value,website:document.getElementById('authWebsite').value};
-        const r=await fetch(endpoint(),{method:'POST',headers:authHeaders(),body:JSON.stringify(payload)});const d=await r.json();
-        if(!r.ok)throw new Error(d.error||'No se pudo enviar la solicitud.');
-        requestRegistered=true;requestEmail=email;
-        document.getElementById('accessCodeField').classList.remove('hidden');
-        const pass=document.getElementById('authPass');pass.closest('.field').classList.remove('hidden');pass.required=true;pass.autocomplete='new-password';pass.minLength=12;pass.maxLength=128;
-        btn.textContent='Confirmar código y crear acceso';
-        msg.textContent=(d.email_sent
-          ?'Solicitud enviada. El administrador fue notificado por correo. Cuando le entregue el código, escríbalo aquí junto con su contraseña.'
-          :'Solicitud registrada. El administrador podrá verla en el sistema. Cuando le entregue el código, escríbalo aquí junto con su contraseña.')+' La contraseña debe tener al menos 12 caracteres y combinar tres tipos: mayúsculas, minúsculas, números o símbolos.';
-        document.getElementById('privateAccessCode').focus();return;
-      }
-      if(email!==requestEmail)throw new Error('El correo fue cambiado. Envíe nuevamente la solicitud para ese correo.');
-      const code=document.getElementById('privateAccessCode').value.trim().toUpperCase();
-      if(code.length!==12)throw new Error('Escriba el código de 12 caracteres proporcionado por el administrador.');
-      if(!strongPassword(password))throw new Error('Use una contraseña de al menos 12 caracteres y combine tres tipos: mayúsculas, minúsculas, números o símbolos.');
-      const r=await fetch(SUPABASE_URL+'/auth/v1/signup',{method:'POST',headers:authHeaders(),body:JSON.stringify({email,password,data:{full_name:nameValue,workspace_invite_code:code}})});const d=await r.json();
-      if(!r.ok)throw new Error(d.msg||d.message||d.error_description||'Código incorrecto, vencido o asignado a otro correo.');
-      if(!d.access_token){msg.textContent='Cuenta autorizada. Revise su correo para confirmarla y luego ingrese.';mode('login');return}
-      try{await fetch(SUPABASE_URL+'/auth/v1/logout',{method:'POST',headers:{...authHeaders(),Authorization:`Bearer ${d.access_token}`}})}catch{}
-      await protectedLogin(email,password);
-    }catch(err){msg.textContent=err.message||'No se pudo completar la operación.'}
-    finally{btn.disabled=false}
-  };
+ const form=document.getElementById('authForm');if(!form||form.dataset.privateAccess==='1')return;form.dataset.privateAccess='1';const name=document.getElementById('authName')?.closest('.field');if(!name)return;document.getElementById('authInvite')?.closest('.field')?.remove();name.insertAdjacentHTML('afterend',field('authPhone','Teléfono','type="tel" autocomplete="tel" placeholder="Ej. 9999-9999"')+field('authPosition','Cargo o institución','autocomplete="organization-title" placeholder="Ej. Supervisor de obra"')+`<label class="field reg hidden"><span>Tipo de acceso solicitado</span><select id="authRequestedRole"><option value="consulta">Consulta · solo lectura</option><option value="editor">Editor · registrar y actualizar</option></select></label><label class="field reg hidden" id="accessCodeField"><span>Código de acceso</span><input id="privateAccessCode" autocomplete="one-time-code" maxlength="12" placeholder="Código proporcionado por el administrador"><small>El código es personal, temporal y solo funciona con el correo solicitado.</small></label><label class="field reg hidden" style="position:absolute;left:-9999px" aria-hidden="true"><span>Sitio web</span><input id="authWebsite" tabindex="-1" autocomplete="off"></label>`);
+ const loginTab=document.getElementById('loginTab'),registerTab=document.getElementById('registerTab');registerTab.textContent='Solicitar acceso';
+ function mode(next){authMode=next;requestRegistered=false;requestEmail='';loginTab.classList.toggle('active',next==='login');registerTab.classList.toggle('active',next==='register');document.querySelectorAll('#authForm .reg').forEach(x=>x.classList.toggle('hidden',next!=='register'));document.getElementById('authSubmit').textContent=next==='login'?'Ingresar':'Enviar solicitud';const pass=document.getElementById('authPass');pass.closest('.field').classList.toggle('hidden',next==='register');pass.required=next==='login';pass.removeAttribute('minlength');pass.removeAttribute('maxlength');document.getElementById('accessCodeField').classList.add('hidden');document.getElementById('authMessage').textContent=next==='login'?'Acceso privado y auditado. Ingrese con una cuenta previamente autorizada.':'Complete sus datos. El administrador recibirá la solicitud y le proporcionará un código personal.'}
+ loginTab.onclick=()=>mode('login');registerTab.onclick=()=>mode('register');mode('login');
+ form.onsubmit=async ev=>{ev.preventDefault();ev.stopPropagation();const email=document.getElementById('authEmail').value.trim().toLowerCase(),password=document.getElementById('authPass').value,nameValue=document.getElementById('authName').value.trim(),btn=document.getElementById('authSubmit'),msg=document.getElementById('authMessage');btn.disabled=true;msg.textContent='Procesando de forma segura…';try{if(authMode==='login'){await protectedLogin(email,password);return}if(!requestRegistered){if(nameValue.length<3)throw new Error('Escriba su nombre completo.');const payload={full_name:nameValue,email,phone:document.getElementById('authPhone').value.trim(),position:document.getElementById('authPosition').value.trim(),requested_role:document.getElementById('authRequestedRole').value,website:document.getElementById('authWebsite').value},r=await fetch(endpoint(),{method:'POST',headers:authHeaders(),body:JSON.stringify(payload)}),d=await r.json();if(!r.ok)throw new Error(d.error||'No se pudo enviar la solicitud.');requestRegistered=true;requestEmail=email;document.getElementById('accessCodeField').classList.remove('hidden');const pass=document.getElementById('authPass');pass.closest('.field').classList.remove('hidden');pass.required=true;pass.autocomplete='new-password';pass.minLength=12;pass.maxLength=128;btn.textContent='Confirmar código y crear acceso';msg.textContent=(d.email_sent?'Solicitud enviada. El administrador fue notificado por correo. Cuando le entregue el código, escríbalo aquí junto con su contraseña.':'Solicitud registrada. El administrador podrá verla en el sistema. Cuando le entregue el código, escríbalo aquí junto con su contraseña.')+' La contraseña debe tener al menos 12 caracteres y combinar tres tipos: mayúsculas, minúsculas, números o símbolos.';document.getElementById('privateAccessCode').focus();return}if(email!==requestEmail)throw new Error('El correo fue cambiado. Envíe nuevamente la solicitud para ese correo.');const code=document.getElementById('privateAccessCode').value.trim().toUpperCase();if(code.length!==12)throw new Error('Escriba el código de 12 caracteres proporcionado por el administrador.');if(!strongPassword(password))throw new Error('Use una contraseña de al menos 12 caracteres y combine tres tipos: mayúsculas, minúsculas, números o símbolos.');const r=await fetch(SUPABASE_URL+'/auth/v1/signup',{method:'POST',headers:authHeaders(),body:JSON.stringify({email,password,data:{full_name:nameValue,workspace_invite_code:code}})}),d=await r.json();if(!r.ok)throw new Error(d.msg||d.message||d.error_description||'Código incorrecto, vencido o asignado a otro correo.');if(!d.access_token){msg.textContent='Cuenta autorizada. Revise su correo para confirmarla y luego ingrese.';mode('login');return}try{await fetch(SUPABASE_URL+'/auth/v1/logout',{method:'POST',headers:{...authHeaders(),Authorization:`Bearer ${d.access_token}`}})}catch{}await protectedLogin(email,password)}catch(err){msg.textContent=err.message||'No se pudo completar la operación.'}finally{btn.disabled=false}};
 }
 
-async function requestRows(){
-  const r=await sbFetch('/rest/v1/access_requests?select=id,full_name,email,phone,position,requested_role,status,requested_at,notification_sent&status=in.(pending,approved)&order=requested_at.desc&limit=50');
-  return Array.isArray(r.data)?r.data:[];
-}
-
+async function requestRows(){const r=await sbFetch('/rest/v1/access_requests?select=id,full_name,email,phone,position,requested_role,status,requested_at,notification_sent&status=in.(pending,approved)&order=requested_at.desc&limit=50');return Array.isArray(r.data)?r.data:[]}
 async function privateTeamModal(){
-  if(typeof openModal!=='function'||String(cloudRole||'')!=='admin')return;
-  const m=openModal('Solicitudes y accesos',`<div class="alert info">Solo el administrador puede aprobar solicitudes y entregar el código. Cada código queda ligado al correo, vence y funciona una sola vez.</div><div id="privateRequests"><div class="empty">Cargando solicitudes…</div></div>`);
-  const host=m.querySelector('#privateRequests');
-  try{
-    const rows=await requestRows();
-    host.innerHTML=rows.length?rows.map(x=>`<article class="panel" style="margin-bottom:10px" data-request="${E(x.id)}"><div class="row spread wrap"><div><h3 style="margin-bottom:3px">${E(x.full_name)}</h3><div class="muted">${E(x.email)}${x.phone?' · '+E(x.phone):''}</div><small class="muted">${E(x.position||'Cargo no indicado')} · ${x.requested_role==='editor'?'Editor':'Solo consulta'} · ${new Date(x.requested_at).toLocaleString('es-HN')}</small></div><span class="status ${x.status==='approved'?'good':'warn'}">${x.status==='approved'?'APROBADA':'PENDIENTE'}</span></div><div class="actions">${x.status==='pending'?`<button class="btn primary" data-approve="${E(x.id)}">Aprobar y generar código</button><button class="btn danger" data-reject="${E(x.id)}">Rechazar</button>`:`<button class="btn primary" data-approve="${E(x.id)}">Ver código</button>`}</div><div class="invite-output"></div></article>`).join(''):'<div class="empty">No hay solicitudes pendientes.</div>';
-    host.querySelectorAll('[data-approve]').forEach(b=>b.onclick=async()=>{
-      b.disabled=true;
-      try{
-        const r=await sbFetch('/rest/v1/rpc/approve_access_request',{method:'POST',body:{p_request_id:b.dataset.approve,p_days:3}}),x=Array.isArray(r.data)?r.data[0]:r.data;
-        const card=b.closest('[data-request]'),out=card.querySelector('.invite-output');
-        out.innerHTML=`<div class="alert good" style="margin-top:10px"><small>CÓDIGO PERSONAL PARA ${E(x.email)}</small><div style="font-size:22px;font-weight:900;letter-spacing:.12em;margin:5px 0">${E(x.invite_code)}</div><small>Vence ${new Date(x.expires_at).toLocaleString('es-HN')} · ${x.role==='editor'?'Editor':'Solo consulta'}</small><div class="actions"><button class="btn" data-copy>Copiar código</button></div></div>`;
-        out.querySelector('[data-copy]').onclick=()=>navigator.clipboard?.writeText(x.invite_code).then(()=>toast('Código copiado.')).catch(()=>toast('Código: '+x.invite_code));
-        b.textContent='Ver código';card.querySelector('.status').className='status good';card.querySelector('.status').textContent='APROBADA';card.querySelector('[data-reject]')?.remove();
-      }catch(e){toast(e.message||'No se pudo aprobar la solicitud.')}finally{b.disabled=false}
-    });
-    host.querySelectorAll('[data-reject]').forEach(b=>b.onclick=async()=>{
-      if(!confirm('¿Rechazar esta solicitud de acceso?'))return;
-      b.disabled=true;try{await sbFetch('/rest/v1/rpc/reject_access_request',{method:'POST',body:{p_request_id:b.dataset.reject}});b.closest('[data-request]').remove();toast('Solicitud rechazada.')}catch(e){toast(e.message||'No se pudo rechazar.')}
-    });
-  }catch(e){host.innerHTML=`<div class="alert danger">${E(e.message||'No se pudieron cargar las solicitudes.')}</div>`}
+ if(typeof openModal!=='function'||String(cloudRole||'')!=='admin')return;const m=openModal('Solicitudes y accesos',`<div class="alert info">Solo el administrador puede aprobar solicitudes y entregar el código. Cada código queda ligado al correo, vence y funciona una sola vez.</div><div id="privateRequests"><div class="empty">Cargando solicitudes…</div></div>`),host=m.querySelector('#privateRequests');try{const rows=await requestRows();host.innerHTML=rows.length?rows.map(x=>`<article class="panel" style="margin-bottom:10px" data-request="${E(x.id)}"><div class="row spread wrap"><div><h3 style="margin-bottom:3px">${E(x.full_name)}</h3><div class="muted">${E(x.email)}${x.phone?' · '+E(x.phone):''}</div><small class="muted">${E(x.position||'Cargo no indicado')} · ${x.requested_role==='editor'?'Editor':'Solo consulta'} · ${new Date(x.requested_at).toLocaleString('es-HN')}</small></div><span class="status ${x.status==='approved'?'good':'warn'}">${x.status==='approved'?'APROBADA':'PENDIENTE'}</span></div><div class="actions">${x.status==='pending'?`<button class="btn primary" data-approve="${E(x.id)}">Aprobar y generar código</button><button class="btn danger" data-reject="${E(x.id)}">Rechazar</button>`:`<button class="btn primary" data-approve="${E(x.id)}">Ver código</button>`}</div><div class="invite-output"></div></article>`).join(''):'<div class="empty">No hay solicitudes pendientes.</div>';host.querySelectorAll('[data-approve]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const r=await sbFetch('/rest/v1/rpc/approve_access_request',{method:'POST',body:{p_request_id:b.dataset.approve,p_days:3}}),x=Array.isArray(r.data)?r.data[0]:r.data,card=b.closest('[data-request]'),out=card.querySelector('.invite-output');out.innerHTML=`<div class="alert good" style="margin-top:10px"><small>CÓDIGO PERSONAL PARA ${E(x.email)}</small><div style="font-size:22px;font-weight:900;letter-spacing:.12em;margin:5px 0">${E(x.invite_code)}</div><small>Vence ${new Date(x.expires_at).toLocaleString('es-HN')} · ${x.role==='editor'?'Editor':'Solo consulta'}</small><div class="actions"><button class="btn" data-copy>Copiar código</button></div></div>`;out.querySelector('[data-copy]').onclick=()=>navigator.clipboard?.writeText(x.invite_code).then(()=>toast('Código copiado.')).catch(()=>toast('Código: '+x.invite_code));b.textContent='Ver código';card.querySelector('.status').className='status good';card.querySelector('.status').textContent='APROBADA';card.querySelector('[data-reject]')?.remove()}catch(e){toast(e.message||'No se pudo aprobar la solicitud.')}finally{b.disabled=false}});host.querySelectorAll('[data-reject]').forEach(b=>b.onclick=async()=>{if(!confirm('¿Rechazar esta solicitud de acceso?'))return;b.disabled=true;try{await sbFetch('/rest/v1/rpc/reject_access_request',{method:'POST',body:{p_request_id:b.dataset.reject}});b.closest('[data-request]').remove();toast('Solicitud rechazada.')}catch(e){toast(e.message||'No se pudo rechazar.')}})}catch(e){host.innerHTML=`<div class="alert danger">${E(e.message||'No se pudieron cargar las solicitudes.')}</div>`}
 }
-
-function bindTeam(){
- const team=document.getElementById('ccTeamBtn'),existing=document.getElementById('ccAccessRequestsBtn');
- if(String(cloudRole||'')!=='admin'||!session?.accessToken){existing?.remove();return}
- if(existing||!team?.parentElement)return;
- const b=document.createElement('button');b.id='ccAccessRequestsBtn';b.type='button';b.className='btn';b.textContent='Solicitudes';b.title='Solicitudes de acceso pendientes';b.onclick=privateTeamModal;team.parentElement.insertBefore(b,team);
-}
-
+function bindTeam(){const team=document.getElementById('ccTeamBtn'),existing=document.getElementById('ccAccessRequestsBtn');if(String(cloudRole||'')!=='admin'||!session?.accessToken){existing?.remove();return}if(existing||!team?.parentElement)return;const b=document.createElement('button');b.id='ccAccessRequestsBtn';b.type='button';b.className='btn';b.textContent='Solicitudes';b.title='Solicitudes de acceso pendientes';b.onclick=privateTeamModal;team.parentElement.insertBefore(b,team)}
 try{if(typeof renderAuth==='function'&&!renderAuth.__privateAccess){const base=renderAuth;renderAuth=function(){const r=base.apply(this,arguments);setTimeout(enhanceAuth,0);return r};renderAuth.__privateAccess=true}}catch(e){console.warn(e)}
 try{if(typeof renderApp==='function'&&!renderApp.__privateAccess){const base=renderApp;renderApp=function(){const r=base.apply(this,arguments);setTimeout(bindTeam,0);return r};renderApp.__privateAccess=true}}catch(e){console.warn(e)}
-new MutationObserver(()=>{enhanceAuth();bindTeam()}).observe(document.documentElement,{subtree:true,childList:true});
-setTimeout(()=>{enhanceAuth();bindTeam()},0);
+new MutationObserver(()=>{enhanceAuth();bindTeam()}).observe(document.documentElement,{subtree:true,childList:true});setTimeout(()=>{enhanceAuth();bindTeam()},0);
 })();

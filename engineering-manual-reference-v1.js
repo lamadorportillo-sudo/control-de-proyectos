@@ -166,9 +166,10 @@ function manualModal(){
 function bindManualButton(){
   injectCss();
   if(!session?.accessToken){document.getElementById('ccManualBtn')?.remove();return}
-  if(document.getElementById('ccManualBtn'))return;
+  const existing=document.getElementById('ccManualBtn');
+  if(existing){existing.textContent='Manual en Halu';existing.title='Consultar el Manual técnico conversando con Halu';existing.onclick=openHaluFromManual;return}
   const host=document.querySelector('.top-actions');if(!host)return;
-  const b=document.createElement('button');b.id='ccManualBtn';b.className='btn cc-manual-top-btn';b.type='button';b.textContent='Manual técnico';b.title='Referencia técnica de ingeniería registrada en Halu';b.onclick=manualModal;
+  const b=document.createElement('button');b.id='ccManualBtn';b.className='btn cc-manual-top-btn';b.type='button';b.textContent='Manual en Halu';b.title='Consultar el Manual técnico conversando con Halu';b.onclick=openHaluFromManual;
   host.insertBefore(b,host.firstChild);
 }
 function bindChatQuick(){

@@ -12,6 +12,7 @@ const context={
 context.window=context;
 vm.createContext(context);
 vm.runInContext(fs.readFileSync('adaptive-chat-learning-v1.js','utf8'),context,{filename:'adaptive-chat-learning-v1.js'});
+context.__ccEngineeringManual={context(query){return /concreto/i.test(query)?'MANUAL: controlar curado y vibrado. Normativa peruana solo como referencia; prevalece Honduras.':''}};
 vm.runInContext(fs.readFileSync('engineer-chatbot-v3.js','utf8'),context,{filename:'engineer-chatbot-v3.js'});
 const bot=context.__ccEngineerChat;
 
@@ -42,4 +43,6 @@ assert.match(fs.readFileSync('engineer-chatbot-v3.js','utf8'),/Halu · Ingeniero
 assert.match(fs.readFileSync('engineer-chatbot-v3.js','utf8'),/data-q="Camina por la pantalla">Caminar/,'muestra la opcion rapida para caminar');
 assert.match(fs.readFileSync('engineer-chatbot-v3.js','utf8'),/data-q="Ponte aquí">Colocar avatar/,'muestra la opcion para colocar el avatar');
 
-console.log('engineer-chatbot: 26 verificaciones superadas');
+assert.match(fs.readFileSync('engineer-chatbot-v3.js','utf8'),/haluCloudContext\(q\)/,'envía a Halu el contexto técnico relacionado con la consulta');
+
+console.log('engineer-chatbot: 27 verificaciones superadas');

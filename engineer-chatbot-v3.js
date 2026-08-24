@@ -114,22 +114,25 @@ function useLocalHaluAnswer(text){
   if(fieldVisit||conversation.lastType==='field')return true;
   return /\b(ponte|coloca|avatar|camina|caminar|detente|para de caminar|visita|foto|recuerda|que recuerdas|olvida|abre|abrir|ve a|llevame|pantalla actual|donde estoy)\b/.test(spoken)||/\b(ley|legal|norma|decreto|reglamento|articulo|licitacion|adjudicacion|garantia|multa|sancion)\b/.test(spoken);
 }
-function haluCloudContext(){
-  const parts=[contextText()];
+function haluCloudContext(message=''){
+  const parts=[];
+  const manual=window.__ccEngineeringManual?.context?.(message)||'';
+  if(manual)parts.push(manual);
+  parts.push(contextText());
   try{
     if(view?.screen==='project'){
       const p=A(db?.projects).find(x=>x.id===view.projectId);
       if(p)parts.push(`Proyecto: ${p.code||'sin código'} · ${p.name||p.title||'sin nombre'} · estado ${p.status||'sin estado'}.`);
     }
   }catch{}
-  return parts.join('\n').slice(0,1800);
+  return parts.join('\n\n').slice(0,1800);
 }
 async function answerWithAI(text){
   const q=String(text||'').trim();
   if(!q||useLocalHaluAnswer(q)||!session?.accessToken||!cloudAiAvailable)return answer(q);
   const prior=conversation.history.slice(-10);
   try{
-    const {data}=await sbFetch('/functions/v1/halu-chat',{method:'POST',body:{message:q,context:haluCloudContext(),history:prior}});
+    const {data}=await sbFetch('/functions/v1/halu-chat',{method:'POST',body:{message:q,context:haluCloudContext(q),history:prior}});
     const reply=String(data?.reply||'').trim();
     if(!reply)throw new Error('Respuesta vacía');
     conversation.turns+=1;rememberTurn('user',q);rememberTurn('assistant',reply);conversation.lastTopic=q;conversation.lastType='ai';

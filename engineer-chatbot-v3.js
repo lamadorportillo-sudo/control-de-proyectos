@@ -129,6 +129,9 @@ function haluCloudContext(message=''){
 }
 async function answerWithAI(text){
   const q=String(text||'').trim();
+  if(/\b(ley|legal|norma|decreto|reglamento|art[ií]culo|licitaci[oó]n|adjudicaci[oó]n|oferente|pliego|garant[ií]a|multa|sanci[oó]n|contratista|contrataci[oó]n|presupuesto|vigencia|plazo)\b/i.test(q)&&!window.__ccLegalKnowledge){
+    try{await window.__ccLazyFeatures?.loadLegal?.()}catch(error){console.warn('No se pudo cargar la biblioteca legal.',error?.message||error)}
+  }
   if(!q||useLocalHaluAnswer(q)||!session?.accessToken||!cloudAiAvailable)return answer(q);
   const prior=conversation.history.slice(-10);
   try{

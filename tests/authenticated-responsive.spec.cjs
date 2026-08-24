@@ -240,6 +240,19 @@ for (const vp of viewports) {
       const editableInProject = page.locator('#tabBody button').filter({ hasText: /^(Guardar|Eliminar|Editar|Agregar|Nuevo|Registrar)/i });
       expect(await editableInProject.count(), `${vp.name}: usuario consulta no debe mostrar edición directa`).toBe(0);
 
+      if (vp.name === 'desktop-1366x768') {
+        const costButton = page.locator('#ccCostProgramLazyBtn');
+        await expect(costButton).toBeVisible();
+        await costButton.click();
+        await page.waitForSelector('.cccost', { timeout: 30000 });
+        await expect(page.locator('.cccost h2', { hasText: 'Programa de costos' })).toBeVisible();
+        expect(await page.evaluate(() => window.__ccCostProgram?.data?.fichas?.length || 0), 'la base FHIS debe cargarse al solicitarla').toBeGreaterThan(0);
+
+        await page.locator('#ccEngineerChatLaunch').click();
+        await page.locator('#ccEngineerChat [data-q]').filter({ hasText: 'Consulta legal' }).click();
+        await expect.poll(() => page.evaluate(() => !!window.__ccLegalKnowledge), { timeout: 30000 }).toBe(true);
+      }
+
       expect(pageErrors, `${vp.name}: errores JS: ${pageErrors.join(' | ')}`).toEqual([]);
       await page.screenshot({ path: testInfo.outputPath(`${vp.name}-expediente.png`), fullPage: true });
     });

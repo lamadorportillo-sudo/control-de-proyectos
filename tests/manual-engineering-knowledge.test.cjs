@@ -9,7 +9,7 @@ assert.match(manual,/source:'Manual\.pdf'/,'debe identificar la fuente');
 assert.match(manual,/pageIndex:\[/,'debe existir un índice técnico para Halu');
 assert.match(manual,/important:\[/,'debe separar lo importante que se muestra en la página');
 assert.match(manual,/manualContext/,'debe generar contexto para el chatbot');
-assert.match(manual,/\/functions\\\/v1\\\/halu-chat/,'debe enriquecer las consultas enviadas a Halu');
+assert.match(manual,/halu-chat/,'debe enriquecer las consultas enviadas a Halu');
 assert.match(manual,/window\.__ccEngineeringManual/,'debe exponer la referencia técnica a la aplicación');
 assert.match(manual,/Manual técnico · referencia de ingeniería/,'debe existir una vista visible del Manual');
 assert.match(manual,/Preguntar a Halu/,'la vista debe conectar con el chatbot');

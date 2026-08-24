@@ -38,7 +38,7 @@ assert(halu.includes('allowedOrigins'),'La función de Halu debe restringir CORS
 assert(halu.includes('requestBuckets'),'La función de Halu debe limitar la frecuencia por sesión.');
 assert(/content-length[\s\S]{0,160}>\s*24_?000/.test(halu),'La función de Halu debe rechazar solicitudes excesivas.');
 assert(html.includes('engineer-chatbot-v3.js?v=20260823-ai3'),'La versión publicada de Halu no coincide.');
-assert(html.includes('programacion-control-v1.js?v=20260823-programacion2'),'Programación y Control debe estar activa.');
+assert(html.includes('programacion-control-v1.js?v=20260823-programacion3'),'Programación y Control debe estar activa.');
 assert(html.includes('engineering-manual-reference-v1.js?v=20260823-manual1'),'La referencia técnica del manual debe estar activa.');
 
 console.log(`structure-security: ${localRefs.length} referencias, ${scripts.length} scripts, ${staticIds.length} ID y ${sourceFiles.length} fuentes verificadas`);

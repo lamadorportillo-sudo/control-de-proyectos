@@ -43,7 +43,14 @@ function injectStyle(){
   document.head.appendChild(s);
 }
 
-function projectId(){try{return view?.screen==='project'?view.projectId||'':''}catch{return''}}
+function projectId(){
+  try{if(typeof view!=='undefined'&&view?.screen==='project'&&view.projectId)return view.projectId}catch{}
+  try{
+    if(!document.querySelector('nav.tabs')||!document.getElementById('tabBody'))return'';
+    const codes=[...document.querySelectorAll('#content b,#content strong,.project-v3-code')].map(x=>String(x.textContent||'').trim()).filter(Boolean);
+    return A(db?.projects).find(p=>codes.includes(String(p.id||''))||codes.includes(String(p.code||'').trim()))?.id||'';
+  }catch{return''}
+}
 function projectData(pid){
   try{
     const p=A(db?.projects).find(x=>x.id===pid&&!x.deletedAt)||null;

@@ -18,6 +18,19 @@ if(!b64.startsWith('H4sI')) throw new Error('Paquete Base64/GZIP inválido');
 let html=zlib.gunzipSync(Buffer.from(b64,'base64')).toString('utf8');
 if(!html.includes('</body>')) throw new Error('HTML base incompleto');
 
+// Conserva el endurecimiento de red y los datos de la sesión de seguridad.
+// La base comprimida es histórica, por lo que toda reconstrucción debe aplicar
+// explícitamente estas protecciones antes de publicar el HTML resultante.
+const sbFetchOld="async function sbFetch(path,{method='GET',body=null,auth=true,retry=true}={}){const headers={'apikey':SUPABASE_KEY,'Content-Type':'application/json','Accept':'application/json'};if(auth&&session?.accessToken)headers.Authorization=`Bearer ${session.accessToken}`;const res=await fetch(SUPABASE_URL+path,{method,headers,body:body==null?undefined:JSON.stringify(body)});if(res.status===401&&retry&&session?.refreshToken){const ok=await refreshCloudSession();if(ok)return sbFetch(path,{method,body,auth,retry:false})}const text=await res.text();let data=null;try{data=text?JSON.parse(text):null}catch{data=text}if(!res.ok)throw new Error(data?.message||data?.error_description||data?.error||`Error ${res.status}`);return{data,res}}";
+const sbFetchSecure=sbFetchOld.replace("body:body==null?undefined:JSON.stringify(body)}","body:body==null?undefined:JSON.stringify(body),cache:'no-store'}");
+if(!html.includes(sbFetchOld)) throw new Error('No se encontró el cliente Supabase esperado para aplicar no-store.');
+html=html.replace(sbFetchOld,sbFetchSecure);
+
+const refreshOld="async function refreshCloudSession(){try{const res=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:session.refreshToken})});if(!res.ok)return false;const d=await res.json();session={userId:d.user?.id||session.userId,email:d.user?.email||session.email,accessToken:d.access_token,refreshToken:d.refresh_token||session.refreshToken,expiresAt:Date.now()+(d.expires_in||3600)*1000};localStorage.setItem(SESSION,JSON.stringify(session));return true}catch{return false}}";
+const refreshSecure="async function refreshCloudSession(){try{const res=await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:session.refreshToken}),cache:'no-store'});if(!res.ok)return false;const d=await res.json();const priorSession=session||{};session={userId:d.user?.id||priorSession.userId,email:d.user?.email||priorSession.email,accessToken:d.access_token,refreshToken:d.refresh_token||priorSession.refreshToken,expiresAt:Date.now()+(d.expires_in||3600)*1000,securitySessionId:priorSession.securitySessionId||'',deviceLabel:priorSession.deviceLabel||''};localStorage.setItem(SESSION,JSON.stringify(session));return true}catch{return false}}";
+if(!html.includes(refreshOld)) throw new Error('No se encontró la renovación de sesión esperada para endurecerla.');
+html=html.replace(refreshOld,refreshSecure);
+
 // Buscador del dashboard antiguo: filtra sin redibujar y conserva el foco.
 const searchOld="$('#projectSearch').oninput=e=>{view.search=e.target.value;renderProjects(k)};";
 const searchNew="$('#projectSearch').oninput=e=>{view.search=e.target.value;const q=view.search.trim().toLowerCase(),grid=$('.dashboard-project-grid');if(!grid)return;const cards=[...grid.querySelectorAll('.card')];let visible=0;cards.forEach(card=>{const show=!q||card.textContent.toLowerCase().includes(q);card.style.display=show?'':'none';if(show)visible++});let empty=grid.querySelector('[data-search-empty]');if(!visible){if(!empty){empty=document.createElement('div');empty.className='empty';empty.dataset.searchEmpty='1';empty.textContent='No hay proyectos que coincidan con la búsqueda.';grid.appendChild(empty)}}else if(empty)empty.remove()};";
@@ -115,9 +128,9 @@ html=html.replace(firstFeature,`<script src="${performanceModule}?v=${performanc
 // Los módulos funcionales se cargan de forma directa para no depender de cachés o cargadores secundarios.
 const lateModules=[
   ['workspace-access-v1.js','20260820-master4'],
-  ['private-access-v1.js','20260822-private1'],
+  ['private-access-v1.js','20260823-private5'],
   ['password-recovery-v1.js','20260822-password1'],
-  ['admin-users-v1.js','20260822-admin-users1'],
+  ['admin-users-v1.js','20260823-admin-users4'],
   ['alerts-compact-v1.js','20260820-master4'],
   ['dashboard-executive-v1.js','20260820-master4'],
   ['engineering-ux-v1.js','20260820-master4'],
@@ -135,7 +148,7 @@ const lateModules=[
   ['summary-budget-law-v1.js','20260820-summarybudgetlaw1'],
   ['project-search-clean-v1.js','20260820-searchclean1'],
   ['storage-quota-fix-v1.js','20260820-storagequota2'],
-  ['project-tabs-complete-v1.js','20260821-tabscomplete12'],
+  ['project-tabs-complete-v1.js','20260823-tabscomplete23'],
   ['procurement-process-save-v4.js','20260820-procsave4'],
   ['contract-integrity-fix-v1.js','20260822-integrity1'],
   ['integrity-hardening-v2.js','20260822-integrity2'],
@@ -147,17 +160,17 @@ const lateModules=[
   ['engineer-chatbot-v3.js','20260822-ai2'],
   ['halu-avatar-motion-v1.js','20260822-place13'],
   ['transparency-portal-v1.js','20260822-transparency1'],
-  ['portfolio-redesign-v1.js','20260821-portfolio3'],
-  ['project-portfolio-detail-v1.js','20260821-projectdetail2'],
-  ['portfolio-gallery-v1.js','20260821-gallery2'],
-  ['portfolio-screen-fix-v1.js','20260821-screenfix1'],
-  ['project-photo-story-v1.js','20260821-photostory1'],
   ['photo-gallery-polish-v2.js','20260822-photopolish2'],
   ['ui-theme-unifier-v1.js','20260822-theme1'],
   ['engineering-visibility-fix-v1.js','20260822-visibility1'],
   ['ui-operational-polish-v1.js','20260822-operational1'],
   ['home-executive-fix-v2.js','20260822-home2'],
   ['ui-visibility-audit-v1.js','20260822-uiaudit1'],
+  ['portfolio-redesign-v1.js','20260821-portfolio3'],
+  ['project-portfolio-detail-v1.js','20260821-projectdetail2'],
+  ['portfolio-gallery-v1.js','20260821-gallery2'],
+  ['portfolio-screen-fix-v1.js','20260821-screenfix1'],
+  ['project-photo-story-v1.js','20260821-photostory1'],
 ];
 for(const [module,version] of lateModules){
   if(!fs.existsSync(module)) throw new Error(`No se encontró ${module}.`);

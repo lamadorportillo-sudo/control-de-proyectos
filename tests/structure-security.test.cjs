@@ -33,10 +33,10 @@ for(const file of sourceFiles){
 
 const halu=fs.readFileSync(path.join(root,'supabase/functions/halu-chat/index.ts'),'utf8');
 assert(halu.includes('Deno.env.get("OPENAI_API_KEY")'),'La función de Halu debe leer la clave desde secretos.');
-assert(halu.includes('store: false'),'Las respuestas de Halu deben desactivar el almacenamiento recuperable.');
+assert(/\bstore\s*:\s*false\b/.test(halu),'Las respuestas de Halu deben desactivar el almacenamiento recuperable.');
 assert(halu.includes('allowedOrigins'),'La función de Halu debe restringir CORS.');
 assert(halu.includes('requestBuckets'),'La función de Halu debe limitar la frecuencia por sesión.');
-assert(halu.includes('declaredSize > 24_000'),'La función de Halu debe rechazar solicitudes excesivas.');
+assert(/content-length[\s\S]{0,160}>\s*24_?000/.test(halu),'La función de Halu debe rechazar solicitudes excesivas.');
 assert(html.includes('engineer-chatbot-v3.js?v=20260822-ai2'),'La versión publicada de Halu no coincide.');
 
 console.log(`structure-security: ${localRefs.length} referencias, ${scripts.length} scripts, ${staticIds.length} ID y ${sourceFiles.length} fuentes verificadas`);

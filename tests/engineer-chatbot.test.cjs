@@ -40,7 +40,7 @@ assert.match(bot.answer('guardar visita'),/Visita N.º 1 guardada/i,'guarda la b
 assert.equal(context.db.visits.length,1,'crea una visita vinculada al expediente');
 assert.ok(fs.statSync('engineer-assistant-avatar.png').size>1000,'el avatar del ingeniero existe');
 assert.match(fs.readFileSync('engineer-chatbot-v3.js','utf8'),/Halu · Ingeniero Civil/,'presenta la identidad profesional de Halu');
-assert.match(fs.readFileSync('engineer-chatbot-v3.js','utf8'),/data-q="Camina por la pantalla">Caminar/,'muestra la opcion rapida para caminar');
+assert.match(fs.readFileSync('engineer-chatbot-v3.js','utf8'),/data-q="¿Qué puedes controlar\?">Controlar página/,'muestra la opcion rapida de control de pagina');
 assert.match(fs.readFileSync('engineer-chatbot-v3.js','utf8'),/data-q="Ponte aquí">Colocar avatar/,'muestra la opcion para colocar el avatar');
 
 assert.match(fs.readFileSync('engineer-chatbot-v3.js','utf8'),/haluCloudContext\(q\)/,'envía a Halu el contexto técnico relacionado con la consulta');

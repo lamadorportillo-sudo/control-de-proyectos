@@ -27,4 +27,16 @@ assert(knowledge.stats.resources>=46000,'debe relacionar los recursos de las fic
 assert(knowledge.stats.uniqueResources>=2700,'debe construir el catálogo maestro de insumos');
 assert.equal(fs.readdirSync('assets/cost-knowledge').filter(x=>/^fichas-\d+\.json$/.test(x)).length,knowledge.stats.chunks,'cada bloque progresivo debe existir');
 for(const file of ['fichas-17102013.pdf','listado-insumos.pdf','listado-actividades.pdf','fichas-costos-unitarios.pdf','especificaciones-actividades.pdf','ingenieria-trafico.pdf'])assert(fs.existsSync(`assets/cost-knowledge/sources/${file}`),`falta fuente ${file}`);
+assert(fs.existsSync('assets/cost-knowledge/sources/formato-fichas-presupuestos.pdf'),'debe conservar el formato PDF institucional proporcionado');
+for(const feature of ['CANON_INDEX','seenKnowledgeCodes','seenKnowledgeNames','printFicha','printBudget','FICHA DE COSTOS','PRESUPUESTO DE OBRA','GASTOS ADMINISTRATIVOS','costSettings'])assert(app.includes(feature),`falta ${feature}`);
+const normalizeIdentity=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+const baseSeenCodes=new Set(),baseSeenNames=new Set();
+const canonicalBase=[...data.fichas].sort((a,b)=>(b.resources?.length||0)-(a.resources?.length||0)).filter(x=>{const code=normalizeIdentity(x.code),name=`${normalizeIdentity(x.description)}|${normalizeIdentity(x.unit)}`;if((code&&baseSeenCodes.has(code))||baseSeenNames.has(name))return false;if(code)baseSeenCodes.add(code);baseSeenNames.add(name);return true});
+const baseCodes=new Set(canonicalBase.map(x=>normalizeIdentity(x.code)).filter(Boolean));
+const baseNames=new Set(canonicalBase.map(x=>`${normalizeIdentity(x.description)}|${normalizeIdentity(x.unit)}`));
+const seenCodes=new Set(),seenNames=new Set();
+const canonical=[...knowledge.index].sort((a,b)=>(/^F/i.test(b.code)?1:0)-(/^F/i.test(a.code)?1:0)||(a.sourcePage||0)-(b.sourcePage||0)).filter(x=>{const code=normalizeIdentity(x.code),name=`${normalizeIdentity(x.description)}|${normalizeIdentity(x.unit)}`;if((code&&baseCodes.has(code))||baseNames.has(name)||(code&&seenCodes.has(code))||seenNames.has(name))return false;if(code)seenCodes.add(code);seenNames.add(name);return true});
+const combined=[...canonicalBase,...canonical];
+assert.equal(new Set(combined.map(x=>normalizeIdentity(x.code)).filter(Boolean)).size,combined.filter(x=>normalizeIdentity(x.code)).length,'no debe publicar códigos duplicados');
+assert.equal(new Set(combined.map(x=>`${normalizeIdentity(x.description)}|${normalizeIdentity(x.unit)}`)).size,combined.length,'no debe publicar fichas duplicadas por descripción y unidad');
 console.log('cost-program: 6,413 fichas sincronizadas, precios, CRUD, relación automática, especificaciones y formatos verificados');

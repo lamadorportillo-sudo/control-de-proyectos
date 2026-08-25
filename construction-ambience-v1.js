@@ -11,21 +11,24 @@ function installStyle(){
   const style=document.createElement('style');
   style.id='ccConstructionAmbienceStyle';
   style.textContent=`
-body.cc-construction-ambience{position:relative;overflow-x:hidden;background-color:#f1f4ef!important}
-#ccConstructionScenery{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;user-select:none}
+body.cc-construction-ambience{position:relative;overflow-x:hidden;background:radial-gradient(circle at 12% 8%,rgba(94,127,99,.16),transparent 28%),radial-gradient(circle at 88% 18%,rgba(68,96,76,.12),transparent 24%),linear-gradient(rgba(82,108,87,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(82,108,87,.05) 1px,transparent 1px),#eef2ec!important;background-size:auto,auto,48px 48px,48px 48px,auto!important}
+#ccConstructionScenery{position:fixed;inset:0;z-index:1;overflow:hidden;pointer-events:none;user-select:none}
 #ccConstructionScenery .cc-blueprint-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(76,104,70,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(76,104,70,.055) 1px,transparent 1px),linear-gradient(rgba(76,104,70,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(76,104,70,.025) 1px,transparent 1px);background-size:48px 48px,48px 48px,12px 12px,12px 12px;mask-image:linear-gradient(to bottom,rgba(0,0,0,.85),rgba(0,0,0,.22) 58%,transparent);-webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,.85),rgba(0,0,0,.22) 58%,transparent)}
-#ccConstructionScenery .cc-truss{position:absolute;left:28px;right:28px;top:0;height:28px;opacity:.34;border-top:5px solid #5f6d65;border-bottom:5px solid #5f6d65;background:repeating-linear-gradient(62deg,transparent 0 30px,rgba(68,82,73,.72) 31px 35px,transparent 36px 63px),repeating-linear-gradient(-62deg,transparent 0 30px,rgba(68,82,73,.52) 31px 35px,transparent 36px 63px);filter:drop-shadow(0 5px 8px rgba(24,38,28,.14))}
-#ccConstructionScenery .cc-column{position:absolute;top:0;bottom:0;width:24px;opacity:.30;background:linear-gradient(90deg,#46534b 0 14%,#9eaaa2 15% 27%,#59675e 28% 72%,#b3bbb5 73% 85%,#455149 86%);box-shadow:0 0 0 1px rgba(39,55,44,.28),5px 0 16px rgba(32,48,36,.12)}
+#ccConstructionScenery .cc-truss{position:absolute;left:28px;right:28px;top:0;height:34px;opacity:.60;border-top:6px solid #5f6d65;border-bottom:6px solid #5f6d65;background:repeating-linear-gradient(62deg,transparent 0 30px,rgba(68,82,73,.82) 31px 36px,transparent 37px 63px),repeating-linear-gradient(-62deg,transparent 0 30px,rgba(68,82,73,.64) 31px 36px,transparent 37px 63px);filter:drop-shadow(0 6px 9px rgba(24,38,28,.24))}
+#ccConstructionScenery .cc-column{position:absolute;top:0;bottom:0;width:28px;opacity:.48;background:linear-gradient(90deg,#46534b 0 14%,#9eaaa2 15% 27%,#59675e 28% 72%,#b3bbb5 73% 85%,#455149 86%);box-shadow:0 0 0 1px rgba(39,55,44,.38),5px 0 16px rgba(32,48,36,.18)}
 #ccConstructionScenery .cc-column:before{content:"";position:absolute;inset:7px 5px;background:radial-gradient(circle,#24332a 0 2px,transparent 2.6px) center top/12px 42px repeat-y}
 #ccConstructionScenery .cc-column-left{left:8px}.cc-column-right{right:8px;transform:scaleX(-1)}
-#ccConstructionScenery .cc-crane{position:absolute;right:7%;top:13%;width:260px;height:190px;opacity:.105}
+#ccConstructionScenery .cc-crane{position:absolute;right:7%;top:10%;width:260px;height:190px;opacity:.24}
 #ccConstructionScenery .cc-crane:before{content:"";position:absolute;right:34px;top:0;width:10px;height:188px;background:linear-gradient(90deg,#425148,#8a978f 48%,#425148 52%);clip-path:polygon(20% 0,80% 0,100% 100%,0 100%)}
 #ccConstructionScenery .cc-crane:after{content:"";position:absolute;right:32px;top:2px;width:224px;height:9px;background:#526158;box-shadow:0 13px 0 -3px rgba(82,97,88,.72);transform-origin:right center;transform:skewX(-20deg)}
 #ccConstructionScenery .cc-hook{position:absolute;right:205px;top:13px;width:2px;height:92px;background:#526158}.cc-hook:after{content:"";position:absolute;left:-5px;bottom:-11px;width:10px;height:13px;border:2px solid #526158;border-top:0;border-radius:0 0 8px 8px}
-#app,.cp-login-shell,.shell,#ccEngineerChat,#ccEngineerChatLaunch{position:relative;z-index:1}
+#ccConstructionScenery .cc-site-line{position:absolute;left:4%;right:4%;bottom:0;height:104px;opacity:.24;background:linear-gradient(to top,#536258 0 7px,transparent 7px),repeating-linear-gradient(90deg,transparent 0 72px,#5c6d62 73px 79px,transparent 80px 148px)}
+#ccConstructionScenery .cc-site-line:before{content:"";position:absolute;left:0;right:0;bottom:70px;height:8px;background:#607067;box-shadow:0 18px 0 -2px rgba(96,112,103,.70)}
+#app,.cp-login-shell,.shell,#ccEngineerChat,#ccEngineerChatLaunch{position:relative;z-index:2}
 .cp-login-shell{isolation:isolate}
 .cp-login-brand{position:relative;overflow:hidden!important}
-.cp-login-brand:before{content:"";position:absolute;inset:7% 7% 9%;z-index:-1;opacity:.18;background:linear-gradient(90deg,transparent 0 12%,rgba(255,255,255,.48) 12% 14%,transparent 14% 78%,rgba(255,255,255,.42) 78% 80%,transparent 80%),repeating-linear-gradient(58deg,transparent 0 36px,rgba(255,255,255,.34) 37px 40px,transparent 41px 73px),repeating-linear-gradient(-58deg,transparent 0 36px,rgba(255,255,255,.22) 37px 40px,transparent 41px 73px);border-top:7px solid rgba(255,255,255,.38);border-bottom:7px solid rgba(255,255,255,.28)}
+.cp-login-brand>*{position:relative;z-index:1}
+.cp-login-brand:before{content:"";position:absolute;inset:7% 7% 9%;z-index:0;opacity:.34;background:linear-gradient(90deg,transparent 0 12%,rgba(255,255,255,.52) 12% 14%,transparent 14% 78%,rgba(255,255,255,.46) 78% 80%,transparent 80%),repeating-linear-gradient(58deg,transparent 0 36px,rgba(255,255,255,.40) 37px 41px,transparent 42px 73px),repeating-linear-gradient(-58deg,transparent 0 36px,rgba(255,255,255,.28) 37px 41px,transparent 42px 73px);border-top:8px solid rgba(255,255,255,.44);border-bottom:8px solid rgba(255,255,255,.34)}
 .cp-login-brand:after{content:"PLANO ESTRUCTURAL · CONTROL DE OBRA";position:absolute;left:8%;bottom:7%;font:800 9px/1.2 Inter,system-ui,sans-serif;letter-spacing:.18em;color:rgba(255,255,255,.54)}
 .dashboard-hero{isolation:isolate}
 .dashboard-hero:after{content:"";position:absolute!important;z-index:0!important;left:4%!important;right:4%!important;bottom:0!important;height:18px!important;border-radius:3px 3px 7px 7px!important;background:linear-gradient(180deg,#8d9b92 0 18%,#4d5e53 19% 39%,#718078 40% 60%,#4b5a50 61% 82%,#9aa69f 83%)!important;box-shadow:0 -1px 0 rgba(255,255,255,.18),0 8px 18px rgba(23,38,28,.18)!important;opacity:.52!important}
@@ -47,7 +50,7 @@ function installScenery(){
   const scenery=document.createElement('div');
   scenery.id='ccConstructionScenery';
   scenery.setAttribute('aria-hidden','true');
-  scenery.innerHTML='<i class="cc-blueprint-grid"></i><i class="cc-truss"></i><i class="cc-column cc-column-left"></i><i class="cc-column cc-column-right"></i><i class="cc-crane"><i class="cc-hook"></i></i>';
+  scenery.innerHTML='<i class="cc-blueprint-grid"></i><i class="cc-truss"></i><i class="cc-column cc-column-left"></i><i class="cc-column cc-column-right"></i><i class="cc-crane"><i class="cc-hook"></i></i><i class="cc-site-line"></i>';
   document.body.prepend(scenery);
 }
 

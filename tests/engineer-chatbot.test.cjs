@@ -31,6 +31,11 @@ assert.match(bot.answer('me llamo Luis'),/Mucho gusto, Luis/i,'recuerda el nombr
 assert.match(bot.answer('gracias'),/A la orden/i,'responde con cortesía');
 assert.match(bot.answer('recuerda que el acarreo del tramo norte quedó pendiente'),/Anotado/i,'acepta memoria explícita');
 assert.match(bot.answer('qué recuerdas del tramo norte'),/acarreo del tramo norte/i,'retoma recuerdos compartidos');
+assert.match(bot.answer('recuerda temporalmente que hoy revisaremos la portada'),/solo en este hilo/i,'acepta memoria temporal controlada');
+assert.match(bot.answer('recuerda que el monto del contrato es L 2,000,000.00'),/Antes de usarlo.*confirma/i,'solicita confirmación para datos contractuales importantes');
+assert.match(bot.answer('confirmo el monto del contrato es L 2,000,000.00'),/Confirmado/i,'confirma una memoria contractual pendiente');
+assert.match(bot.answer('mi token es abc1234567890'),/información sensible/i,'rechaza credenciales antes de agregarlas al hilo');
+assert.equal(bot.conversation.history.some(turn=>/abc1234567890/.test(turn.text)),false,'no conserva credenciales en el historial conversacional');
 assert.match(bot.answer('eres una inteligencia artificial'),/asistente digital/i,'mantiene transparencia cuando se le pregunta directamente');
 assert.match(bot.answer('a que bueno espero me ayudes a llevar un buen control'),/lo contratado, lo ejecutado y lo pagado/i,'responde de inmediato a compromisos conversacionales');
 assert.match(bot.answer('voy a registrar una visita'),/abierta la visita/i,'activa el modo de visita en el proyecto actual');
@@ -44,5 +49,7 @@ assert.match(fs.readFileSync('engineer-chatbot-v3.js','utf8'),/data-q="¿Qué pu
 assert.match(fs.readFileSync('engineer-chatbot-v3.js','utf8'),/data-q="Ponte aquí">Colocar avatar/,'muestra la opcion para colocar el avatar');
 
 assert.match(fs.readFileSync('engineer-chatbot-v3.js','utf8'),/haluCloudContext\(q\)/,'envía a Halu el contexto técnico relacionado con la consulta');
+assert.match(bot.haluCloudContext('acarreo tramo norte'),/MEMORIA ZORDON APLICABLE/,'inyecta únicamente la memoria pertinente en el contexto de IA');
+assert.match(fs.readFileSync('engineer-chatbot-v3.js','utf8'),/no lo guardaré ni lo enviaré al servicio de IA/i,'bloquea secretos antes de llamar a la IA en la nube');
 
-console.log('engineer-chatbot: 27 verificaciones superadas');
+console.log('engineer-chatbot: 34 verificaciones superadas');

@@ -111,7 +111,7 @@ const fixture = {
   durationLearning: [],
 };
 
-async function installAuthenticatedFixture(page) {
+async function installAuthenticatedFixture(page, role = 'consulta') {
   await page.addInitScript(({ userId, fixture }) => {
     Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false });
     localStorage.setItem('control_contractual_session_v3', JSON.stringify({
@@ -131,7 +131,7 @@ async function installAuthenticatedFixture(page) {
     let body = [];
 
     if (path.includes('/rest/v1/workspace_members')) {
-      body = [{ workspace_id: WORKSPACE_ID, role: 'consulta', active: true }];
+      body = [{ workspace_id: WORKSPACE_ID, role, active: true }];
     } else if (path.includes('/rest/v1/profiles')) {
       body = [{ full_name: 'Usuario QA Responsive', active: true }];
     } else if (path.includes('/rest/v1/app_state')) {
@@ -264,3 +264,59 @@ for (const vp of viewports) {
     });
   });
 }
+
+test.describe('ZORDON autenticado', () => {
+  test.use({ viewport: { width: 1366, height: 768 } });
+
+  test('persiste memoria clasificada en el estado del espacio y protege datos sensibles', async ({ page }) => {
+    const cloudSaves = [];
+    const aiRequests = [];
+    page.on('request', request => {
+      if (request.url().includes('/rest/v1/rpc/save_app_state')) cloudSaves.push(request.postDataJSON());
+      if (request.url().includes('/functions/v1/halu-chat')) aiRequests.push(request.url());
+    });
+    await installAuthenticatedFixture(page, 'admin');
+    await page.goto(appUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.waitForSelector('#ccxNav', { timeout: 20000 });
+
+    const result = await page.evaluate(projectId => {
+      const core = window.__ccZordonLearning;
+      const preference = core.rememberFact('Prefiero informes ejecutivos breves.', { type: 'personal', confirmed: true });
+      const sensitive = core.rememberFact('Mi contraseña es Obra-2026-secreta');
+      const official = core.rememberFact('El monto del contrato QA-CON-001 ahora es L 2,400,000.00', { projectId });
+      const confirmed = core.confirm('monto contrato QA-CON-001');
+      return {
+        engine: core.stats().engine,
+        preference: { saved: preference.saved, type: preference.item.type, scope: preference.item.scope.level, confidence: preference.item.confidence, actorId: preference.item.source.actorId },
+        sensitive: { saved: sensitive.saved, reason: sensitive.reason },
+        officialPending: official.needsConfirmation,
+        confirmed: confirmed.confirmed,
+        context: core.contextFor('monto contrato QA-CON-001', { projectId }),
+      };
+    }, PROJECT_ID);
+
+    expect(result.engine).toBe('ZORDON');
+    expect(result.preference.saved).toBe(true);
+    expect(result.preference.type).toBe('personal');
+    expect(result.preference.scope).toBe('user');
+    expect(result.preference.confidence).toBeGreaterThanOrEqual(0.9);
+    expect(result.preference.actorId).toBe(USER_ID);
+    expect(result.sensitive).toEqual({ saved: false, reason: 'sensitive' });
+    expect(result.officialPending).toBe(true);
+    expect(result.confirmed).toBe(true);
+    expect(result.context).toContain('L 2,400,000.00');
+    const sensitiveReply = await page.evaluate(() => window.__ccEngineerChat.answerWithAI('mi token es abc1234567890-secreto'));
+    expect(sensitiveReply).toContain('No lo guardaré ni lo enviaré');
+    expect(aiRequests).toHaveLength(0);
+
+    await expect.poll(() => page.evaluate(() => {
+      const data = JSON.parse(localStorage.getItem('control_contractual_independiente_v3') || '{}');
+      return data.chatLearning?.items?.filter(item => item.status === 'active').length || 0;
+    })).toBeGreaterThanOrEqual(2);
+    await page.evaluate(() => window.ccSaveCloudNow());
+    await expect.poll(() => cloudSaves.length).toBeGreaterThan(0);
+    expect(cloudSaves.at(-1).p_data.chatLearning.engine).toBe('ZORDON');
+    expect(cloudSaves.at(-1).p_data.chatLearning.items.some(item => item.type === 'personal')).toBe(true);
+    expect(JSON.stringify(cloudSaves.at(-1).p_data.chatLearning)).not.toContain('abc1234567890-secreto');
+  });
+});

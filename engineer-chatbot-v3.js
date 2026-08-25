@@ -63,6 +63,7 @@ const conversationalNorm=value=>String(value||'').normalize('NFD').replace(/[\u0
 function rememberTurn(role,text){conversation.history.push({role,text:String(text||'').slice(0,900)});conversation.history=conversation.history.slice(-30)}
 function resetConversation(){
   conversation.lastTopic='';conversation.lastType='';conversation.turns=0;conversation.userName='';conversation.history=[];
+  window.__ccZordonLearning?.clearTemporary?.();
   fieldVisit=null;saveFieldDraft();
   const body=document.querySelector('#ccEngineerChat .cc-eng-chat-body');
   if(body){const keep=[body.firstElementChild,body.querySelector('.cc-eng-quick')];[...body.children].forEach(node=>{if(!keep.includes(node))node.remove()});body.scrollTop=0}
@@ -118,8 +119,10 @@ function navigateScreen(section){
 function useLocalHaluAnswer(text){
   const q=String(text||''),spoken=conversationalNorm(q);
   if(fieldVisit||conversation.lastType==='field')return true;
-  return /\b(ponte|coloca|avatar|camina|caminar|detente|para de caminar|visita|foto|recuerda|que recuerdas|olvida|abre|abrir|ve a|llevame|pantalla actual|donde estoy|control|costos|contratos|transparencia|usuarios|seguridad|respaldo|gaceta|umbral|cerrar sesion|nuevo proyecto|buscar proyecto)\b/.test(spoken)||/\b(ley|legal|norma|decreto|reglamento|articulo|licitacion|adjudicacion|garantia|multa|sancion)\b/.test(spoken);
+  return /\b(ponte|coloca|avatar|camina|caminar|detente|para de caminar|visita|foto|recuerda|recordar|memoria|confirmo|actualiza el recuerdo|corrige el recuerdo|marca como temporal|no vuelvas a usar|que recuerdas|olvida|abre|abrir|ve a|llevame|pantalla actual|donde estoy|control|costos|contratos|transparencia|usuarios|seguridad|respaldo|gaceta|umbral|cerrar sesion|nuevo proyecto|buscar proyecto)\b/.test(spoken)||/\b(ley|legal|norma|decreto|reglamento|articulo|licitacion|adjudicacion|garantia|multa|sancion)\b/.test(spoken);
 }
+function learningScope(message=''){try{return{projectId:view?.screen==='project'?view.projectId||null:null,screen:view?.screen||'',tab:view?.tab||'',interactionId:`halu-${Date.now()}`}}catch{return{interactionId:`halu-${Date.now()}`}}}
+function learnFromTurn(message,reply){try{return window.__ccZordonLearning?.captureInteraction?.(message,reply,learningScope(message))||null}catch(error){console.warn('ZORDON no pudo clasificar la interacción.',error);return null}}
 function haluCloudContext(message=''){
   const parts=[];
   const manual=window.__ccEngineeringManual?.context?.(message)||'';
@@ -131,42 +134,50 @@ function haluCloudContext(message=''){
       if(p)parts.push(`Proyecto: ${p.code||'sin código'} · ${p.name||p.title||'sin nombre'} · estado ${p.status||'sin estado'}.`);
     }
   }catch{}
-  return parts.join('\n\n').slice(0,1800);
+  const learned=window.__ccZordonLearning?.contextFor?.(message,learningScope(message))||'';if(learned)parts.push(learned);
+  return parts.join('\n\n').slice(0,3800);
 }
 async function answerWithAI(text){
   const q=String(text||'').trim();
+  if(window.__ccZordonLearning?.isSensitive?.(q)){const reply='Ese mensaje parece contener una contraseña, token, clave o credencial sensible. No lo guardaré ni lo enviaré al servicio de IA. Elimínalo y vuelve a escribir solo la información necesaria para el trabajo.';conversation.turns+=1;rememberTurn('user','[Información sensible omitida]');rememberTurn('assistant',reply);learnFromTurn(q,reply);return reply}
   if(/\b(ley|legal|norma|decreto|reglamento|art[ií]culo|licitaci[oó]n|adjudicaci[oó]n|oferente|pliego|garant[ií]a|multa|sanci[oó]n|contratista|contrataci[oó]n|presupuesto|vigencia|plazo)\b/i.test(q)&&!window.__ccLegalKnowledge){
     try{await window.__ccLazyFeatures?.loadLegal?.()}catch(error){console.warn('No se pudo cargar la biblioteca legal.',error?.message||error)}
   }
-  if(!q||useLocalHaluAnswer(q)||!session?.accessToken||!cloudAiAvailable)return answer(q);
+  if(!q||useLocalHaluAnswer(q)||!session?.accessToken||!cloudAiAvailable){const localReply=await Promise.resolve(answer(q));learnFromTurn(q,localReply);return localReply}
   const prior=conversation.history.slice(-18);
   try{
     const {data}=await sbFetch('/functions/v1/halu-chat',{method:'POST',body:{message:q,context:haluCloudContext(q),history:prior}});
     const reply=String(data?.reply||'').trim();
     if(!reply)throw new Error('Respuesta vacía');
-    conversation.turns+=1;rememberTurn('user',q);rememberTurn('assistant',reply);conversation.lastTopic=q;conversation.lastType='ai';
+    conversation.turns+=1;rememberTurn('user',q);rememberTurn('assistant',reply);conversation.lastTopic=q;conversation.lastType='ai';learnFromTurn(q,reply);
     return reply;
   }catch(error){
     const status=Number(error?.status||error?.statusCode||0);
     if(status===503||/503|no configurad|not configured|OPENAI_API_KEY/i.test(String(error?.message||'')))cloudAiAvailable=false;
     console.warn('Halu AI no disponible; usando respuesta local.',error?.message||error);
-    return answer(q);
+    const localReply=await Promise.resolve(answer(q));learnFromTurn(q,localReply);return localReply;
   }
 }
 function answer(text){
   const q=String(text||'').trim();
   const spoken=conversationalNorm(q);conversation.turns+=1;
   if(!q)return'Escribe una consulta legal o dime qué pestaña deseas abrir.';
-  rememberTurn('user',q);window.__ccChatLearning?.observeStyle?.(q);
+  if(window.__ccZordonLearning?.isSensitive?.(q))return'Ese mensaje parece contener información sensible. No lo guardaré ni lo utilizaré. Vuelve a escribirlo sin contraseñas, tokens, claves ni credenciales.';
+  rememberTurn('user',q);
   const visual=window.__ccHaluAvatar?.command?.(q)||'';if(visual){rememberTurn('assistant',visual);return visual}
   const field=handleFieldVisit(q,spoken);if(field){rememberTurn('assistant',field);return field}
   const controlled=window.__ccHaluPageController?.handle?.(q);if(controlled?.handled){rememberTurn('assistant',controlled.message);conversation.lastType='control';return controlled.message}
   if(/\b(eres una ia|eres ia|inteligencia artificial|eres un bot|eres humano|persona real)\b/.test(spoken))return'Soy Halu, el asistente digital de ingeniería del sistema; no te voy a vender humo diciendo que soy una persona. ¿Qué revisamos?';
-  const remember=q.match(/^recuerda que\s+(.+)/i);if(remember){const result=window.__ccChatLearning?.rememberFact?.(remember[1]);return result?.saved?`Anotado: ${result.text}. ¿Algo más que deba relacionar?`:'Eso parece incluir un dato sensible y no lo guardaré. ¿Puedes redactarlo sin claves ni información privada?'}
-  const recall=q.match(/^qu[eé] recuerdas (?:de|del|sobre|acerca de)\s+(.+)/i);if(recall){const facts=window.__ccChatLearning?.recall?.(recall[1],3)||[];return facts.length?`Mira, tengo presente esto: ${facts.map(item=>item.text).join(' También recuerdo que ')}. ¿Cuál de esos puntos retomamos?`:`No tengo un recuerdo aprobado sobre ${recall[1]}. Si quieres conservarlo entre sesiones, dime “recuerda que…” y lo dejo anotado. ¿Qué dato era?`}
+  const rememberTemporary=q.match(/^recuerda temporalmente que\s+(.+)/i);if(rememberTemporary){const result=window.__ccZordonLearning?.rememberFact?.(rememberTemporary[1],{temporary:true,...learningScope(q)});return result?.saved?`Lo tendré presente solo en este hilo: ${result.text}.`:'No pude conservar ese dato temporalmente.'}
+  const remember=q.match(/^recuerda que\s+(.+)/i);if(remember){const result=window.__ccZordonLearning?.rememberFact?.(remember[1],learningScope(q));if(result?.needsConfirmation)return`Ese dato puede afectar un contrato, pago, cálculo o decisión oficial. Antes de usarlo como memoria confirmada, responde “confirmo ${result.text}”.`;return result?.saved?`Anotado: ${result.text}. ¿Algo más que deba relacionar?`:'Eso parece incluir un dato sensible y no lo guardaré. ¿Puedes redactarlo sin claves ni información privada?'}
+  const confirmMemory=q.match(/^confirmo(?: que)?\s+(.+)/i);if(confirmMemory){const result=window.__ccZordonLearning?.confirm?.(confirmMemory[1]);return result?.confirmed?`Confirmado. Mantendré ese dato relacionado con su alcance y lo contrastaré con el expediente cuando corresponda.`:'No encontré un recuerdo pendiente de confirmación que coincida. Dime primero “recuerda que…” con el dato completo.'}
+  const replaceMemory=q.match(/^(?:actualiza|corrige) (?:el )?recuerdo (.+?) (?:por|a) (.+)$/i);if(replaceMemory){const result=window.__ccZordonLearning?.replaceFact?.(replaceMemory[1],replaceMemory[2],learningScope(q));if(result?.needsConfirmation)return`Preparé el reemplazo, pero el dato nuevo afecta información oficial. Confirma: “confirmo ${result.text}”.`;return result?.saved?`Listo. Reemplacé el recuerdo anterior por: ${result.text}.`:'No encontré el recuerdo anterior o el dato nuevo no es seguro para guardar.'}
+  const temporaryMemory=q.match(/^marca (.+?) como temporal$/i);if(temporaryMemory){const changed=window.__ccZordonLearning?.markTemporary?.(temporaryMemory[1])||0;return changed?`Listo. Ese recuerdo se usará únicamente en esta conversación.`:'No encontré un recuerdo activo que coincida.'}
+  const suppressMemory=q.match(/^(?:no vuelvas a usar|deja de usar)\s+(.+)/i);if(suppressMemory){const changed=window.__ccZordonLearning?.suppress?.(suppressMemory[1])||0;return changed?`Entendido. Ese recuerdo quedó desactivado y no volveré a aplicarlo.`:'No encontré un recuerdo activo que coincida.'}
+  const recall=q.match(/^qu[eé] recuerdas (?:de|del|sobre|acerca de)\s+(.+)/i);if(recall){const facts=window.__ccZordonLearning?.recall?.(recall[1],3,learningScope(q))||[];return facts.length?`Mira, tengo presente esto: ${facts.map(item=>item.text).join(' También recuerdo que ')}. ¿Cuál de esos puntos retomamos?`:`No tengo un recuerdo aprobado sobre ${recall[1]}. Si quieres conservarlo entre sesiones, dime “recuerda que…” y lo dejo anotado. ¿Qué dato era?`}
   const forget=q.match(/^olvida (?:que\s+)?(.+)/i);if(forget){const removed=window.__ccChatLearning?.forget?.(forget[1])||0;return removed?`Listo, quité ${removed} recuerdo${removed===1?'':'s'} relacionado${removed===1?'':'s'}. ¿Seguimos con otro asunto?`:'No encontré un recuerdo que coincida con eso. ¿Cómo lo habíamos anotado?'}
   const social=socialReply(q,spoken);if(social){rememberTurn('assistant',social);return social}
-  if(/^(que has aprendido|que recuerdas|memoria|aprendizaje)$/.test(spoken)){const stats=window.__ccChatLearning?.stats?.()||{examples:0,feedback:0,facts:0,styleSamples:0};return`Mira, en este espacio tengo ${stats.facts} recuerdo${stats.facts===1?'':'s'} aprobado${stats.facts===1?'':'s'}, ${stats.examples} respuesta${stats.examples===1?'':'s'} corregida${stats.examples===1?'':'s'} y ${stats.feedback} valoración${stats.feedback===1?'':'es'}. También he ajustado el tono con ${stats.styleSamples} interacción${stats.styleSamples===1?'':'es'}, sin guardar los mensajes completos. ¿Qué parte quieres revisar?`;}
+  if(/^(que has aprendido|que recuerdas|memoria|aprendizaje)$/.test(spoken)){const stats=window.__ccZordonLearning?.stats?.()||{examples:0,feedback:0,facts:0,styleSamples:0,pendingConfirmations:0};return`Mira, en este espacio tengo ${stats.facts} recuerdo${stats.facts===1?'':'s'} activo${stats.facts===1?'':'s'}, ${stats.examples} respuesta${stats.examples===1?'':'s'} corregida${stats.examples===1?'':'s'} y ${stats.feedback} valoración${stats.feedback===1?'':'es'}. Hay ${stats.pendingConfirmations||0} dato${stats.pendingConfirmations===1?'':'s'} pendiente${stats.pendingConfirmations===1?'':'s'} de confirmación. ¿Qué parte quieres revisar?`;}
   if(/^(gracias|muchas gracias|perfecto|entendido)[!.\s]*$/i.test(q))return'Con gusto. Si quieres, seguimos con otra consulta o revisamos juntos una etapa del proyecto.';
   if(/d[oó]nde estoy|ubicaci[oó]n actual|pantalla actual/i.test(q))return contextText();
   if(/qu[eé] puedes hacer|ayuda|opciones/i.test(q))return window.__ccHaluPageController?.capabilities?.()||'Reviso normativa, ubico módulos y sigo el control del proyecto contigo. ¿Qué tienes pendiente?';
@@ -183,7 +194,7 @@ function answer(text){
   if(/relacion|sincron|actualiza/i.test(q))return'Los módulos usan el mismo expediente; un cambio contractual debe reflejarse en resumen, pagos e informes. ¿Qué dato no te está cuadrando?';
   if(/pestaña|m[oó]dulo|proceso/i.test(q))return'Resumen concentra el estado; Contrato, Pagos, Visitas y Garantías alimentan el control. ¿Qué etapa estás trabajando?';
   const learned=window.__ccChatLearning?.answer?.(q);if(learned)return learned;
-  const remembered=window.__ccChatLearning?.recall?.(q,2)||[];if(remembered.length)return`Esto conecta con lo anotado: ${remembered.map(item=>item.text).join(' También: ')}. ¿Cómo siguió en campo?`;
+  const remembered=window.__ccZordonLearning?.recall?.(q,2,learningScope(q))||[];if(remembered.length)return`Esto conecta con lo anotado: ${remembered.map(item=>item.text).join(' También: ')}. ¿Cómo siguió en campo?`;
   if(/^(si|claro|por favor|continua|sigue|explicame mas|mas detalles)$/.test(spoken)&&conversation.lastTopic){
     const follow=`${conversation.lastTopic} ${q}`;
     if(conversation.lastType==='legal'&&window.__ccLegalKnowledge){const legal=window.__ccLegalKnowledge.answer(follow);return window.__ccWebKnowledge?window.__ccWebKnowledge.answer(follow).then(web=>`${legal}\n\n${web}`):legal}
@@ -197,7 +208,7 @@ function compactPhoto(file){return new Promise((resolve,reject)=>{const reader=n
 function mount(){
   css();if(document.getElementById('ccEngineerChat'))return;
   const launch=document.createElement('button');launch.id='ccEngineerChatLaunch';launch.className='cc-eng-chat-launch';launch.title='Hablar con Halu';launch.setAttribute('aria-label','Hablar con Halu');launch.innerHTML='<span class="cc-eng-avatar-frame cc-halu-walker"><img class="cc-halu-layer cc-halu-torso" src="halu-engineer-cutout-v4.webp" alt="Halu, ingeniero civil de apoyo" decoding="async"><img class="cc-halu-layer cc-halu-leg cc-halu-leg-left" src="halu-engineer-cutout-v4.webp" alt="" decoding="async"><img class="cc-halu-layer cc-halu-leg cc-halu-leg-right" src="halu-engineer-cutout-v4.webp" alt="" decoding="async"><img class="cc-halu-layer cc-halu-seated-image" src="halu-engineer-seated-v1.webp" alt="Halu sentado" loading="lazy" decoding="async"></span><span class="dot"></span>';
-  const box=document.createElement('section');box.id='ccEngineerChat';box.className='cc-eng-chat';box.setAttribute('aria-label','Chat con Halu');box.innerHTML=`<header class="cc-eng-chat-head"><span class="cc-eng-avatar-frame"><img src="halu-engineer-cutout-v4.webp" alt="Halu, ingeniero civil" loading="lazy" decoding="async"></span><div><b>Halu · Ingeniero Civil</b><small>Conversación continua · recuerdo el hilo mientras estés aquí</small></div><button type="button" class="cc-eng-chat-reset" title="Iniciar una conversación nueva" aria-label="Nueva conversación">↻</button><button type="button" class="cc-eng-chat-close" aria-label="Cerrar">×</button></header><div class="cc-eng-chat-body" aria-live="polite"><div class="cc-eng-msg bot">Qué tal. Soy Halu. Aquí hablamos directo: obra, contratos, estimaciones y los problemas que en el plano no aparecen. Puedes escribirme libremente; recordaré lo que vayamos hablando. ¿Cómo va todo?</div><div class="cc-eng-quick"><button data-q="¿Qué puedes controlar?">Controlar página</button><button data-q="Ponte aquí">Colocar avatar</button><button data-q="Voy a registrar una visita">Registrar visita</button><button data-q="Abre programa de costos">Programa de costos</button><button data-q="¿Dónde estoy?">¿Dónde estoy?</button><button data-q="Abre proyectos">Proyectos</button></div></div><form class="cc-eng-chat-form"><button type="button" class="tool" data-photo title="Agregar foto">📷</button><button type="button" class="tool" data-mic title="Dictar nota">🎙️</button><input type="file" accept="image/*" capture="environment" data-photo-input><textarea rows="1" autocomplete="off" maxlength="1200" placeholder="Cuéntame qué está pasando…" aria-label="Mensaje"></textarea><button type="submit">Enviar</button></form>`;
+  const box=document.createElement('section');box.id='ccEngineerChat';box.className='cc-eng-chat';box.setAttribute('aria-label','Chat con Halu');box.innerHTML=`<header class="cc-eng-chat-head"><span class="cc-eng-avatar-frame"><img src="halu-engineer-cutout-v4.webp" alt="Halu, ingeniero civil" loading="lazy" decoding="async"></span><div><b>Halu · Ingeniero Civil</b><small>Conversación continua · contexto del proyecto</small></div><button type="button" class="cc-eng-chat-reset" title="Iniciar una conversación nueva" aria-label="Nueva conversación">↻</button><button type="button" class="cc-eng-chat-close" aria-label="Cerrar">×</button></header><div class="cc-eng-chat-body" aria-live="polite"><div class="cc-eng-msg bot">Qué tal. Soy Halu. Aquí hablamos directo: obra, contratos, estimaciones y los problemas que en el plano no aparecen. Puedes escribirme libremente; recordaré lo que vayamos hablando. ¿Cómo va todo?</div><div class="cc-eng-quick"><button data-q="¿Qué puedes controlar?">Controlar página</button><button data-q="Ponte aquí">Colocar avatar</button><button data-q="Voy a registrar una visita">Registrar visita</button><button data-q="Abre programa de costos">Programa de costos</button><button data-q="¿Dónde estoy?">¿Dónde estoy?</button><button data-q="Abre proyectos">Proyectos</button></div></div><form class="cc-eng-chat-form"><button type="button" class="tool" data-photo title="Agregar foto">📷</button><button type="button" class="tool" data-mic title="Dictar nota">🎙️</button><input type="file" accept="image/*" capture="environment" data-photo-input><textarea rows="1" autocomplete="off" maxlength="1200" placeholder="Cuéntame qué está pasando…" aria-label="Mensaje"></textarea><button type="submit">Enviar</button></form>`;
   box.querySelector('.cc-eng-quick')?.insertAdjacentHTML('beforeend','<button data-q="¿Qué regula la garantía de cumplimiento?">Consulta legal</button>');
   document.body.append(launch,box);
   const body=box.querySelector('.cc-eng-chat-body'),input=box.querySelector('textarea'),photoInput=box.querySelector('[data-photo-input]'),sendButton=box.querySelector('button[type="submit"]');
@@ -217,5 +228,5 @@ function mount(){
 }
 document.addEventListener('cc:guest-start',resetConversation);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
-window.__ccEngineerChat={answer,answerWithAI,navigateTab,navigateScreen,contextText,conversation,resetConversation};
+  window.__ccEngineerChat={answer,answerWithAI,navigateTab,navigateScreen,contextText,haluCloudContext,conversation,resetConversation};
 })();

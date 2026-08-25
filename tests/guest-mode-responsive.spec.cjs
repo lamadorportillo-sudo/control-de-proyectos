@@ -80,10 +80,16 @@ test.describe('modo invitado temporal', () => {
     expect(history.length).toBeGreaterThanOrEqual(4);
     expect(history.some(turn => turn.role === 'user' && /obra atrasada/i.test(turn.text))).toBeTruthy();
     expect(history[history.length - 1].role).toBe('assistant');
+    const guestLearning = await page.evaluate(() => {
+      const result = window.__ccZordonLearning.rememberFact('Prefiero respuestas breves.', { type: 'personal', confirmed: true });
+      return { persistent: result.persistent, memories: window.__ccZordonLearning.recall('respuestas breves').length };
+    });
+    expect(guestLearning).toEqual({ persistent: false, memories: 1 });
 
     await page.locator('.cc-eng-chat-reset').click();
     await expect(page.locator('.cc-eng-msg.bot').last()).toContainText('hilo nuevo');
     const resetHistory = await page.evaluate(() => window.__ccEngineerChat.conversation.history);
     expect(resetHistory.length).toBe(0);
+    expect(await page.evaluate(() => window.__ccZordonLearning.recall('respuestas breves').length)).toBe(0);
   });
 });

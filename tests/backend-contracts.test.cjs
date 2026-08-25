@@ -36,6 +36,6 @@ assert.match(html,/id=["']authEmail["'][^>]*type=["']email["']|type=["']email["'
 
 const chatbot=read('engineer-chatbot-v3.js');
 assert.match(chatbot,/cloudAiAvailable=false/,'Halu debe evitar solicitudes 503 repetidas y conservar el modo local');
-assert.match(chatbot,/return answer\(q\)/,'Halu debe conservar una respuesta local cuando falle la IA externa');
+assert.match(chatbot,/Promise\.resolve\(answer\(q\)\)/,'Halu debe conservar una respuesta local cuando falle la IA externa');
 
 console.log(`backend-contracts: ${rpcReferences.length} RPC, ${edgeReferences.length} Edge Functions y ${adminActions.length} acciones verificadas`);

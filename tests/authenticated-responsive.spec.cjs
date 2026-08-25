@@ -7,6 +7,7 @@ const viewports = [
   { name: 'tablet-1024x768', width: 1024, height: 768, touch: true },
   { name: 'desktop-1366x768', width: 1366, height: 768, touch: false },
   { name: 'desktop-1440x900', width: 1440, height: 900, touch: false },
+  { name: 'desktop-wide-1815x900', width: 1815, height: 900, touch: false },
 ];
 
 const appUrl = process.env.APP_URL || 'http://127.0.0.1:4173/';

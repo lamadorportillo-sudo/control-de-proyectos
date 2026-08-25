@@ -38,8 +38,13 @@ assert(halu.includes('allowedOrigins'),'La función de Halu debe restringir CORS
 assert(halu.includes('requestBuckets'),'La función de Halu debe limitar la frecuencia por sesión.');
 assert(/content-length[\s\S]{0,160}>\s*24_?000/.test(halu),'La función de Halu debe rechazar solicitudes excesivas.');
 assert(html.includes('halu-page-controller-v1.js?v=20260824-control1'),'El control opcional de pagina de Halu debe estar activo.');
-assert(html.includes('engineer-chatbot-v3.js?v=20260824-ai6'),'La version publicada de Halu no coincide.');
+assert(html.includes('engineer-chatbot-v3.js?v=20260824-ai5'),'La version publicada de Halu no coincide.');
 assert(html.includes('programacion-control-v1.js?v=20260823-programacion4'),'Programación y Control debe estar activa.');
+assert(html.includes('project-tabs-complete-v1.js?v=20260824-tabscomplete25'),'La navegación publicada no corresponde a la experiencia inmersiva.');
+const projectTabs=fs.readFileSync(path.join(root,'project-tabs-complete-v1.js'),'utf8');
+assert(projectTabs.includes('immersive-engineering-experience-v1.js?v=20260824-immersive1'),'La experiencia 3D debe cargarse desde la navegación global.');
+const immersive=fs.readFileSync(path.join(root,'immersive-engineering-experience-v1.js'),'utf8');
+assert(immersive.includes('EXPERIENCIA DE INGENIERIA 3D V1'),'El módulo inmersivo debe estar disponible.');
 const lazyLoader=fs.readFileSync(path.join(root,'feature-lazy-loader-v1.js'),'utf8');
 assert(html.includes('feature-lazy-loader-v1.js?v=20260824-lazy3'),'La carga progresiva debe estar activa.');
 assert(lazyLoader.includes('assets/cost-knowledge/index.js?v=20260823-costsync2'),'El índice completo de fichas debe estar disponible bajo demanda.');

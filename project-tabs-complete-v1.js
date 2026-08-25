@@ -26,7 +26,7 @@ function loadPortfolioModules(){
   if(window.__CC_PORTFOLIO_LOADER_V1__)return;window.__CC_PORTFOLIO_LOADER_V1__=true;
   const modules=[
     'zordon-continuous-runtime-v1.js?v=20260824-zordonbrand3',
-    'zordon-chat-ui-v1.js?v=20260824-cleanchat3',
+    'zordon-chat-ui-v1.js?v=20260824-cleanchat4',
     'engineering-manual-reference-v1.js?v=20260823-manual2',
     'security-runtime-v1.js?v=20260823-security3',
     'mfa-security-v1.js?v=20260824-mfa4',

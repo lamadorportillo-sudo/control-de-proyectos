@@ -7,6 +7,7 @@ on:
     paths:
       - 'index.html'
       - '*.js'
+      - '*.cjs'
       - 'tests/**'
       - 'supabase/**'
       - 'playwright.config.cjs'
@@ -46,8 +47,22 @@ jobs:
             [ -f "$f" ] || continue
             node --check "$f"
           done
+          node --check build-pages.cjs
+          node --check inject-portfolio.cjs
+          node --check patch-session-security.cjs
           node --check playwright.config.cjs
           node --test tests/*.test.cjs
+
+      - name: Reconstruir la interfaz exacta que se auditará
+        shell: bash
+        run: |
+          set -euo pipefail
+          node build-pages.cjs
+          node inject-portfolio.cjs
+          node patch-session-security.cjs
+          grep -q 'guest-mode-v1.js?v=20260825-guest2' index.html
+          grep -q 'ui-compact-elegance-v1.js?v=20260825-elegance1' index.html
+          grep -q '</html>' index.html
 
       - name: Instalar Playwright
         shell: bash
@@ -69,7 +84,7 @@ jobs:
           cat /tmp/control-proyectos-http.log
           exit 1
 
-      - name: Probar acceso público, expediente y panel de seguridad
+      - name: Probar acceso público, modo invitado, expediente y panel de seguridad
         env:
           APP_URL: http://127.0.0.1:4173/
         run: npx playwright test

@@ -175,6 +175,11 @@ for (const vp of viewports) {
 
       await expect(page.locator('.auth-card')).toHaveCount(0);
       await expect(page.locator('#ccxNav [data-ccx]')).toHaveCount(6);
+      if (vp.width > 900) {
+        await expect(page.locator('.service-strip .service-tile')).toHaveCount(5);
+        const tileRows = await page.locator('.service-strip .service-tile').evaluateAll(tiles => [...new Set(tiles.map(tile => Math.round(tile.getBoundingClientRect().top)))]);
+        expect(tileRows, `${vp.name}: las cinco tarjetas de servicios deben permanecer en una sola línea`).toHaveLength(1);
+      }
       await assertNoGlobalOverflow(page, `${vp.name} inicio`);
 
       for (const section of ['home', 'projects', 'budget', 'alerts', 'audit', 'reports']) {

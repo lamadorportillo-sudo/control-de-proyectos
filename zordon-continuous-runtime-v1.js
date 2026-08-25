@@ -1,10 +1,10 @@
-/* ===== ZORDON · NÚCLEO DE APRENDIZAJE CONTINUO V2 ===== */
+/* ===== ZORDON · NÚCLEO DE APRENDIZAJE CONTINUO V3 ===== */
 (()=>{
 'use strict';
-if(window.__CC_ZORDON_CONTINUOUS_V2__)return;
-window.__CC_ZORDON_CONTINUOUS_V2__=true;
+if(window.__CC_ZORDON_CONTINUOUS_V3__)return;
+window.__CC_ZORDON_CONTINUOUS_V3__=true;
 
-const VERSION=2;
+const VERSION=3;
 const now=()=>new Date().toISOString();
 const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const normalize=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9ñ]+/g,' ').trim();
@@ -18,7 +18,7 @@ function learningStore(){
     store.enabled=true;
     store.mode='continuous';
     store.engine='ZORDON';
-    store.version=Math.max(Number(store.version)||0,2);
+    store.version=Math.max(Number(store.version)||0,3);
     if(!store.reportUsage||typeof store.reportUsage!=='object')store.reportUsage={};
     store.lastPolicyAppliedAt=store.lastPolicyAppliedAt||now();
     return store;
@@ -72,6 +72,12 @@ function fixChatBranding(root=document){
       first.dataset.zordonWelcome='1';
       first.textContent='Qué tal. Soy ZORDON. Voy a seguir el hilo contigo sin hacerte repetir lo que ya quedó claro. Si hablamos de una obra, relaciono campo, contrato, plazo, pagos y decisiones cuando sea útil; si cambiamos de tema, sigo la conversación normalmente. Dime qué está pasando y parto de ahí.';
     }
+    const form=chat.querySelector('.cc-eng-chat-form');
+    const input=form?.querySelector('textarea');
+    const send=form?.querySelector('button[type="submit"]');
+    if(form)form.setAttribute('novalidate','novalidate');
+    if(input){input.style.setProperty('pointer-events','auto','important');input.style.setProperty('position','relative','important');input.style.setProperty('z-index','2147483645','important')}
+    if(send){send.disabled=false;send.setAttribute('aria-disabled','false');send.style.setProperty('pointer-events','auto','important');send.style.setProperty('position','relative','important');send.style.setProperty('z-index','2147483646','important')}
   }
   if(launcher){launcher.title='Hablar con ZORDON';launcher.setAttribute('aria-label','Hablar con ZORDON')}
   for(const target of [chat,launcher].filter(Boolean)){
@@ -95,7 +101,6 @@ function rememberDirectTurn(role,text){
   conversation.history=Array.isArray(conversation.history)?conversation.history:[];
   const last=conversation.history.at(-1);if(last?.role===role&&last?.text===text)return;
   conversation.history.push({role,text:String(text||'').slice(0,1000)});conversation.history=conversation.history.slice(-30);
-  conversation.turns=(Number(conversation.turns)||0)+1;
 }
 
 function learn(message,reply){try{window.__ccZordonLearning?.captureInteraction?.(message,reply,scope(message))}catch(error){console.warn('ZORDON no pudo registrar el aprendizaje de la interacción.',error)}}
@@ -144,16 +149,50 @@ function addMessage(kind,text,query=''){
 async function runQuery(text){
   const q=String(text||'').trim();if(!q||busy)return;
   const chat=document.getElementById('ccEngineerChat'),body=chat?.querySelector('.cc-eng-chat-body'),input=chat?.querySelector('textarea'),send=chat?.querySelector('button[type="submit"]');if(!chat||!body)return;
-  busy=true;if(send)send.disabled=true;addMessage('user',q);
+  busy=true;if(send){send.disabled=true;send.setAttribute('aria-busy','true')}addMessage('user',q);
   const typing=document.createElement('div');typing.className='cc-eng-msg bot';typing.dataset.zordonTyping='1';typing.textContent='ZORDON está revisando el contexto…';body.appendChild(typing);body.scrollTop=body.scrollHeight;
-  try{const reply=await askZordon(q);typing.remove();addMessage('bot',reply||'No encontré una respuesta clara todavía. Dame el dato que falta y sigo desde el contexto actual.',q)}catch(error){typing.remove();addMessage('bot','No pude completar esa consulta en este momento. El contexto de la conversación sigue intacto; inténtalo nuevamente.',q)}finally{busy=false;if(send)send.disabled=false;if(input)input.focus();fixChatBranding(document)}
+  try{const reply=await askZordon(q);typing.remove();addMessage('bot',reply||'No encontré una respuesta clara todavía. Dame el dato que falta y sigo desde el contexto actual.',q)}catch(error){typing.remove();addMessage('bot','No pude completar esa consulta en este momento. El contexto de la conversación sigue intacto; inténtalo nuevamente.',q)}finally{busy=false;if(send){send.disabled=false;send.removeAttribute('aria-busy');send.setAttribute('aria-disabled','false')}if(input)input.focus();fixChatBranding(document)}
+}
+
+function consumeInput(form){
+  const input=form?.querySelector?.('textarea');
+  const q=String(input?.value||'').trim();
+  if(input&&q){input.value='';input.style.height='auto'}
+  return q;
 }
 
 function installConversationOverride(){
-  if(document.documentElement.dataset.zordonConversation==='1')return;
-  document.documentElement.dataset.zordonConversation='1';
-  document.addEventListener('submit',event=>{const form=event.target;if(!(form instanceof HTMLFormElement)||!form.matches('#ccEngineerChat .cc-eng-chat-form'))return;event.preventDefault();event.stopImmediatePropagation();const input=form.querySelector('textarea'),q=input?.value||'';if(input){input.value='';input.style.height='auto'}runQuery(q)},true);
-  document.addEventListener('click',event=>{const button=event.target.closest?.('#ccEngineerChat .cc-eng-quick button[data-q]');if(!button)return;event.preventDefault();event.stopImmediatePropagation();runQuery(button.dataset.q||button.textContent||'')},true);
+  if(document.documentElement.dataset.zordonConversation==='3')return;
+  document.documentElement.dataset.zordonConversation='3';
+
+  document.addEventListener('submit',event=>{
+    const form=event.target;
+    if(!(form instanceof HTMLFormElement)||!form.matches('#ccEngineerChat .cc-eng-chat-form'))return;
+    event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();
+    runQuery(consumeInput(form));
+  },true);
+
+  document.addEventListener('click',event=>{
+    const send=event.target?.closest?.('#ccEngineerChat .cc-eng-chat-form button[type="submit"]');
+    if(send){
+      event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();
+      const form=send.closest('form');
+      runQuery(consumeInput(form));
+      return;
+    }
+    const button=event.target?.closest?.('#ccEngineerChat .cc-eng-quick button[data-q]');
+    if(!button)return;
+    event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();
+    runQuery(button.dataset.q||button.textContent||'');
+  },true);
+
+  document.addEventListener('keydown',event=>{
+    const input=event.target?.closest?.('#ccEngineerChat .cc-eng-chat-form textarea');
+    if(!input||event.key!=='Enter'||event.shiftKey||event.isComposing)return;
+    event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();
+    const form=input.closest('form');
+    runQuery(consumeInput(form));
+  },true);
 }
 
 function protectToggle(event){const target=event.target;if(target?.id!=='learnOn')return;event.preventDefault();event.stopImmediatePropagation();try{target.checked=true;target.disabled=true}catch{}enforceCore()}
@@ -162,13 +201,13 @@ document.addEventListener('click',protectToggle,true);document.addEventListener(
 const observer=new MutationObserver(()=>{try{enforceCore();fixLearningPanel(document);fixChatBranding(document);installConversationOverride()}catch(error){console.warn('ZORDON: no se pudo aplicar el núcleo continuo.',error)}});
 observer.observe(document.documentElement,{subtree:true,childList:true,characterData:true});
 
-const timer=setInterval(()=>{try{enforceCore();fixLearningPanel(document);fixChatBranding(document);installConversationOverride()}catch{}},2500);
+const timer=setInterval(()=>{try{enforceCore();fixLearningPanel(document);fixChatBranding(document);installConversationOverride()}catch{}},1500);
 window.addEventListener('pagehide',()=>clearInterval(timer),{once:true});
 
 window.__ccZordonContinuousCore={
   engine:'ZORDON',version:VERSION,mode:'continuous',
-  status(){const stats=window.__ccZordonLearning?.stats?.()||{};return{engine:'ZORDON',mode:'continuous',active:true,policyVersion:VERSION,learningVersion:stats.version||null,updatedAt:stats.updatedAt||null,pendingConfirmations:stats.pendingConfirmations||0}},
-  enforce:enforceCore,refreshBranding(){fixChatBranding(document);return true},ask:askZordon,
+  status(){const stats=window.__ccZordonLearning?.stats?.()||{};return{engine:'ZORDON',mode:'continuous',active:true,policyVersion:VERSION,learningVersion:stats.version||null,updatedAt:stats.updatedAt||null,pendingConfirmations:stats.pendingConfirmations||0,busy}},
+  enforce:enforceCore,refreshBranding(){fixChatBranding(document);return true},ask:askZordon,send:runQuery,
   forget(query){return window.__ccZordonLearning?.forget?.(query)||0},suppress(query){return window.__ccZordonLearning?.suppress?.(query)||0},markTemporary(query){return window.__ccZordonLearning?.markTemporary?.(query)||0}
 };
 

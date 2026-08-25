@@ -59,7 +59,7 @@ jobs:
           html = path.read_text(encoding='utf-8')
 
           replacements = [
-              (r'project-tabs-complete-v1\.js\?v[^\"\']*', 'project-tabs-complete-v1.js?v=20260824-tabscomplete26', 'project-tabs-complete-v1.js'),
+              (r'project-tabs-complete-v1\.js\?v[^\"\']*', 'project-tabs-complete-v1.js?v=20260824-tabscomplete27', 'project-tabs-complete-v1.js'),
               (r'private-access-v1\.js\?v[^\"\']*', 'private-access-v1.js?v=20260823-private5', 'private-access-v1.js'),
               (r'admin-users-v1\.js\?v[^\"\']*', 'admin-users-v1.js?v=20260823-admin-users4', 'admin-users-v1.js'),
               (r'adaptive-chat-learning-v1\.js\?v[^\"\']*', 'adaptive-chat-learning-v1.js?v=20260824-zordon2', 'adaptive-chat-learning-v1.js'),
@@ -70,7 +70,7 @@ jobs:
               if count == 0:
                   raise SystemExit(f'No se encontró {label} para renovar su versión.')
 
-          zordon_tag = '<script src="zordon-continuous-runtime-v1.js?v=20260824-zordon3"></script>'
+          zordon_tag = '<script src="zordon-continuous-runtime-v1.js?v=20260824-zordon4"></script>'
           html = re.sub(r'<script\s+src=["\']zordon-continuous-runtime-v1\.js(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
           pos = html.lower().rfind('</body>')
           if pos < 0:
@@ -79,11 +79,11 @@ jobs:
 
           path.write_text(html, encoding='utf-8')
           PY
-          grep -q 'project-tabs-complete-v1.js?v=20260824-tabscomplete26' index.html
+          grep -q 'project-tabs-complete-v1.js?v=20260824-tabscomplete27' index.html
           grep -q 'private-access-v1.js?v=20260823-private5' index.html
           grep -q 'admin-users-v1.js?v=20260823-admin-users4' index.html
           grep -q 'adaptive-chat-learning-v1.js?v=20260824-zordon2' index.html
-          grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordon3' index.html
+          grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordon4' index.html
 
       - name: Validar aplicación generada
         shell: bash
@@ -113,9 +113,12 @@ jobs:
           grep -q 'engineering-manual-reference-v1.js?v=20260823-manual2' project-tabs-complete-v1.js
           grep -q 'immersive-engineering-experience-v1.js?v=20260824-immersive1' project-tabs-complete-v1.js
           grep -q 'EXPERIENCIA DE INGENIERIA 3D V1' immersive-engineering-experience-v1.js
-          grep -q 'NÚCLEO DE APRENDIZAJE CONTINUO V2' zordon-continuous-runtime-v1.js
+          grep -q 'NÚCLEO DE APRENDIZAJE CONTINUO V3' zordon-continuous-runtime-v1.js
           grep -q "mode='continuous'" zordon-continuous-runtime-v1.js
           grep -q 'ZORDON · Ingeniero Civil' zordon-continuous-runtime-v1.js
+          grep -q 'button\[type="submit"\]' zordon-continuous-runtime-v1.js
+          grep -q "event.key!=='Enter'" zordon-continuous-runtime-v1.js
+          grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordonbrand3' project-tabs-complete-v1.js
           grep -q 'REFERENCIA TECNICA DEL MANUAL DE INGENIERIA V2' engineering-manual-reference-v1.js
           grep -q 'Manual técnico' engineering-manual-reference-v1.js
           grep -q '150 páginas' engineering-manual-reference-v1.js
@@ -131,17 +134,17 @@ jobs:
           grep -q "securitySessionId:priorSession.securitySessionId||''" index.html
           grep -q "deviceLabel:priorSession.deviceLabel||''" index.html
           grep -q "cache:'no-store'" index.html
-          grep -q 'project-tabs-complete-v1.js?v=20260824-tabscomplete26' index.html
+          grep -q 'project-tabs-complete-v1.js?v=20260824-tabscomplete27' index.html
           grep -q 'private-access-v1.js?v=20260823-private5' index.html
           grep -q 'admin-users-v1.js?v=20260823-admin-users4' index.html
           grep -q 'adaptive-chat-learning-v1.js?v=20260824-zordon2' index.html
-          grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordon3' index.html
+          grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordon4' index.html
           grep -q '</html>' index.html
           if grep -q 'window.__CP_B64=' index.html; then
             echo 'El HTML generado todavía contiene el cargador Base64.' >&2
             exit 1
           fi
-          echo 'Aplicación generada, ZORDON conversacional V2, aprendizaje continuo, experiencia 3D, Manual técnico, caché local, renovación de token, accesos, 2FA administrativa y seguridad verificados.'
+          echo 'Aplicación generada, ZORDON V3 con envío directo por clic y Enter, aprendizaje continuo, experiencia 3D, Manual técnico, caché local, renovación de token, accesos, 2FA administrativa y seguridad verificados.'
 
       - name: Publicar index.html en main
         shell: bash

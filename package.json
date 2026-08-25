@@ -6,6 +6,7 @@
     "test:responsive:public": "playwright test tests/responsive-audit.spec.cjs",
     "test:responsive:authenticated": "playwright test tests/authenticated-responsive.spec.cjs",
     "test:guest": "playwright test tests/guest-mode-responsive.spec.cjs",
+    "test:access": "playwright test tests/access-approval-responsive.spec.cjs",
     "optimize:images": "node scripts/optimize-images.cjs"
   },
   "devDependencies": {

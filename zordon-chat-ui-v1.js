@@ -1,14 +1,14 @@
-/* ===== ZORDON · CHAT LIMPIO Y ENVÍO DIRECTO V1 ===== */
+/* ===== ZORDON · CHAT LIMPIO Y ENVÍO DIRECTO V2 ===== */
 (()=>{
 'use strict';
-if(window.__CC_ZORDON_CHAT_UI_V1__)return;
-window.__CC_ZORDON_CHAT_UI_V1__=true;
+if(window.__CC_ZORDON_CHAT_UI_V2__)return;
+window.__CC_ZORDON_CHAT_UI_V2__=true;
 
 let busy=false;
 const CHAT='#ccEngineerChat';
 
 function esc(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-
+function norm(value){return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9ñ]+/g,' ').trim()}
 function chat(){return document.querySelector(CHAT)}
 function body(){return chat()?.querySelector('.cc-eng-chat-body')||null}
 function form(){return chat()?.querySelector('.cc-eng-chat-form')||null}
@@ -26,6 +26,19 @@ function removeIntro(){
   b.style.paddingTop='14px';
 }
 
+function casualReply(text){
+  const q=norm(text);
+  if(!q)return'';
+  if(/^(hola+|buenas|buenos dias|buenas tardes|buenas noches|hey|que tal)$/.test(q))return'¡Hola! ¿Cómo estás?';
+  if(/^(bien|muy bien|todo bien|excelente|genial|super|ahi vamos|mas o menos)$/.test(q))return q==='mas o menos'?'Ahí vamos 😄 ¿Qué pasó?':'Qué bueno 😄';
+  if(/^(y tu|como estas|como te va)$/.test(q))return'Bien, aquí contigo 😄';
+  if(/^(gracias|muchas gracias|gracias zordon)$/.test(q))return'¡De nada! 😄';
+  if(/^(que haces|que andas haciendo)$/.test(q))return'Aquí, platicando contigo 😄';
+  if(/^(solo platicar|aqui solo platicar|quiero platicar|quiero hablar|conversemos|hablemos)$/.test(q))return'Claro 😄 ¿De qué hablamos?';
+  if(/^(jaja+|jeje+|jajaja+)$/.test(q))return'😂';
+  return'';
+}
+
 function add(kind,text){
   const b=body();if(!b)return null;
   const wrap=document.createElement('div');wrap.className=`cc-eng-msg-wrap ${kind}`;
@@ -40,6 +53,12 @@ async function ask(text){
   if(inp){inp.value='';inp.style.height='auto'}
   if(btn){btn.disabled=true;btn.setAttribute('aria-busy','true')}
   add('user',q);
+  const quick=casualReply(q);
+  if(quick){
+    add('bot',quick);
+    try{window.__ccZordonLearning?.captureInteraction?.(q,quick,{source:'zordon-casual',interactionId:`zordon-casual-${Date.now()}`})}catch{}
+    busy=false;if(btn){btn.disabled=false;btn.removeAttribute('aria-busy');btn.setAttribute('aria-disabled','false')}input()?.focus();return;
+  }
   const typing=add('bot','ZORDON está pensando…');
   try{
     const core=window.__ccZordonContinuousCore;
@@ -107,5 +126,5 @@ const observer=new MutationObserver(()=>bindUi());
 observer.observe(document.documentElement,{childList:true,subtree:true});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindUi,{once:true});else bindUi();
 setTimeout(bindUi,250);setTimeout(bindUi,1000);
-window.__ccZordonChatUI={send:ask,clean:removeIntro,status:()=>({busy,ready:!!sendButton()})};
+window.__ccZordonChatUI={send:ask,clean:removeIntro,status:()=>({busy,ready:!!sendButton(),version:2})};
 })();

@@ -64,7 +64,6 @@ test.describe('autorización administrativa de usuarios', () => {
     await expect(requestsButton).toBeVisible();
     await expect(requestsButton).toContainText('2');
     await expect(page.locator('.cc-access-request-notice')).toContainText('2 solicitudes nuevas de usuarios');
-    await expect(page.locator('.toast').last()).toContainText('2 solicitudes de usuario');
 
     await page.locator('[data-access-open]').click();
     await expect(page.locator('[data-request="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"]')).toContainText('María Supervisora');

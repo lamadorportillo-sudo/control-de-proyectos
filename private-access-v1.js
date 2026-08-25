@@ -1,4 +1,4 @@
-/* ===== CONTROL CONTRACTUAL · ACCESO PRIVADO CON APROBACIÓN V6 ===== */
+/* ===== CONTROL CONTRACTUAL · ACCESO PRIVADO CON APROBACIÓN V7 ===== */
 (()=>{
 'use strict';
 if(window.__CC_PRIVATE_ACCESS_V1__)return;window.__CC_PRIVATE_ACCESS_V1__=true;
@@ -88,5 +88,5 @@ accessNoticeCSS();
 document.addEventListener('click',event=>{if(!event.target?.closest?.('[data-approve],[data-reject]'))return;setTimeout(()=>refreshAccessRequestNotice(false),500);setTimeout(()=>refreshAccessRequestNotice(false),1600)},true);
 try{if(typeof renderAuth==='function'&&!renderAuth.__privateAccess){const base=renderAuth;renderAuth=function(){const r=base.apply(this,arguments);setTimeout(enhanceAuth,0);return r};renderAuth.__privateAccess=true}}catch(e){console.warn(e)}
 try{if(typeof renderApp==='function'&&!renderApp.__privateAccess){const base=renderApp;renderApp=function(){const r=base.apply(this,arguments);setTimeout(bindTeam,0);return r};renderApp.__privateAccess=true}}catch(e){console.warn(e)}
-new MutationObserver(()=>{enhanceAuth();bindTeam()}).observe(document.documentElement,{subtree:true,childList:true});setTimeout(()=>{enhanceAuth();bindTeam()},0);
+new (window.__ccNativeMutationObserver||MutationObserver)(()=>{enhanceAuth();bindTeam()}).observe(document.documentElement,{subtree:true,childList:true});setTimeout(()=>{enhanceAuth();bindTeam()},0);
 })();

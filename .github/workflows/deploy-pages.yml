@@ -59,7 +59,7 @@ jobs:
           html = path.read_text(encoding='utf-8')
 
           replacements = [
-              (r'project-tabs-complete-v1\.js\?v[^\"\']*', 'project-tabs-complete-v1.js?v=20260824-tabscomplete28', 'project-tabs-complete-v1.js'),
+              (r'project-tabs-complete-v1\.js\?v[^\"\']*', 'project-tabs-complete-v1.js?v=20260824-tabscomplete29', 'project-tabs-complete-v1.js'),
               (r'private-access-v1\.js\?v[^\"\']*', 'private-access-v1.js?v=20260823-private5', 'private-access-v1.js'),
               (r'admin-users-v1\.js\?v[^\"\']*', 'admin-users-v1.js?v=20260823-admin-users4', 'admin-users-v1.js'),
               (r'adaptive-chat-learning-v1\.js\?v[^\"\']*', 'adaptive-chat-learning-v1.js?v=20260824-zordon2', 'adaptive-chat-learning-v1.js'),
@@ -71,22 +71,27 @@ jobs:
                   raise SystemExit(f'No se encontró {label} para renovar su versión.')
 
           zordon_tag = '<script src="zordon-continuous-runtime-v1.js?v=20260824-zordon4"></script>'
-          hardfix_tag = '<script src="zordon-send-hardfix-v1.js?v=20260824-sendhard1"></script>'
+          chat_tag = '<script src="zordon-chat-ui-v1.js?v=20260824-cleanchat2"></script>'
           html = re.sub(r'<script\s+src=["\']zordon-continuous-runtime-v1\.js(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
+          html = re.sub(r'<script\s+src=["\']zordon-chat-ui-v1\.js(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
           html = re.sub(r'<script\s+src=["\']zordon-send-hardfix-v1\.js(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
           pos = html.lower().rfind('</body>')
           if pos < 0:
-              raise SystemExit('No se encontró </body> para cargar el núcleo continuo de ZORDON.')
-          html = html[:pos] + zordon_tag + '\n' + hardfix_tag + '\n' + html[pos:]
+              raise SystemExit('No se encontró </body> para cargar ZORDON.')
+          html = html[:pos] + zordon_tag + '\n' + chat_tag + '\n' + html[pos:]
 
           path.write_text(html, encoding='utf-8')
           PY
-          grep -q 'project-tabs-complete-v1.js?v=20260824-tabscomplete28' index.html
+          grep -q 'project-tabs-complete-v1.js?v=20260824-tabscomplete29' index.html
           grep -q 'private-access-v1.js?v=20260823-private5' index.html
           grep -q 'admin-users-v1.js?v=20260823-admin-users4' index.html
           grep -q 'adaptive-chat-learning-v1.js?v=20260824-zordon2' index.html
           grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordon4' index.html
-          grep -q 'zordon-send-hardfix-v1.js?v=20260824-sendhard1' index.html
+          grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat2' index.html
+          if grep -q 'zordon-send-hardfix-v1.js' index.html; then
+            echo 'El hardfix antiguo de envío todavía está cargado.' >&2
+            exit 1
+          fi
 
       - name: Validar aplicación generada
         shell: bash
@@ -100,7 +105,7 @@ jobs:
           test -s engineering-manual-reference-v1.js
           test -s immersive-engineering-experience-v1.js
           test -s zordon-continuous-runtime-v1.js
-          test -s zordon-send-hardfix-v1.js
+          test -s zordon-chat-ui-v1.js
           grep -q 'NUCLEO DE INTEGRIDAD Y CONCURRENCIA V1' index.html
           grep -q 'save_app_state' index.html
           grep -q 'portfolio-redesign-v1.js' index.html
@@ -120,10 +125,9 @@ jobs:
           grep -q 'NÚCLEO DE APRENDIZAJE CONTINUO V3' zordon-continuous-runtime-v1.js
           grep -q "mode='continuous'" zordon-continuous-runtime-v1.js
           grep -q 'ZORDON · Ingeniero Civil' zordon-continuous-runtime-v1.js
-          grep -q 'ENVIO FISICO PRIORITARIO V1' zordon-send-hardfix-v1.js
-          grep -q "window.addEventListener('pointerup'" zordon-send-hardfix-v1.js
-          grep -q 'insideRect' zordon-send-hardfix-v1.js
-          grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordonbrand3' project-tabs-complete-v1.js
+          grep -q 'CHAT LIMPIO Y ENVÍO DIRECTO V2' zordon-chat-ui-v1.js
+          grep -q '¡Hola! ¿Cómo estás?' zordon-chat-ui-v1.js
+          grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat2' project-tabs-complete-v1.js
           grep -q 'REFERENCIA TECNICA DEL MANUAL DE INGENIERIA V2' engineering-manual-reference-v1.js
           grep -q 'Manual técnico' engineering-manual-reference-v1.js
           grep -q '150 páginas' engineering-manual-reference-v1.js
@@ -139,18 +143,18 @@ jobs:
           grep -q "securitySessionId:priorSession.securitySessionId||''" index.html
           grep -q "deviceLabel:priorSession.deviceLabel||''" index.html
           grep -q "cache:'no-store'" index.html
-          grep -q 'project-tabs-complete-v1.js?v=20260824-tabscomplete28' index.html
+          grep -q 'project-tabs-complete-v1.js?v=20260824-tabscomplete29' index.html
           grep -q 'private-access-v1.js?v=20260823-private5' index.html
           grep -q 'admin-users-v1.js?v=20260823-admin-users4' index.html
           grep -q 'adaptive-chat-learning-v1.js?v=20260824-zordon2' index.html
           grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordon4' index.html
-          grep -q 'zordon-send-hardfix-v1.js?v=20260824-sendhard1' index.html
+          grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat2' index.html
           grep -q '</html>' index.html
           if grep -q 'window.__CP_B64=' index.html; then
             echo 'El HTML generado todavía contiene el cargador Base64.' >&2
             exit 1
           fi
-          echo 'Aplicación generada, ZORDON V3 con envío físico prioritario por puntero, clic y Enter, aprendizaje continuo, experiencia 3D, Manual técnico, caché local, renovación de token, accesos, 2FA administrativa y seguridad verificados.'
+          echo 'Aplicación generada con un único envío de ZORDON y conversación informal breve.'
 
       - name: Publicar index.html en main
         shell: bash

@@ -57,6 +57,34 @@ function fixLearningPanel(root=document){
   if(btn)btn.textContent='🧠 Memoria ZORDON';
 }
 
+function replaceVisibleBrand(value){
+  return String(value||'').replace(/\bHalu\b/gi,'ZORDON');
+}
+
+function fixChatBranding(root=document){
+  const targets=[];
+  const chat=root?.querySelector?.('#ccEngineerChat');
+  const launcher=root?.querySelector?.('#ccEngineerChatLaunch');
+  if(chat)targets.push(chat);
+  if(launcher)targets.push(launcher);
+  for(const target of targets){
+    const walker=document.createTreeWalker(target,NodeFilter.SHOW_TEXT);
+    let node;
+    while((node=walker.nextNode())){
+      const updated=replaceVisibleBrand(node.nodeValue);
+      if(updated!==node.nodeValue)node.nodeValue=updated;
+    }
+    for(const el of target.querySelectorAll?.('[title],[aria-label],[alt]')||[]){
+      for(const attr of ['title','aria-label','alt']){
+        if(!el.hasAttribute(attr))continue;
+        const current=el.getAttribute(attr)||'';
+        const updated=replaceVisibleBrand(current);
+        if(updated!==current)el.setAttribute(attr,updated);
+      }
+    }
+  }
+}
+
 function protectToggle(event){
   const target=event.target;
   if(target?.id!=='learnOn')return;
@@ -70,12 +98,12 @@ document.addEventListener('click',protectToggle,true);
 document.addEventListener('change',protectToggle,true);
 
 const observer=new MutationObserver(()=>{
-  try{enforceCore();fixLearningPanel(document)}catch(error){console.warn('ZORDON: no se pudo aplicar el núcleo continuo.',error)}
+  try{enforceCore();fixLearningPanel(document);fixChatBranding(document)}catch(error){console.warn('ZORDON: no se pudo aplicar el núcleo continuo.',error)}
 });
-observer.observe(document.documentElement,{subtree:true,childList:true});
+observer.observe(document.documentElement,{subtree:true,childList:true,characterData:true});
 
 // Reaplica el enlace con auditoría porque otros módulos pueden redefinirla al cargar.
-const timer=setInterval(()=>{try{enforceCore();fixLearningPanel(document)}catch{}},4000);
+const timer=setInterval(()=>{try{enforceCore();fixLearningPanel(document);fixChatBranding(document)}catch{}},2500);
 window.addEventListener('pagehide',()=>clearInterval(timer),{once:true});
 
 // API visible para diagnóstico y control de memoria, sin exponer secretos ni credenciales.
@@ -88,6 +116,7 @@ window.__ccZordonContinuousCore={
     return{engine:'ZORDON',mode:'continuous',active:true,policyVersion:VERSION,learningVersion:stats.version||null,updatedAt:stats.updatedAt||null,pendingConfirmations:stats.pendingConfirmations||0};
   },
   enforce:enforceCore,
+  refreshBranding(){fixChatBranding(document);return true},
   forget(query){return window.__ccZordonLearning?.forget?.(query)||0},
   suppress(query){return window.__ccZordonLearning?.suppress?.(query)||0},
   markTemporary(query){return window.__ccZordonLearning?.markTemporary?.(query)||0}
@@ -95,5 +124,6 @@ window.__ccZordonContinuousCore={
 
 enforceCore();
 fixLearningPanel(document);
-setTimeout(()=>{enforceCore();fixLearningPanel(document);persistPolicy()},0);
+fixChatBranding(document);
+setTimeout(()=>{enforceCore();fixLearningPanel(document);fixChatBranding(document);persistPolicy()},0);
 })();

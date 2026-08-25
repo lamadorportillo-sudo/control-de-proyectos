@@ -24,7 +24,8 @@ body.cc-construction-ambience{position:relative;overflow-x:hidden;background:rad
 #ccConstructionScenery .cc-hook{position:absolute;right:205px;top:13px;width:2px;height:92px;background:#526158}.cc-hook:after{content:"";position:absolute;left:-5px;bottom:-11px;width:10px;height:13px;border:2px solid #526158;border-top:0;border-radius:0 0 8px 8px}
 #ccConstructionScenery .cc-site-line{position:absolute;left:4%;right:4%;bottom:0;height:104px;opacity:.17;background:linear-gradient(to top,#536258 0 7px,transparent 7px),repeating-linear-gradient(90deg,transparent 0 72px,#5c6d62 73px 79px,transparent 80px 148px)}
 #ccConstructionScenery .cc-site-line:before{content:"";position:absolute;left:0;right:0;bottom:70px;height:8px;background:#607067;box-shadow:0 18px 0 -2px rgba(96,112,103,.70)}
-#app,.cp-login-shell,.shell,#ccEngineerChat,#ccEngineerChatLaunch{position:relative;z-index:2}
+#app,.cp-login-shell,.shell{position:relative;z-index:2}
+#ccEngineerChat,#ccEngineerChatLaunch{z-index:70!important}
 .cp-login-shell{isolation:isolate}
 .cp-login-brand{position:relative;overflow:hidden!important}
 .cp-login-brand>*{position:relative;z-index:1}

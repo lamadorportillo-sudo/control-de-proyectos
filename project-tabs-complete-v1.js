@@ -27,7 +27,7 @@ function loadPortfolioModules(){
   const modules=[
     'engineering-manual-reference-v1.js?v=20260823-manual2',
     'security-runtime-v1.js?v=20260823-security3',
-'mfa-security-v1.js?v=20260824-mfa4',
+    'mfa-security-v1.js?v=20260824-mfa4',
     'security-center-v1.js?v=20260823-securitycenter4',
     'mobile-popup-fallback-v1.js?v=20260821-mobilepopup1',
     'progress-separation-fix-v1.js?v=20260821-progresssep1',
@@ -48,11 +48,12 @@ function loadPortfolioModules(){
     'project-photo-story-v1.js?v=20260821-photostory1',
     'photo-gallery-polish-v2.js?v=20260821-photopolish2',
     'project-card-engineering-fix-v1.js?v=20260821-cardengfix1',
-    'ui-theme-unifier-v1.js?v=20260821-theme1',
+    'ui-theme-unifier-v1.js?v=20260824-theme3d2',
     'engineering-visibility-fix-v1.js?v=20260821-engvisibility1',
     'ui-operational-polish-v1.js?v=20260821-operational2',
     'home-executive-fix-v2.js?v=20260822-homeexec3',
-    'ui-visibility-audit-v1.js?v=20260821-visibility1'
+    'ui-visibility-audit-v1.js?v=20260821-visibility1',
+    'immersive-engineering-experience-v1.js?v=20260824-immersive1'
   ];
   const current=document.currentScript?.src||'',base=current?current.slice(0,current.lastIndexOf('/')+1):'';
   const load=i=>{if(i>=modules.length)return;const file=modules[i].split('?')[0];if([...document.scripts].some(s=>(s.src||'').includes('/'+file))){load(i+1);return}const s=document.createElement('script');s.src=base+modules[i];s.async=false;s.onload=()=>load(i+1);s.onerror=()=>{console.warn('No se pudo cargar módulo visual',file);load(i+1)};document.body.appendChild(s)};load(0);

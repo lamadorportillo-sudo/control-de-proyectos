@@ -59,7 +59,7 @@ jobs:
           html = path.read_text(encoding='utf-8')
 
           replacements = [
-              (r'project-tabs-complete-v1\.js\?v[^\"\']*', 'project-tabs-complete-v1.js?v=20260824-tabscomplete30', 'project-tabs-complete-v1.js'),
+              (r'project-tabs-complete-v1\.js\?v[^\"\']*', 'project-tabs-complete-v1.js?v=20260824-tabscomplete31', 'project-tabs-complete-v1.js'),
               (r'private-access-v1\.js\?v[^\"\']*', 'private-access-v1.js?v=20260823-private5', 'private-access-v1.js'),
               (r'admin-users-v1\.js\?v[^\"\']*', 'admin-users-v1.js?v=20260823-admin-users4', 'admin-users-v1.js'),
               (r'adaptive-chat-learning-v1\.js\?v[^\"\']*', 'adaptive-chat-learning-v1.js?v=20260824-zordon2', 'adaptive-chat-learning-v1.js'),
@@ -71,7 +71,7 @@ jobs:
                   raise SystemExit(f'No se encontró {label} para renovar su versión.')
 
           zordon_tag = '<script src="zordon-continuous-runtime-v1.js?v=20260824-zordon4"></script>'
-          chat_tag = '<script src="zordon-chat-ui-v1.js?v=20260824-cleanchat3"></script>'
+          chat_tag = '<script src="zordon-chat-ui-v1.js?v=20260824-cleanchat4"></script>'
           html = re.sub(r'<script\s+src=["\']zordon-continuous-runtime-v1\.js(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
           html = re.sub(r'<script\s+src=["\']zordon-chat-ui-v1\.js(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
           html = re.sub(r'<script\s+src=["\']zordon-send-hardfix-v1\.js(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
@@ -82,12 +82,12 @@ jobs:
 
           path.write_text(html, encoding='utf-8')
           PY
-          grep -q 'project-tabs-complete-v1.js?v=20260824-tabscomplete30' index.html
+          grep -q 'project-tabs-complete-v1.js?v=20260824-tabscomplete31' index.html
           grep -q 'private-access-v1.js?v=20260823-private5' index.html
           grep -q 'admin-users-v1.js?v=20260823-admin-users4' index.html
           grep -q 'adaptive-chat-learning-v1.js?v=20260824-zordon2' index.html
           grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordon4' index.html
-          grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat3' index.html
+          grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat4' index.html
           if grep -q 'zordon-send-hardfix-v1.js' index.html; then
             echo 'El hardfix antiguo de envío todavía está cargado.' >&2
             exit 1
@@ -125,10 +125,10 @@ jobs:
           grep -q 'NÚCLEO DE APRENDIZAJE CONTINUO V3' zordon-continuous-runtime-v1.js
           grep -q "mode='continuous'" zordon-continuous-runtime-v1.js
           grep -q 'ZORDON · Ingeniero Civil' zordon-continuous-runtime-v1.js
-          grep -q 'CHAT LIMPIO Y ENVÍO DIRECTO V3' zordon-chat-ui-v1.js
-          grep -q 'Sí, me decías que estabas bien' zordon-chat-ui-v1.js
+          grep -q 'CHAT NATURAL Y CONTINUO V4' zordon-chat-ui-v1.js
+          grep -q 'zordonCasualLock' zordon-chat-ui-v1.js
           grep -q 'c.history.push' zordon-chat-ui-v1.js
-          grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat3' project-tabs-complete-v1.js
+          grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat4' project-tabs-complete-v1.js
           grep -q 'REFERENCIA TECNICA DEL MANUAL DE INGENIERIA V2' engineering-manual-reference-v1.js
           grep -q 'Manual técnico' engineering-manual-reference-v1.js
           grep -q '150 páginas' engineering-manual-reference-v1.js
@@ -144,18 +144,18 @@ jobs:
           grep -q "securitySessionId:priorSession.securitySessionId||''" index.html
           grep -q "deviceLabel:priorSession.deviceLabel||''" index.html
           grep -q "cache:'no-store'" index.html
-          grep -q 'project-tabs-complete-v1.js?v=20260824-tabscomplete30' index.html
+          grep -q 'project-tabs-complete-v1.js?v=20260824-tabscomplete31' index.html
           grep -q 'private-access-v1.js?v=20260823-private5' index.html
           grep -q 'admin-users-v1.js?v=20260823-admin-users4' index.html
           grep -q 'adaptive-chat-learning-v1.js?v=20260824-zordon2' index.html
           grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordon4' index.html
-          grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat3' index.html
+          grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat4' index.html
           grep -q '</html>' index.html
           if grep -q 'window.__CP_B64=' index.html; then
             echo 'El HTML generado todavía contiene el cargador Base64.' >&2
             exit 1
           fi
-          echo 'Aplicación generada con continuidad real de conversación informal breve en ZORDON.'
+          echo 'Aplicación generada con conversación natural, breve y contextual de ZORDON V4.'
 
       - name: Publicar index.html en main
         shell: bash

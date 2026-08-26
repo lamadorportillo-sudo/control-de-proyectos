@@ -55,35 +55,20 @@
       <label>Participantes<input id="meetingParticipants" placeholder="Ej. Luis, Harold, contratista"></label>
       <label>Fecha de la reunión<input id="meetingDate" type="date"></label>
     </div>
-
     <div class="micWrap"><button id="micBtn" class="mic" aria-label="Iniciar grabación">🎙️</button><b id="recStatus">Listo para grabar</b><small>Audio de voz comprimido WebM/Opus cuando el navegador lo permite.</small></div>
     <div class="actions"><button id="pauseBtn" class="btn soft" disabled>⏸ Pausar</button><button id="stopBtn" class="btn danger" disabled>⏹ Finalizar</button><button id="liveTranscriptBtn" class="btn soft">🗣️ Transcripción en vivo</button></div>
     <div id="speechNotice" class="notice info smallNotice"></div>
     <div id="audioBox" class="audioBox hidden"><audio id="preview" controls></audio><small id="audioInfo"></small></div>
-
     <label>Transcripción / texto de la reunión<textarea id="meetingTranscript" class="tall" placeholder="Aquí aparecerá la transcripción en vivo si el navegador la admite. También puedes pegar una transcripción o escribir texto manualmente."></textarea></label>
     <label>Notas rápidas<textarea id="meetingNotes" placeholder="Acuerdos, responsables, fechas, montos o puntos importantes..."></textarea></label>
-
     <div class="analysisConfig">
       <div class="form2">
-        <label>Tipo de resumen
-          <select id="summaryType">
-            <option value="executive">Resumen ejecutivo</option>
-            <option value="minutes">Minuta / acta de reunión</option>
-            <option value="detailed">Resumen detallado</option>
-            <option value="actions">Acuerdos y tareas</option>
-            <option value="keypoints">Puntos clave</option>
-          </select>
-        </label>
-        <label>Nivel de detalle
-          <select id="summaryDetail"><option value="short">Corto</option><option value="medium" selected>Medio</option><option value="long">Detallado</option></select>
-        </label>
+        <label>Tipo de resumen<select id="summaryType"><option value="executive">Resumen ejecutivo</option><option value="minutes">Minuta / acta de reunión</option><option value="detailed">Resumen detallado</option><option value="actions">Acuerdos y tareas</option><option value="keypoints">Puntos clave</option></select></label>
+        <label>Nivel de detalle<select id="summaryDetail"><option value="short">Corto</option><option value="medium" selected>Medio</option><option value="long">Detallado</option></select></label>
       </div>
       <label class="checkLine"><input id="autoCalendar" type="checkbox" checked> Agregar automáticamente al calendario las asignaciones detectadas que tengan fecha.</label>
     </div>
-
     <div class="actions left"><button id="analyzeBtn" class="btn dark">🧠 Analizar reunión</button><button id="saveMeetingBtn" class="btn primary">💾 Guardar reunión</button></div>
-
     <section id="analysisResults" class="hidden resultStack">
       <article class="resultCard"><div class="head"><h3>Resumen generado</h3><button id="copySummaryBtn" class="link">Copiar</button></div><pre id="summary" class="summary"></pre></article>
       <article class="resultCard"><h3>Información detectada</h3><div id="detectedInfo" class="infoGrid"></div></article>
@@ -92,36 +77,14 @@
   </article>
 </section>
 
-<section id="calendar" class="view">
-  <div class="calendarLayout">
-    <article class="card"><div class="head"><button id="prevMonth" class="btn icon">←</button><h2 id="monthLabel"></h2><button id="nextMonth" class="btn icon">→</button></div><div id="calGrid" class="calGrid"></div></article>
-    <article class="card"><p class="eyebrow">NUEVA ASIGNACIÓN</p><h2>Agregar actividad</h2><form id="taskForm" class="formStack">
-      <label>Actividad<input id="taskTitle" required placeholder="Ej. Visita al proyecto"></label>
-      <label>Responsable<input id="taskOwner" placeholder="Nombre del responsable"></label>
-      <label>Fecha<input id="taskDate" required type="date"></label>
-      <label>Hora<input id="taskTime" type="time"></label>
-      <label>Prioridad<select id="taskPriority"><option>Normal</option><option>Alta</option><option>Baja</option></select></label>
-      <button class="btn primary" type="submit">Agregar al calendario</button>
-    </form></article>
-  </div>
-</section>
-
-<section id="tasks" class="view">
-  <article class="card"><div class="head"><div><p class="eyebrow">SEGUIMIENTO</p><h2>Tareas y asignaciones</h2></div></div><div id="taskList"></div></article>
-</section>
-
-<section id="meetings" class="view">
-  <article class="card"><div class="head"><div><p class="eyebrow">HISTORIAL</p><h2>Reuniones guardadas</h2></div></div><div id="meetingList"></div></article>
-</section>
-
-<section id="account" class="view">
-  <div class="grid2">
-    <article class="card"><p class="eyebrow">PERFIL</p><h2>Mi cuenta</h2><form id="profileForm" class="formStack"><label>Nombre<input id="profileNameInput" placeholder="Tu nombre"></label><label>Correo<input id="profileEmailInput" type="email" placeholder="correo@ejemplo.com"></label><button class="btn primary" type="submit">Guardar perfil</button></form></article>
-    <article class="card"><p class="eyebrow">SINCRONIZACIÓN</p><h2>Estado de esta versión</h2><div class="notice info"><b>Versión web segura por HTTPS.</b><br>Los datos todavía se guardan localmente en este dispositivo. La siguiente fase conectará autenticación y nube para abrir la misma cuenta desde cualquier celular o computadora.</div><ul class="check"><li>✓ PWA instalable</li><li>✓ Micrófono por HTTPS</li><li>✓ Resúmenes múltiples</li><li>✓ Detección de asignaciones</li><li>✓ Integración con calendario interno</li><li>Próximo: cuenta, nube y transcripción IA del audio ya grabado</li></ul></article>
-  </div>
-</section>
+<section id="calendar" class="view"><div class="calendarLayout"><article class="card"><div class="head"><button id="prevMonth" class="btn icon">←</button><h2 id="monthLabel"></h2><button id="nextMonth" class="btn icon">→</button></div><div id="calGrid" class="calGrid"></div></article><article class="card"><p class="eyebrow">NUEVA ASIGNACIÓN</p><h2>Agregar actividad</h2><form id="taskForm" class="formStack"><label>Actividad<input id="taskTitle" required placeholder="Ej. Visita al proyecto"></label><label>Responsable<input id="taskOwner" placeholder="Nombre del responsable"></label><label>Fecha<input id="taskDate" required type="date"></label><label>Hora<input id="taskTime" type="time"></label><label>Prioridad<select id="taskPriority"><option>Normal</option><option>Alta</option><option>Baja</option></select></label><button class="btn primary" type="submit">Agregar al calendario</button></form></article></div></section>
+<section id="tasks" class="view"><article class="card"><div class="head"><div><p class="eyebrow">SEGUIMIENTO</p><h2>Tareas y asignaciones</h2></div></div><div id="taskList"></div></article></section>
+<section id="meetings" class="view"><article class="card"><div class="head"><div><p class="eyebrow">HISTORIAL</p><h2>Reuniones guardadas</h2></div></div><div id="meetingList"></div></article></section>
+<section id="account" class="view"><div class="grid2"><article class="card"><p class="eyebrow">PERFIL</p><h2>Mi cuenta</h2><form id="profileForm" class="formStack"><label>Nombre<input id="profileNameInput" placeholder="Tu nombre"></label><label>Correo<input id="profileEmailInput" type="email" placeholder="correo@ejemplo.com"></label><button class="btn primary" type="submit">Guardar perfil</button></form></article><article class="card"><p class="eyebrow">SINCRONIZACIÓN</p><h2>Estado de esta versión</h2><div class="notice info"><b>Versión web segura por HTTPS.</b><br>Los datos todavía se guardan localmente en este dispositivo. La siguiente fase conectará autenticación y nube para abrir la misma cuenta desde cualquier celular o computadora.</div><ul class="check"><li>✓ PWA instalable</li><li>✓ Micrófono por HTTPS</li><li>✓ Resúmenes múltiples</li><li>✓ Detección de asignaciones</li><li>✓ Integración con calendario interno</li><li>Próximo: cuenta, nube y transcripción IA del audio ya grabado</li></ul></article></div></section>
 </main>
 </div>
-<script src="./app.js?v=3"></script>
+<script src="./core-v3.js?v=4"></script>
+<script src="./record-v3.js?v=4"></script>
+<script src="./analysis-v3.js?v=4"></script>
 </body>
 </html>

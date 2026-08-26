@@ -8,8 +8,7 @@ const modules=[
   ['portfolio-gallery-v1.js','20260821-gallery2'],
   ['portfolio-screen-fix-v1.js','20260821-screenfix1'],
   ['project-photo-story-v1.js','20260821-photostory1'],
-  ['guest-mode-v1.js','20260825-guest2'],
-  ['ui-compact-elegance-v1.js','20260825-elegance1'],
+  ['system-ui-refinement-v2.js','20260825-system2'],
 ];
 if(!fs.existsSync(htmlFile)) throw new Error('No se encontró index.html.');
 for(const [moduleFile] of modules){
@@ -26,8 +25,5 @@ for(const [moduleFile,version] of modules){
   html=html.slice(0,pos)+`<script src="${moduleFile}?v=${version}"></script>\n`+html.slice(pos);
 }
 
-if(!html.includes('guest-mode-v1.js?v=20260825-guest2')) throw new Error('No se pudo restaurar el modo invitado.');
-if(!html.includes('ui-compact-elegance-v1.js?v=20260825-elegance1')) throw new Error('No se pudo integrar el pulido visual compacto.');
-
 fs.writeFileSync(htmlFile,html,'utf8');
-console.log('Portafolio integrado, modo invitado restaurado e interfaz compacta/elegante aplicada en index.html.');
+console.log('Rediseño de portafolio, ficha profesional, galería, control de pantalla, evolución fotográfica y refinamiento general V2 integrados en index.html.');

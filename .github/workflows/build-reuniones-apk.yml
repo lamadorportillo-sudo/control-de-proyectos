@@ -1,0 +1,56 @@
+name: Build Asistente Reuniones APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'android-reuniones/**'
+      - '.github/workflows/build-reuniones-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Verificar Android SDK
+        shell: bash
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Compilar APK
+        run: gradle -p android-reuniones :app:assembleDebug --stacktrace
+
+      - name: Renombrar APK
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp android-reuniones/app/build/outputs/apk/debug/app-debug.apk dist/Asistente-Reuniones-v1.0.0.apk
+          ls -lh dist/Asistente-Reuniones-v1.0.0.apk
+
+      - name: Subir APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Asistente-Reuniones-APK
+          path: dist/Asistente-Reuniones-v1.0.0.apk
+          if-no-files-found: error
+          retention-days: 30

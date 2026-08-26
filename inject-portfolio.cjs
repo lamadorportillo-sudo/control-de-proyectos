@@ -8,7 +8,10 @@ const modules=[
   ['portfolio-gallery-v1.js','20260821-gallery2'],
   ['portfolio-screen-fix-v1.js','20260821-screenfix1'],
   ['project-photo-story-v1.js','20260821-photostory1'],
-  ['system-ui-refinement-v2.js','20260825-system2'],
+  ['guest-mode-v1.js','20260825-guest4'],
+  ['ui-compact-elegance-v1.js','20260825-elegance3'],
+  ['system-ui-refinement-v2.js','20260825-system3'],
+  ['functional-repair-v1.js','20260825-repair1'],
 ];
 if(!fs.existsSync(htmlFile)) throw new Error('No se encontró index.html.');
 for(const [moduleFile] of modules){
@@ -26,4 +29,4 @@ for(const [moduleFile,version] of modules){
 }
 
 fs.writeFileSync(htmlFile,html,'utf8');
-console.log('Rediseño de portafolio, ficha profesional, galería, control de pantalla, evolución fotográfica y refinamiento general V2 integrados en index.html.');
+console.log('Interfaz profesional, modo invitado, iconografía elegante, portafolio y reparaciones funcionales integrados permanentemente en index.html.');

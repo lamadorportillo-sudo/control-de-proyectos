@@ -9,7 +9,10 @@ on:
       - 'inject-portfolio.cjs'
       - 'patch-session-security.cjs'
       - '*.js'
+      - 'tests/**'
       - 'supabase/**'
+      - 'playwright.config.cjs'
+      - 'package.json'
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
@@ -23,11 +26,17 @@ concurrency:
 jobs:
   build-direct:
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     steps:
       - name: Descargar repositorio
         uses: actions/checkout@v6
         with:
           ref: main
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
 
       - name: Validar JavaScript fuente
         shell: bash
@@ -40,6 +49,8 @@ jobs:
           node --check build-pages.cjs
           node --check inject-portfolio.cjs
           node --check patch-session-security.cjs
+          node --check playwright.config.cjs
+          node --test tests/*.test.cjs
 
       - name: Reconstruir aplicación
         run: |
@@ -106,6 +117,7 @@ jobs:
           test -s immersive-engineering-experience-v1.js
           test -s zordon-continuous-runtime-v1.js
           test -s zordon-chat-ui-v1.js
+          test -s integrity-diagnostics-v1.js
           grep -q 'NUCLEO DE INTEGRIDAD Y CONCURRENCIA V1' index.html
           grep -q 'save_app_state' index.html
           grep -q 'portfolio-redesign-v1.js' index.html
@@ -118,6 +130,12 @@ jobs:
           grep -q 'ui-theme-unifier-v1.js' index.html
           grep -q 'engineering-visibility-fix-v1.js' index.html
           grep -q 'ui-operational-polish-v1.js' index.html
+          grep -q 'system-ui-refinement-v3.js' index.html
+          grep -q 'integrity-diagnostics-v1.js' index.html
+          if grep -q 'system-ui-refinement-v2.js' index.html; then
+            echo 'La capa visual V2 redundante todavía está cargada.' >&2
+            exit 1
+          fi
           grep -q 'home-executive-fix-v2.js' project-tabs-complete-v1.js
           grep -q 'engineering-manual-reference-v1.js?v=20260823-manual2' project-tabs-complete-v1.js
           grep -q 'immersive-engineering-experience-v1.js?v=20260824-immersive1' project-tabs-complete-v1.js
@@ -155,7 +173,33 @@ jobs:
             echo 'El HTML generado todavía contiene el cargador Base64.' >&2
             exit 1
           fi
-          echo 'Aplicación generada con conversación natural, breve y contextual de ZORDON V4.'
+          echo 'Aplicación generada y lista para auditoría de navegador.'
+
+      - name: Instalar dependencias de auditoría
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-package-lock
+          npx playwright install --with-deps chromium
+
+      - name: Levantar artefacto generado
+        shell: bash
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/control-proyectos-deploy-http.log 2>&1 &
+          echo $! > /tmp/control-proyectos-deploy-http.pid
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/control-proyectos-deploy-http.log
+          exit 1
+
+      - name: Auditar exactamente el artefacto que se publicará
+        env:
+          APP_URL: http://127.0.0.1:4173/
+        run: npx playwright test
 
       - name: Publicar index.html en main
         shell: bash
@@ -167,6 +211,6 @@ jobs:
             echo "index.html ya está actualizado."
           else
             git add index.html
-            git commit -m "Publicar interfaz contractual renovada [skip ci]"
+            git commit -m "Publicar interfaz contractual verificada [skip ci]"
             git push origin HEAD:main
           fi

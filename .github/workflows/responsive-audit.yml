@@ -28,7 +28,7 @@ concurrency:
 jobs:
   responsive-audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
 
     steps:
       - name: Descargar repositorio
@@ -60,13 +60,19 @@ jobs:
           node build-pages.cjs
           node inject-portfolio.cjs
           node patch-session-security.cjs
-          grep -q 'system-ui-refinement-v2.js' index.html
+          grep -q 'system-ui-refinement-v3.js' index.html
+          grep -q 'integrity-diagnostics-v1.js' index.html
+          if grep -q 'system-ui-refinement-v2.js' index.html; then
+            echo 'La capa visual V2 redundante todavía está cargada.' >&2
+            exit 1
+          fi
           grep -q '</html>' index.html
 
-      - name: Instalar Playwright
+      - name: Instalar dependencias de auditoría
         shell: bash
         run: |
-          npm install --no-save --no-package-lock @playwright/test@1.55.0
+          set -euo pipefail
+          npm install --no-package-lock
           npx playwright install --with-deps chromium
 
       - name: Levantar aplicación local
@@ -83,7 +89,7 @@ jobs:
           cat /tmp/control-proyectos-http.log
           exit 1
 
-      - name: Probar acceso público, modo invitado, expediente y panel de seguridad
+      - name: Probar acceso, invitado, expedientes, seguridad y accesibilidad
         env:
           APP_URL: http://127.0.0.1:4173/
         run: npx playwright test

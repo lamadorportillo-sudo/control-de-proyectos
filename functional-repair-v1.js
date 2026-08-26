@@ -93,7 +93,7 @@ function renderAccessNotice(rows){
 
 let accessBusy=false;
 async function refreshAccess(){
-  if(!canReviewAccess()||accessBusy)return;
+  if(document.hidden||!canReviewAccess()||accessBusy)return;
   accessBusy=true;
   try{renderAccessNotice(await pendingRows())}catch(error){console.warn('Control de solicitudes:',error?.message||error)}finally{accessBusy=false}
 }
@@ -142,8 +142,10 @@ async function openAccessModal(){
 function loadScript(src,predicate){
   if(predicate())return Promise.resolve();
   return new Promise((resolve,reject)=>{
+    const existing=[...document.scripts].find(s=>(s.src||'').includes('/'+src.split('?')[0]));
+    if(existing){existing.addEventListener('load',()=>predicate()?resolve():reject(new Error(`No se inicializó ${src}`)),{once:true});existing.addEventListener('error',()=>reject(new Error(`No se pudo cargar ${src}`)),{once:true});return}
     const script=document.createElement('script');
-    script.src=`${src}${src.includes('?')?'&':'?'}v=repair1-${Date.now()}`;
+    script.src=`${src}${src.includes('?')?'&':'?'}v=repair3`;
     script.onload=()=>predicate()?resolve():reject(new Error(`No se inicializó ${src}`));
     script.onerror=()=>reject(new Error(`No se pudo cargar ${src}`));
     document.head.appendChild(script);
@@ -152,8 +154,11 @@ function loadScript(src,predicate){
 
 async function openLegalQuick(){
   try{
-    await loadScript('law-knowledge-v1.js',()=>!!window.__CC_LAW_KNOWLEDGE__);
-    await loadScript('legal-assistant-v1.js',()=>!!window.__ccLegalKnowledge);
+    if(window.__ccLazyFeatures?.loadLegal)await window.__ccLazyFeatures.loadLegal();
+    else{
+      await loadScript('law-knowledge-v1.js',()=>!!window.__CC_LAW_KNOWLEDGE__);
+      await loadScript('legal-assistant-v2.js',()=>!!window.__ccLegalKnowledge);
+    }
     if(window.__ccZordonChatUI?.send)await window.__ccZordonChatUI.send('¿Qué regula la garantía de cumplimiento?');
   }catch(error){console.warn('Consulta legal rápida:',error?.message||error)}
 }
@@ -222,11 +227,20 @@ function scheduleRepair(){
   if(scheduled)return;scheduled=true;
   requestAnimationFrame(()=>{scheduled=false;repair()});
 }
+function attachObserver(){
+  const root=document.getElementById('app')||document.body;
+  if(!root)return null;
+  const observer=new MutationObserver(scheduleRepair);
+  observer.observe(root,{childList:true,subtree:true});
+  return observer;
+}
 
 installStyle();repair();
 setTimeout(()=>{repair();refreshAccess()},160);
 setTimeout(()=>{repair();refreshAccess()},850);
-setInterval(()=>{repair();refreshAccess()},20000);
-new MutationObserver(scheduleRepair).observe(document.documentElement,{childList:true,subtree:true,characterData:true});
-window.__ccFunctionalRepair={refreshAccess,openAccessModal,openLegalQuick,repairConversationContinuity,version:2};
+const observer=attachObserver();
+const accessTimer=setInterval(()=>{if(!document.hidden)refreshAccess()},60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){repair();refreshAccess()}});
+window.addEventListener('pagehide',()=>{clearInterval(accessTimer);observer?.disconnect?.()},{once:true});
+window.__ccFunctionalRepair={refreshAccess,openAccessModal,openLegalQuick,repairConversationContinuity,version:3};
 })();

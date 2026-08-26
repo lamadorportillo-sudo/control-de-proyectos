@@ -16,4 +16,9 @@ assert(!fs.readFileSync('engineer-chatbot-v3.js','utf8').includes('halu-engineer
 assert(html.includes('rel="preconnect" href="https://flethujkrharehjikwgj.supabase.co"'),'Debe anticipar la conexión de autenticación');
 assert(html.includes('rel="preload" href="performance-runtime-v1.js?v=20260823-perf5"'),'Debe anticipar el coordinador de rendimiento');
 
+const injector=fs.readFileSync('inject-portfolio.cjs','utf8');
+assert(injector.includes("'system-ui-refinement-v2.js'"),'El inyector debe reconocer la capa visual V2 como legado para retirarla');
+assert(injector.includes("'system-ui-refinement-v3.js'"),'El inyector debe cargar la capa visual final V3');
+assert(injector.includes("'integrity-diagnostics-v1.js'"),'El inyector debe cargar el diagnóstico contractual no destructivo');
+
 console.log(`initial-payload: ${refs.length} scripts directos, ${directBytes} bytes de JavaScript inicial`);

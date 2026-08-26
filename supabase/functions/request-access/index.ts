@@ -4,7 +4,9 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.0";
 const allowedOrigins = new Set([
   "https://lamadorportillo-sudo.github.io",
   "http://localhost:8000",
-  "http://127.0.0.1:8000"
+  "http://127.0.0.1:8000",
+  "http://localhost:4173",
+  "http://127.0.0.1:4173"
 ]);
 
 function cors(origin: string | null) {
@@ -20,7 +22,15 @@ function cors(origin: string | null) {
 function json(body: unknown, status: number, origin: string | null) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...cors(origin), "Content-Type": "application/json; charset=utf-8" }
+    headers: {
+      ...cors(origin),
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store, max-age=0",
+      "Pragma": "no-cache",
+      "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "no-referrer",
+      "X-Frame-Options": "DENY"
+    }
   });
 }
 

@@ -7,11 +7,9 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.view.WindowManager;
 import android.webkit.CookieManager;
 import android.webkit.PermissionRequest;
-import android.webkit.SafeBrowsingResponse;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -74,11 +72,6 @@ public class MainActivity extends Activity {
                 } catch (Exception ignored) {
                 }
                 return true;
-            }
-
-            @Override
-            public void onSafeBrowsingHit(WebView view, WebResourceRequest request, int threatType, SafeBrowsingResponse callback) {
-                callback.backToSafety(true);
             }
         });
 

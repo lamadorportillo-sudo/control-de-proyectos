@@ -2,14 +2,17 @@
   "name": "control-de-proyectos",
   "private": true,
   "scripts": {
+    "test": "node --test tests/*.test.cjs && playwright test",
     "test:responsive": "playwright test tests/responsive-audit.spec.cjs tests/authenticated-responsive.spec.cjs",
     "test:responsive:public": "playwright test tests/responsive-audit.spec.cjs",
     "test:responsive:authenticated": "playwright test tests/authenticated-responsive.spec.cjs",
     "test:guest": "playwright test tests/guest-mode-responsive.spec.cjs",
     "test:access": "playwright test tests/access-approval-responsive.spec.cjs",
+    "test:accessibility": "playwright test tests/accessibility-responsive.spec.cjs",
     "optimize:images": "node scripts/optimize-images.cjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
     "@playwright/test": "^1.62.1",
     "sharp": "^0.35.3"
   }

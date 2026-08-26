@@ -18,6 +18,8 @@ const modules=[
   ['functional-repair-v1.js','20260826-repair3'],
   ['system-ui-refinement-v3.js','20260826-system5'],
   ['integrity-diagnostics-v1.js','20260826-integrity1'],
+  // Última capa: solo corrige contraste AA y evita que módulos anteriores lo reduzcan.
+  ['accessibility-contrast-fix-v1.js','20260826-a11y1'],
 ];
 if(!fs.existsSync(htmlFile)) throw new Error('No se encontró index.html.');
 for(const [moduleFile] of modules){
@@ -44,4 +46,4 @@ for(const [moduleFile,version] of modules){
 
 if(/system-ui-refinement-v2\.js/i.test(html)) throw new Error('La capa visual V2 no debe permanecer cargada.');
 fs.writeFileSync(htmlFile,html,'utf8');
-console.log('Interfaz consolidada: iconografía compacta, refinamiento visual V3 e integridad contractual sin capa V2 redundante.');
+console.log('Interfaz consolidada: refinamiento V3, diagnóstico contractual y contraste WCAG AA como capa final.');

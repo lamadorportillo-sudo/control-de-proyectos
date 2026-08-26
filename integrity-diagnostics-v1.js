@@ -11,9 +11,11 @@ const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim
 const active=x=>!!x&&!x.voidedAt&&!x.voided_at&&!x.archivedAt&&!x.archived_at&&!/anulad/i.test(String(x.status||''));
 const money=v=>{try{return typeof fmtC==='function'?fmtC(N(v)):`L ${N(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`}catch{return`L ${R(v).toFixed(2)}`}};
 const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const getDB=()=>{try{return typeof db!=='undefined'?db:window.db}catch{return window.db}};
+const getView=()=>{try{return typeof view!=='undefined'?view:window.view}catch{return window.view}};
 
 function approvedChanges(contractId){
-  return A(window.db?.changes).filter(x=>active(x)&&x.contractId===contractId&&norm(x.status)==='aprobado');
+  return A(getDB()?.changes).filter(x=>active(x)&&x.contractId===contractId&&norm(x.status)==='aprobado');
 }
 function derivedAmount(c){
   if(!c)return 0;
@@ -37,15 +39,16 @@ function guaranteeIssues(g,c){
   if(!String(g?.number||'').trim())out.push('Falta el número de garantía.');
   if(!String(g?.issuer||'').trim())out.push('Falta la institución emisora.');
   if(!String(g?.document||g?.document_ref||'').trim())out.push('Falta la referencia documental.');
-  if(!(g?.start||g?.startDate)&&!(g?.end||g?.endDate))out.push('La vigencia está incompleta.');
+  if(!(g?.start||g?.startDate)||!(g?.end||g?.endDate))out.push('La vigencia está incompleta.');
   return out;
 }
 
 function scanProject(projectId){
-  const p=A(window.db?.projects).find(x=>x.id===projectId);
+  const store=getDB();
+  const p=A(store?.projects).find(x=>x.id===projectId);
   if(!p)return[];
   const issues=[];
-  const contracts=A(window.db?.contracts).filter(c=>active(c)&&c.projectId===p.id);
+  const contracts=A(store?.contracts).filter(c=>active(c)&&c.projectId===p.id);
   for(const c of contracts){
     const derived=derivedAmount(c),stored=storedAmount(c);
     if(Math.abs(stored-derived)>0.01){
@@ -64,7 +67,7 @@ function scanProject(projectId){
         detail:`Las fechas abarcan ${span} días calendario y el contrato registra ${days} días de ejecución. Verifique el documento contractual antes de modificar cualquiera de los valores.`
       });
     }
-    for(const g of A(window.db?.guarantees).filter(x=>active(x)&&x.contractId===c.id)){
+    for(const g of A(store?.guarantees).filter(x=>active(x)&&x.contractId===c.id)){
       for(const detail of guaranteeIssues(g,c))issues.push({
         level:'warn',kind:'guarantee',projectId:p.id,contractId:c.id,guaranteeId:g.id,
         title:`Garantía ${g.type||g.guaranteeType||'contractual'} incompleta`,detail
@@ -74,12 +77,11 @@ function scanProject(projectId){
   return issues;
 }
 function scanAll(){
-  return A(window.db?.projects).filter(active).flatMap(p=>scanProject(p.id));
+  return A(getDB()?.projects).filter(active).flatMap(p=>scanProject(p.id));
 }
 
 function mountProjectNotice(){
-  let projectId='';
-  try{projectId=window.view?.projectId||''}catch{}
+  const projectId=getView()?.projectId||'';
   const host=document.getElementById('tabBody')||document.querySelector('.project-portfolio-actions')?.parentElement;
   document.querySelectorAll('[data-cc-integrity-diagnostics]').forEach(el=>{if(!host||!host.contains(el))el.remove()});
   if(!projectId||!host||host.querySelector('[data-cc-integrity-diagnostics]'))return;

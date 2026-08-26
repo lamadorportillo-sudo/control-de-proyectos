@@ -163,14 +163,8 @@ document.addEventListener('click',voidByClick,true);
 function relabel(){document.querySelectorAll('[data-del-est],[data-del-ch]').forEach(b=>{b.textContent='Anular';b.title='Anula el registro y conserva la trazabilidad.'})}
 new MutationObserver(relabel).observe(document.documentElement,{childList:true,subtree:true});queueMicrotask(relabel);
 
-function repairKnownContract(){
-  let changed=false;const p=A(db?.projects).find(x=>String(x.code||'').toUpperCase()==='COT121706-2026'),c=p&&A(db?.contracts).find(x=>x.projectId===p.id&&String(x.number||'').toUpperCase()==='COT121706-2026');if(!p||!c)return false;
-  if(norm(c.contractor)===norm(p.name)||/construcci[oó]n de pavimento calle del colegio/i.test(c.contractor||'')){c.contractor='ING. NORMA LUHATANY MEDINA RAMOS';changed=true}
-  const controls=typeof contractControlDefaults==='function'?contractControlDefaults(c.controls||{}):Object.assign({},c.controls||{});if(controls.orderStartMode!=='Después del pago/entrega del anticipo'){controls.orderStartMode='Después del pago/entrega del anticipo';changed=true}if(N(controls.orderStartAfterAdvanceDays)!==15){controls.orderStartAfterAdvanceDays=15;changed=true}if(controls.successionClauseEnabled!==true){controls.successionClauseEnabled=true;changed=true}c.controls=controls;
-  if(changed){c.updatedAt=now();audit?.('CORREGIR','Contrato',c.id,{projectId:p.id,number:c.number,fields:['contractor','orderStartMode','orderStartAfterAdvanceDays','successionClauseEnabled'],source:'Contrato validado'});saveDB();say('Se corrigieron los datos contractuales validados de COT121706-2026.')}
-  return changed;
-}
-setTimeout(repairKnownContract,400);setTimeout(repairKnownContract,3500);setTimeout(repairKnownContract,9000);
-
-window.__ccContractIntegrity={active,certified,paid,qualifiedOffer,currentAmount,financialModel,automaticProgress,estimateLimit,guaranteeIssues,deriveOriginalDays,validScannedEstimates,repairKnownContract};
+// Las correcciones de contratos específicos no se ejecutan desde el runtime.
+// Cualquier ajuste contractual debe provenir de datos validados y quedar trazado
+// mediante el flujo normal de edición/migración, nunca por temporizadores ocultos.
+window.__ccContractIntegrity={active,certified,paid,qualifiedOffer,currentAmount,financialModel,automaticProgress,estimateLimit,guaranteeIssues,deriveOriginalDays,validScannedEstimates};
 })();

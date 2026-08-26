@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07101f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Asistente de Reuniones</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <div class="brand"><span class="logo">🎙️</span><div><b>Asistente de Reuniones</b><small>Reuniones · acuerdos · calendario</small></div></div>
+  <button id="installBtn" class="btn soft hidden">📲 Instalar</button>
+</header>
+<nav class="nav" aria-label="Navegación principal">
+  <button class="tab active" data-view="home">🏠<span>Inicio</span></button>
+  <button class="tab" data-view="record">🎙️<span>Grabar</span></button>
+  <button class="tab" data-view="calendar">📅<span>Calendario</span></button>
+  <button class="tab" data-view="tasks">✅<span>Tareas</span></button>
+  <button class="tab" data-view="account">👤<span>Cuenta</span></button>
+</nav>
+<main>
+<section id="home" class="view active">
+  <div class="hero">
+    <div><p class="eyebrow">MEMORIA DIGITAL DE REUNIONES</p><h1>Convierte lo hablado en acciones.</h1><p>Graba audio optimizado para voz, organiza asignaciones y consulta tus próximas actividades.</p></div>
+    <button class="btn primary big" data-go="record">🎙️ Iniciar reunión</button>
+  </div>
+  <div class="kpis">
+    <article><small>Reuniones</small><strong id="kMeetings">0</strong></article>
+    <article><small>Pendientes</small><strong id="kPending">0</strong></article>
+    <article><small>Próximos 7 días</small><strong id="kWeek">0</strong></article>
+  </div>
+  <div class="grid2">
+    <article class="card"><div class="head"><h2>Próximas actividades</h2><button class="link" data-go="calendar">Ver calendario</button></div><div id="upcoming" class="list"></div></article>
+    <article class="card"><div class="head"><h2>Últimas reuniones</h2><button class="link" data-go="record">Nueva</button></div><div id="recent" class="list"></div></article>
+  </div>
+</section>
+
+<section id="record" class="view">
+  <article class="card recording">
+    <div class="head"><div><p class="eyebrow">NUEVA REUNIÓN</p><h2>Grabación de audio</h2></div><strong id="timer" class="timer">00:00:00</strong></div>
+    <div id="secureNotice" class="notice"></div>
+    <div class="form2">
+      <label>Título<input id="meetingTitle" placeholder="Ej. Seguimiento del parque"></label>
+      <label>Proyecto / tema<input id="meetingProject" placeholder="Ej. Parque Central"></label>
+    </div>
+    <div class="micWrap"><button id="micBtn" class="mic" aria-label="Iniciar grabación">🎙️</button><b id="recStatus">Listo para grabar</b><small>Audio de voz comprimido WebM/Opus cuando el navegador lo permite.</small></div>
+    <div class="actions"><button id="pauseBtn" class="btn soft" disabled>⏸ Pausar</button><button id="stopBtn" class="btn danger" disabled>⏹ Finalizar</button></div>
+    <div id="audioBox" class="audioBox hidden"><audio id="preview" controls></audio><small id="audioInfo"></small></div>
+    <label>Notas rápidas<textarea id="meetingNotes" placeholder="Acuerdos, responsables, fechas, montos o puntos importantes..."></textarea></label>
+    <div class="actions left"><button id="summaryBtn" class="btn dark">🧠 Resumen preliminar</button><button id="saveMeetingBtn" class="btn primary">💾 Guardar reunión</button></div>
+    <pre id="summary" class="summary hidden"></pre>
+  </article>
+</section>
+
+<section id="calendar" class="view">
+  <div class="calendarLayout">
+    <article class="card"><div class="head"><button id="prevMonth" class="btn icon">←</button><h2 id="monthLabel"></h2><button id="nextMonth" class="btn icon">→</button></div><div id="calGrid" class="calGrid"></div></article>
+    <article class="card"><p class="eyebrow">NUEVA ASIGNACIÓN</p><h2>Agregar actividad</h2><form id="taskForm" class="formStack">
+      <label>Actividad<input id="taskTitle" required placeholder="Ej. Visita al proyecto"></label>
+      <label>Responsable<input id="taskOwner" placeholder="Nombre del responsable"></label>
+      <label>Fecha<input id="taskDate" required type="date"></label>
+      <label>Hora<input id="taskTime" type="time"></label>
+      <label>Prioridad<select id="taskPriority"><option>Normal</option><option>Alta</option><option>Baja</option></select></label>
+      <button class="btn primary" type="submit">Agregar al calendario</button>
+    </form></article>
+  </div>
+</section>
+
+<section id="tasks" class="view">
+  <article class="card"><div class="head"><div><p class="eyebrow">SEGUIMIENTO</p><h2>Tareas y asignaciones</h2></div></div><div id="taskList"></div></article>
+</section>
+
+<section id="account" class="view">
+  <div class="grid2">
+    <article class="card"><p class="eyebrow">PERFIL</p><h2>Mi cuenta</h2><form id="profileForm" class="formStack"><label>Nombre<input id="profileNameInput" placeholder="Tu nombre"></label><label>Correo<input id="profileEmailInput" type="email" placeholder="correo@ejemplo.com"></label><button class="btn primary" type="submit">Guardar perfil</button></form></article>
+    <article class="card"><p class="eyebrow">SINCRONIZACIÓN</p><h2>Estado de esta versión</h2><div class="notice info"><b>Versión web segura por HTTPS.</b><br>Los datos todavía se guardan localmente en este dispositivo. La siguiente fase conectará autenticación y nube para abrir la misma cuenta desde cualquier celular o computadora.</div><ul class="check"><li>✓ PWA instalable</li><li>✓ Micrófono por HTTPS</li><li>✓ Calendario y tareas</li><li>✓ Audio local</li><li>Próximo: cuenta y sincronización en la nube</li></ul></article>
+  </div>
+</section>
+</main>
+</div>
+<script src="./app.js"></script>
+</body>
+</html>

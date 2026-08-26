@@ -11,7 +11,7 @@ const modules=[
   ['guest-mode-v1.js','20260825-guest4'],
   ['ui-compact-elegance-v1.js','20260825-elegance3'],
   ['system-ui-refinement-v2.js','20260825-system3'],
-  ['functional-repair-v1.js','20260825-repair1'],
+  ['functional-repair-v1.js','20260826-repair2'],
   ['system-ui-refinement-v3.js','20260825-system4'],
 ];
 if(!fs.existsSync(htmlFile)) throw new Error('No se encontró index.html.');

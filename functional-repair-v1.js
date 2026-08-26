@@ -167,10 +167,53 @@ function ensureStableQuick(){
   body.appendChild(quick);
 }
 
+let pendingNameIntro=null,lastNameIntroKey='';
+function normalizePersonName(value){
+  return String(value||'').trim().replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ'’-]/g,'').slice(0,32).replace(/^./,c=>c.toUpperCase());
+}
+function detectNameIntro(){
+  const chat=document.getElementById('ccEngineerChat');if(!chat)return;
+  const user=[...chat.querySelectorAll('.cc-eng-msg.user')].at(-1);if(!user)return;
+  const text=String(user.textContent||'').trim();
+  const match=text.match(/\b(?:me llamo|mi nombre es)\s+([A-Za-zÁÉÍÓÚÜÑáéíóúüñ'’-]{2,32})\b/i);if(!match)return;
+  const name=normalizePersonName(match[1]);if(!name)return;
+  const key=`${text}|${name}`;if(lastNameIntroKey===key||pendingNameIntro?.key===key)return;
+  pendingNameIntro={key,name,started:Date.now()};
+  try{if(window.__ccEngineerChat?.conversation)window.__ccEngineerChat.conversation.userName=name}catch{}
+}
+function applyNameIntro(){
+  if(!pendingNameIntro)return;
+  const chat=document.getElementById('ccEngineerChat'),body=chat?.querySelector('.cc-eng-chat-body');if(!body)return;
+  const bots=[...body.querySelectorAll('.cc-eng-msg.bot')];
+  const bot=bots.at(-1);if(!bot)return;
+  if(bot.dataset.zordonTyping==='1'||/pensando|revisando el contexto/i.test(bot.textContent||''))return;
+  const {key,name}=pendingNameIntro;
+  const reply=`Mucho gusto, ${name}. ¿Cómo estás? Cuéntame qué estás revisando y seguimos desde ahí.`;
+  bot.textContent=reply;
+  try{
+    const conversation=window.__ccEngineerChat?.conversation;
+    if(conversation){
+      conversation.userName=name;
+      conversation.history=Array.isArray(conversation.history)?conversation.history:[];
+      const last=conversation.history.at(-1);
+      if(last?.role==='assistant')last.text=reply;
+      else conversation.history.push({role:'assistant',text:reply});
+    }
+  }catch{}
+  lastNameIntroKey=key;pendingNameIntro=null;
+}
+function repairConversationContinuity(){
+  detectNameIntro();
+  if(!pendingNameIntro)return;
+  applyNameIntro();
+  if(pendingNameIntro&&Date.now()-pendingNameIntro.started<12000)setTimeout(applyNameIntro,90);
+}
+
 let scheduled=false;
 function repair(){
   installStyle();
   ensureStableQuick();
+  repairConversationContinuity();
   if(canReviewAccess()){
     const button=accessButton();if(button)button.onclick=openAccessModal;
   }
@@ -184,6 +227,6 @@ installStyle();repair();
 setTimeout(()=>{repair();refreshAccess()},160);
 setTimeout(()=>{repair();refreshAccess()},850);
 setInterval(()=>{repair();refreshAccess()},20000);
-new MutationObserver(scheduleRepair).observe(document.documentElement,{childList:true,subtree:true});
-window.__ccFunctionalRepair={refreshAccess,openAccessModal,openLegalQuick,version:1};
+new MutationObserver(scheduleRepair).observe(document.documentElement,{childList:true,subtree:true,characterData:true});
+window.__ccFunctionalRepair={refreshAccess,openAccessModal,openLegalQuick,repairConversationContinuity,version:2};
 })();

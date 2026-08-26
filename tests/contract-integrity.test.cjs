@@ -10,7 +10,7 @@ const context={
     {id:'e2',projectId:'p1',contractId:'c1',status:'Aprobada',gross:300,net:260,qualityApplied:15,advanceApplied:30},
     {id:'e3',projectId:'p1',contractId:'c1',status:'Pagada',gross:200,net:170,qualityApplied:10,advanceApplied:20}
   ]},
-  document:{addEventListener(){},documentElement:{}},MutationObserver:class{observe(){}},queueMicrotask(){},setTimeout(){},navigator:{onLine:false},
+  document:{addEventListener(){},documentElement:{},querySelectorAll(){return[]}},MutationObserver:class{observe(){}},queueMicrotask(){},setTimeout(){},navigator:{onLine:false},
   cents:v=>Math.round(Number(v||0)*100),fromCents:v=>Math.round(v)/100,round2:v=>Math.round(Number(v||0)*100)/100,
   contractControlDefaults:x=>Object.assign({performanceGuaranteePct:15,performanceExtraMonths:3,qualityGuaranteePct:5,qualityGuaranteeDays:365},x),
   daysBetween:(a,b)=>Math.round((new Date(`${b}T12:00:00`)-new Date(`${a}T12:00:00`))/86400000)+1,
@@ -48,11 +48,9 @@ assert(issues.some(x=>x.includes('referencia')));
 assert(issues.some(x=>x.includes('menor al 15%')));
 assert(issues.some(x=>x.includes('vigencia')));
 
-context.db.changes=[];contract.currentAmount=1000;
-assert.equal(api.repairKnownContract(),true);
-assert.equal(contract.contractor,'ING. NORMA LUHATANY MEDINA RAMOS');
-assert.equal(contract.controls.orderStartMode,'Después del pago/entrega del anticipo');
-assert.equal(contract.controls.orderStartAfterAdvanceDays,15);
-assert.equal(contract.controls.successionClauseEnabled,true);
+const source=fs.readFileSync('contract-integrity-fix-v1.js','utf8');
+assert.equal(typeof api.repairKnownContract,'undefined','el runtime no debe exponer reparaciones de contratos específicos');
+assert(!/setTimeout\(repairKnownContract|repairKnownContract\s*\(/.test(source),'no debe existir autocorrección contractual por temporizador');
+assert(!/ING\. NORMA LUHATANY MEDINA RAMOS/.test(source),'los datos de un contratista concreto no deben estar incrustados en el motor general');
 
-console.log('contract-integrity: 17 verificaciones superadas');
+console.log('contract-integrity: 16 verificaciones superadas y autocorrección específica eliminada');

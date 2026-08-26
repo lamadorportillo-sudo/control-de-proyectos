@@ -60,8 +60,9 @@ jobs:
           node build-pages.cjs
           node inject-portfolio.cjs
           node patch-session-security.cjs
-          grep -q 'guest-mode-v1.js?v=20260825-guest2' index.html
-          grep -q 'ui-compact-elegance-v1.js?v=20260825-elegance1' index.html
+          grep -q 'guest-mode-v1.js' index.html
+          grep -q 'ui-compact-elegance-v1.js' index.html
+          grep -q 'system-ui-refinement-v2.js?v=20260825-system2' index.html
           grep -q '</html>' index.html
 
       - name: Instalar Playwright

@@ -10,13 +10,13 @@
 <title>Asistente de Reuniones</title>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./styles.css?v=3">
+<link rel="stylesheet" href="./styles.css?v=5">
 </head>
 <body>
 <div class="app">
 <header class="top">
   <div class="brand"><span class="logo">🎙️</span><div><b>Asistente de Reuniones</b><small>Voz · resumen · acuerdos · calendario</small></div></div>
-  <button id="installBtn" class="btn soft hidden">📲 Instalar</button>
+  <div class="topActions"><span id="cloudBadge" class="cloudBadge">☁️ Local</span><button id="installBtn" class="btn soft hidden">📲 Instalar</button></div>
 </header>
 <nav class="nav" aria-label="Navegación principal">
   <button class="tab active" data-view="home">🏠<span>Inicio</span></button>
@@ -80,11 +80,38 @@
 <section id="calendar" class="view"><div class="calendarLayout"><article class="card"><div class="head"><button id="prevMonth" class="btn icon">←</button><h2 id="monthLabel"></h2><button id="nextMonth" class="btn icon">→</button></div><div id="calGrid" class="calGrid"></div></article><article class="card"><p class="eyebrow">NUEVA ASIGNACIÓN</p><h2>Agregar actividad</h2><form id="taskForm" class="formStack"><label>Actividad<input id="taskTitle" required placeholder="Ej. Visita al proyecto"></label><label>Responsable<input id="taskOwner" placeholder="Nombre del responsable"></label><label>Fecha<input id="taskDate" required type="date"></label><label>Hora<input id="taskTime" type="time"></label><label>Prioridad<select id="taskPriority"><option>Normal</option><option>Alta</option><option>Baja</option></select></label><button class="btn primary" type="submit">Agregar al calendario</button></form></article></div></section>
 <section id="tasks" class="view"><article class="card"><div class="head"><div><p class="eyebrow">SEGUIMIENTO</p><h2>Tareas y asignaciones</h2></div></div><div id="taskList"></div></article></section>
 <section id="meetings" class="view"><article class="card"><div class="head"><div><p class="eyebrow">HISTORIAL</p><h2>Reuniones guardadas</h2></div></div><div id="meetingList"></div></article></section>
-<section id="account" class="view"><div class="grid2"><article class="card"><p class="eyebrow">PERFIL</p><h2>Mi cuenta</h2><form id="profileForm" class="formStack"><label>Nombre<input id="profileNameInput" placeholder="Tu nombre"></label><label>Correo<input id="profileEmailInput" type="email" placeholder="correo@ejemplo.com"></label><button class="btn primary" type="submit">Guardar perfil</button></form></article><article class="card"><p class="eyebrow">SINCRONIZACIÓN</p><h2>Estado de esta versión</h2><div class="notice info"><b>Versión web segura por HTTPS.</b><br>Los datos todavía se guardan localmente en este dispositivo. La siguiente fase conectará autenticación y nube para abrir la misma cuenta desde cualquier celular o computadora.</div><ul class="check"><li>✓ PWA instalable</li><li>✓ Micrófono por HTTPS</li><li>✓ Resúmenes múltiples</li><li>✓ Detección de asignaciones</li><li>✓ Integración con calendario interno</li><li>Próximo: cuenta, nube y transcripción IA del audio ya grabado</li></ul></article></div></section>
+<section id="account" class="view">
+  <div class="grid2">
+    <article class="card">
+      <p class="eyebrow">CUENTA EN LA NUBE</p><h2>Sincronización entre dispositivos</h2>
+      <div id="cloudStatus" class="notice info"><b>Comprobando conexión…</b></div>
+      <div id="authLoggedOut">
+        <form id="loginForm" class="formStack">
+          <label>Correo<input id="loginEmail" type="email" autocomplete="email" placeholder="correo@ejemplo.com"></label>
+          <label>Contraseña<input id="loginPassword" type="password" autocomplete="current-password" placeholder="Tu contraseña"></label>
+          <button class="btn primary" type="submit">🔐 Iniciar sesión</button>
+          <button id="signupBtn" class="btn soft" type="button">Crear cuenta</button>
+        </form>
+        <p class="hint">Al iniciar sesión, reuniones, tareas, calendario y audios se vinculan a tu usuario y podrán abrirse desde otro celular o computadora.</p>
+      </div>
+      <div id="authLoggedIn" class="hidden">
+        <div class="accountConnected"><span class="accountIcon">✓</span><div><b>Cuenta conectada</b><small id="authEmail"></small></div></div>
+        <div class="actions left"><button id="syncNowBtn" class="btn primary" type="button">☁️ Sincronizar ahora</button><button id="logoutBtn" class="btn danger" type="button">Cerrar sesión</button></div>
+      </div>
+    </article>
+    <article class="card">
+      <p class="eyebrow">PERFIL</p><h2>Datos del usuario</h2>
+      <form id="profileForm" class="formStack"><label>Nombre<input id="profileNameInput" placeholder="Tu nombre"></label><label>Correo<input id="profileEmailInput" type="email" placeholder="correo@ejemplo.com"></label><button class="btn primary" type="submit">Guardar perfil</button></form>
+      <ul class="check"><li>✓ PWA instalable</li><li>✓ Micrófono por HTTPS</li><li>✓ Resúmenes múltiples</li><li>✓ Detección de asignaciones</li><li>✓ Calendario interno</li><li>✓ Cuenta y sincronización en nube</li><li>✓ Audios privados por usuario</li><li>Próximo: transcripción IA del audio completo</li></ul>
+    </article>
+  </div>
+</section>
 </main>
 </div>
-<script src="./core-v3.js?v=4"></script>
-<script src="./record-v3.js?v=4"></script>
-<script src="./analysis-v3.js?v=4"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./core-v3.js?v=5"></script>
+<script src="./record-v3.js?v=5"></script>
+<script src="./analysis-v3.js?v=5"></script>
+<script src="./cloud-v4.js?v=5"></script>
 </body>
 </html>

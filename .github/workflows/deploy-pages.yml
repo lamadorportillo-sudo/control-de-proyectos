@@ -211,6 +211,8 @@ jobs:
             echo "index.html ya está actualizado."
           else
             git add index.html
-            git commit -m "Publicar interfaz contractual verificada [skip ci]"
+            # No usar [skip ci]: el commit generado debe disparar la auditoría
+            # responsive de la revisión exacta que quedará servida por Pages.
+            git commit -m "Publicar interfaz contractual verificada"
             git push origin HEAD:main
           fi

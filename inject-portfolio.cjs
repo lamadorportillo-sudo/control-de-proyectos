@@ -12,6 +12,7 @@ const modules=[
   ['ui-compact-elegance-v1.js','20260825-elegance3'],
   ['system-ui-refinement-v2.js','20260825-system3'],
   ['functional-repair-v1.js','20260825-repair1'],
+  ['system-ui-refinement-v3.js','20260825-system4'],
 ];
 if(!fs.existsSync(htmlFile)) throw new Error('No se encontró index.html.');
 for(const [moduleFile] of modules){
@@ -29,4 +30,4 @@ for(const [moduleFile,version] of modules){
 }
 
 fs.writeFileSync(htmlFile,html,'utf8');
-console.log('Interfaz profesional, modo invitado, iconografía elegante, portafolio y reparaciones funcionales integrados permanentemente en index.html.');
+console.log('Interfaz profesional, modo invitado, iconografía elegante, portafolio, reparaciones funcionales y refinamiento visual V3 integrados permanentemente en index.html.');

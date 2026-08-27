@@ -6,9 +6,10 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
-import android.view.WindowManager;
 import android.webkit.CookieManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -34,7 +35,6 @@ public class MainActivity extends Activity {
 
         getWindow().setStatusBarColor(Color.rgb(7, 16, 31));
         getWindow().setNavigationBarColor(Color.rgb(7, 16, 31));
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         webView = new WebView(this);
         setContentView(webView);
@@ -52,11 +52,13 @@ public class MainActivity extends Activity {
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        settings.setUserAgentString(settings.getUserAgentString() + " AsistenteReunionesAPK/1.0");
+        settings.setUserAgentString(settings.getUserAgentString() + " AsistenteReunionesAPK/1.1");
 
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, false);
         WebView.setWebContentsDebuggingEnabled(false);
+
+        webView.addJavascriptInterface(new AndroidRecorderBridge(), "AndroidRecorder");
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -106,6 +108,32 @@ public class MainActivity extends Activity {
                 }
             }
         });
+    }
+
+    private final class AndroidRecorderBridge {
+        @JavascriptInterface
+        public void startKeepAlive() {
+            runOnUiThread(() -> {
+                Intent service = new Intent(MainActivity.this, RecordingKeepAliveService.class);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(service);
+                } else {
+                    startService(service);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void stopKeepAlive() {
+            runOnUiThread(() -> stopService(
+                    new Intent(MainActivity.this, RecordingKeepAliveService.class)
+            ));
+        }
+
+        @JavascriptInterface
+        public boolean isKeepAliveRunning() {
+            return RecordingKeepAliveService.isRunning();
+        }
     }
 
     private boolean isTrusted(Uri uri) {
@@ -167,6 +195,10 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
+        if (RecordingKeepAliveService.isRunning()) {
+            moveTaskToBack(true);
+            return;
+        }
         if (webView != null && webView.canGoBack()) {
             webView.goBack();
         } else {
@@ -177,18 +209,26 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (webView != null) webView.onResume();
+        if (webView != null) {
+            webView.onResume();
+            webView.evaluateJavascript(
+                    "window.RM && window.RM.refreshRecordingUi && window.RM.refreshRecordingUi()",
+                    null
+            );
+        }
     }
 
     @Override
     protected void onPause() {
-        if (webView != null) webView.onPause();
+        // No se pausa el WebView aquí: una grabación activa debe continuar al
+        // minimizar la app o bloquear la pantalla. El servicio en primer plano
+        // mantiene el proceso y la CPU activos hasta que el usuario pulse Finalizar.
         super.onPause();
     }
 
     @Override
     protected void onDestroy() {
-        if (webView != null) {
+        if (webView != null && !RecordingKeepAliveService.isRunning()) {
             webView.stopLoading();
             webView.destroy();
             webView = null;

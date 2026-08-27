@@ -95,11 +95,8 @@
     if(!isSecureContext)return alert('Usa el enlace HTTPS oficial.');
 
     if($('#autoProcessStatus'))$('#autoProcessStatus').classList.add('hidden');
-    nativeKeeper.start();
 
     try{
-      if(nativeKeeper.available())await new Promise(ok=>setTimeout(ok,140));
-
       stream=await navigator.mediaDevices.getUserMedia({
         audio:{
           channelCount:1,
@@ -108,6 +105,9 @@
           autoGainControl:true
         }
       });
+
+      nativeKeeper.start();
+      if(nativeKeeper.available())await new Promise(ok=>setTimeout(ok,100));
 
       const mt=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus'].find(t=>MediaRecorder.isTypeSupported(t))||'';
       const o={audioBitsPerSecond:32000};

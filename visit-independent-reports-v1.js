@@ -10,6 +10,9 @@ const N=v=>Number.isFinite(Number(v))?Number(v):0;
 const D=v=>{try{return v&&typeof dmy==='function'?dmy(v):(v?new Date(v+'T12:00:00').toLocaleDateString('es-HN'):'—')}catch{return v||'—'}};
 const P=v=>`${Math.max(0,Math.min(100,N(v))).toFixed(2)}%`;
 const say=m=>{try{if(typeof toast==='function')toast(m);else console.log(m)}catch{}};
+function contributionOf(v){
+  return String(v?.communityContribution||v?.community_contribution||v?.rawData?.communityContribution||v?.raw_data?.communityContribution||'').trim();
+}
 function current(){
   try{
     const pid=view?.projectId;
@@ -32,6 +35,8 @@ function css(){
   .cc-visit-report-picker{display:grid;grid-template-columns:minmax(240px,1.5fr) auto auto;gap:8px;align-items:end;margin:0 0 14px;padding:13px;border:1px solid #dfe6dc;background:#f8faf7;border-radius:14px}
   .cc-visit-report-picker .field{margin:0}.cc-visit-report-picker .btn{min-height:40px}
   .cc-visit-count-note{font-size:10px;color:#68756c;margin:5px 0 0}.cc-visit-print-row{margin-left:5px!important}
+  .cc-visit-community-note{grid-column:1/-1;padding:10px 12px;border:1px solid #c9d8e7;background:#f3f7fb;border-radius:10px;font-size:11px;line-height:1.45;color:#334e68}
+  .cc-visit-community-note b{color:#244766}
   @media(max-width:760px){.cc-visit-report-picker{grid-template-columns:1fr}.cc-visit-report-picker .btn{width:100%}}
   `;document.head.appendChild(s);
 }
@@ -45,7 +50,7 @@ function rows(items){
 function reportBody(p,c,v){
   const ps=photosOf(v),obs=A(v.observations);
   const meta=[['Proyecto',H(p.name||'')],['Código',H(p.code||'')],['Contrato',H(c?.number||'No registrado')],['Visita',`N.º ${N(v.number)||'—'}`],['Fecha',D(v.date)],['Tipo',H(v.type||'—')],['Estado',H(v.status||'—')],['Avance físico observado',P(v.physical||0)],['Personal en sitio',N(v.personnel)||'—'],['Clima',H(v.weather||'—')],['Supervisor',H(v.supervisor||'—')]];
-  const detail=[['Objetivo / motivo',v.objective],['Actividades observadas / trabajos ejecutados',v.activities],['Observaciones generales',v.generalObservations],['Instrucciones / recomendaciones',v.instructions],['Compromisos / seguimiento',v.commitments]].filter(([,x])=>String(x||'').trim());
+  const detail=[['Objetivo / motivo',v.objective],['Actividades observadas / trabajos ejecutados',v.activities],['Distribución de aportes / responsabilidades',contributionOf(v)],['Observaciones generales',v.generalObservations],['Instrucciones / recomendaciones',v.instructions],['Compromisos / seguimiento',v.commitments]].filter(([,x])=>String(x||'').trim());
   return `<div class="screen-actions"><button onclick="window.print()">Imprimir / Guardar PDF</button></div><article class="sheet"><header class="head"><div><div class="kicker">CONTROL CONTRACTUAL · VISITA DE CAMPO</div><h1>INFORME DE VISITA N.º ${N(v.number)||'—'}</h1><p>${H(p.name||'Proyecto')}</p></div><div class="code"><b>${H(p.code||'SIN CÓDIGO')}</b><span>${D(v.date)}</span></div></header>${rows(meta)}${detail.length?`<h3 class="section">Seguimiento técnico de campo</h3><table class="tbl"><tbody>${detail.map(([k,x])=>`<tr><th style="width:24%">${H(k)}</th><td>${H(x)}</td></tr>`).join('')}</tbody></table>`:''}${obs.length?`<h3 class="section">Observaciones individuales</h3><table class="tbl"><thead><tr><th>Categoría</th><th>Observación</th><th>Prioridad</th><th>Responsable</th><th>Estado</th></tr></thead><tbody>${obs.map(o=>`<tr><td>${H(o.category||'General')}</td><td>${H(o.text||'')}</td><td>${H(o.priority||'—')}</td><td>${H(o.responsible||'—')}</td><td>${H(o.status||'Pendiente')}</td></tr>`).join('')}</tbody></table>`:''}${ps.length?`<h3 class="section">Registro fotográfico</h3><div class="photos">${ps.map((ph,i)=>`<figure><img src="${H(photoSrc(ph))}" alt="Fotografía ${i+1}"><figcaption>Fotografía ${i+1}${ph.caption?' · '+H(ph.caption):ph.name?' · '+H(ph.name):''}</figcaption></figure>`).join('')}</div>`:''}<div class="sign"><div><span></span><b>Supervisor / Responsable</b></div><div><span></span><b>Representante del contratista</b></div><div><span></span><b>V.º B.º / Aprobó</b></div></div><footer><span>${H(p.code||'')}</span><span>Informe independiente · ${D(v.date)}</span></footer></article>`;
 }
 function openReport(visitId,autoPrint=false){
@@ -66,12 +71,21 @@ function picker(){
     const anchor=body.querySelector('.advance')||body.querySelector('.table-wrap')||body.firstChild;
     anchor?.parentNode?.insertBefore(box,anchor);
   }
-  const signature=vs.map(v=>`${v.id}:${v.number}:${v.date}:${v.updatedAt||''}`).join('|');
+  const signature=vs.map(v=>`${v.id}:${v.number}:${v.date}:${v.updatedAt||''}:${contributionOf(v)}`).join('|');
   if(box.dataset.signature!==signature){
     box.dataset.signature=signature;
-    box.innerHTML=`<label class="field"><span>Informe de visita a imprimir</span><select data-visit-report-select>${vs.length?vs.map(v=>`<option value="${H(v.id)}">Visita N.º ${N(v.number)||'—'} · ${D(v.date)} · ${H(v.type||'Supervisión')}</option>`).join(''):'<option value="">No hay visitas registradas</option>'}</select><div class="cc-visit-count-note">${vs.length} visita${vs.length===1?'':'s'} registrada${vs.length===1?'':'s'} de forma independiente.</div></label><button class="btn" type="button" data-visit-preview ${vs.length?'':'disabled'}>Ver informe</button><button class="btn primary" type="button" data-visit-print ${vs.length?'':'disabled'}>Imprimir seleccionada</button>`;
-    box.querySelector('[data-visit-preview]')?.addEventListener('click',()=>openReport(box.querySelector('[data-visit-report-select]')?.value,false));
-    box.querySelector('[data-visit-print]')?.addEventListener('click',()=>openReport(box.querySelector('[data-visit-report-select]')?.value,true));
+    const options=vs.slice().reverse();
+    box.innerHTML=`<label class="field"><span>Informe de visita a imprimir</span><select data-visit-report-select>${options.length?options.map(v=>`<option value="${H(v.id)}">Visita N.º ${N(v.number)||'—'} · ${D(v.date)} · ${H(v.type||'Supervisión')}</option>`).join(''):'<option value="">No hay visitas registradas</option>'}</select><div class="cc-visit-count-note">${vs.length} visita${vs.length===1?'':'s'} registrada${vs.length===1?'':'s'} de forma independiente.</div></label><button class="btn" type="button" data-visit-preview ${vs.length?'':'disabled'}>Ver informe</button><button class="btn primary" type="button" data-visit-print ${vs.length?'':'disabled'}>Imprimir seleccionada</button><div class="cc-visit-community-note" data-visit-community-note></div>`;
+    const select=box.querySelector('[data-visit-report-select]');
+    const renderContribution=()=>{
+      const note=box.querySelector('[data-visit-community-note]');if(!note)return;
+      const v=vs.find(x=>x.id===select?.value),text=contributionOf(v);
+      note.innerHTML=text?`<b>Distribución de aportes / responsabilidades:</b> ${H(text)}`:'<b>Distribución de aportes / responsabilidades:</b> No hay información registrada para esta visita.';
+    };
+    select?.addEventListener('change',renderContribution);
+    renderContribution();
+    box.querySelector('[data-visit-preview]')?.addEventListener('click',()=>openReport(select?.value,false));
+    box.querySelector('[data-visit-print]')?.addEventListener('click',()=>openReport(select?.value,true));
   }
   body.querySelectorAll('tbody tr').forEach(tr=>{
     const first=tr.querySelector('td');if(!first)return;

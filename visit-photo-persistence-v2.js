@@ -4,6 +4,7 @@
 if(window.__CC_VISIT_PHOTO_PERSIST_V2__)return;
 window.__CC_VISIT_PHOTO_PERSIST_V2__=true;
 const A=v=>Array.isArray(v)?v:[];
+const BASE=new URL('.',document.currentScript?.src||location.href).href;
 let pending=null;
 function srcOf(p){if(typeof p==='string')return p;return String(p?.src||p?.url||p?.dataUrl||p?.data_url||p?.image||'')}
 function normalize(p,i=0){if(typeof p==='string')return{id:`legacy_${i}`,name:`Fotografía ${i+1}`,src:p};if(!p||typeof p!=='object')return null;return{...p,id:p.id||`legacy_${i}`,name:p.name||p.filename||`Fotografía ${i+1}`,src:srcOf(p)}}
@@ -29,6 +30,15 @@ function hookSave(){
  wrapped.__ccPhotoPersistV2=true;
  saveDB=wrapped;
 }
+function loadIndependentVisitReports(){
+ if(window.__CC_VISIT_INDEPENDENT_REPORTS_V1__||document.querySelector('script[data-cc-visit-independent-reports]'))return;
+ const s=document.createElement('script');
+ s.src=BASE+'visit-independent-reports-v1.js?v=20260827-community1';
+ s.async=false;
+ s.dataset.ccVisitIndependentReports='1';
+ s.onerror=()=>console.warn('No se pudo cargar el módulo de informes independientes de visitas.');
+ (document.body||document.documentElement).appendChild(s);
+}
 document.addEventListener('submit',e=>{
  const form=e.target;if(!form||form.id!=='visitForm')return;
  const pid=typeof view!=='undefined'?view.projectId:'';
@@ -40,4 +50,5 @@ document.addEventListener('submit',e=>{
 },true);
 const mo=new MutationObserver(()=>hookSave());mo.observe(document.documentElement,{subtree:true,childList:true});
 hookSave();
+setTimeout(loadIndependentVisitReports,0);
 })();

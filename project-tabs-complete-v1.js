@@ -46,7 +46,7 @@ function loadPortfolioModules(){
     'project-evaluation-dashboard-v1.js?v=20260828-projectevaluation1',
     'project-functional-actions-v1.js?v=20260821-actions2',
     'visit-independent-reports-v1.js?v=20260821-visitsind1',
-    'portfolio-gallery-v1.js?v=20260821-gallery2',
+    'portfolio-gallery-v1.js?v=20260828-gallery3',
     'portfolio-screen-fix-v1.js?v=20260821-screenfix1',
     'project-photo-story-v1.js?v=20260821-photostory1',
     'photo-gallery-polish-v2.js?v=20260821-photopolish2',
@@ -56,7 +56,7 @@ function loadPortfolioModules(){
     'ui-operational-polish-v1.js?v=20260821-operational2',
     'home-executive-fix-v2.js?v=20260822-homeexec3',
     'ui-visibility-audit-v1.js?v=20260821-visibility1',
-    'immersive-engineering-experience-v1.js?v=20260824-immersive1'
+    'immersive-engineering-experience-v1.js?v=20260828-immersive2'
   ];
   const current=document.currentScript?.src||'',base=current?current.slice(0,current.lastIndexOf('/')+1):'';
   const load=i=>{if(i>=modules.length)return;const file=modules[i].split('?')[0];if([...document.scripts].some(s=>(s.src||'').includes('/'+file))){load(i+1);return}const s=document.createElement('script');s.src=base+modules[i];s.async=false;s.onload=()=>load(i+1);s.onerror=()=>{console.warn('No se pudo cargar módulo visual',file);load(i+1)};document.body.appendChild(s)};load(0);

@@ -106,8 +106,18 @@ function injectStyles(){
 
     body:not(.print-report) .panel,
     body:not(.print-report) .projects-board,
-    body:not(.print-report) .modal,
     body:not(.print-report) .auth-card{position:relative;overflow:hidden;border-color:rgba(114,157,220,.17)!important;background:linear-gradient(150deg,rgba(11,24,44,.88),rgba(6,14,28,.94))!important;box-shadow:var(--cc3d-shadow),inset 0 1px 0 rgba(255,255,255,.035)!important}
+    body:not(.print-report) .modal{
+      position:relative;
+      overflow-x:hidden!important;
+      overflow-y:auto!important;
+      overscroll-behavior:contain;
+      -webkit-overflow-scrolling:touch;
+      scrollbar-gutter:stable;
+      border-color:rgba(114,157,220,.17)!important;
+      background:linear-gradient(150deg,rgba(11,24,44,.88),rgba(6,14,28,.94))!important;
+      box-shadow:var(--cc3d-shadow),inset 0 1px 0 rgba(255,255,255,.035)!important;
+    }
     body:not(.print-report) .panel::after,
     body:not(.print-report) .projects-board::after,
     body:not(.print-report) .auth-card::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(120deg,transparent 0 38%,rgba(255,255,255,.022) 46%,transparent 54%)}

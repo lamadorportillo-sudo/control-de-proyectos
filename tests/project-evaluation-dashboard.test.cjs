@@ -44,6 +44,9 @@ assert.ok(result.alerts.some(item=>/garantía de cumplimiento vencida/i.test(ite
 assert.ok(result.alerts.some(item=>/observaciones pendientes/i.test(item.title)),'detecta observaciones pendientes');
 assert.ok(result.processes.find(item=>item.id==='schedule').score<65,'detecta atraso físico frente al tiempo');
 
-const source=fs.readFileSync('index.html','utf8');
-assert.match(source,/project-evaluation-dashboard-v1\.js\?v=/,'el dashboard está cargado por la página');
+const source=[
+  fs.readFileSync('index.html','utf8'),
+  fs.readFileSync('project-tabs-complete-v1.js','utf8'),
+].join('\n');
+assert.match(source,/project-evaluation-dashboard-v1\.js\?v=/,'el dashboard está cargado por la página o su cargador global');
 console.log('project-evaluation-dashboard: cálculo integral, alertas e integración verificados');

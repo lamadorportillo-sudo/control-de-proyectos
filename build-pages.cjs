@@ -161,7 +161,7 @@ const lateModules=[
   ['summary-budget-law-v1.js','20260820-summarybudgetlaw1'],
   ['project-search-clean-v1.js','20260820-searchclean1'],
   ['storage-quota-fix-v1.js','20260820-storagequota2'],
-  ['project-tabs-complete-v1.js','20260823-tabscomplete24'],
+  ['project-tabs-complete-v1.js','20260828-tabscomplete32'],
   ['feature-lazy-loader-v1.js','20260824-lazy3'],
   ['procurement-process-save-v4.js','20260820-procsave4'],
   ['contract-integrity-fix-v1.js','20260822-integrity1'],
@@ -183,7 +183,7 @@ const lateModules=[
   ['ui-visibility-audit-v1.js','20260822-uiaudit1'],
   ['portfolio-redesign-v1.js','20260821-portfolio3'],
   ['project-portfolio-detail-v1.js','20260821-projectdetail2'],
-  ['portfolio-gallery-v1.js','20260821-gallery2'],
+  ['portfolio-gallery-v1.js','20260828-gallery3'],
   ['portfolio-screen-fix-v1.js','20260821-screenfix1'],
   ['project-photo-story-v1.js','20260821-photostory1'],
 ];

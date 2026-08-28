@@ -1,4 +1,4 @@
-const CACHE='cc-static-v1-20260828-projectevaluation1';
+const CACHE='cc-static-v1-20260828-modalscroll-compact1';
 const STATIC_EXT=/\.(?:js|css|webp|png|jpg|jpeg|woff2?)(?:\?|$)/i;
 
 self.addEventListener('install',event=>event.waitUntil(self.skipWaiting()));

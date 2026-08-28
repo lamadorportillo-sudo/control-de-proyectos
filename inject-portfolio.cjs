@@ -8,7 +8,7 @@ const legacyVisualModules=[
 const modules=[
   ['portfolio-redesign-v1.js','20260821-portfolio3'],
   ['project-portfolio-detail-v1.js','20260821-projectdetail2'],
-  ['portfolio-gallery-v1.js','20260821-gallery2'],
+  ['portfolio-gallery-v1.js','20260828-gallery3'],
   ['portfolio-screen-fix-v1.js','20260821-screenfix1'],
   ['project-photo-story-v1.js','20260821-photostory1'],
   ['guest-mode-v1.js','20260825-guest4'],

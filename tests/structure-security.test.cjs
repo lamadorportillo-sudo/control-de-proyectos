@@ -42,7 +42,7 @@ assert(/programacion-control-v1\.js\?v=/.test(html),'Programación y Control deb
 assert(/project-tabs-complete-v1\.js\?v=/.test(html),'La navegación publicada debe estar activa.');
 assert(/zordon-continuous-runtime-v1\.js\?v=/.test(html),'El núcleo continuo de ZORDON debe estar publicado.');
 const projectTabs=fs.readFileSync(path.join(root,'project-tabs-complete-v1.js'),'utf8');
-assert(projectTabs.includes('immersive-engineering-experience-v1.js?v=20260824-immersive1'),'La experiencia 3D debe cargarse desde la navegación global.');
+assert(projectTabs.includes('immersive-engineering-experience-v1.js?v=20260828-immersive2'),'La experiencia 3D debe cargarse desde la navegación global.');
 assert(projectTabs.includes('zordon-continuous-runtime-v1.js?v=20260824-zordonbrand3'),'La navegación debe cargar ZORDON V3 con versión renovada.');
 const immersive=fs.readFileSync(path.join(root,'immersive-engineering-experience-v1.js'),'utf8');
 assert(immersive.includes('EXPERIENCIA DE INGENIERIA 3D V1'),'El módulo inmersivo debe estar disponible.');

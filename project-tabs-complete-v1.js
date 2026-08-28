@@ -43,6 +43,7 @@ function loadPortfolioModules(){
     'transparency-storage-v1.js?v=20260821-trstorage1',
     'budget-search-fix-v1.js?v=20260821-budgetsearch1',
     'project-portfolio-detail-v1.js?v=20260821-projectdetail2',
+    'project-evaluation-dashboard-v1.js?v=20260828-projectevaluation1',
     'project-functional-actions-v1.js?v=20260821-actions2',
     'visit-independent-reports-v1.js?v=20260821-visitsind1',
     'portfolio-gallery-v1.js?v=20260821-gallery2',

@@ -85,10 +85,18 @@ function showState(grid,title,detail){const n=stateNode(grid);n.innerHTML=`<b>${
 function hideState(grid){const n=grid.querySelector(':scope > .zordon-project-state');if(n)n.style.display='none'}
 function hide(card){card.dataset.zordonHidden='1'}
 function show(card){delete card.dataset.zordonHidden}
+function isGuest(){return !!document.body?.classList?.contains('cc-guest-mode')}
 function apply(board,query){
   const grid=board.querySelector('.project-grid-v3');if(!grid)return;
   const cards=[...grid.querySelectorAll(':scope > .project-v3')],q=String(query||'').trim(),count=board.querySelector('[data-zordon-count]');
-  if(!q){cards.forEach(hide);showState(grid,'Zordon está listo','Escribe el nombre, código, contratista, ubicación, estado o una frase como “proyectos en ejecución”.');if(count)count.textContent='Esperando búsqueda';return}
+  if(!q){
+    if(isGuest()){
+      cards.forEach(show);hideState(grid);if(count)count.textContent=`${cards.length} proyecto${cards.length===1?'':'s'}`;
+    }else{
+      cards.forEach(hide);showState(grid,'Zordon está listo','Escribe el nombre, código, contratista, ubicación, estado o una frase como “proyectos en ejecución”.');if(count)count.textContent='Esperando búsqueda';
+    }
+    return;
+  }
   if(/^(todos|todas|mostrar todos|muestra todos|ver todos)$/i.test(norm(q))){cards.forEach(show);hideState(grid);if(count)count.textContent=`${cards.length} proyecto${cards.length===1?'':'s'}`;return}
   const ranked=cards.map(c=>({c,score:scoreCard(c,q)})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
   cards.forEach(hide);ranked.forEach(({c})=>show(c));
@@ -116,12 +124,12 @@ function mount(board){
 function run(){document.querySelectorAll('.projects-board').forEach(mount)}
 let queued=false;
 const observer=typeof MutationObserver==='function'?new MutationObserver(mutations=>{
-  if(!mutations.some(m=>m.type==='childList'||(m.type==='attributes'&&m.attributeName==='style')))return;
+  if(!mutations.some(m=>m.type==='childList'||(m.type==='attributes'&&(m.attributeName==='style'||m.attributeName==='class'))))return;
   if(queued)return;queued=true;
   const go=()=>{queued=false;run()};
   if(typeof requestAnimationFrame==='function')requestAnimationFrame(go);else setTimeout(go,0);
 }):null;
-observer?.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['style']});
+observer?.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
 setTimeout(run,0);setTimeout(run,350);setTimeout(run,1100);
 window.__ccZordonProjectSearch={run,apply,scoreCard};
 })();

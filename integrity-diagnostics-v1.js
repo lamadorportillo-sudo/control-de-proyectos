@@ -106,3 +106,18 @@ function observe(){
 setTimeout(()=>{mountProjectNotice();if(!observe()){const wait=setInterval(()=>{if(observe()){clearInterval(wait);mountProjectNotice()}},500);setTimeout(()=>clearInterval(wait),10000)}},0);
 window.__ccIntegrityDiagnostics={scanProject,scanAll,derivedAmount,storedAmount,calendarDays,mountProjectNotice};
 })();
+
+/* Carga desacoplada del buscador inteligente Zordon. */
+(()=>{
+  if(window.__CC_ZORDON_PROJECT_SEARCH_LOADER__)return;
+  window.__CC_ZORDON_PROJECT_SEARCH_LOADER__=true;
+  const load=()=>{
+    if(window.__CC_ZORDON_PROJECT_SEARCH_V1__||document.querySelector('script[data-zordon-project-search-loader]'))return;
+    const s=document.createElement('script');
+    s.src='zordon-project-search-v1.js?v=20260830-zordon1';
+    s.async=false;
+    s.dataset.zordonProjectSearchLoader='1';
+    document.head.appendChild(s);
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load();
+})();

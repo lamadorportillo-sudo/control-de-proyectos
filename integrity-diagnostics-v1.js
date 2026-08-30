@@ -10,7 +10,7 @@ const R=v=>Math.round(N(v)*100)/100;
 const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
 const active=x=>!!x&&!x.voidedAt&&!x.voided_at&&!x.archivedAt&&!x.archived_at&&!/anulad/i.test(String(x.status||''));
 const money=v=>{try{return typeof fmtC==='function'?fmtC(N(v)):`L ${N(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`}catch{return`L ${R(v).toFixed(2)}`}};
-const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
 const getDB=()=>{try{return typeof db!=='undefined'?db:window.db}catch{return window.db}};
 const getView=()=>{try{return typeof view!=='undefined'?view:window.view}catch{return window.view}};
 
@@ -82,7 +82,8 @@ function scanAll(){
 
 function mountProjectNotice(){
   const projectId=getView()?.projectId||'';
-  const host=document.getElementById('tabBody')||document.querySelector('.project-portfolio-actions')?.parentElement;
+  const host=typeof document!=='undefined'?(document.getElementById('tabBody')||document.querySelector('.project-portfolio-actions')?.parentElement):null;
+  if(typeof document==='undefined')return;
   document.querySelectorAll('[data-cc-integrity-diagnostics]').forEach(el=>{if(!host||!host.contains(el))el.remove()});
   if(!projectId||!host||host.querySelector('[data-cc-integrity-diagnostics]'))return;
   const issues=scanProject(projectId);if(!issues.length)return;
@@ -95,29 +96,67 @@ function mountProjectNotice(){
 let queued=false;
 function schedule(){
   if(queued)return;queued=true;
-  requestAnimationFrame(()=>{queued=false;mountProjectNotice()});
+  if(typeof requestAnimationFrame==='function')requestAnimationFrame(()=>{queued=false;mountProjectNotice()});
+  else{queued=false;mountProjectNotice()}
 }
 function observe(){
+  if(typeof document==='undefined'||typeof MutationObserver==='undefined')return false;
   const app=document.getElementById('app');if(!app)return false;
   const observer=new MutationObserver(schedule);observer.observe(app,{childList:true,subtree:true});
   return true;
 }
 
-setTimeout(()=>{mountProjectNotice();if(!observe()){const wait=setInterval(()=>{if(observe()){clearInterval(wait);mountProjectNotice()}},500);setTimeout(()=>clearInterval(wait),10000)}},0);
+if(typeof document!=='undefined')setTimeout(()=>{mountProjectNotice();if(!observe()){const wait=setInterval(()=>{if(observe()){clearInterval(wait);mountProjectNotice()}},500);setTimeout(()=>clearInterval(wait),10000)}},0);
 window.__ccIntegrityDiagnostics={scanProject,scanAll,derivedAmount,storedAmount,calendarDays,mountProjectNotice};
 })();
 
-/* Carga desacoplada del buscador inteligente Zordon. */
+/* ZORDON · carga segura del buscador inteligente y compactación del portafolio. */
 (()=>{
   if(window.__CC_ZORDON_PROJECT_SEARCH_LOADER__)return;
   window.__CC_ZORDON_PROJECT_SEARCH_LOADER__=true;
+  if(typeof document==='undefined'||typeof document.createElement!=='function')return;
+
+  const installCompact=()=>{
+    if(document.getElementById('cc-zordon-project-compact-loader'))return;
+    const style=document.createElement('style');
+    style.id='cc-zordon-project-compact-loader';
+    style.textContent=`
+      html.zordon-search-boot .projects-board .project-grid-v3>.project-v3{display:none!important}
+      body:not(.print-report) .projects-board .project-grid-v3{grid-template-columns:1fr!important;gap:8px!important}
+      body:not(.print-report) .projects-board .project-v3{min-height:0!important;height:auto!important}
+      body:not(.print-report) .projects-board .project-v3-main{grid-template-columns:minmax(0,1.7fr) minmax(230px,.75fr)!important;gap:8px!important;padding:9px 11px!important}
+      body:not(.print-report) .projects-board .project-v3 h3{font-size:11.5px!important;line-height:1.24!important;min-height:0!important;margin:4px 0 3px!important}
+      body:not(.print-report) .projects-board .project-v3-contractor{margin-top:5px!important;padding:5px 7px!important}
+      body:not(.print-report) .projects-board .project-v3 .v3-metric{min-height:45px!important;padding:5px 7px!important}
+      body:not(.print-report) .projects-board .project-v3-progress{margin-top:5px!important;gap:6px!important}
+      body:not(.print-report) .projects-board .project-v3-health{margin-top:5px!important;padding-top:5px!important}
+      body:not(.print-report) .projects-board .project-v3-actions{display:flex!important;flex-direction:row!important;align-items:center!important;gap:5px!important;padding:6px 8px!important;min-height:0!important}
+      body:not(.print-report) .projects-board .project-v3-actions .btn{min-height:28px!important;padding:5px 7px!important;font-size:8.5px!important;width:auto!important}
+      body:not(.print-report) .projects-board .project-v3-actions .btn.primary{margin-left:auto!important;min-width:108px!important}
+      @media(max-width:760px){body:not(.print-report) .projects-board .project-v3-main{display:block!important}body:not(.print-report) .projects-board .project-v3-money{margin-top:7px!important}}
+    `;
+    document.head.appendChild(style);
+  };
+
+  const activate=()=>{
+    document.documentElement.classList.remove('zordon-search-boot');
+    try{window.__ccZordonProjectSearch?.run?.()}catch{}
+  };
+
   const load=()=>{
-    if(window.__CC_ZORDON_PROJECT_SEARCH_V1__||document.querySelector('script[data-zordon-project-search-loader]'))return;
-    const s=document.createElement('script');
-    s.src='zordon-project-search-v1.js?v=20260830-zordon1';
+    installCompact();
+    document.documentElement.classList.add('zordon-search-boot');
+    if(window.__CC_ZORDON_PROJECT_SEARCH_V1__){activate();return}
+    let s=document.querySelector('script[data-zordon-project-search-loader]');
+    if(s){s.addEventListener?.('load',activate,{once:true});return}
+    s=document.createElement('script');
+    s.src='zordon-project-search-v1.js?v=20260830-zordon2';
     s.async=false;
     s.dataset.zordonProjectSearchLoader='1';
+    s.onload=activate;
+    s.onerror=()=>document.documentElement.classList.remove('zordon-search-boot');
     document.head.appendChild(s);
   };
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load();
+
+  if(document.readyState==='loading'&&typeof document.addEventListener==='function')document.addEventListener('DOMContentLoaded',load,{once:true});else load();
 })();

@@ -57,8 +57,6 @@ function corpus(card){
 function scoreCard(card,q){
   const text=corpus(card),tokens=coreTokens(q),phrase=norm(q);
   if(!tokens.length)return 0;
-  /* Cada concepto escrito por el usuario debe existir realmente en la tarjeta.
-     Los alias solo actúan como sinónimos del mismo concepto; no suman coincidencias sueltas. */
   if(!tokens.every(t=>tokenMatches(t,text)))return 0;
   let score=40;
   if(phrase&&text.includes(phrase))score+=100;
@@ -126,4 +124,20 @@ const observer=typeof MutationObserver==='function'?new MutationObserver(mutatio
 observer?.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['style']});
 setTimeout(run,0);setTimeout(run,350);setTimeout(run,1100);
 window.__ccZordonProjectSearch={run,apply,scoreCard};
+})();
+
+/* ZORDON · portada industrial inspirada en el modelo visual del usuario. */
+(()=>{
+'use strict';
+if(typeof window==='undefined'||typeof document==='undefined'||window.__CC_INDUSTRIAL_HOME_LOADER__)return;
+window.__CC_INDUSTRIAL_HOME_LOADER__=true;
+const activate=()=>{try{window.__ccIndustrialHome?.run?.()}catch{}};
+const load=()=>{
+  if(window.__CC_INDUSTRIAL_HOME_V1__){activate();return}
+  if(typeof document.createElement!=='function')return;
+  let s=document.querySelector('script[data-industrial-home-loader]');
+  if(s){s.addEventListener?.('load',activate,{once:true});return}
+  s=document.createElement('script');s.src='industrial-home-v1.js?v=20260831-industrial2';s.async=false;s.dataset.industrialHomeLoader='1';s.onload=activate;document.head.appendChild(s);
+};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load();
 })();

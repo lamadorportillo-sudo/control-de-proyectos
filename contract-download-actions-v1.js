@@ -18,33 +18,10 @@ function addCss(){
   document.head.appendChild(s);
 }
 
-function currentProjectContract(){
-  try{
-    const p=typeof window.getProject==='function'?window.getProject():null;
-    const c=p&&typeof window.getContract==='function'?window.getContract(p):null;
-    return {p,c};
-  }catch{return {p:null,c:null}}
-}
-
-function resolveContext(){
-  const ctx=currentProjectContract();
-  if(ctx.p&&ctx.c)return ctx;
-  try{
-    const id=window.currentProjectId||window.selectedProjectId||window.activeProjectId;
-    const projects=window.DB?.projects||window.db?.projects||[];
-    const p=projects.find(x=>String(x.id)===String(id));
-    const contracts=window.DB?.contracts||window.db?.contracts||[];
-    const c=p?contracts.find(x=>String(x.projectId)===String(p.id)):null;
-    return {p,c};
-  }catch{return {p:null,c:null}}
-}
-
-function callGenerate(kind){
-  const api=window.ccContractPaymentDocuments;
-  if(!api||typeof api.generate!=='function')return window.toast?.('El generador de documentos aún no está disponible.')||alert('El generador de documentos aún no está disponible.');
-  const {p,c}=resolveContext();
-  if(!p||!c)return window.toast?.('No se pudo identificar el contrato activo.')||alert('No se pudo identificar el contrato activo.');
-  api.generate(p,c,kind);
+function manualDownload(card,selector){
+  const source=card.querySelector(selector);
+  if(!source)return window.toast?.('No se encontró el generador de este documento.')||alert('No se encontró el generador de este documento.');
+  source.click();
 }
 
 function decorate(card){
@@ -54,14 +31,14 @@ function decorate(card){
   box.className='cc-doc-downloads';
   box.setAttribute('data-cc-manual-downloads','');
   box.innerHTML=`
-    <div class="cc-doc-download"><span><b>Contrato de obra</b>Descargar una copia Word</span><button class="btn" type="button" data-download-contract>Descargar</button></div>
-    <div class="cc-doc-download"><span><b>Nota de remisión</b>Descargar una copia Word</span><button class="btn" type="button" data-download-note>Descargar</button></div>
-    <div class="cc-doc-download"><span><b>Orden de inicio</b>Descargar una copia Word</span><button class="btn" type="button" data-download-start>Descargar</button></div>`;
+    <div class="cc-doc-download"><span><b>Contrato de obra</b>Descargar manualmente en Word</span><button class="btn" type="button" data-download-contract>Descargar</button></div>
+    <div class="cc-doc-download"><span><b>Nota de remisión</b>Descargar manualmente en Word</span><button class="btn" type="button" data-download-note>Descargar</button></div>
+    <div class="cc-doc-download"><span><b>Orden de inicio</b>Descargar manualmente en Word</span><button class="btn" type="button" data-download-start>Descargar</button></div>`;
   const actions=card.querySelector('.cc-payment-doc-actions');
   actions?actions.insertAdjacentElement('afterend',box):card.appendChild(box);
-  box.querySelector('[data-download-contract]')?.addEventListener('click',()=>callGenerate('contract'));
-  box.querySelector('[data-download-note]')?.addEventListener('click',()=>callGenerate('advanceRemittance'));
-  box.querySelector('[data-download-start]')?.addEventListener('click',()=>callGenerate('startOrder'));
+  box.querySelector('[data-download-contract]')?.addEventListener('click',()=>manualDownload(card,'[data-cc-doc-contract]'));
+  box.querySelector('[data-download-note]')?.addEventListener('click',()=>manualDownload(card,'[data-cc-doc-note]'));
+  box.querySelector('[data-download-start]')?.addEventListener('click',()=>manualDownload(card,'[data-cc-doc-start]'));
 }
 
 function scan(){document.querySelectorAll('[data-cc-payment-docs]').forEach(decorate)}

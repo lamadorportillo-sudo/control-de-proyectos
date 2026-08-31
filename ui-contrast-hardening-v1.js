@@ -1,23 +1,38 @@
-/* ===== CONTROL CONTRACTUAL · ENDURECIMIENTO DE CONTRASTE V2 ===== */
+/* ===== CONTROL CONTRACTUAL · ENDURECIMIENTO DE CONTRASTE V3 ===== */
 (()=>{
 'use strict';
-if(window.__CC_CONTRAST_HARDENING_V2__)return;
-window.__CC_CONTRAST_HARDENING_V2__=true;
+if(window.__CC_CONTRAST_HARDENING_V3__)return;
+window.__CC_CONTRAST_HARDENING_V3__=true;
 
 const STYLE_ID='cc-contrast-hardening-v1-style';
 function install(){
   let s=document.getElementById(STYLE_ID);
   if(!s){s=document.createElement('style');s.id=STYLE_ID;document.head.appendChild(s)}
   s.textContent=`
+  /* Navegación principal e invitado: superficies deterministas de alto contraste. */
+  body:not(.print-report) #ccxNav button[data-ccx],
+  body:not(.print-report) #ccgNavBtn{
+    background:#0d1520!important;background-image:none!important;color:#f8fbff!important;
+    border:1px solid #405675!important;opacity:1!important;text-shadow:none!important;
+  }
+  body:not(.print-report) #ccxNav button[data-ccx] *,
+  body:not(.print-report) #ccgNavBtn *{color:#f8fbff!important;opacity:1!important}
+  body:not(.print-report) #ccxNav button[data-ccx].active,
+  body:not(.print-report) #ccxNav button[data-ccx][aria-current='page']{
+    background:#174a9c!important;background-image:none!important;color:#fff!important;border-color:#6fa3e8!important;
+  }
+  body:not(.print-report) #ccxNav button[data-ccx]:hover,
+  body:not(.print-report) #ccgNavBtn:hover{background:#102039!important;border-color:#6fa3e8!important;color:#fff!important}
+
   /* Superficies ejecutivas deterministas: evitar fondos transparentes o gradientes ambiguos para contraste. */
   body:not(.print-report) #content .ccx-kpi,
   body:not(.print-report) #content .ccx-access button{
     background:#0d1520!important;background-image:none!important;color:#f8fbff!important;
     border-color:#31445f!important;
   }
-  body:not(.print-report) #content .ccx-kpi.good{background:#0d1d17!important;border-color:#347d51!important}
-  body:not(.print-report) #content .ccx-kpi.warn{background:#211b0d!important;border-color:#8a6d1f!important}
-  body:not(.print-report) #content .ccx-access button:hover{background:#102039!important;border-color:#5b91df!important}
+  body:not(.print-report) #content .ccx-kpi.good{background:#0d1d17!important;background-image:none!important;border-color:#347d51!important}
+  body:not(.print-report) #content .ccx-kpi.warn{background:#211b0d!important;background-image:none!important;border-color:#8a6d1f!important}
+  body:not(.print-report) #content .ccx-access button:hover{background:#102039!important;background-image:none!important;border-color:#5b91df!important}
 
   /* Centro ejecutivo: los textos secundarios deben superar 4.5:1. */
   body:not(.print-report) #content .ccx-kpi small,
@@ -36,13 +51,30 @@ function install(){
   /* Acciones primarias: azul suficientemente oscuro para texto blanco normal. */
   body:not(.print-report) #content .btn.primary,
   body:not(.print-report) #content button.primary{
-    background:#174a9c!important;color:#fff!important;border-color:#5b91df!important;
+    background:#174a9c!important;background-image:none!important;color:#fff!important;border-color:#5b91df!important;
     opacity:1!important;text-shadow:none!important;
   }
   body:not(.print-report) #content .btn.primary:hover,
-  body:not(.print-report) #content button.primary:hover{background:#123f87!important;color:#fff!important}
+  body:not(.print-report) #content button.primary:hover{background:#123f87!important;background-image:none!important;color:#fff!important}
 
-  /* Presupuesto y control de ejecución: estabilizar textos pequeños en superficies oscuras/gradientes. */
+  /* Presupuesto: eliminar transparencias/gradientes en contenedores de texto pequeño. */
+  body:not(.print-report) #content .cp-budget-page,
+  body:not(.print-report) #content .cp-budget-panel,
+  body:not(.print-report) #content .cp-budget-kpi,
+  body:not(.print-report) #content .cp-project-search-note,
+  body:not(.print-report) #content .cp-exec-only,
+  body:not(.print-report) #content .cp-exec-ring-card,
+  body:not(.print-report) #content .cp-exec-metric{
+    background:#0a131d!important;background-image:none!important;color:#f8fbff!important;
+  }
+  body:not(.print-report) #content .cp-budget-kpi{border-color:#315249!important}
+  body:not(.print-report) #content .cp-budget-kpi.good{background:#0d1d17!important;background-image:none!important;border-color:#347d51!important}
+  body:not(.print-report) #content .cp-exec-only{border-color:#315249!important}
+  body:not(.print-report) #content .cp-exec-ring-card,
+  body:not(.print-report) #content .cp-exec-metric{border-color:#31445f!important}
+  body:not(.print-report) #content .cp-budget-table tr{background:#0a131d!important;background-image:none!important}
+
+  body:not(.print-report) #content .cp-budget-page small,
   body:not(.print-report) #content .cp-budget-page .cp-budget-sub,
   body:not(.print-report) #content .cp-budget-page .cp-budget-pager small,
   body:not(.print-report) #content .cp-budget-page .cp-exec-ring-info small,
@@ -51,13 +83,15 @@ function install(){
   body:not(.print-report) #content .cp-budget-page .cp-exec-footer span,
   body:not(.print-report) #content .cp-budget-page .cp-budget-title p,
   body:not(.print-report) #content .cp-budget-page td:before{
-    color:#c3d1df!important;opacity:1!important;visibility:visible!important;
+    color:#d3deea!important;opacity:1!important;visibility:visible!important;
   }
 
   /* En superficies oscuras conocidas, un atributo calculado con un fondo heredado no puede invertir el texto. */
   body:not(.print-report) #content .ccx-page [data-cc-readable],
   body:not(.print-report) #content .cp-budget-page [data-cc-readable],
-  body:not(.print-report) #content .cp-exec-only [data-cc-readable]{
+  body:not(.print-report) #content .cp-exec-only [data-cc-readable],
+  body:not(.print-report) #ccxNav [data-cc-readable],
+  body:not(.print-report) #ccgNavBtn[data-cc-readable]{
     color:#f8fbff!important;opacity:1!important;visibility:visible!important;
   }
   `;

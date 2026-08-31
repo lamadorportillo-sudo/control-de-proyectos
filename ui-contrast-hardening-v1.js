@@ -11,18 +11,26 @@ function install(){
   s.textContent=`
   /* Navegación principal e invitado: superficies deterministas de alto contraste. */
   body:not(.print-report) #ccxNav button[data-ccx],
-  body:not(.print-report) #ccgNavBtn{
+  body:not(.print-report) #ccgNavBtn,
+  body:not(.print-report) button[data-tr-nav],
+  body:not(.print-report) button[data-tr-exec]{
     background:#0d1520!important;background-image:none!important;color:#f8fbff!important;
     border:1px solid #405675!important;opacity:1!important;text-shadow:none!important;
   }
   body:not(.print-report) #ccxNav button[data-ccx] *,
-  body:not(.print-report) #ccgNavBtn *{color:#f8fbff!important;opacity:1!important}
+  body:not(.print-report) #ccgNavBtn *,
+  body:not(.print-report) button[data-tr-nav] *,
+  body:not(.print-report) button[data-tr-exec] *{color:#f8fbff!important;opacity:1!important}
   body:not(.print-report) #ccxNav button[data-ccx].active,
-  body:not(.print-report) #ccxNav button[data-ccx][aria-current='page']{
+  body:not(.print-report) #ccxNav button[data-ccx][aria-current='page'],
+  body:not(.print-report) button[data-tr-nav].active,
+  body:not(.print-report) button[data-tr-exec].active{
     background:#174a9c!important;background-image:none!important;color:#fff!important;border-color:#6fa3e8!important;
   }
   body:not(.print-report) #ccxNav button[data-ccx]:hover,
-  body:not(.print-report) #ccgNavBtn:hover{background:#102039!important;border-color:#6fa3e8!important;color:#fff!important}
+  body:not(.print-report) #ccgNavBtn:hover,
+  body:not(.print-report) button[data-tr-nav]:hover,
+  body:not(.print-report) button[data-tr-exec]:hover{background:#102039!important;border-color:#6fa3e8!important;color:#fff!important}
 
   /* Superficies ejecutivas deterministas: evitar fondos transparentes o gradientes ambiguos para contraste. */
   body:not(.print-report) #content .ccx-kpi,
@@ -33,6 +41,20 @@ function install(){
   body:not(.print-report) #content .ccx-kpi.good{background:#0d1d17!important;background-image:none!important;border-color:#347d51!important}
   body:not(.print-report) #content .ccx-kpi.warn{background:#211b0d!important;background-image:none!important;border-color:#8a6d1f!important}
   body:not(.print-report) #content .ccx-access button:hover{background:#102039!important;background-image:none!important;border-color:#5b91df!important}
+
+  /* Tarjetas de reportes: fondo y textos se fijan juntos para evitar contraste ambiguo tras mutaciones de tema. */
+  body:not(.print-report) #content .ccx-report{
+    background:#0d1520!important;background-image:none!important;color:#f8fbff!important;
+    border-color:#31445f!important;opacity:1!important;
+  }
+  body:not(.print-report) #content .ccx-report h1,
+  body:not(.print-report) #content .ccx-report h2,
+  body:not(.print-report) #content .ccx-report h3,
+  body:not(.print-report) #content .ccx-report h4,
+  body:not(.print-report) #content .ccx-report b,
+  body:not(.print-report) #content .ccx-report strong{
+    color:#f8fbff!important;opacity:1!important;text-shadow:none!important;
+  }
 
   /* Centro ejecutivo: los textos secundarios deben superar 4.5:1. */
   body:not(.print-report) #content .ccx-kpi small,
@@ -110,7 +132,9 @@ function install(){
   body:not(.print-report) #content .cp-budget-page [data-cc-readable],
   body:not(.print-report) #content .cp-exec-only [data-cc-readable],
   body:not(.print-report) #ccxNav [data-cc-readable],
-  body:not(.print-report) #ccgNavBtn[data-cc-readable]{
+  body:not(.print-report) #ccgNavBtn[data-cc-readable],
+  body:not(.print-report) button[data-tr-nav][data-cc-readable],
+  body:not(.print-report) button[data-tr-exec][data-cc-readable]{
     color:#f8fbff!important;opacity:1!important;visibility:visible!important;
   }
   `;

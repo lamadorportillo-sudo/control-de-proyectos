@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const AxeBuilder = require('@axe-core/playwright').default;
 
 const appUrl = process.env.APP_URL || 'http://127.0.0.1:4173/';
 const USER_ID='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -55,10 +56,18 @@ async function noOverflow(page,label){
   expect(d.sw,`${label}: desbordamiento horizontal`).toBeLessThanOrEqual(d.cw+3);
 }
 
+async function noSeriousContrast(page,label){
+  const result=await new AxeBuilder({page}).include('.modal').withRules(['color-contrast']).analyze();
+  const bad=result.violations
+    .filter(v=>v.id==='color-contrast'&&['serious','critical'].includes(v.impact))
+    .map(v=>({impact:v.impact,targets:v.nodes.slice(0,12).flatMap(n=>n.target)}));
+  expect(bad,`${label}: el Centro de Seguridad no debe contener texto de contraste insuficiente`).toEqual([]);
+}
+
 for(const vp of [{name:'seguridad-mobile',width:390,height:844,touch:true},{name:'seguridad-desktop',width:1366,height:768,touch:false}]){
   test.describe(vp.name,()=>{
     test.use({viewport:{width:vp.width,height:vp.height},hasTouch:vp.touch});
-    test('muestra métricas, eventos y permite cerrar sesiones de otro usuario',async({page},testInfo)=>{
+    test('muestra métricas, eventos, contraste legible y permite cerrar sesiones de otro usuario',async({page},testInfo)=>{
       const errors=[];page.on('pageerror',e=>errors.push(e.message));
       await install(page);
       await page.goto(appUrl,{waitUntil:'domcontentloaded',timeout:60000});
@@ -67,6 +76,7 @@ for(const vp of [{name:'seguridad-mobile',width:390,height:844,touch:true},{name
       await page.waitForSelector('#ccSecurityBtn',{timeout:15000});
       await page.locator('#ccSecurityBtn').click();
       await page.waitForSelector('#ccSecurityCenter .cc-sec-kpis',{timeout:15000});
+      await page.waitForTimeout(250);
 
       await expect(page.getByText('Ingresos correctos · 24 h')).toBeVisible();
       await expect(page.getByText('Intentos fallidos · 24 h')).toBeVisible();
@@ -74,6 +84,7 @@ for(const vp of [{name:'seguridad-mobile',width:390,height:844,touch:true},{name
       await expect(page.getByText('Android · Chrome').first()).toBeVisible();
       await expect(page.getByText('Intento fallido')).toBeVisible();
       await noOverflow(page,vp.name);
+      await noSeriousContrast(page,vp.name);
 
       let revoked=false;
       page.on('request',req=>{if(req.url().includes('/functions/v1/manage-users')){try{if(req.postDataJSON()?.action==='revoke_sessions')revoked=true}catch{}}});

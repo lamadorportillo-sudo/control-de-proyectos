@@ -8,12 +8,12 @@ const notice=m=>typeof window.toast==='function'?window.toast(m):alert(m);
 const clean=v=>String(v||'documento').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9_-]+/gi,'-').replace(/^-+|-+$/g,'').slice(0,80)||'documento';
 
 function loadContractArchive(){
-  if(window.__CC_CONTRACT_FILE_REPOSITORY_V1__||document.getElementById('ccContractFileRepositoryScript'))return;
+  if(window.__CC_CONTRACT_FILE_REPOSITORY_V2__||document.getElementById('ccContractFileRepositoryV2Script'))return;
   const s=document.createElement('script');
-  s.id='ccContractFileRepositoryScript';
-  s.src='contract-file-repository-v1.js?v=20260831-archive1';
+  s.id='ccContractFileRepositoryV2Script';
+  s.src='contract-file-repository-v2.js?v=20260831-intelligence2';
   s.async=false;
-  s.onerror=()=>console.warn('No se pudo cargar el archivo documental del contrato.');
+  s.onerror=()=>console.warn('No se pudo cargar el archivo documental inteligente del contrato.');
   document.head.appendChild(s);
 }
 
@@ -105,7 +105,7 @@ function openGuarantees(){
   const timer=setInterval(()=>{
     tries++;
     if(window.ccContractFileRepository?.focusGuarantees){clearInterval(timer);window.ccContractFileRepository.focusGuarantees();return}
-    if(tries>=12){clearInterval(timer);notice('El archivo de garantías todavía se está cargando. Inténtalo nuevamente.');}
+    if(tries>=20){clearInterval(timer);notice('El archivo de garantías todavía se está cargando. Inténtalo nuevamente.');}
   },100);
 }
 
@@ -130,10 +130,7 @@ function decorate(card){
     actions.appendChild(b);
   }
   let box=card.querySelector('[data-cc-manual-downloads]');
-  if(!box){
-    box=document.createElement('div');box.className='cc-doc-downloads';box.setAttribute('data-cc-manual-downloads','');
-    actions?actions.insertAdjacentElement('afterend',box):card.appendChild(box);
-  }
+  if(!box){box=document.createElement('div');box.className='cc-doc-downloads';box.setAttribute('data-cc-manual-downloads','');actions?actions.insertAdjacentElement('afterend',box):card.appendChild(box)}
   if(box.dataset.ccSaveUi!=='v2'){
     box.dataset.ccSaveUi='v2';
     box.innerHTML=`
@@ -142,15 +139,7 @@ function decorate(card){
       <div class="cc-doc-download"><span><b>Orden de inicio</b>Elegir dónde guardar el Word</span><button class="btn" type="button" data-cc-save-doc="start">Guardar Word</button></div>`;
   }
 }
-
 function scan(){document.querySelectorAll('[data-cc-payment-docs]').forEach(decorate)}
-document.addEventListener('click',e=>{
-  const g=e.target.closest?.('[data-cc-open-guarantees]');
-  if(g){e.preventDefault();e.stopImmediatePropagation();openGuarantees();return}
-  const b=e.target.closest?.('[data-cc-save-doc]');
-  if(!b)return;
-  e.preventDefault();e.stopImmediatePropagation();
-  captureGeneratedToFile(b.dataset.ccSaveDoc,b);
-},true);
+document.addEventListener('click',e=>{const g=e.target.closest?.('[data-cc-open-guarantees]');if(g){e.preventDefault();e.stopImmediatePropagation();openGuarantees();return}const b=e.target.closest?.('[data-cc-save-doc]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();captureGeneratedToFile(b.dataset.ccSaveDoc,b)},true);
 loadContractArchive();scan();new MutationObserver(scan).observe(document.documentElement,{childList:true,subtree:true});setTimeout(loadContractArchive,900);
 })();

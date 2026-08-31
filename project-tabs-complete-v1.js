@@ -56,6 +56,7 @@ function loadPortfolioModules(){
     'ui-operational-polish-v1.js?v=20260821-operational2',
     'home-executive-fix-v2.js?v=20260822-homeexec3',
     'ui-visibility-audit-v1.js?v=20260821-visibility1',
+    'technical-control-v1.js?v=20260830-controltecnico1',
     'immersive-engineering-experience-v1.js?v=20260828-immersive2'
   ];
   const current=document.currentScript?.src||'',base=current?current.slice(0,current.lastIndexOf('/')+1):'';

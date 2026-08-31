@@ -13,6 +13,16 @@ const D=v=>{if(!v)return 'Sin fecha';const d=String(v).slice(0,10).split('-');re
 const WS=()=>{try{return cloudWorkspaceId||null}catch{return null}};
 const DB=()=>{try{return db||null}catch{return null}};
 
+function loadOfficialFormat(){
+ if(window.__CC_OFFICIAL_CONTRACT_FORMAT_V1__||document.getElementById('ccOfficialContractFormatScript'))return;
+ const s=document.createElement('script');
+ s.id='ccOfficialContractFormatScript';
+ s.src='contract-official-format-v1.js?v=20260831-official1';
+ s.async=false;
+ s.onerror=()=>console.warn('No se pudo cargar el formato oficial del contrato.');
+ document.head.appendChild(s);
+}
+
 function css(){
  if(document.getElementById('cc-contracts-center-v1-style'))return;
  const s=document.createElement('style');s.id='cc-contracts-center-v1-style';s.textContent=`
@@ -86,5 +96,5 @@ document.addEventListener('click',e=>{
 if(typeof renderApp==='function'&&!renderApp.__ccContractsCenter){
  const base=renderApp;const wrapped=function(){const r=base.apply(this,arguments);setTimeout(()=>{ensureNav();if(ST.active)render()},20);return r};wrapped.__ccContractsCenter=true;renderApp=wrapped;
 }
-css();setTimeout(ensureNav,150);setTimeout(ensureNav,700);
+css();loadOfficialFormat();setTimeout(ensureNav,150);setTimeout(ensureNav,700);setTimeout(loadOfficialFormat,900);
 })();

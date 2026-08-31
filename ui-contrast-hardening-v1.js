@@ -1,14 +1,24 @@
-/* ===== CONTROL CONTRACTUAL · ENDURECIMIENTO DE CONTRASTE V1 ===== */
+/* ===== CONTROL CONTRACTUAL · ENDURECIMIENTO DE CONTRASTE V2 ===== */
 (()=>{
 'use strict';
-if(window.__CC_CONTRAST_HARDENING_V1__)return;
-window.__CC_CONTRAST_HARDENING_V1__=true;
+if(window.__CC_CONTRAST_HARDENING_V2__)return;
+window.__CC_CONTRAST_HARDENING_V2__=true;
 
 const STYLE_ID='cc-contrast-hardening-v1-style';
 function install(){
   let s=document.getElementById(STYLE_ID);
   if(!s){s=document.createElement('style');s.id=STYLE_ID;document.head.appendChild(s)}
   s.textContent=`
+  /* Superficies ejecutivas deterministas: evitar fondos transparentes o gradientes ambiguos para contraste. */
+  body:not(.print-report) #content .ccx-kpi,
+  body:not(.print-report) #content .ccx-access button{
+    background:#0d1520!important;background-image:none!important;color:#f8fbff!important;
+    border-color:#31445f!important;
+  }
+  body:not(.print-report) #content .ccx-kpi.good{background:#0d1d17!important;border-color:#347d51!important}
+  body:not(.print-report) #content .ccx-kpi.warn{background:#211b0d!important;border-color:#8a6d1f!important}
+  body:not(.print-report) #content .ccx-access button:hover{background:#102039!important;border-color:#5b91df!important}
+
   /* Centro ejecutivo: los textos secundarios deben superar 4.5:1. */
   body:not(.print-report) #content .ccx-kpi small,
   body:not(.print-report) #content .ccx-access small,
@@ -18,10 +28,10 @@ function install(){
   body:not(.print-report) #content .ccx-audit small,
   body:not(.print-report) #content .ccx-report p,
   body:not(.print-report) #content .ccx-head p{
-    color:#b8c8da!important;opacity:1!important;visibility:visible!important;
+    color:#c3d1df!important;opacity:1!important;visibility:visible!important;
   }
   body:not(.print-report) #content .ccx-kpi.good small,
-  body:not(.print-report) #content .ccx-kpi.warn small{color:#c4d3e2!important}
+  body:not(.print-report) #content .ccx-kpi.warn small{color:#d3deea!important}
 
   /* Acciones primarias: azul suficientemente oscuro para texto blanco normal. */
   body:not(.print-report) #content .btn.primary,
@@ -41,7 +51,7 @@ function install(){
   body:not(.print-report) #content .cp-budget-page .cp-exec-footer span,
   body:not(.print-report) #content .cp-budget-page .cp-budget-title p,
   body:not(.print-report) #content .cp-budget-page td:before{
-    color:#b7c8da!important;opacity:1!important;visibility:visible!important;
+    color:#c3d1df!important;opacity:1!important;visibility:visible!important;
   }
 
   /* En superficies oscuras conocidas, un atributo calculado con un fondo heredado no puede invertir el texto. */

@@ -7,6 +7,16 @@ window.__CC_CONTRACT_DOWNLOAD_ACTIONS_V2__=true;
 const notice=m=>typeof window.toast==='function'?window.toast(m):alert(m);
 const clean=v=>String(v||'documento').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9_-]+/gi,'-').replace(/^-+|-+$/g,'').slice(0,80)||'documento';
 
+function loadContractArchive(){
+  if(window.__CC_CONTRACT_FILE_REPOSITORY_V1__||document.getElementById('ccContractFileRepositoryScript'))return;
+  const s=document.createElement('script');
+  s.id='ccContractFileRepositoryScript';
+  s.src='contract-file-repository-v1.js?v=20260831-archive1';
+  s.async=false;
+  s.onerror=()=>console.warn('No se pudo cargar el archivo documental del contrato.');
+  document.head.appendChild(s);
+}
+
 function resolveContext(){
   let p=null,c=null;
   try{if(typeof getProject==='function')p=getProject()}catch{}
@@ -89,15 +99,14 @@ async function captureGeneratedToFile(kind,button){
 }
 
 function openGuarantees(){
-  try{
-    const v=typeof view!=='undefined'?view:window.view;
-    if(v){v.screen='project';v.tab='guarantees'}
-    if(typeof renderProject==='function'){renderProject();return}
-    if(typeof renderApp==='function'){renderApp();return}
-  }catch(err){console.warn('Abrir garantías',err)}
-  const btn=[...document.querySelectorAll('button')].find(x=>/garant[ií]as/i.test(x.textContent||''));
-  if(btn){btn.click();return}
-  notice('No se pudo abrir la sección de garantías desde este proyecto.');
+  loadContractArchive();
+  if(window.ccContractFileRepository?.focusGuarantees){window.ccContractFileRepository.focusGuarantees();return}
+  let tries=0;
+  const timer=setInterval(()=>{
+    tries++;
+    if(window.ccContractFileRepository?.focusGuarantees){clearInterval(timer);window.ccContractFileRepository.focusGuarantees();return}
+    if(tries>=12){clearInterval(timer);notice('El archivo de garantías todavía se está cargando. Inténtalo nuevamente.');}
+  },100);
 }
 
 function addCss(){
@@ -116,7 +125,7 @@ function decorate(card){
   const actions=card.querySelector('.cc-payment-doc-actions');
   if(actions&&!actions.querySelector('[data-cc-open-guarantees]')){
     const b=document.createElement('button');
-    b.type='button';b.className='btn cc-guarantee-shortcut';b.setAttribute('data-cc-open-guarantees','');b.title='Cargar garantías del contrato';
+    b.type='button';b.className='btn cc-guarantee-shortcut';b.setAttribute('data-cc-open-guarantees','');b.title='Cargar y archivar garantías del contrato';
     b.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.6 2.8 8.6 7 10 4.2-1.4 7-5.4 7-10V6l-7-3Z"></path><path d="M12 15V8"></path><path d="m9.5 10.5 2.5-2.5 2.5 2.5"></path></svg><span>Cargar garantías</span>';
     actions.appendChild(b);
   }
@@ -140,5 +149,5 @@ document.addEventListener('click',e=>{
   e.preventDefault();e.stopImmediatePropagation();
   captureGeneratedToFile(b.dataset.ccSaveDoc,b);
 },true);
-scan();new MutationObserver(scan).observe(document.documentElement,{childList:true,subtree:true});
+loadContractArchive();scan();new MutationObserver(scan).observe(document.documentElement,{childList:true,subtree:true});setTimeout(loadContractArchive,900);
 })();

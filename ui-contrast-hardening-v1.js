@@ -48,6 +48,18 @@ function install(){
   body:not(.print-report) #content .ccx-kpi.good small,
   body:not(.print-report) #content .ccx-kpi.warn small{color:#d3deea!important}
 
+  /* Estados de auditoría: la etiqueta de integridad debe conservar contraste verificable. */
+  body:not(.print-report) #content .ccx-page .status.good,
+  body:not(.print-report) #content .ccx-integrity .status.good{
+    background:#0d1d17!important;background-image:none!important;color:#f8fbff!important;
+    border-color:#347d51!important;opacity:1!important;text-shadow:none!important;
+  }
+  body:not(.print-report) #content .ccx-page .status.danger,
+  body:not(.print-report) #content .ccx-integrity .status.danger{
+    background:#2a1013!important;background-image:none!important;color:#fff1f2!important;
+    border-color:#8a3942!important;opacity:1!important;text-shadow:none!important;
+  }
+
   /* Acciones primarias: azul suficientemente oscuro para texto blanco normal. */
   body:not(.print-report) #content .btn.primary,
   body:not(.print-report) #content button.primary{
@@ -84,6 +96,13 @@ function install(){
   body:not(.print-report) #content .cp-budget-page .cp-budget-title p,
   body:not(.print-report) #content .cp-budget-page td:before{
     color:#d3deea!important;opacity:1!important;visibility:visible!important;
+  }
+
+  /* Valores positivos de presupuesto: texto claro sobre la superficie oscura consolidada. */
+  body:not(.print-report) #content .cp-budget-page .good > strong,
+  body:not(.print-report) #content .cp-budget-page .cp-budget-kpi.good > strong,
+  body:not(.print-report) #content .cp-budget-page .cp-exec-metric.good > strong{
+    color:#f8fbff!important;opacity:1!important;text-shadow:none!important;
   }
 
   /* En superficies oscuras conocidas, un atributo calculado con un fondo heredado no puede invertir el texto. */

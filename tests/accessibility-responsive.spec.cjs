@@ -3,12 +3,12 @@ const AxeBuilder = require('@axe-core/playwright').default;
 
 const appUrl = process.env.APP_URL || 'http://127.0.0.1:4173/';
 
-function critical(violations){
-  return violations.filter(v=>v.impact==='critical').map(v=>({
+function blocking(violations){
+  return violations.filter(v=>v.impact==='critical'||(v.id==='color-contrast'&&['serious','critical'].includes(v.impact))).map(v=>({
     id:v.id,
     impact:v.impact,
     description:v.description,
-    targets:v.nodes.slice(0,5).flatMap(n=>n.target),
+    targets:v.nodes.slice(0,8).flatMap(n=>n.target),
   }));
 }
 
@@ -18,7 +18,7 @@ async function scan(page,label){
     .analyze();
   const severe=result.violations.filter(v=>['serious','critical'].includes(v.impact));
   if(severe.length)console.log(`${label}: ${severe.length} hallazgo(s) serio(s)/crítico(s) de accesibilidad`,severe.map(v=>`${v.impact}:${v.id}`).join(', '));
-  expect(critical(result.violations),`${label} no debe contener violaciones críticas WCAG`).toEqual([]);
+  expect(blocking(result.violations),`${label} no debe contener contraste serio ni violaciones críticas WCAG`).toEqual([]);
 }
 
 test.describe('accesibilidad esencial WCAG',()=>{

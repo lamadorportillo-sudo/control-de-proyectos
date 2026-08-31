@@ -6,10 +6,14 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'contract-payment-documents-v1.js'), 'utf8');
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const loader = fs.readFileSync(path.join(root, 'project-tabs-complete-v1.js'), 'utf8');
 
-test('la página original carga el módulo contractual al final', () => {
-  assert.match(index, /contract-payment-documents-v1\.js\?v=20260831-advance-docs2/);
-  assert.ok(index.lastIndexOf('contract-payment-documents-v1.js') > index.lastIndexOf('zordon-chat-ui-v1.js'));
+test('la página y el cargador global conservan el módulo contractual', () => {
+  assert.match(loader, /contract-payment-documents-v1\.js\?v=20260831-advance-docs3/);
+  const modules = loader.match(/const modules=\[(.*?)\];const current/s)?.[1] || '';
+  assert.ok(modules.lastIndexOf('contract-payment-documents-v1.js') > modules.lastIndexOf('zordon-chat-ui-v1.js'));
+  const direct = index.lastIndexOf('contract-payment-documents-v1.js');
+  if (direct >= 0) assert.ok(direct > index.lastIndexOf('zordon-chat-ui-v1.js'));
 });
 
 test('los tres formatos Word base existen y son DOCX válidos', () => {

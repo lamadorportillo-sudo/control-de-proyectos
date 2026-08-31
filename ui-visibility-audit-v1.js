@@ -1,8 +1,8 @@
-/* ===== VISIBILIDAD GLOBAL Y CONTRASTE V3 ===== */
+/* ===== VISIBILIDAD GLOBAL Y CONTRASTE V4 ===== */
 (()=>{
 'use strict';
-if(window.__CC_VISIBILITY_AUDIT_V3__)return;
-window.__CC_VISIBILITY_AUDIT_V3__=true;
+if(window.__CC_VISIBILITY_AUDIT_V4__)return;
+window.__CC_VISIBILITY_AUDIT_V4__=true;
 
 const STYLE_ID='cc-visibility-audit-style';
 
@@ -122,6 +122,11 @@ function effectiveBackground(el){
 }
 function directText(el){return [...el.childNodes].some(n=>n.nodeType===3&&String(n.textContent||'').trim().length>0)}
 function requiredRatio(el){const cs=getComputedStyle(el),size=parseFloat(cs.fontSize)||14,weight=parseInt(cs.fontWeight,10)||400;return(size>=24||(size>=18.66&&weight>=700))?3:4.5}
+function knownDarkSurface(el){return !!el.closest('#content .ccx-page,#content .cp-budget-page,#content .cp-exec-only,.modal:not(.report-paper)')}
+function bestReadable(bg){
+  const dark={r:20,g:32,b:25,a:1},light={r:248,g:251,b:255,a:1};
+  return ratio(light,bg)>=ratio(dark,bg)?'light':'dark';
+}
 function shouldAudit(el){
   if(!(el instanceof HTMLElement))return false;
   if(el.closest('.report-paper,.print-report,.hero-control-contractual'))return false;
@@ -136,7 +141,7 @@ function auditContrast(){
     if(el.closest('#ccxSync')){el.dataset.ccReadable='light';return}
     const fg=rgb(getComputedStyle(el).color),bg=effectiveBackground(el);if(!fg||!bg)return;
     const r=ratio(fg,bg),need=requiredRatio(el);
-    if(r+0.05<need)el.dataset.ccReadable=lum(bg)>.46?'dark':'light';else delete el.dataset.ccReadable;
+    if(r+0.05<need)el.dataset.ccReadable=knownDarkSurface(el)?'light':bestReadable(bg);else delete el.dataset.ccReadable;
   });
 }
 function clarifyHeader(){

@@ -127,6 +127,21 @@ function install(){
     color:#f8fbff!important;opacity:1!important;text-shadow:none!important;
   }
 
+  /* Dashboard evaluativo del expediente: textos pequeños con margen suficiente sobre superficies claras. */
+  body:not(.print-report) #content .ped-shell .ped-kpi span,
+  body:not(.print-report) #content .ped-shell .ped-panel-head p,
+  body:not(.print-report) #content .ped-shell .ped-process p,
+  body:not(.print-report) #content .ped-shell .ped-alert small,
+  body:not(.print-report) #content .ped-shell .ped-foot{
+    color:#536476!important;opacity:1!important;visibility:visible!important;
+  }
+  body:not(.print-report) #content .ped-shell .ped-badge.na{
+    background:#edf1f5!important;background-image:none!important;color:#4f6173!important;
+  }
+  body:not(.print-report) #content .ped-shell .ped-empty{
+    background:#e2f3e9!important;background-image:none!important;color:#1f5f42!important;
+  }
+
   /* En superficies oscuras conocidas, un atributo calculado con un fondo heredado no puede invertir el texto. */
   body:not(.print-report) #content .ccx-page [data-cc-readable],
   body:not(.print-report) #content .cp-budget-page [data-cc-readable],

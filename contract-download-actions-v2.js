@@ -134,10 +134,13 @@ function decorate(card){
     box=document.createElement('div');box.className='cc-doc-downloads';box.setAttribute('data-cc-manual-downloads','');
     actions?actions.insertAdjacentElement('afterend',box):card.appendChild(box);
   }
-  box.innerHTML=`
-    <div class="cc-doc-download"><span><b>Contrato de obra</b>Elegir dónde guardar el Word</span><button class="btn" type="button" data-cc-save-doc="contract">Guardar Word</button></div>
-    <div class="cc-doc-download"><span><b>Nota de remisión</b>Elegir dónde guardar el Word</span><button class="btn" type="button" data-cc-save-doc="note">Guardar Word</button></div>
-    <div class="cc-doc-download"><span><b>Orden de inicio</b>Elegir dónde guardar el Word</span><button class="btn" type="button" data-cc-save-doc="start">Guardar Word</button></div>`;
+  if(box.dataset.ccSaveUi!=='v2'){
+    box.dataset.ccSaveUi='v2';
+    box.innerHTML=`
+      <div class="cc-doc-download"><span><b>Contrato de obra</b>Elegir dónde guardar el Word</span><button class="btn" type="button" data-cc-save-doc="contract">Guardar Word</button></div>
+      <div class="cc-doc-download"><span><b>Nota de remisión</b>Elegir dónde guardar el Word</span><button class="btn" type="button" data-cc-save-doc="note">Guardar Word</button></div>
+      <div class="cc-doc-download"><span><b>Orden de inicio</b>Elegir dónde guardar el Word</span><button class="btn" type="button" data-cc-save-doc="start">Guardar Word</button></div>`;
+  }
 }
 
 function scan(){document.querySelectorAll('[data-cc-payment-docs]').forEach(decorate)}

@@ -24,12 +24,12 @@ function loadOfficialFormat(){
 }
 
 function loadDownloadActions(){
- if(window.__CC_CONTRACT_DOWNLOAD_ACTIONS_V1__||document.getElementById('ccContractDownloadActionsScript'))return;
+ if(window.__CC_CONTRACT_DOWNLOAD_ACTIONS_V2__||document.getElementById('ccContractDownloadActionsV2Script'))return;
  const s=document.createElement('script');
- s.id='ccContractDownloadActionsScript';
- s.src='contract-download-actions-v1.js?v=20260831-download1';
+ s.id='ccContractDownloadActionsV2Script';
+ s.src='contract-download-actions-v2.js?v=20260831-download2';
  s.async=false;
- s.onerror=()=>console.warn('No se pudieron cargar las descargas manuales del expediente contractual.');
+ s.onerror=()=>console.warn('No se pudieron cargar las descargas manuales V2 del expediente contractual.');
  document.head.appendChild(s);
 }
 

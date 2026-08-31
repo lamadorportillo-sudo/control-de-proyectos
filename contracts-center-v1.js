@@ -7,7 +7,7 @@ window.__CC_CONTRACTS_CENTER_V1__=true;
 const ST={active:false,rows:null,at:0,search:''};
 const A=v=>Array.isArray(v)?v:[];
 const N=v=>Number(v)||0;
-const E=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const E=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m]));
 const M=v=>`L ${N(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
 const D=v=>{if(!v)return 'Sin fecha';const d=String(v).slice(0,10).split('-');return d.length===3?`${d[2]}/${d[1]}/${d[0]}`:String(v)};
 const WS=()=>{try{return cloudWorkspaceId||null}catch{return null}};
@@ -22,17 +22,15 @@ function loadOfficialFormat(){
  s.onerror=()=>console.warn('No se pudo cargar el formato oficial del contrato.');
  document.head.appendChild(s);
 }
-
 function loadDownloadActions(){
  if(window.__CC_CONTRACT_DOWNLOAD_ACTIONS_V2__||document.getElementById('ccContractDownloadActionsV2Script'))return;
  const s=document.createElement('script');
  s.id='ccContractDownloadActionsV2Script';
- s.src='contract-download-actions-v2.js?v=20260831-download2';
+ s.src='contract-download-actions-v2.js?v=20260831-download3';
  s.async=false;
- s.onerror=()=>console.warn('No se pudieron cargar las descargas manuales V2 del expediente contractual.');
+ s.onerror=()=>console.warn('No se pudieron cargar las descargas y archivo documental del expediente contractual.');
  document.head.appendChild(s);
 }
-
 function css(){
  if(document.getElementById('cc-contracts-center-v1-style'))return;
  const s=document.createElement('style');s.id='cc-contracts-center-v1-style';s.textContent=`
@@ -42,69 +40,13 @@ function css(){
  @media(max-width:440px){.ccc-kpis{grid-template-columns:1fr}}
  `;document.head.appendChild(s);
 }
-
-function ensureNav(){
- const nav=document.getElementById('ccxNav');if(!nav)return;
- let b=document.getElementById('cccNavBtn');
- if(!b){b=document.createElement('button');b.id='cccNavBtn';b.className='ccc-nav-btn';b.type='button';b.textContent='Contratos';b.dataset.ccContracts='1';const projects=nav.querySelector('[data-ccx="projects"]');projects?.insertAdjacentElement('afterend',b)}
- b.classList.toggle('active',ST.active);
- if(ST.active)nav.querySelectorAll('[data-ccx],#ccgNavBtn').forEach(x=>x.classList.remove('active'));
-}
-
-function fallback(){
- const d=DB()||{},ps=A(d.projects),chs=A(d.changes),es=A(d.estimates);
- return A(d.contracts).filter(c=>!c.voidedAt&&!c.voided_at).map(c=>{
-   const p=ps.find(x=>x.id===c.projectId)||{};
-   const delta=chs.filter(x=>x.contractId===c.id&&x.status==='Aprobado'&&!x.voidedAt&&!x.voided_at).reduce((s,x)=>s+N(x.amountDelta),0);
-   const current=N(c.originalAmount)+delta;
-   const est=es.filter(x=>x.contractId===c.id&&x.status!=='Anulada'&&!x.voidedAt&&!x.voided_at);
-   const gross=est.reduce((s,x)=>s+N(x.gross),0),paid=est.filter(x=>/pagad/i.test(x.status||'')).reduce((s,x)=>s+N(x.net),0);
-   return{project_id:p.id,code:p.code,name:p.name,contract_id:c.id,contract_number:c.number,contractor:c.contractor,original_amount:N(c.originalAmount),current_amount:current,estimated_total:gross,paid_total:paid,contractual_balance:Math.max(0,current-gross),financial_progress_pct:current?gross/current*100:0,contract_start_date:c.start,contract_end_date:c.end};
- });
-}
-
-async function load(force=false){
- if(!force&&ST.rows&&Date.now()-ST.at<45000)return ST.rows;
- const w=WS();if(!w||!navigator.onLine||typeof sbFetch!=='function'){ST.rows=fallback();return ST.rows}
- try{
-   const q=`/rest/v1/project_financial_summary?select=project_id,code,name,contract_id,contract_number,contractor,original_amount,current_amount,estimated_total,paid_total,contractual_balance,financial_progress_pct,contract_start_date,contract_end_date&workspace_id=eq.${encodeURIComponent(w)}&contract_id=not.is.null&order=contract_number.asc`;
-   const r=await sbFetch(q);ST.rows=A(r.data);ST.at=Date.now();return ST.rows;
- }catch(e){console.warn('Centro de contratos:',e);ST.rows=fallback();return ST.rows}
-}
-
-function renderRows(rows){
- const q=ST.search.trim().toLowerCase();
- const filtered=rows.filter(x=>!q||`${x.contract_number||''} ${x.code||''} ${x.name||''} ${x.contractor||''}`.toLowerCase().includes(q));
- if(!filtered.length)return '<div class="ccc-empty">No hay contratos que coincidan con la búsqueda.</div>';
- return `<div class="ccc-row head"><span>Contrato</span><span>Proyecto</span><span>Contratista</span><span>Monto vigente</span><span>Avance</span><span>Acción</span></div>${filtered.map(x=>{
-   const pct=Math.max(0,N(x.financial_progress_pct));
-   return `<div class="ccc-row"><div class="ccc-main"><b>${E(x.contract_number||'Sin número')}</b><small>${D(x.contract_start_date)} → ${D(x.contract_end_date)}</small></div><div class="ccc-main"><b>${E(x.code||'')} · ${E(x.name||'Proyecto')}</b><small>Saldo por estimar ${M(x.contractual_balance)}</small></div><div class="ccc-cell"><b>${E(x.contractor||'No registrado')}</b><small>Contratista</small></div><div class="ccc-cell"><b>${M(x.current_amount)}</b><small>Original ${M(x.original_amount)}</small></div><div class="ccc-cell"><div class="ccc-progress"><div class="ccc-track"><i style="width:${Math.min(100,pct)}%"></i></div><b>${pct.toFixed(1)}%</b></div><small>Estimado ${M(x.estimated_total)}</small></div><div class="ccc-action"><button class="btn primary" data-ccc-open="${E(x.project_id)}">Abrir</button></div></div>`;
- }).join('')}`;
-}
-
-async function render(){
- if(!ST.active)return;css();ensureNav();const c=document.getElementById('content');if(!c)return;
- c.innerHTML='<div class="ccc-empty">Cargando contratos…</div>';
- const rows=await load();if(!ST.active)return;
- const amount=rows.reduce((s,x)=>s+N(x.current_amount),0),estimated=rows.reduce((s,x)=>s+N(x.estimated_total),0),paid=rows.reduce((s,x)=>s+N(x.paid_total),0);
- c.innerHTML=`<section class="ccc-page"><div class="ccc-head"><div><span class="ccc-eyebrow">CONTROL CONTRACTUAL</span><h2>Contratos</h2><p>Vista consolidada de montos vigentes, ejecución y saldos contractuales.</p></div></div><div class="ccc-kpis"><div class="ccc-kpi"><small>Contratos registrados</small><strong>${rows.length}</strong></div><div class="ccc-kpi"><small>Monto contractual vigente</small><strong>${M(amount)}</strong></div><div class="ccc-kpi"><small>Estimado acumulado</small><strong>${M(estimated)}</strong></div><div class="ccc-kpi"><small>Pagado</small><strong>${M(paid)}</strong></div></div><div class="ccc-tools"><input id="cccSearch" placeholder="Buscar por contrato, proyecto o contratista" value="${E(ST.search)}"><button class="btn" id="cccRefresh">Actualizar</button></div><div class="ccc-table" id="cccRows">${renderRows(rows)}</div></section>`;
- const input=document.getElementById('cccSearch');if(input)input.oninput=e=>{ST.search=e.target.value;document.getElementById('cccRows').innerHTML=renderRows(rows)};
- const refresh=document.getElementById('cccRefresh');if(refresh)refresh.onclick=async()=>{ST.rows=null;await render()};
- ensureNav();
-}
-
-function openProject(id){
- if(!id)return;ST.active=false;try{view.projectId=id;view.screen='project';view.tab='summary';renderApp()}catch(e){console.error(e)}
-}
-
-document.addEventListener('click',e=>{
- const b=e.target.closest?.('[data-cc-contracts]');if(b){e.preventDefault();e.stopPropagation();ST.active=true;ensureNav();render();return}
- if(e.target.closest?.('[data-ccx],#ccgNavBtn')){ST.active=false;setTimeout(ensureNav,0)}
- const op=e.target.closest?.('[data-ccc-open]');if(op){e.preventDefault();openProject(op.dataset.cccOpen)}
-},true);
-
-if(typeof renderApp==='function'&&!renderApp.__ccContractsCenter){
- const base=renderApp;const wrapped=function(){const r=base.apply(this,arguments);setTimeout(()=>{ensureNav();if(ST.active)render()},20);return r};wrapped.__ccContractsCenter=true;renderApp=wrapped;
-}
+function ensureNav(){const nav=document.getElementById('ccxNav');if(!nav)return;let b=document.getElementById('cccNavBtn');if(!b){b=document.createElement('button');b.id='cccNavBtn';b.className='ccc-nav-btn';b.type='button';b.textContent='Contratos';b.dataset.ccContracts='1';const projects=nav.querySelector('[data-ccx="projects"]');projects?.insertAdjacentElement('afterend',b)}b.classList.toggle('active',ST.active);if(ST.active)nav.querySelectorAll('[data-ccx],#ccgNavBtn').forEach(x=>x.classList.remove('active'))}
+function fallback(){const d=DB()||{},ps=A(d.projects),chs=A(d.changes),es=A(d.estimates);return A(d.contracts).filter(c=>!c.voidedAt&&!c.voided_at).map(c=>{const p=ps.find(x=>x.id===c.projectId)||{};const delta=chs.filter(x=>x.contractId===c.id&&x.status==='Aprobado'&&!x.voidedAt&&!x.voided_at).reduce((s,x)=>s+N(x.amountDelta),0);const current=N(c.originalAmount)+delta;const est=es.filter(x=>x.contractId===c.id&&x.status!=='Anulada'&&!x.voidedAt&&!x.voided_at);const gross=est.reduce((s,x)=>s+N(x.gross),0),paid=est.filter(x=>/pagad/i.test(x.status||'')).reduce((s,x)=>s+N(x.net),0);return{project_id:p.id,code:p.code,name:p.name,contract_id:c.id,contract_number:c.number,contractor:c.contractor,original_amount:N(c.originalAmount),current_amount:current,estimated_total:gross,paid_total:paid,contractual_balance:Math.max(0,current-gross),financial_progress_pct:current?gross/current*100:0,contract_start_date:c.start,contract_end_date:c.end}})}
+async function load(force=false){if(!force&&ST.rows&&Date.now()-ST.at<45000)return ST.rows;const w=WS();if(!w||!navigator.onLine||typeof sbFetch!=='function'){ST.rows=fallback();return ST.rows}try{const q=`/rest/v1/project_financial_summary?select=project_id,code,name,contract_id,contract_number,contractor,original_amount,current_amount,estimated_total,paid_total,contractual_balance,financial_progress_pct,contract_start_date,contract_end_date&workspace_id=eq.${encodeURIComponent(w)}&contract_id=not.is.null&order=contract_number.asc`;const r=await sbFetch(q);ST.rows=A(r.data);ST.at=Date.now();return ST.rows}catch(e){console.warn('Centro de contratos:',e);ST.rows=fallback();return ST.rows}}
+function renderRows(rows){const q=ST.search.trim().toLowerCase();const filtered=rows.filter(x=>!q||`${x.contract_number||''} ${x.code||''} ${x.name||''} ${x.contractor||''}`.toLowerCase().includes(q));if(!filtered.length)return '<div class="ccc-empty">No hay contratos que coincidan con la búsqueda.</div>';return `<div class="ccc-row head"><span>Contrato</span><span>Proyecto</span><span>Contratista</span><span>Monto vigente</span><span>Avance</span><span>Acción</span></div>${filtered.map(x=>{const pct=Math.max(0,N(x.financial_progress_pct));return `<div class="ccc-row"><div class="ccc-main"><b>${E(x.contract_number||'Sin número')}</b><small>${D(x.contract_start_date)} → ${D(x.contract_end_date)}</small></div><div class="ccc-main"><b>${E(x.code||'')} · ${E(x.name||'Proyecto')}</b><small>Saldo por estimar ${M(x.contractual_balance)}</small></div><div class="ccc-cell"><b>${E(x.contractor||'No registrado')}</b><small>Contratista</small></div><div class="ccc-cell"><b>${M(x.current_amount)}</b><small>Original ${M(x.original_amount)}</small></div><div class="ccc-cell"><div class="ccc-progress"><div class="ccc-track"><i style="width:${Math.min(100,pct)}%"></i></div><b>${pct.toFixed(1)}%</b></div><small>Estimado ${M(x.estimated_total)}</small></div><div class="ccc-action"><button class="btn primary" data-ccc-open="${E(x.project_id)}">Abrir</button></div></div>`}).join('')}`}
+async function render(){if(!ST.active)return;css();ensureNav();const c=document.getElementById('content');if(!c)return;c.innerHTML='<div class="ccc-empty">Cargando contratos…</div>';const rows=await load();if(!ST.active)return;const amount=rows.reduce((s,x)=>s+N(x.current_amount),0),estimated=rows.reduce((s,x)=>s+N(x.estimated_total),0),paid=rows.reduce((s,x)=>s+N(x.paid_total),0);c.innerHTML=`<section class="ccc-page"><div class="ccc-head"><div><span class="ccc-eyebrow">CONTROL CONTRACTUAL</span><h2>Contratos</h2><p>Vista consolidada de montos vigentes, ejecución y saldos contractuales.</p></div></div><div class="ccc-kpis"><div class="ccc-kpi"><small>Contratos registrados</small><strong>${rows.length}</strong></div><div class="ccc-kpi"><small>Monto contractual vigente</small><strong>${M(amount)}</strong></div><div class="ccc-kpi"><small>Estimado acumulado</small><strong>${M(estimated)}</strong></div><div class="ccc-kpi"><small>Pagado</small><strong>${M(paid)}</strong></div></div><div class="ccc-tools"><input id="cccSearch" placeholder="Buscar por contrato, proyecto o contratista" value="${E(ST.search)}"><button class="btn" id="cccRefresh">Actualizar</button></div><div class="ccc-table" id="cccRows">${renderRows(rows)}</div></section>`;const input=document.getElementById('cccSearch');if(input)input.oninput=e=>{ST.search=e.target.value;document.getElementById('cccRows').innerHTML=renderRows(rows)};const refresh=document.getElementById('cccRefresh');if(refresh)refresh.onclick=async()=>{ST.rows=null;await render()};ensureNav()}
+function openProject(id){if(!id)return;ST.active=false;try{view.projectId=id;view.screen='project';view.tab='summary';renderApp()}catch(e){console.error(e)}}
+document.addEventListener('click',e=>{const b=e.target.closest?.('[data-cc-contracts]');if(b){e.preventDefault();e.stopPropagation();ST.active=true;ensureNav();render();return}if(e.target.closest?.('[data-ccx],#ccgNavBtn')){ST.active=false;setTimeout(ensureNav,0)}const op=e.target.closest?.('[data-ccc-open]');if(op){e.preventDefault();openProject(op.dataset.cccOpen)}},true);
+if(typeof renderApp==='function'&&!renderApp.__ccContractsCenter){const base=renderApp;const wrapped=function(){const r=base.apply(this,arguments);setTimeout(()=>{ensureNav();if(ST.active)render()},20);return r};wrapped.__ccContractsCenter=true;renderApp=wrapped}
 css();loadOfficialFormat();loadDownloadActions();setTimeout(ensureNav,150);setTimeout(ensureNav,700);setTimeout(loadOfficialFormat,900);setTimeout(loadDownloadActions,950);
 })();

@@ -1,8 +1,8 @@
-/* ===== VISIBILIDAD GLOBAL Y CONTRASTE V2 ===== */
+/* ===== VISIBILIDAD GLOBAL Y CONTRASTE V3 ===== */
 (()=>{
 'use strict';
-if(window.__CC_VISIBILITY_AUDIT_V2__)return;
-window.__CC_VISIBILITY_AUDIT_V2__=true;
+if(window.__CC_VISIBILITY_AUDIT_V3__)return;
+window.__CC_VISIBILITY_AUDIT_V3__=true;
 
 const STYLE_ID='cc-visibility-audit-style';
 
@@ -36,6 +36,18 @@ function injectCss(){
     body:not(.print-report) .topbar .userbox small{color:#f1f3f5!important;opacity:1!important}
     body:not(.print-report) .topbar .userbox .avatar{background:#686f76!important;color:#fff!important;border:1px solid #8f969c!important}
     body:not(.print-report) .topbar .userbox .btn{background:#626970!important;color:#fff!important;border-color:#858c93!important}
+
+    /* Sincronización: superficie estable y legible tanto autenticado como invitado. */
+    body:not(.print-report) #ccxSync{
+      background:#10243b!important;color:#f8fbff!important;border:1px solid #55769d!important;
+      opacity:1!important;visibility:visible!important;text-shadow:none!important;
+    }
+    body:not(.print-report) #ccxSync,
+    body:not(.print-report) #ccxSync *{
+      color:#f8fbff!important;opacity:1!important;visibility:visible!important;
+    }
+    body:not(.print-report) #ccxSync [data-cc-readable='dark'],
+    body:not(.print-report) #ccxSync [data-cc-readable='light']{color:#f8fbff!important}
 
     /* Los modales son una superficie oscura coherente. Evita cuerpo claro con texto claro. */
     body:not(.print-report) .modal-bg>.modal:not(.report-paper),
@@ -121,6 +133,7 @@ function auditContrast(){
   const selector='p,span,small,b,strong,h1,h2,h3,h4,label,button,a,th,td,.muted,.notice,.eyebrow,.status,.pill,.empty,.cc-sec-note';
   document.querySelectorAll(selector).forEach(el=>{
     if(!shouldAudit(el))return;
+    if(el.closest('#ccxSync')){el.dataset.ccReadable='light';return}
     const fg=rgb(getComputedStyle(el).color),bg=effectiveBackground(el);if(!fg||!bg)return;
     const r=ratio(fg,bg),need=requiredRatio(el);
     if(r+0.05<need)el.dataset.ccReadable=lum(bg)>.46?'dark':'light';else delete el.dataset.ccReadable;

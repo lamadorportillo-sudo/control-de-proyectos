@@ -18,6 +18,7 @@ const modules=[
   ['functional-repair-v1.js','20260826-repair3'],
   ['system-ui-refinement-v3.js','20260826-system5'],
   ['integrity-diagnostics-v1.js','20260826-integrity1'],
+  ['hero-typography-v1.js','20260830-hero1'],
 ];
 if(!fs.existsSync(htmlFile)) throw new Error('No se encontró index.html.');
 for(const [moduleFile] of modules){

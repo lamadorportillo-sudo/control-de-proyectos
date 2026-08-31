@@ -17,7 +17,7 @@ function loadOfficialFormat(){
  if(window.__CC_OFFICIAL_CONTRACT_FORMAT_V1__||document.getElementById('ccOfficialContractFormatScript'))return;
  const s=document.createElement('script');
  s.id='ccOfficialContractFormatScript';
- s.src='contract-official-format-v1.js?v=20260831-official1';
+ s.src='contract-official-format-v1.js?v=20260831-official2';
  s.async=false;
  s.onerror=()=>console.warn('No se pudo cargar el formato oficial del contrato.');
  document.head.appendChild(s);

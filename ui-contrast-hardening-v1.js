@@ -44,7 +44,7 @@ function install(){
     color:#b7c8da!important;opacity:1!important;visibility:visible!important;
   }
 
-  /* La reparación automática no puede convertir a oscuro texto que vive en superficies conocidas como oscuras. */
+  /* En superficies oscuras conocidas, un atributo calculado con un fondo heredado no puede invertir el texto. */
   body:not(.print-report) #content .ccx-page [data-cc-readable],
   body:not(.print-report) #content .cp-budget-page [data-cc-readable],
   body:not(.print-report) #content .cp-exec-only [data-cc-readable]{
@@ -53,16 +53,8 @@ function install(){
   `;
 }
 
-function repairKnownDarkSurfaces(){
-  document.querySelectorAll('#content .ccx-page [data-cc-readable="dark"],#content .cp-budget-page [data-cc-readable="dark"],#content .cp-exec-only [data-cc-readable="dark"]').forEach(el=>{
-    el.dataset.ccReadable='light';
-  });
-}
-function run(){install();repairKnownDarkSurfaces()}
-let queued=false;
-function queue(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;run()})}
-run();
-new MutationObserver(queue).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style','data-cc-readable']});
-setTimeout(run,250);setTimeout(run,800);setTimeout(run,1800);
-window.ccRunContrastHardening=run;
+install();
+setTimeout(install,350);
+setTimeout(install,1200);
+window.ccRunContrastHardening=install;
 })();

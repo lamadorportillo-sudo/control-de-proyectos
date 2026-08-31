@@ -1,1 +1,2 @@
-/* recovery pending */
+/* temporary loader while restoring */
+(()=>{const a=document.createElement('script');a.src='contract-payment-documents-v1.js?v=20260831-docs1';document.head.appendChild(a);const b=document.createElement('script');b.src='contract-official-format-v1.js?v=20260831-official1';document.head.appendChild(b);const c=document.createElement('script');c.src='contract-download-actions-v1.js?v=20260831-download1';document.head.appendChild(c);})();

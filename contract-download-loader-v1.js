@@ -1,0 +1,1 @@
+(()=>{if(window.__CC_DOWNLOAD_LOADER_V1__)return;window.__CC_DOWNLOAD_LOADER_V1__=true;const load=()=>{if(document.querySelector('script[data-cc-download-actions]'))return;const s=document.createElement('script');s.src='contract-download-actions-v1.js?v=20260831-download1';s.dataset.ccDownloadActions='1';document.head.appendChild(s)};load();})();

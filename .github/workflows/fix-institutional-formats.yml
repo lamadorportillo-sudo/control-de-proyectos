@@ -1,0 +1,57 @@
+name: Corregir datos institucionales en formatos Word
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/fix-institutional-phone.py'
+      - 'templates/**'
+      - 'assets/formats/**'
+      - '.github/workflows/fix-institutional-formats.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: institutional-formats-main
+  cancel-in-progress: true
+
+jobs:
+  fix-formats:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Corregir teléfono institucional en todos los Word
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/fix-institutional-phone.py | tee /tmp/phone-fix.log
+
+      - name: Verificar que la corrección sea completa e idempotente
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/fix-institutional-phone.py | tee /tmp/phone-fix-check.log
+          grep -q 'Archivos corregidos: 0' /tmp/phone-fix-check.log
+          grep -q 'Reemplazos realizados: 0' /tmp/phone-fix-check.log
+
+      - name: Guardar formatos corregidos
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- templates assets/formats; then
+            echo 'Todos los formatos ya tienen el teléfono institucional correcto.'
+            exit 0
+          fi
+          git add templates assets/formats
+          git commit -m 'Corregir teléfono institucional en formatos Word'
+          git push origin HEAD:main

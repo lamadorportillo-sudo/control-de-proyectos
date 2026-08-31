@@ -5,13 +5,16 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'contract-payment-documents-v1.js'), 'utf8');
+const phoneFix = fs.readFileSync(path.join(root, 'contract-official-format-v1.js'), 'utf8');
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const loader = fs.readFileSync(path.join(root, 'project-tabs-complete-v1.js'), 'utf8');
 
 test('la página y el cargador global conservan el módulo contractual', () => {
   assert.match(loader, /contract-payment-documents-v1\.js\?v=20260831-advance-docs3/);
+  assert.match(loader, /contract-official-format-v1\.js\?v=20260831-phone3/);
   const modules = loader.match(/const modules=\[(.*?)\];const current/s)?.[1] || '';
   assert.ok(modules.lastIndexOf('contract-payment-documents-v1.js') > modules.lastIndexOf('zordon-chat-ui-v1.js'));
+  assert.ok(modules.lastIndexOf('contract-payment-documents-v1.js') > modules.lastIndexOf('contract-official-format-v1.js'));
   const direct = index.lastIndexOf('contract-payment-documents-v1.js');
   if (direct >= 0) assert.ok(direct > index.lastIndexOf('zordon-chat-ui-v1.js'));
 });
@@ -54,4 +57,13 @@ test('la orden de inicio compacta el espacio de firmas para evitar una segunda p
   assert.match(source, /signatureTable/);
   assert.match(source, /includes\('ALCALDE MUNICIPAL'\)/);
   assert.match(source, /removed<4/);
+});
+
+test('todos los documentos contractuales corrigen el teléfono municipal antes de descargarse', () => {
+  assert.match(phoneFix, /const CORRECT_PHONE=['"]9864-2006['"]/);
+  assert.match(phoneFix, /9865-2258/);
+  assert.match(phoneFix, /word\\\/\.\+\\\.xml/);
+  assert.match(phoneFix, /window\.JSZip\.loadAsync=wrapped/);
+  assert.match(phoneFix, /ccMunicipalFormatData/);
+  assert.ok(loader.indexOf('contract-official-format-v1.js') < loader.indexOf('contract-payment-documents-v1.js'));
 });

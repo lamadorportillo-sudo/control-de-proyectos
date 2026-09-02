@@ -43,4 +43,5 @@ const dashboardCss=document.createElement('link');dashboardCss.rel='stylesheet';
 const portalJs=document.createElement('script');portalJs.src='portal-web-v2.js?v=20260901-web2';portalJs.defer=true;document.head.appendChild(portalJs);
 const projectJs=document.createElement('script');projectJs.src='project-detail-v2.js?v=20260901-detail2';projectJs.defer=true;document.head.appendChild(projectJs);
 const dashboardJs=document.createElement('script');dashboardJs.src='dashboard-simplified-v4.js?v=20260901-dash4b';dashboardJs.defer=true;document.head.appendChild(dashboardJs);
+const routeBridgeJs=document.createElement('script');routeBridgeJs.src='portal-route-bridge-v1.js?v=20260901-route1';routeBridgeJs.defer=true;document.head.appendChild(routeBridgeJs);
 })();

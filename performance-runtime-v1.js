@@ -44,5 +44,6 @@ const portalJs=document.createElement('script');portalJs.src='portal-web-v2.js?v
 const projectJs=document.createElement('script');projectJs.src='project-detail-v2.js?v=20260901-detail2';projectJs.defer=true;document.head.appendChild(projectJs);
 const dashboardJs=document.createElement('script');dashboardJs.src='dashboard-simplified-v4.js?v=20260901-dash4b';dashboardJs.defer=true;document.head.appendChild(dashboardJs);
 const paymentsJs=document.createElement('script');paymentsJs.src='payments-center-v1.js?v=20260901-payments1';paymentsJs.defer=true;document.head.appendChild(paymentsJs);
-const routeBridgeJs=document.createElement('script');routeBridgeJs.src='portal-route-bridge-v1.js?v=20260901-route2';routeBridgeJs.defer=true;document.head.appendChild(routeBridgeJs);
+const guaranteesJs=document.createElement('script');guaranteesJs.src='guarantees-center-v1.js?v=20260901-guarantees1';guaranteesJs.defer=true;document.head.appendChild(guaranteesJs);
+const routeBridgeJs=document.createElement('script');routeBridgeJs.src='portal-route-bridge-v1.js?v=20260901-route3';routeBridgeJs.defer=true;document.head.appendChild(routeBridgeJs);
 })();

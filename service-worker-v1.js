@@ -1,4 +1,4 @@
-const CACHE='cc-static-v1-20260828-modalscroll-compact1';
+const CACHE='cc-static-v1-20260901-portal-web-v2';
 const STATIC_EXT=/\.(?:js|css|webp|png|jpg|jpeg|woff2?)(?:\?|$)/i;
 
 self.addEventListener('install',event=>event.waitUntil(self.skipWaiting()));
@@ -14,8 +14,9 @@ self.addEventListener('fetch',event=>{
   const url=new URL(request.url);
   if(url.origin!==self.location.origin||!STATIC_EXT.test(url.pathname+url.search))return;
 
-  // Stale-while-revalidate: la interfaz abre rápido, pero cada visita comprueba
-  // silenciosamente si existe una versión más reciente del recurso.
+  // Stale-while-revalidate: la interfaz abre rápido y comprueba en segundo plano
+  // si existe una versión más reciente. El cambio de CACHE fuerza la renovación
+  // de los recursos del nuevo portal sin alterar datos ni sesiones.
   event.respondWith((async()=>{
     const cache=await caches.open(CACHE);
     const cached=await cache.match(request);

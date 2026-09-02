@@ -38,5 +38,7 @@ if('serviceWorker'in navigator&&location.protocol==='https:'){
 // Portal Web V2: capa visual y de navegación, cargada aparte para no mezclar
 // la lógica contractual ni la persistencia existente.
 const portalCss=document.createElement('link');portalCss.rel='stylesheet';portalCss.href='portal-web-v2.css?v=20260901-web2';document.head.appendChild(portalCss);
+const projectCss=document.createElement('link');projectCss.rel='stylesheet';projectCss.href='project-detail-v2.css?v=20260901-detail2';document.head.appendChild(projectCss);
 const portalJs=document.createElement('script');portalJs.src='portal-web-v2.js?v=20260901-web2';portalJs.defer=true;document.head.appendChild(portalJs);
+const projectJs=document.createElement('script');projectJs.src='project-detail-v2.js?v=20260901-detail2';projectJs.defer=true;document.head.appendChild(projectJs);
 })();

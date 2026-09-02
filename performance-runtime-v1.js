@@ -47,5 +47,7 @@ const paymentsJs=document.createElement('script');paymentsJs.src='payments-cente
 const guaranteesJs=document.createElement('script');guaranteesJs.src='guarantees-center-v1.js?v=20260901-guarantees1';guaranteesJs.defer=true;document.head.appendChild(guaranteesJs);
 const visitsJs=document.createElement('script');visitsJs.src='visits-center-v1.js?v=20260901-visits1';visitsJs.defer=true;document.head.appendChild(visitsJs);
 const reportsJs=document.createElement('script');reportsJs.src='reports-center-v1.js?v=20260901-reports1';reportsJs.defer=true;document.head.appendChild(reportsJs);
-const routeBridgeJs=document.createElement('script');routeBridgeJs.src='portal-route-bridge-v1.js?v=20260901-route4';routeBridgeJs.defer=true;document.head.appendChild(routeBridgeJs);
+const alertsJs=document.createElement('script');alertsJs.src='alerts-center-v1.js?v=20260901-alerts1';alertsJs.defer=true;document.head.appendChild(alertsJs);
+const auditJs=document.createElement('script');auditJs.src='audit-center-v1.js?v=20260901-audit1';auditJs.defer=true;document.head.appendChild(auditJs);
+const routeBridgeJs=document.createElement('script');routeBridgeJs.src='portal-route-bridge-v1.js?v=20260901-route5';routeBridgeJs.defer=true;document.head.appendChild(routeBridgeJs);
 })();

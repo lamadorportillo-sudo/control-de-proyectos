@@ -43,14 +43,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          : > validation.log
+          exec > >(tee -a validation.log) 2>&1
+          echo '=== VALIDACIÓN JAVASCRIPT ==='
           for f in ./*.js; do
             [ -f "$f" ] || continue
+            echo "[node --check] $f"
             node --check "$f"
           done
+          echo '[node --check] build-pages.cjs'
           node --check build-pages.cjs
+          echo '[node --check] inject-portfolio.cjs'
           node --check inject-portfolio.cjs
+          echo '[node --check] patch-session-security.cjs'
           node --check patch-session-security.cjs
+          echo '[node --check] playwright.config.cjs'
           node --check playwright.config.cjs
+          echo '=== PRUEBAS ESTRUCTURALES ==='
           node --test tests/*.test.cjs
 
       - name: Reconstruir la interfaz exacta que se auditará
@@ -94,12 +103,13 @@ jobs:
           APP_URL: http://127.0.0.1:4173/
         run: npx playwright test
 
-      - name: Guardar reporte visual
+      - name: Guardar diagnóstico y reporte visual
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: responsive-audit-report
           path: |
+            validation.log
             playwright-report/
             test-results/
           if-no-files-found: ignore

@@ -28,9 +28,13 @@ test('el portafolio usa expedientes compactos sin portadas pesadas',()=>{
 test('las versiones publicadas renuevan los módulos corregidos',()=>{
   const index=read('index.html');
   const serviceWorker=read('service-worker-v1.js');
+  const runtime=read('performance-runtime-v1.js');
+  const routes=read('portal-route-bridge-v1.js');
   assert.match(index,/project-tabs-complete-v1\.js\?v=20260831-tabscomplete34/);
   assert.match(index,/portfolio-gallery-v1\.js\?v=20260828-gallery3/);
   assert.match(read('project-tabs-complete-v1.js'),/immersive-engineering-experience-v1\.js\?v=20260828-immersive2/);
-  assert.match(serviceWorker,/const CACHE='cc-static-v1-20260901-control-centers-v5-visits-reports'/);
+  assert.match(serviceWorker,/const CACHE='cc-static-v1-20260901-control-centers-v6-alerts-audit'/);
   assert.match(serviceWorker,/stale-while-revalidate/i);
+  for(const file of ['payments-center-v1.js','guarantees-center-v1.js','visits-center-v1.js','reports-center-v1.js','alerts-center-v1.js','audit-center-v1.js'])assert.match(runtime,new RegExp(file.replace(/\./g,'\\.')));
+  for(const route of ['contratos','pagos','garantias','visitas','reportes','alertas','auditoria'])assert.match(routes,new RegExp(`route==='${route}'`));
 });

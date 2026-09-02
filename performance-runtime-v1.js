@@ -35,13 +35,14 @@ if('serviceWorker'in navigator&&location.protocol==='https:'){
   addEventListener('load',()=>navigator.serviceWorker.register(`${scope}service-worker-v1.js`,{scope,updateViaCache:'none'}).catch(error=>console.warn('Caché sin conexión no disponible.',error?.message||error)),{once:true});
 }
 
-// Portal Web V2: capa visual y de navegación, cargada aparte para no mezclar
-// la lógica contractual ni la persistencia existente.
+// Portal Web V2: capas visuales y centros globales. No sustituyen la lógica
+// contractual, los expedientes ni la persistencia existente en Supabase.
 const portalCss=document.createElement('link');portalCss.rel='stylesheet';portalCss.href='portal-web-v2.css?v=20260901-web2';document.head.appendChild(portalCss);
 const projectCss=document.createElement('link');projectCss.rel='stylesheet';projectCss.href='project-detail-v2.css?v=20260901-detail2';document.head.appendChild(projectCss);
 const dashboardCss=document.createElement('link');dashboardCss.rel='stylesheet';dashboardCss.href='dashboard-simplified-v4.css?v=20260901-dash4b';document.head.appendChild(dashboardCss);
 const portalJs=document.createElement('script');portalJs.src='portal-web-v2.js?v=20260901-web2';portalJs.defer=true;document.head.appendChild(portalJs);
 const projectJs=document.createElement('script');projectJs.src='project-detail-v2.js?v=20260901-detail2';projectJs.defer=true;document.head.appendChild(projectJs);
 const dashboardJs=document.createElement('script');dashboardJs.src='dashboard-simplified-v4.js?v=20260901-dash4b';dashboardJs.defer=true;document.head.appendChild(dashboardJs);
-const routeBridgeJs=document.createElement('script');routeBridgeJs.src='portal-route-bridge-v1.js?v=20260901-route1';routeBridgeJs.defer=true;document.head.appendChild(routeBridgeJs);
+const paymentsJs=document.createElement('script');paymentsJs.src='payments-center-v1.js?v=20260901-payments1';paymentsJs.defer=true;document.head.appendChild(paymentsJs);
+const routeBridgeJs=document.createElement('script');routeBridgeJs.src='portal-route-bridge-v1.js?v=20260901-route2';routeBridgeJs.defer=true;document.head.appendChild(routeBridgeJs);
 })();

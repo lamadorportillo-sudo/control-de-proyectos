@@ -1,4 +1,4 @@
-const CACHE='cc-static-v1-20260901-portfolio-views-v4b';
+const CACHE='cc-static-v1-20260901-finance-center-v4c';
 const STATIC_EXT=/\.(?:js|css|webp|png|jpg|jpeg|woff2?)(?:\?|$)/i;
 
 self.addEventListener('install',event=>event.waitUntil(self.skipWaiting()));

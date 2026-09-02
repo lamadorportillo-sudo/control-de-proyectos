@@ -1,4 +1,4 @@
-const CACHE='cc-static-v1-20260901-control-centers-v4d';
+const CACHE='cc-static-v1-20260901-control-centers-v5-visits-reports';
 const STATIC_EXT=/\.(?:js|css|webp|png|jpg|jpeg|woff2?)(?:\?|$)/i;
 
 self.addEventListener('install',event=>event.waitUntil(self.skipWaiting()));

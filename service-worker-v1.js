@@ -1,4 +1,4 @@
-const CACHE='cc-static-v1-20260901-portal-web-v2';
+const CACHE='cc-static-v1-20260901-dashboard-web-v4';
 const STATIC_EXT=/\.(?:js|css|webp|png|jpg|jpeg|woff2?)(?:\?|$)/i;
 
 self.addEventListener('install',event=>event.waitUntil(self.skipWaiting()));
@@ -16,7 +16,7 @@ self.addEventListener('fetch',event=>{
 
   // Stale-while-revalidate: la interfaz abre rápido y comprueba en segundo plano
   // si existe una versión más reciente. El cambio de CACHE fuerza la renovación
-  // de los recursos del nuevo portal sin alterar datos ni sesiones.
+  // de los recursos visuales sin alterar datos, autenticación ni sesiones.
   event.respondWith((async()=>{
     const cache=await caches.open(CACHE);
     const cached=await cache.match(request);

@@ -1,3 +1,4 @@
+// Prueba crítica: protege contra regresiones de pantalla en blanco y ciclos de arranque autenticado.
 const { test, expect } = require('@playwright/test');
 
 const appUrl = process.env.APP_URL || 'http://127.0.0.1:4173/';

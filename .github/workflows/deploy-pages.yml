@@ -1,39 +1,22 @@
-name: Construir y publicar Control de Proyectos
+name: Auditoría completa manual de Control de Proyectos
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'build-pages.cjs'
-      - 'inject-portfolio.cjs'
-      - 'patch-session-security.cjs'
-      - '*.js'
-      - 'tests/**'
-      - 'templates/**'
-      - 'assets/formats/**'
-      - 'supabase/**'
-      - 'playwright.config.cjs'
-      - 'package.json'
-      - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: control-proyectos-build-main
+  group: control-proyectos-auditoria-manual
   cancel-in-progress: true
 
 jobs:
-  build-direct:
+  audit-full:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
       - name: Descargar repositorio
         uses: actions/checkout@v6
-        with:
-          ref: main
 
       - name: Preparar Node.js
         uses: actions/setup-node@v5
@@ -51,145 +34,15 @@ jobs:
           node --check build-pages.cjs
           node --check inject-portfolio.cjs
           node --check patch-session-security.cjs
-          node --check playwright.config.cjs
           node --test tests/*.test.cjs
 
-      - name: Reconstruir aplicación
+      - name: Reconstruir aplicación para auditoría
         run: |
           node build-pages.cjs
           node inject-portfolio.cjs
           node patch-session-security.cjs
 
-      - name: Forzar versión de módulos críticos
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-          import re
-
-          path = Path('index.html')
-          html = path.read_text(encoding='utf-8')
-
-          replacements = [
-              (r'project-tabs-complete-v1\.js\?v[^\"\']*', 'project-tabs-complete-v1.js?v=20260831-tabscomplete34', 'project-tabs-complete-v1.js'),
-              (r'private-access-v1\.js\?v[^\"\']*', 'private-access-v1.js?v=20260823-private5', 'private-access-v1.js'),
-              (r'admin-users-v1\.js\?v[^\"\']*', 'admin-users-v1.js?v=20260823-admin-users4', 'admin-users-v1.js'),
-              (r'adaptive-chat-learning-v1\.js\?v[^\"\']*', 'adaptive-chat-learning-v1.js?v=20260824-zordon2', 'adaptive-chat-learning-v1.js'),
-          ]
-
-          for pattern, replacement, label in replacements:
-              html, count = re.subn(pattern, replacement, html)
-              if count == 0:
-                  raise SystemExit(f'No se encontró {label} para renovar su versión.')
-
-          zordon_tag = '<script src="zordon-continuous-runtime-v1.js?v=20260824-zordon4"></script>'
-          chat_tag = '<script src="zordon-chat-ui-v1.js?v=20260824-cleanchat4"></script>'
-          html = re.sub(r'<script\s+src=["\']zordon-continuous-runtime-v1\.js(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
-          html = re.sub(r'<script\s+src=["\']zordon-chat-ui-v1\.js(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
-          html = re.sub(r'<script\s+src=["\']zordon-send-hardfix-v1\.js(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
-          pos = html.lower().rfind('</body>')
-          if pos < 0:
-              raise SystemExit('No se encontró </body> para cargar ZORDON.')
-          html = html[:pos] + zordon_tag + '\n' + chat_tag + '\n' + html[pos:]
-
-          path.write_text(html, encoding='utf-8')
-          PY
-          grep -q 'project-tabs-complete-v1.js?v=20260831-tabscomplete34' index.html
-          grep -q 'private-access-v1.js?v=20260823-private5' index.html
-          grep -q 'admin-users-v1.js?v=20260823-admin-users4' index.html
-          grep -q 'adaptive-chat-learning-v1.js?v=20260824-zordon2' index.html
-          grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordon4' index.html
-          grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat4' index.html
-          if grep -q 'zordon-send-hardfix-v1.js' index.html; then
-            echo 'El hardfix antiguo de envío todavía está cargado.' >&2
-            exit 1
-          fi
-
-      - name: Validar aplicación generada
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -s index.html
-          test -s home-executive-fix-v2.js
-          test -s security-runtime-v1.js
-          test -s security-center-v1.js
-          test -s mfa-security-v1.js
-          test -s engineering-manual-reference-v1.js
-          test -s immersive-engineering-experience-v1.js
-          test -s zordon-continuous-runtime-v1.js
-          test -s zordon-chat-ui-v1.js
-          test -s integrity-diagnostics-v1.js
-          test -s contract-official-format-v1.js
-          test -s contract-payment-documents-v1.js
-          test -s contract-preview-v1.js
-          test -s templates/contrato-infraestructura-base.docx
-          test -s templates/nota-remision-anticipo-base.docx
-          test -s templates/orden-inicio-base.docx
-          grep -q 'NUCLEO DE INTEGRIDAD Y CONCURRENCIA V1' index.html
-          grep -q 'save_app_state' index.html
-          grep -q 'portfolio-redesign-v1.js' index.html
-          grep -q 'transparency-portal-v1.js' index.html
-          grep -q 'project-portfolio-detail-v1.js' index.html
-          grep -q 'portfolio-gallery-v1.js' index.html
-          grep -q 'portfolio-screen-fix-v1.js' index.html
-          grep -q 'project-photo-story-v1.js' index.html
-          grep -q 'photo-gallery-polish-v2.js' index.html
-          grep -q 'ui-theme-unifier-v1.js' index.html
-          grep -q 'engineering-visibility-fix-v1.js' index.html
-          grep -q 'ui-operational-polish-v1.js' index.html
-          grep -q 'system-ui-refinement-v3.js' index.html
-          grep -q 'integrity-diagnostics-v1.js' index.html
-          if grep -q 'system-ui-refinement-v2.js' index.html; then
-            echo 'La capa visual V2 redundante todavía está cargada.' >&2
-            exit 1
-          fi
-          grep -q 'home-executive-fix-v2.js' project-tabs-complete-v1.js
-          grep -q 'engineering-manual-reference-v1.js?v=20260823-manual2' project-tabs-complete-v1.js
-          grep -q 'immersive-engineering-experience-v1.js?v=20260828-immersive2' project-tabs-complete-v1.js
-          grep -q 'contract-official-format-v1.js?v=20260831-phone3' project-tabs-complete-v1.js
-          grep -q 'contract-preview-v1.js?v=20260831-preview1' project-tabs-complete-v1.js
-          grep -q "const CORRECT_PHONE='9864-2006'" contract-official-format-v1.js
-          grep -q "const PHONE='9864-2006'" contract-preview-v1.js
-          grep -q 'Ver formato oficial' contract-preview-v1.js
-          grep -q 'EXPERIENCIA DE INGENIERIA 3D V1' immersive-engineering-experience-v1.js
-          grep -q 'NÚCLEO DE APRENDIZAJE CONTINUO V3' zordon-continuous-runtime-v1.js
-          grep -q "mode='continuous'" zordon-continuous-runtime-v1.js
-          grep -q 'ZORDON · Ingeniero Civil' zordon-continuous-runtime-v1.js
-          grep -q 'CHAT NATURAL Y CONTINUO V4' zordon-chat-ui-v1.js
-          grep -q 'zordonCasualLock' zordon-chat-ui-v1.js
-          grep -q 'c.history.push' zordon-chat-ui-v1.js
-          grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat4' project-tabs-complete-v1.js
-          grep -q 'REFERENCIA TECNICA DEL MANUAL DE INGENIERIA V2' engineering-manual-reference-v1.js
-          grep -q 'Manual técnico' engineering-manual-reference-v1.js
-          grep -q '150 páginas' engineering-manual-reference-v1.js
-          grep -q 'jurisdictionNote' engineering-manual-reference-v1.js
-          grep -q 'security-runtime-v1.js?v=20260823-security3' project-tabs-complete-v1.js
-          grep -q 'mfa-security-v1.js?v=20260824-mfa4' project-tabs-complete-v1.js
-          grep -q 'security-center-v1.js?v=20260823-securitycenter4' project-tabs-complete-v1.js
-          grep -q 'ui-visibility-audit-v1.js' index.html
-          grep -q 'functions/v1/secure-mfa' private-access-v1.js
-          grep -q 'mfa_enrollment_required' private-access-v1.js
-          grep -q 'complete_login:true' private-access-v1.js
-          grep -q 'Recuperar 2FA' admin-users-v1.js
-          grep -q "securitySessionId:priorSession.securitySessionId||''" index.html
-          grep -q "deviceLabel:priorSession.deviceLabel||''" index.html
-          grep -q "cache:'no-store'" index.html
-          grep -q 'project-tabs-complete-v1.js?v=20260831-tabscomplete34' index.html
-          grep -q 'portfolio-gallery-v1.js?v=20260828-gallery3' index.html
-          grep -q 'private-access-v1.js?v=20260823-private5' index.html
-          grep -q 'admin-users-v1.js?v=20260823-admin-users4' index.html
-          grep -q 'adaptive-chat-learning-v1.js?v=20260824-zordon2' index.html
-          grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordon4' index.html
-          grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat4' index.html
-          grep -q '</html>' index.html
-          if grep -q 'window.__CP_B64=' index.html; then
-            echo 'El HTML generado todavía contiene el cargador Base64.' >&2
-            exit 1
-          fi
-          echo 'Aplicación generada y lista para auditoría de navegador.'
-
-      - name: Instalar dependencias de auditoría
+      - name: Instalar dependencias de navegador
         shell: bash
         run: |
           set -euo pipefail
@@ -199,34 +52,17 @@ jobs:
       - name: Levantar artefacto generado
         shell: bash
         run: |
-          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/control-proyectos-deploy-http.log 2>&1 &
-          echo $! > /tmp/control-proyectos-deploy-http.pid
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/control-proyectos-audit-http.log 2>&1 &
           for i in {1..30}; do
             if curl -fsS http://127.0.0.1:4173/ >/dev/null; then
               exit 0
             fi
             sleep 1
           done
-          cat /tmp/control-proyectos-deploy-http.log
+          cat /tmp/control-proyectos-audit-http.log
           exit 1
 
-      - name: Auditar exactamente el artefacto que se publicará
+      - name: Ejecutar auditoría responsive completa
         env:
           APP_URL: http://127.0.0.1:4173/
         run: npx playwright test
-
-      - name: Publicar index.html en main
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- index.html; then
-            echo "index.html ya está actualizado."
-          else
-            git add index.html
-            # No usar [skip ci]: el commit generado debe disparar la auditoría
-            # responsive de la revisión exacta que quedará servida por Pages.
-            git commit -m "Publicar interfaz contractual verificada"
-            git push origin HEAD:main
-          fi

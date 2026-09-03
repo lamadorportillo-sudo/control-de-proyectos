@@ -54,72 +54,42 @@ const fixture = {
     recoveryTarget: 80,
   }],
   estimates: [{
-    id: '55555555-5555-4555-8555-555555555555',
-    projectId: PROJECT_ID,
-    contractId: CONTRACT_ID,
-    number: 1,
-    start: '2026-08-05',
-    end: '2026-08-19',
-    gross: 250000,
-    advanceApplied: 46875,
-    qualityApplied: 12500,
-    isrApplied: 0,
-    totalDeductions: 59375,
-    net: 190625,
-    status: 'Pagada',
-    paymentDate: '2026-08-20',
+    id: '55555555-5555-4555-8555-555555555555', projectId: PROJECT_ID, contractId: CONTRACT_ID,
+    number: 1, start: '2026-08-05', end: '2026-08-19', gross: 250000, advanceApplied: 46875,
+    qualityApplied: 12500, isrApplied: 0, totalDeductions: 59375, net: 190625, status: 'Pagada', paymentDate: '2026-08-20',
   }],
   guarantees: [{
-    id: '66666666-6666-4666-8666-666666666666',
-    projectId: PROJECT_ID,
-    contractId: CONTRACT_ID,
-    type: 'Cumplimiento',
-    number: 'QA-GAR-001',
-    issuer: 'Entidad de prueba',
-    base: 2307639.52,
-    percentage: 15,
-    applied: 346145.93,
-    start: '2026-08-05',
-    end: '2026-12-02',
+    id: '66666666-6666-4666-8666-666666666666', projectId: PROJECT_ID, contractId: CONTRACT_ID,
+    type: 'Cumplimiento', number: 'QA-GAR-001', issuer: 'Entidad de prueba', base: 2307639.52,
+    percentage: 15, applied: 346145.93, start: '2026-08-05', end: '2026-12-02',
   }],
   changes: [{
-    id: '77777777-7777-4777-8777-777777777777',
-    projectId: PROJECT_ID,
-    contractId: CONTRACT_ID,
-    number: 1,
-    type: 'Orden de cambio',
-    date: '2026-08-18',
-    amountDelta: 0,
-    daysDelta: 0,
-    status: 'Borrador',
+    id: '77777777-7777-4777-8777-777777777777', projectId: PROJECT_ID, contractId: CONTRACT_ID,
+    number: 1, type: 'Orden de cambio', date: '2026-08-18', amountDelta: 0, daysDelta: 0, status: 'Borrador',
   }],
   payments: [],
   visits: [{
-    id: '88888888-8888-4888-8888-888888888888',
-    projectId: PROJECT_ID,
-    contractId: CONTRACT_ID,
-    number: 1,
-    date: '2026-08-21',
-    type: 'Supervisión',
-    status: 'Abierta',
-    physical: 35,
-    activities: 'Revisión de terracería y control geométrico.',
-    generalObservations: 'Registro sintético para pruebas responsive.',
-    observations: [],
+    id: '88888888-8888-4888-8888-888888888888', projectId: PROJECT_ID, contractId: CONTRACT_ID,
+    number: 1, date: '2026-08-21', type: 'Supervisión', status: 'Abierta', physical: 35,
+    activities: 'Revisión de terracería y control geométrico.', generalObservations: 'Registro sintético para pruebas responsive.', observations: [],
   }],
   audit: [],
   durationLearning: [],
 };
 
+function controlCenter(){
+  return {
+    summary:{projects_total:1,projects_execution:1,projects_finalized:0,projects_pre_execution:0,portfolio_amount:2307639.52,execution_amount:2307639.52,execution_estimated:250000,execution_paid:190625,paid_total:190625,execution_progress_pct:10.83,active_alerts:0,budget_projects:0,budget_available:0,critical_projects:0},
+    projects:[{project_id:PROJECT_ID,code:'QA-RESP-001',name:'Proyecto de prueba responsive',status:'En ejecución',current_amount:2307639.52,estimated_total:250000,paid_total:190625,financial_progress_pct:10.83}],
+    alerts:[],attention:[],reconciliation:[],audit:{total_events:0,integrity_ok:0,integrity_failures:0}
+  };
+}
+
 async function installAuthenticatedFixture(page, role = 'consulta') {
   await page.addInitScript(({ userId, fixture }) => {
     Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false });
     localStorage.setItem('control_contractual_session_v3', JSON.stringify({
-      userId,
-      email: 'qa-responsive@example.com',
-      accessToken: 'qa-access-token',
-      refreshToken: 'qa-refresh-token',
-      expiresAt: Date.now() + 60 * 60 * 1000,
+      userId, email: 'qa-responsive@example.com', accessToken: 'qa-access-token', refreshToken: 'qa-refresh-token', expiresAt: Date.now() + 60 * 60 * 1000,
     }));
     localStorage.setItem('control_contractual_independiente_v3', JSON.stringify(fixture));
     localStorage.setItem('cc_exec_section_v2', 'home');
@@ -129,19 +99,13 @@ async function installAuthenticatedFixture(page, role = 'consulta') {
     const url = new URL(route.request().url());
     const path = url.pathname;
     let body = [];
-
-    if (path.includes('/rest/v1/workspace_members')) {
-      body = [{ workspace_id: WORKSPACE_ID, role, active: true }];
-    } else if (path.includes('/rest/v1/profiles')) {
-      body = [{ full_name: 'Usuario QA Responsive', active: true }];
-    } else if (path.includes('/rest/v1/app_state')) {
-      body = [{ data: fixture, version: 1, updated_at: '2026-08-22T12:00:00Z' }];
-    } else if (path.includes('/rest/v1/rpc/save_app_state')) {
-      body = [{ saved: true, new_version: 2 }];
-    } else if (path.includes('/auth/v1/logout')) {
-      body = {};
-    }
-
+    if (path.includes('/rest/v1/workspace_members')) body = [{ workspace_id: WORKSPACE_ID, role, active: true }];
+    else if (path.includes('/rest/v1/profiles')) body = [{ full_name: 'Usuario QA Responsive', active: true, must_change_password:false }];
+    else if (path.includes('/rest/v1/app_state')) body = [{ data: fixture, version: 1, updated_at: '2026-08-22T12:00:00Z' }];
+    else if (path.includes('/rest/v1/rpc/get_control_center')) body = controlCenter();
+    else if (path.includes('/rest/v1/rpc/save_app_state')) body = [{ saved: true, new_version: 2 }];
+    else if (path.includes('/rest/v1/access_requests')) body = [];
+    else if (path.includes('/auth/v1/logout')) body = {};
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
   });
 }
@@ -161,6 +125,18 @@ async function assertNoGlobalOverflow(page, label) {
   expect(dims.bodyWidth, `${label}: desbordamiento del body`).toBeLessThanOrEqual(dims.clientWidth + 3);
 }
 
+async function openSidebarIfNeeded(page){
+  const sidebar=page.locator('#ccSidebar');
+  if(await sidebar.isVisible().catch(()=>false))return;
+  const toggle=page.locator('#ccMobileToggle');
+  if(await toggle.isVisible().catch(()=>false)){await toggle.click();await expect(sidebar).toBeVisible();}
+}
+async function clickRoute(page,route){
+  await openSidebarIfNeeded(page);
+  const btn=page.locator(`#ccSidebar [data-route="${route}"]`);
+  await expect(btn).toBeVisible();await btn.click();await page.waitForTimeout(260);
+}
+
 for (const vp of viewports) {
   test.describe(vp.name, () => {
     test.use({ viewport: { width: vp.width, height: vp.height }, hasTouch: vp.touch });
@@ -171,11 +147,12 @@ for (const vp of viewports) {
 
       await installAuthenticatedFixture(page);
       await page.goto(appUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
-      await page.waitForSelector('#ccxNav', { timeout: 20000 });
+      await page.waitForSelector('#ccSidebar', { timeout: 20000 });
       await page.waitForTimeout(700);
 
       await expect(page.locator('.auth-card')).toHaveCount(0);
-      await expect(page.locator('#ccxNav [data-ccx]')).toHaveCount(6);
+      await expect(page.locator('#ccxNav')).toBeHidden();
+      await expect(page.locator('#ccSidebar [data-route="transparencia"]')).toHaveCount(1);
       if (vp.width > 900) {
         await expect(page.locator('.service-strip .service-tile')).toHaveCount(5);
         const tileRows = await page.locator('.service-strip .service-tile').evaluateAll(tiles => [...new Set(tiles.map(tile => Math.round(tile.getBoundingClientRect().top)))]);
@@ -183,26 +160,18 @@ for (const vp of viewports) {
       }
       await assertNoGlobalOverflow(page, `${vp.name} inicio`);
 
-      for (const section of ['home', 'projects', 'budget', 'alerts', 'audit', 'reports']) {
-        const btn = page.locator(`#ccxNav [data-ccx="${section}"]`);
-        await expect(btn).toBeVisible();
-        await btn.click();
-        await page.waitForTimeout(220);
+      for (const route of ['inicio','proyectos','presupuesto','transparencia']) {
+        await clickRoute(page,route);
         await expect(page.locator('#content')).not.toBeEmpty();
-        await assertNoGlobalOverflow(page, `${vp.name} sección ${section}`);
+        await assertNoGlobalOverflow(page, `${vp.name} ruta ${route}`);
       }
 
-      await page.locator('#ccxNav [data-ccx="projects"]').click();
-      await page.waitForTimeout(250);
-
-      const search = page.locator('#projectSearch');
-      if (await search.count()) {
-        await search.click();
-        await search.fill('');
-        await search.type('QA RESP', { delay: 30 });
-        await expect(search).toHaveValue('QA RESP');
-        await expect(search).toBeFocused();
-      }
+      await clickRoute(page,'proyectos');
+      const search = page.locator('#ccGlobalSearch');
+      await expect(search).toBeVisible();
+      await search.fill('QA RESP');
+      await search.press('Enter');
+      await expect(search).toHaveValue('QA RESP');
 
       const open = page.locator(`[data-ccx-open="${PROJECT_ID}"], [data-open="${PROJECT_ID}"]`).first();
       await expect(open).toBeVisible();
@@ -211,8 +180,6 @@ for (const vp of viewports) {
       await page.waitForTimeout(500);
       await assertNoGlobalOverflow(page, `${vp.name} expediente`);
 
-      // Only exercise real project tabs. Auxiliary actions such as
-      // "Invitaciones" intentionally live beside the tabs but open a modal.
       const tabs = page.locator('nav.tabs button[data-tab], .tabs button[data-tab]');
       const count = await tabs.count();
       expect(count, `${vp.name}: cantidad de pestañas`).toBeGreaterThanOrEqual(9);
@@ -230,10 +197,7 @@ for (const vp of viewports) {
       }
 
       const reportsJump = page.locator('[data-project-jump="reports"]').first();
-      if (await reportsJump.count()) {
-        await reportsJump.click();
-        await page.waitForTimeout(300);
-      }
+      if (await reportsJump.count()) { await reportsJump.click(); await page.waitForTimeout(300); }
       if (await page.locator('.report-type-card').count()) {
         await expect(page.locator('.report-type-card')).toHaveCount(9);
         await page.locator('.report-type-card').first().click();
@@ -277,7 +241,7 @@ test.describe('ZORDON autenticado', () => {
     });
     await installAuthenticatedFixture(page, 'admin');
     await page.goto(appUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
-    await page.waitForSelector('#ccxNav', { timeout: 20000 });
+    await page.waitForSelector('#ccSidebar', { timeout: 20000 });
 
     const result = await page.evaluate(projectId => {
       const core = window.__ccZordonLearning;

@@ -30,7 +30,8 @@ test.describe('modo invitado temporal', () => {
     await expect(page.locator('.cc-guest-banner')).toContainText('Modo invitado temporal');
     await expect(page.locator('#backupBtn')).toBeDisabled();
     await expect(page.locator('#newProjectBtn')).toBeVisible();
-    await page.locator('#ccxNav [data-ccx="projects"]').click();
+    await expect(page.locator('#ccSidebar')).toBeVisible({timeout:10000});
+    await page.locator('#ccSidebar [data-route="proyectos"]').click();
     await expect(page.locator('.project-v3, .project-card-premium').first()).toBeVisible();
 
     await page.locator('#newProjectBtn').click();

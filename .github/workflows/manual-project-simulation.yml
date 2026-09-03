@@ -6,6 +6,7 @@ on:
     paths:
       - 'tests/manual-project-entry-simulation.spec.cjs'
       - '.github/workflows/manual-project-simulation.yml'
+      - 'playwright.config.cjs'
       - 'index.html'
       - '*.js'
       - 'build-pages.cjs'
@@ -65,6 +66,7 @@ jobs:
       - name: Ejecutar captura manual campo por campo
         env:
           APP_URL: http://127.0.0.1:4173/
+          CC_MANUAL_SIM: '1'
         shell: bash
         run: npx playwright test tests/manual-project-entry-simulation.spec.cjs --workers=1 --retries=0
 

@@ -15,6 +15,30 @@ let baseState=clone(window.__ccCloudBaseState||null);
 let stateVersion=Number(window.__ccCloudVersion||0)||null;
 let conflictOpen=false;
 
+/* El arranque no puede quedar esperando indefinidamente a Supabase. */
+const STARTUP_TIMEOUT_MS=12000;
+function withStartupTimeout(promise,label='La conexión con Supabase'){
+  let timer=null;
+  const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(`${label} no respondió en ${Math.round(STARTUP_TIMEOUT_MS/1000)} segundos.`)),STARTUP_TIMEOUT_MS)});
+  return Promise.race([Promise.resolve(promise),timeout]).finally(()=>{if(timer)clearTimeout(timer)});
+}
+function startupSbFetch(path,options){return withStartupTimeout(sbFetch(path,options),'La conexión con Supabase')}
+async function hardenedEnsureCloudSession(){
+  if(!session?.accessToken)return false;
+  if(session.expiresAt&&Date.now()>session.expiresAt-60000){
+    try{return await withStartupTimeout(refreshCloudSession(),'La renovación de la sesión')}
+    catch(error){console.warn('La renovación de sesión excedió el tiempo de espera.',error?.message||error);return false}
+  }
+  return true;
+}
+function showStartupState(){
+  const app=document.getElementById('app');
+  if(!app||app.children.length)return;
+  app.innerHTML='<div class="auth"><div class="auth-card"><div class="logo">CC</div><p class="eyebrow">CONTROL DE PROYECTOS</p><h1>Abriendo tu espacio de trabajo</h1><p class="muted">Verificando la sesión y sincronizando la información con Supabase…</p><p class="notice">Si la conexión no responde, el sistema mostrará una opción para reintentar en pocos segundos.</p></div></div>';
+}
+try{ensureCloudSession=hardenedEnsureCloudSession}catch{}
+showStartupState();
+
 function stripSecrets(source){
   const out=clone(source)||{};
   out.users=arr(out.users).map(u=>{const x={...u};delete x.password;return x});
@@ -51,7 +75,7 @@ function threeWayMerge(base,local,server){
 }
 async function readCloudRow(){
   if(!cloudWorkspaceId)return null;
-  const r=await sbFetch(`/rest/v1/app_state?select=data,version,updated_at&workspace_id=eq.${encodeURIComponent(cloudWorkspaceId)}&limit=1`);
+  const r=await startupSbFetch(`/rest/v1/app_state?select=data,version,updated_at&workspace_id=eq.${encodeURIComponent(cloudWorkspaceId)}&limit=1`);
   return r.data?.[0]||null;
 }
 function showConflict(serverData,serverVersion,conflicts){
@@ -71,10 +95,10 @@ function showConflict(serverData,serverVersion,conflicts){
 }
 
 async function hardenedLoadCloudData(){
-  const mem=(await sbFetch(`/rest/v1/workspace_members?select=workspace_id,role,active&user_id=eq.${encodeURIComponent(session.userId)}&limit=1`)).data?.[0];
+  const mem=(await startupSbFetch(`/rest/v1/workspace_members?select=workspace_id,role,active&user_id=eq.${encodeURIComponent(session.userId)}&limit=1`)).data?.[0];
   if(!mem)throw new Error('No se encontró un espacio de trabajo para este usuario.');
   cloudWorkspaceId=mem.workspace_id;cloudRole=mem.role||'consulta';
-  const prof=(await sbFetch(`/rest/v1/profiles?select=full_name,active&user_id=eq.${encodeURIComponent(session.userId)}&limit=1`)).data?.[0];
+  const prof=(await startupSbFetch(`/rest/v1/profiles?select=full_name,active&user_id=eq.${encodeURIComponent(session.userId)}&limit=1`)).data?.[0];
   cloudProfile=prof||{full_name:session.email||'Usuario',active:true};
   if(cloudProfile.active===false)throw new Error('Este acceso está desactivado.');
   const row=await readCloudRow();
@@ -158,7 +182,7 @@ async function hardenedAuditModal(){
   try{
     if(!cloudWorkspaceId||!navigator.onLine)throw new Error('Sin conexión');
     const r=await sbFetch(`/rest/v1/audit_events?select=id,created_at,user_name,entity_type,entity_id,action,before_data,after_data,event_hash,hash_valid,chain_valid&workspace_id=eq.${encodeURIComponent(cloudWorkspaceId)}&order=created_at.desc&limit=200`),rows=arr(r.data);
-    openModal('Historial de cambios · PostgreSQL',`<div class="alert info">Historial oficial del servidor con validación de integridad.</div><div class="table-wrap"><table class="table"><thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Entidad</th><th>Integridad</th></tr></thead><tbody>${rows.map(a=>`<tr><td>${new Date(a.created_at).toLocaleString('es-HN')}</td><td>${typeof esc==='function'?esc(a.user_name||'Sistema'):a.user_name}</td><td>${typeof esc==='function'?esc(a.action):a.action}</td><td>${typeof esc==='function'?esc(`${a.entity_type||''} · ${a.entity_id||''}`):''}</td><td>${a.hash_valid&&a.chain_valid?'✓ Correcta':'⚠ Revisar'}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">Sin movimientos.</td></tr>'}</tbody></table></div>`);
+    openModal('Historial de cambios · PostgreSQL',`<div class="alert info">Historial oficial del servidor con validación de integridad.</div><div class="table-wrap"><table class="table"><thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Entidad</th><th>Integridad</th></tr></thead><tbody>${rows.map(a=>`<tr><td>${new Date(a.created_at).toLocaleString('es-HN')}</td><td>${typeof esc==='function'?esc(a.user_name||'Sistema'):a.user_name}</td><td>${typeof esc==='function'?esc(a.action):a.action}</td><td>${typeof esc==='function'?esc(`${a.entity_type||''} · ${a.entity_id||''}`):''}</td><td>${a.hash_valid&&a.chain_valid?'✓ Correcta':'⚠ Revisar'}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">Sin movimientos.</td></tr>`);
   }catch{say('La auditoría oficial requiere conexión con Supabase.')}
 }
 try{auditModal=hardenedAuditModal}catch{}

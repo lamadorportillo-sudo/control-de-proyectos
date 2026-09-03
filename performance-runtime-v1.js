@@ -1,7 +1,7 @@
-/* ===== COORDINADOR DE RENDIMIENTO DEL DOM V3 ===== */
+/* ===== COORDINADOR DE RENDIMIENTO DEL DOM V4 ===== */
 (()=>{
 'use strict';
-if(window.__CC_PERFORMANCE_RUNTIME_V3__)return;window.__CC_PERFORMANCE_RUNTIME_V3__=true;window.__CC_PERFORMANCE_RUNTIME_V2__=true;window.__CC_PERFORMANCE_RUNTIME_V1__=true;
+if(window.__CC_PERFORMANCE_RUNTIME_V4__)return;window.__CC_PERFORMANCE_RUNTIME_V4__=true;window.__CC_PERFORMANCE_RUNTIME_V3__=true;window.__CC_PERFORMANCE_RUNTIME_V2__=true;window.__CC_PERFORMANCE_RUNTIME_V1__=true;
 const NativeObserver=window.MutationObserver;if(!NativeObserver)return;
 const pending=new Set();let flushScheduled=false,passes=0;
 const MAX_PASSES=4;
@@ -48,4 +48,5 @@ const reportsJs=document.createElement('script');reportsJs.src='reports-center-v
 const alertsJs=document.createElement('script');alertsJs.src='alerts-center-v1.js?v=20260901-alerts1';alertsJs.defer=true;document.head.appendChild(alertsJs);
 const auditJs=document.createElement('script');auditJs.src='audit-center-v1.js?v=20260901-audit1';auditJs.defer=true;document.head.appendChild(auditJs);
 const routeBridgeJs=document.createElement('script');routeBridgeJs.src='portal-route-bridge-v1.js?v=20260901-route5';routeBridgeJs.defer=true;document.head.appendChild(routeBridgeJs);
+const stabilityJs=document.createElement('script');stabilityJs.src='ui-stability-v1.js?v=20260903-stable1';stabilityJs.defer=true;document.head.appendChild(stabilityJs);
 })();

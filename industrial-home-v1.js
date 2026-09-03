@@ -1,8 +1,9 @@
-/* ===== ZORDON · PORTADA CONSTRUCCIÓN E INGENIERÍA V2 ===== */
+/* ===== ZORDON · PORTADA CONSTRUCCIÓN E INGENIERÍA V3 · ESTABLE ===== */
 (()=>{
 'use strict';
 if(typeof window==='undefined'||typeof document==='undefined')return;
-if(window.__CC_INDUSTRIAL_HOME_V2__)return;
+if(window.__CC_INDUSTRIAL_HOME_V3__)return;
+window.__CC_INDUSTRIAL_HOME_V3__=true;
 window.__CC_INDUSTRIAL_HOME_V2__=true;
 window.__CC_INDUSTRIAL_HOME_V1__=true;
 const A='assets/industrial/';
@@ -33,6 +34,30 @@ function label(name){const n=norm(name),els=[...document.querySelectorAll('butto
 function go(t){if(known(t))return;if(t==='engineering'&&label('Ingeniería'))return;if(t==='supervision'&&(label('Supervisión')||label('Visitas')))return;if(t==='contracts'&&(label('Contratos')||label('Contrato')))return;known('projects')}
 function card(target,kicker,title,subtitle,img){return `<button class="cc-industrial-service" data-go="${target}" style="--cc-service-img:url('${img}')"><div><small>${kicker}</small><b>${title}</b><span>${subtitle}</span></div></button>`}
 function markup(){return `<section class="cc-industrial-home" data-cc-industrial-home><div class="cc-industrial-hero"><div class="cc-industrial-copy"><span class="cc-industrial-kicker">ZORDON · CONTROL CONTRACTUAL + INGENIERÍA</span><h1 class="cc-industrial-title"><span>Tu proyecto.</span><em>Control total.</em></h1><p>Proyectos, ingeniería, supervisión, costos, contratos y auditoría con una identidad visual centrada en obra y construcción.</p><div class="cc-industrial-actions"><button type="button" class="primary" data-go="projects">Ver proyectos</button><button type="button" data-go="engineering">Abrir Ingeniería</button></div></div><div class="cc-industrial-art" style="--cc-hero-img:url('${IMG.hero}')"><div class="cc-industrial-badge"><b>CONTROL DE PROYECTOS</b><span>Ingeniería · obra · contratos · seguimiento</span></div></div></div><div class="cc-industrial-services">${card('projects','Gestión','Proyectos','Expedientes y avance',IMG.projects)}${card('engineering','Técnico','Ingeniería','Cálculo y diseño',IMG.engineering)}${card('supervision','Campo','Supervisión','Visitas y seguridad',IMG.supervision)}${card('audit','Control','Auditoría','Hallazgos y calidad',IMG.audit)}${card('budget','Costos','Presupuestos','Cantidades y estimaciones',IMG.budget)}${card('contracts','Contractual','Contratos','Plazos y garantías',IMG.contracts)}</div></section>`}
-function mount(){css();const root=document.querySelector('#content .ccx-page'),title=root?.querySelector('.ccx-head h2');if(!root||!title||!/estado general del portafolio/i.test(title.textContent||''))return false;const old=root.querySelector('[data-cc-industrial-home]');if(old)old.remove();const box=document.createElement('div');box.innerHTML=markup();const hero=box.firstElementChild;const anchor=root.querySelector('.ccx-kpis')||root.firstElementChild;if(anchor)anchor.insertAdjacentElement('beforebegin',hero);else root.prepend(hero);hero.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b)go(b.dataset.go)});return true}
-let queued=false;const run=()=>{queued=false;mount()};new MutationObserver(()=>{if(queued)return;queued=true;(typeof requestAnimationFrame==='function'?requestAnimationFrame:setTimeout)(run)}).observe(document.documentElement,{childList:true,subtree:true});setTimeout(run,0);setTimeout(run,450);setTimeout(run,1200);window.__ccIndustrialHome={run,go};
+function mount(){
+ css();
+ const root=document.querySelector('#content .ccx-page'),title=root?.querySelector('.ccx-head h2');
+ if(!root||!title||!/estado general del portafolio/i.test(title.textContent||''))return false;
+ /* No retirar ni volver a insertar la portada: esa mutación se observaba a sí misma y generaba un ciclo infinito. */
+ const old=root.querySelector('[data-cc-industrial-home]');
+ if(old)return true;
+ const box=document.createElement('div');box.innerHTML=markup();const hero=box.firstElementChild;
+ const anchor=root.querySelector('.ccx-kpis')||root.firstElementChild;
+ if(anchor)anchor.insertAdjacentElement('beforebegin',hero);else root.prepend(hero);
+ hero.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b)go(b.dataset.go)});
+ return true;
+}
+let queued=false;
+const run=()=>{queued=false;mount()};
+const observer=typeof MutationObserver==='function'?new MutationObserver(mutations=>{
+ if(!mutations.some(m=>m.type==='childList'))return;
+ if(queued)return;
+ queued=true;
+ const schedule=typeof requestAnimationFrame==='function'?requestAnimationFrame:(fn=>setTimeout(fn,0));
+ schedule(run);
+}):null;
+observer?.observe(document.documentElement,{childList:true,subtree:true});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run();
+setTimeout(run,450);
+window.__ccIndustrialHome={run,go};
 })();

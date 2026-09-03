@@ -29,6 +29,8 @@ test('las versiones publicadas renuevan los módulos corregidos',()=>{
   const index=read('index.html');
   const serviceWorker=read('service-worker-v1.js');
   const runtime=read('performance-runtime-v1.js');
+  const portal=read('portal-web-v2.js');
+  const dashboard=read('dashboard-simplified-v4.js');
   const routes=read('portal-route-bridge-v1.js');
   assert.match(index,/project-tabs-complete-v1\.js\?v=20260831-tabscomplete34/);
   assert.match(index,/portfolio-gallery-v1\.js\?v=20260828-gallery3/);
@@ -36,8 +38,13 @@ test('las versiones publicadas renuevan los módulos corregidos',()=>{
   assert.match(serviceWorker,/const CACHE='cc-static-v1-20260903-recovery-v2'/);
   assert.match(serviceWorker,/Network-first/i);
   assert.match(serviceWorker,/fetch\(request,\{cache:'no-store'\}\)/);
-  assert.match(runtime,/dashboard-simplified-v4\.js\?v=20260903-dash5/);
+  assert.match(runtime,/portal-web-v2\.js\?v=20260903-web3/);
+  assert.match(runtime,/dashboard-simplified-v4\.js\?v=20260903-dash6/);
   assert.match(runtime,/service-worker-v1\.js\?v=20260903-sw2/);
+  assert.match(portal,/PORTAL WEB V3 · ESTABLE/);
+  assert.match(portal,/if\(el\.textContent!==next\)el\.textContent=next/);
+  assert.match(dashboard,/DASHBOARD SIMPLIFICADO V6 · ESTABLE/);
+  assert.match(dashboard,/setText\(badge,/);
   for(const file of ['payments-center-v1.js','guarantees-center-v1.js','visits-center-v1.js','reports-center-v1.js','alerts-center-v1.js','audit-center-v1.js'])assert.match(runtime,new RegExp(file.replace(/\./g,'\\.')));
   for(const route of ['contratos','pagos','garantias','visitas','reportes','alertas','auditoria'])assert.match(routes,new RegExp(`route==='${route}'`));
 });

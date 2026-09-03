@@ -7,12 +7,13 @@ if(window.__CC_SINGLE_NAV_V1__)return;window.__CC_SINGLE_NAV_V1__=true;
 const Q=(s,r=document)=>r.querySelector(s);
 const QA=(s,r=document)=>[...r.querySelectorAll(s)];
 const NativeObserver=window.__ccNativeMutationObserver||window.MutationObserver;
-let queued=false,cleaning=false;
+let queued=false,cleaning=false,sideObserver=null,observedSidebar=null;
 
 function role(){try{return String(cloudRole||'')}catch{return''}}
 function screen(){try{return String(view?.screen||'')}catch{return''}}
 function tab(){try{return String(view?.tab||'')}catch{return''}}
 function executiveSection(){try{return localStorage.getItem('cc_exec_section_v2')||'home'}catch{return'home'}}
+let requestedExecutive=executiveSection();
 function toastSafe(message){try{if(typeof toast==='function')toast(message)}catch{}}
 
 function css(){
@@ -34,18 +35,20 @@ function css(){
 }
 
 function driveExecutive(section){
+ requestedExecutive=section;
+ try{localStorage.setItem('cc_exec_section_v2',section)}catch{}
  const nav=Q('#ccxNav');
  const btn=nav?.querySelector(`[data-ccx="${section}"]`);
  if(btn){
-  try{btn.click();return true}catch{}
+  try{btn.click();setTimeout(queue,0);return true}catch{}
  }
  try{
-  localStorage.setItem('cc_exec_section_v2',section);
   if(typeof view!=='undefined'){
    if(section==='budget'){view.screen='budgetPortfolio';view.projectId=null}
    else{view.screen='projects';view.projectId=null;view.tab='summary'}
   }
   if(typeof renderApp==='function')renderApp();
+  setTimeout(queue,0);
   return true;
  }catch(e){console.warn('No se pudo cambiar de sección ejecutiva.',e);return false}
 }
@@ -96,15 +99,34 @@ function activeRoute(){
  if(document.body.classList.contains('cc-reports-center-active'))return'reportes';
  if(document.body.classList.contains('cc-alerts-center-active'))return'alertas';
  if(document.body.classList.contains('cc-audit-center-active'))return'auditoria';
- if(s==='projects')return executiveSection()==='projects'?'proyectos':'inicio';
+ if(s==='projects'){
+  const current=requestedExecutive||executiveSection();
+  return current==='projects'?'proyectos':'inicio';
+ }
  return'';
 }
-function syncActive(sidebar){const r=activeRoute();QA('.cc-side-btn',sidebar).forEach(b=>b.classList.toggle('active',b.dataset.route===r))}
+function syncActive(sidebar){
+ const r=activeRoute();
+ QA('.cc-side-btn',sidebar).forEach(b=>{
+  const should=b.dataset.route===r;
+  if(b.classList.contains('active')!==should)b.classList.toggle('active',should);
+ });
+}
+function watchSidebar(sidebar){
+ if(!NativeObserver||observedSidebar===sidebar)return;
+ sideObserver?.disconnect?.();observedSidebar=sidebar;
+ sideObserver=new NativeObserver(mutations=>{
+  if(cleaning)return;
+  for(const m of mutations){
+   if(m.type==='attributes'&&m.attributeName==='class'&&m.target?.matches?.('.cc-side-btn')){queue();break}
+  }
+ });
+ sideObserver.observe(sidebar,{subtree:true,attributes:true,attributeFilter:['class']});
+}
 
 function sanitizeLegacy(){
  const legacy=QA('#ccxNav,#ccxSync,[data-cp-main-tabs],#cpExecutiveNav,.cp-main-tabs');
  for(const el of legacy){el.setAttribute('aria-hidden','true');el.setAttribute('inert','');}
- // Si hay más de un acceso de Transparencia fuera del sidebar no se muestran.
  QA('[data-tr-nav],[data-tr-exec]').forEach(el=>{if(!el.closest('#ccSidebar')){el.setAttribute('aria-hidden','true');el.setAttribute('inert','')}});
 }
 
@@ -113,12 +135,11 @@ function ensure(){
  try{
   css();sanitizeLegacy();
   const side=Q('#ccSidebar');if(!side)return;
-  ensureTransparency(side);ensureAdmin(side);syncActive(side);
+  ensureTransparency(side);ensureAdmin(side);watchSidebar(side);syncActive(side);
  }finally{cleaning=false}
 }
 function queue(){if(queued)return;queued=true;const run=()=>{queued=false;ensure()};(window.requestAnimationFrame||setTimeout)(run)}
 
-// Captura primero para impedir que handlers antiguos vuelvan a activar rutas duplicadas.
 document.addEventListener('click',event=>{
  const b=event.target.closest?.('#ccSidebar .cc-side-btn[data-route]');if(!b)return;
  const r=b.dataset.route;
@@ -128,6 +149,7 @@ document.addEventListener('click',event=>{
   else if(r==='proyectos')driveExecutive('projects');
   else if(r==='presupuesto')driveExecutive('budget');
   else if(r==='transparencia'){
+   requestedExecutive='transparency';
    if(typeof window.__ccOpenTransparencyDirect==='function')window.__ccOpenTransparencyDirect();
    else{try{view.screen='transparency';view.projectId=null;view.tab='summary';renderApp()}catch{}}
   }
@@ -140,7 +162,9 @@ document.addEventListener('click',event=>{
   else if(r==='seguridad'){
    if(typeof window.securityCenterModal==='function')window.securityCenterModal();else Q('#ccSecurityBtn')?.click();
   }
-  setTimeout(queue,30);return;
+  // Marca la ruta al instante y vuelve a comprobar después del render heredado.
+  syncActive(Q('#ccSidebar'));
+  setTimeout(queue,0);setTimeout(queue,40);setTimeout(queue,180);return;
  }
 },true);
 

@@ -39,7 +39,16 @@ async function noOverflow(page,label){
  expect(d.w,`${label}: overflow documento`).toBeLessThanOrEqual(d.c+3);
  expect(d.body,`${label}: overflow body`).toBeLessThanOrEqual(d.c+3);
 }
-async function visibleButtonTexts(page){return page.locator('button:visible').evaluateAll(xs=>xs.map(x=>(x.innerText||'').replace(/\s+/g,' ').trim()).filter(Boolean))}
+async function assertSinglePrimaryNavigation(page){
+ await expect(page.locator('#ccSidebar')).toBeVisible();
+ await expect(page.locator('#ccSidebar [data-route="transparencia"]')).toHaveCount(1);
+ await expect(page.locator('#ccxNav')).toBeHidden();
+ await expect(page.locator('[data-cp-main-tabs]')).toBeHidden();
+ const legacyVisible=await page.locator('[data-tr-nav],[data-tr-exec]').evaluateAll(xs=>xs.filter(x=>{
+   const s=getComputedStyle(x),r=x.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0;
+ }).length);
+ expect(legacyVisible,'No debe existir un segundo botón visible de Transparencia en navegación heredada').toBe(0);
+}
 
 for(const vp of [{name:'desktop',width:1366,height:768},{name:'tablet',width:1024,height:768}]){
  test.describe(`recorrido completo ${vp.name}`,()=>{
@@ -62,11 +71,7 @@ for(const vp of [{name:'desktop',width:1366,height:768},{name:'tablet',width:102
    await expect(page.locator('#content')).toBeVisible();
    await expect(page.locator('#ccSidebar [data-route="inicio"]')).toBeVisible();
    await expect(page.locator('#ccSidebar [data-route="proyectos"]')).toBeVisible();
-   await expect(page.locator('#ccSidebar [data-route="transparencia"]')).toHaveCount(1);
-   await expect(page.locator('#ccxNav')).toBeHidden();
-   await expect(page.locator('[data-cp-main-tabs]')).toBeHidden();
-   let texts=await visibleButtonTexts(page);
-   expect(texts.filter(x=>x==='Transparencia'),`Transparencia visible duplicada: ${texts.join(' | ')}`).toHaveLength(1);
+   await assertSinglePrimaryNavigation(page);
    await noOverflow(page,`${vp.name} inicio`);
 
    // 3. Inicio y Proyectos deben ser rutas diferentes aunque compartan el mismo motor interno.
@@ -105,10 +110,10 @@ for(const vp of [{name:'desktop',width:1366,height:768},{name:'tablet',width:102
    await expect(page.locator('#content')).toContainText(/Estado general del portafolio|Centro de Control/i,{timeout:8000});
    await expect(page.locator('#ccSidebar [data-route="inicio"]')).toHaveClass(/active/);
 
-   // 7. Transparencia debe abrir desde el sidebar y seguir siendo única.
+   // 7. Transparencia debe abrir desde el sidebar sin reactivar la navegación heredada.
    await page.locator('#ccSidebar [data-route="transparencia"]').click();
    await expect(page.locator('#content')).toContainText(/Portal de Transparencia|Control mensual de formatos/i,{timeout:8000});
-   texts=await visibleButtonTexts(page);expect(texts.filter(x=>x==='Transparencia')).toHaveLength(1);
+   await assertSinglePrimaryNavigation(page);
    await noOverflow(page,`${vp.name} transparencia`);
 
    expect(pageErrors,`Errores JavaScript: ${pageErrors.join(' | ')}`).toEqual([]);

@@ -1,0 +1,156 @@
+name: Publicación crítica Control de Proyectos
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'build-pages.cjs'
+      - 'inject-portfolio.cjs'
+      - 'patch-session-security.cjs'
+      - 'core-hardening-v1.js'
+      - 'performance-runtime-v1.js'
+      - 'private-access-v1.js'
+      - 'workspace-access-v1.js'
+      - 'project-tabs-complete-v1.js'
+      - 'tests/startup-responsive.spec.cjs'
+      - 'tests/*.test.cjs'
+      - 'templates/**'
+      - 'assets/formats/**'
+      - 'package.json'
+      - 'playwright.config.cjs'
+      - '.github/workflows/deploy-pages-critical.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: control-proyectos-critical-deploy-main
+  cancel-in-progress: true
+
+jobs:
+  build-smoke-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Validar fuente y pruebas unitarias
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in ./*.js; do
+            [ -f "$f" ] || continue
+            node --check "$f"
+          done
+          node --check build-pages.cjs
+          node --check inject-portfolio.cjs
+          node --check patch-session-security.cjs
+          node --test tests/*.test.cjs
+
+      - name: Reconstruir aplicación
+        run: |
+          node build-pages.cjs
+          node inject-portfolio.cjs
+          node patch-session-security.cjs
+
+      - name: Forzar versiones críticas
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('index.html')
+          html = path.read_text(encoding='utf-8')
+          replacements = [
+              (r'project-tabs-complete-v1\.js\?v[^\"\']*', 'project-tabs-complete-v1.js?v=20260831-tabscomplete34', 'project-tabs-complete-v1.js'),
+              (r'private-access-v1\.js\?v[^\"\']*', 'private-access-v1.js?v=20260823-private5', 'private-access-v1.js'),
+              (r'admin-users-v1\.js\?v[^\"\']*', 'admin-users-v1.js?v=20260823-admin-users4', 'admin-users-v1.js'),
+              (r'adaptive-chat-learning-v1\.js\?v[^\"\']*', 'adaptive-chat-learning-v1.js?v=20260824-zordon2', 'adaptive-chat-learning-v1.js'),
+          ]
+          for pattern, replacement, label in replacements:
+              html, count = re.subn(pattern, replacement, html)
+              if count == 0:
+                  raise SystemExit(f'No se encontró {label} para renovar su versión.')
+
+          zordon_tag = '<script src="zordon-continuous-runtime-v1.js?v=20260824-zordon4"></script>'
+          chat_tag = '<script src="zordon-chat-ui-v1.js?v=20260824-cleanchat4"></script>'
+          html = re.sub(r'<script\s+src=["\']zordon-continuous-runtime-v1\.js(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
+          html = re.sub(r'<script\s+src=["\']zordon-chat-ui-v1\.js(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
+          html = re.sub(r'<script\s+src=["\']zordon-send-hardfix-v1\.js(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
+          pos = html.lower().rfind('</body>')
+          if pos < 0:
+              raise SystemExit('No se encontró </body> para cargar ZORDON.')
+          html = html[:pos] + zordon_tag + '\n' + chat_tag + '\n' + html[pos:]
+          path.write_text(html, encoding='utf-8')
+          PY
+
+      - name: Validar artefacto crítico
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s index.html
+          grep -q 'NUCLEO DE INTEGRIDAD Y CONCURRENCIA V1' index.html
+          grep -q 'STARTUP_TIMEOUT_MS=12000' index.html
+          grep -q 'Abriendo tu espacio de trabajo' index.html
+          grep -q 'save_app_state' index.html
+          grep -q 'project-tabs-complete-v1.js?v=20260831-tabscomplete34' index.html
+          grep -q 'private-access-v1.js?v=20260823-private5' index.html
+          grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordon4' index.html
+          grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat4' index.html
+          grep -q '</html>' index.html
+          if grep -q 'window.__CP_B64=' index.html; then
+            echo 'El HTML generado todavía contiene el cargador Base64.' >&2
+            exit 1
+          fi
+
+      - name: Instalar navegador de prueba
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-package-lock
+          npx playwright install --with-deps chromium
+
+      - name: Levantar artefacto generado
+        shell: bash
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/control-proyectos-critical-http.log 2>&1 &
+          echo $! > /tmp/control-proyectos-critical-http.pid
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/control-proyectos-critical-http.log
+          exit 1
+
+      - name: Probar arranque y recuperación de nube
+        env:
+          APP_URL: http://127.0.0.1:4173/
+        run: npx playwright test tests/startup-responsive.spec.cjs --workers=1 --retries=0
+
+      - name: Publicar index.html en main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- index.html; then
+            echo "index.html ya está actualizado."
+          else
+            git add index.html
+            git commit -m "Publicar arranque contractual verificado"
+            git push origin HEAD:main
+          fi

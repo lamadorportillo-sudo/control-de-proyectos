@@ -14,7 +14,7 @@ assert(fs.statSync('halu-engineer-cutout-v4.webp').size<100_000,'El avatar de pi
 assert(fs.statSync('halu-engineer-seated-v1.webp').size<100_000,'El avatar sentado debe estar optimizado');
 assert(!fs.readFileSync('engineer-chatbot-v3.js','utf8').includes('halu-engineer-cutout-v4.png'),'El chatbot no debe descargar el avatar PNG pesado');
 assert(html.includes('rel="preconnect" href="https://flethujkrharehjikwgj.supabase.co"'),'Debe anticipar la conexión de autenticación');
-assert(html.includes('rel="preload" href="performance-runtime-v1.js?v=20260823-perf5"'),'Debe anticipar el coordinador de rendimiento');
+assert(/rel="preload" href="performance-runtime-v1\.js\?v=[^"]+"/.test(html),'Debe anticipar el coordinador de rendimiento con una versión vigente');
 
 const injector=fs.readFileSync('inject-portfolio.cjs','utf8');
 assert(injector.includes("'system-ui-refinement-v2.js'"),'El inyector debe reconocer la capa visual V2 como legado para retirarla');

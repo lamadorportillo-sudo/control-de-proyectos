@@ -1,7 +1,7 @@
-/* ===== COORDINADOR DE RENDIMIENTO DEL DOM V1 ===== */
+/* ===== COORDINADOR DE RENDIMIENTO DEL DOM V2 ===== */
 (()=>{
 'use strict';
-if(window.__CC_PERFORMANCE_RUNTIME_V1__)return;window.__CC_PERFORMANCE_RUNTIME_V1__=true;
+if(window.__CC_PERFORMANCE_RUNTIME_V2__)return;window.__CC_PERFORMANCE_RUNTIME_V2__=true;window.__CC_PERFORMANCE_RUNTIME_V1__=true;
 const NativeObserver=window.MutationObserver;if(!NativeObserver)return;
 const pending=new Set();let flushScheduled=false,passes=0;
 const MAX_PASSES=4;
@@ -32,17 +32,17 @@ window.MutationObserver=BatchedMutationObserver;
 window.__ccNativeMutationObserver=NativeObserver;
 if('serviceWorker'in navigator&&location.protocol==='https:'){
   const scope=new URL('.',location.href).pathname;
-  addEventListener('load',()=>navigator.serviceWorker.register(`${scope}service-worker-v1.js`,{scope,updateViaCache:'none'}).catch(error=>console.warn('Caché sin conexión no disponible.',error?.message||error)),{once:true});
+  addEventListener('load',()=>navigator.serviceWorker.register(`${scope}service-worker-v1.js?v=20260903-sw2`,{scope,updateViaCache:'none'}).catch(error=>console.warn('Caché sin conexión no disponible.',error?.message||error)),{once:true});
 }
 
-// Portal Web V2: capas visuales y centros globales. No sustituyen la lógica
+// Portal Web: capas visuales y centros globales. No sustituyen la lógica
 // contractual, los expedientes ni la persistencia existente en Supabase.
 const portalCss=document.createElement('link');portalCss.rel='stylesheet';portalCss.href='portal-web-v2.css?v=20260901-web2';document.head.appendChild(portalCss);
 const projectCss=document.createElement('link');projectCss.rel='stylesheet';projectCss.href='project-detail-v2.css?v=20260901-detail2';document.head.appendChild(projectCss);
-const dashboardCss=document.createElement('link');dashboardCss.rel='stylesheet';dashboardCss.href='dashboard-simplified-v4.css?v=20260901-dash4b';document.head.appendChild(dashboardCss);
+const dashboardCss=document.createElement('link');dashboardCss.rel='stylesheet';dashboardCss.href='dashboard-simplified-v4.css?v=20260903-dash5';document.head.appendChild(dashboardCss);
 const portalJs=document.createElement('script');portalJs.src='portal-web-v2.js?v=20260901-web2';portalJs.defer=true;document.head.appendChild(portalJs);
 const projectJs=document.createElement('script');projectJs.src='project-detail-v2.js?v=20260901-detail2';projectJs.defer=true;document.head.appendChild(projectJs);
-const dashboardJs=document.createElement('script');dashboardJs.src='dashboard-simplified-v4.js?v=20260901-dash4b';dashboardJs.defer=true;document.head.appendChild(dashboardJs);
+const dashboardJs=document.createElement('script');dashboardJs.src='dashboard-simplified-v4.js?v=20260903-dash5';dashboardJs.defer=true;document.head.appendChild(dashboardJs);
 const paymentsJs=document.createElement('script');paymentsJs.src='payments-center-v1.js?v=20260901-payments1';paymentsJs.defer=true;document.head.appendChild(paymentsJs);
 const guaranteesJs=document.createElement('script');guaranteesJs.src='guarantees-center-v1.js?v=20260901-guarantees1';guaranteesJs.defer=true;document.head.appendChild(guaranteesJs);
 const visitsJs=document.createElement('script');visitsJs.src='visits-center-v1.js?v=20260901-visits1';visitsJs.defer=true;document.head.appendChild(visitsJs);

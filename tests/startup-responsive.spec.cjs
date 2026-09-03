@@ -1,4 +1,4 @@
-// Prueba crítica V2: protege contra pantalla en blanco y ciclos de arranque autenticado del dashboard.
+// Prueba crítica V3: protege contra pantalla en blanco y ciclos de arranque autenticado del dashboard.
 const { test, expect } = require('@playwright/test');
 
 const appUrl = process.env.APP_URL || 'http://127.0.0.1:4173/';
@@ -52,11 +52,12 @@ test.describe('arranque crítico', () => {
     await expect.poll(async () => (await page.locator('#app').innerText()).trim().length, { timeout: 8000 }).toBeGreaterThan(20);
   });
 
-  test('con sesión y Supabase disponible abre la navegación principal', async ({ page }) => {
+  test('con sesión y Supabase disponible abre la interfaz autenticada', async ({ page }) => {
     await installSession(page);
     await mockSupabaseFast(page);
     await page.goto(appUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await expect(page.locator('#ccxNav')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#ccSidebar')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#content')).toBeVisible({ timeout: 5000 });
     await expect.poll(async () => (await page.locator('#app').innerText()).trim().length, { timeout: 5000 }).toBeGreaterThan(50);
   });
 

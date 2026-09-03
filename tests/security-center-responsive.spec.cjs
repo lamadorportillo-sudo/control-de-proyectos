@@ -73,8 +73,9 @@ for(const vp of [{name:'seguridad-mobile',width:390,height:844,touch:true},{name
       await page.goto(appUrl,{waitUntil:'domcontentloaded',timeout:60000});
       await page.waitForTimeout(900);
       await page.evaluate(()=>{try{cloudRole='admin'}catch{};document.body.appendChild(document.createComment('qa-security-admin'))});
-      await page.waitForSelector('#ccSecurityBtn',{timeout:15000});
-      await page.locator('#ccSecurityBtn').click();
+      const securityButton=page.locator('#ccSidebar [data-route="seguridad"]');
+      await expect(securityButton).toBeVisible({timeout:15000});
+      await securityButton.click();
       await page.waitForSelector('#ccSecurityCenter .cc-sec-kpis',{timeout:15000});
       await page.waitForTimeout(250);
 

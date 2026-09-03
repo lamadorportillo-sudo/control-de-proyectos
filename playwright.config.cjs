@@ -1,8 +1,10 @@
 const { defineConfig } = require('@playwright/test');
 
+const manualSimulation = process.env.CC_MANUAL_SIM === '1';
+
 module.exports = defineConfig({
   testDir: './tests',
-  testMatch: /.*responsive.*\.spec\.cjs/,
+  testMatch: manualSimulation ? /manual-project-entry-simulation\.spec\.cjs/ : /.*responsive.*\.spec\.cjs/,
   timeout: 90000,
   expect: { timeout: 12000 },
   fullyParallel: false,

@@ -1,0 +1,80 @@
+name: Simulación manual de proyecto inventado
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/manual-project-entry-simulation.spec.cjs'
+      - '.github/workflows/manual-project-simulation.yml'
+      - 'index.html'
+      - '*.js'
+      - 'build-pages.cjs'
+      - 'inject-portfolio.cjs'
+      - 'patch-session-security.cjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manual-project-simulation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  simulate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v6
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Reconstruir la aplicación publicada
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tests/manual-project-entry-simulation.spec.cjs
+          node build-pages.cjs
+          node inject-portfolio.cjs
+          node patch-session-security.cjs
+          test -s index.html
+
+      - name: Instalar Playwright
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-package-lock
+          npx playwright install --with-deps chromium
+
+      - name: Levantar aplicación local
+        shell: bash
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/manual-simulation-http.log 2>&1 &
+          echo $! > /tmp/manual-simulation-http.pid
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/manual-simulation-http.log
+          exit 1
+
+      - name: Ejecutar captura manual campo por campo
+        env:
+          APP_URL: http://127.0.0.1:4173/
+        shell: bash
+        run: npx playwright test tests/manual-project-entry-simulation.spec.cjs --workers=1 --retries=0
+
+      - name: Guardar capturas y reporte de inconvenientes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulacion-manual-proyecto-inventado
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7

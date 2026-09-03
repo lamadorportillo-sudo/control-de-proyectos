@@ -19,6 +19,8 @@ const modules=[
   ['system-ui-refinement-v3.js','20260826-system5'],
   ['integrity-diagnostics-v1.js','20260826-integrity1'],
   ['hero-typography-v1.js','20260830-hero1'],
+  // Debe ser la última capa visual/funcional: una sola navegación visible y estable.
+  ['ui-navigation-single-source-v1.js','20260903-singlenav1'],
 ];
 if(!fs.existsSync(htmlFile)) throw new Error('No se encontró index.html.');
 for(const [moduleFile] of modules){
@@ -45,4 +47,4 @@ for(const [moduleFile,version] of modules){
 
 if(/system-ui-refinement-v2\.js/i.test(html)) throw new Error('La capa visual V2 no debe permanecer cargada.');
 fs.writeFileSync(htmlFile,html,'utf8');
-console.log('Interfaz consolidada: iconografía compacta, refinamiento visual V3 e integridad contractual sin capa V2 redundante.');
+console.log('Interfaz consolidada: iconografía compacta, refinamiento visual V3, integridad contractual y navegación única.');

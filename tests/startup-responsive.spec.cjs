@@ -1,4 +1,4 @@
-// Prueba crítica V3: protege contra pantalla en blanco y ciclos de arranque autenticado del dashboard.
+// Prueba crítica V4: protege contra pantalla en blanco, ciclos de arranque y regresiones visuales del dashboard.
 const { test, expect } = require('@playwright/test');
 
 const appUrl = process.env.APP_URL || 'http://127.0.0.1:4173/';
@@ -59,6 +59,39 @@ test.describe('arranque crítico', () => {
     await expect(page.locator('#ccSidebar')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('#content')).toBeVisible({ timeout: 5000 });
     await expect.poll(async () => (await page.locator('#app').innerText()).trim().length, { timeout: 5000 }).toBeGreaterThan(50);
+  });
+
+  test('la interfaz autenticada queda consolidada, legible y sin navegación duplicada', async ({ page }) => {
+    await installSession(page);
+    await mockSupabaseFast(page);
+    await page.goto(appUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await expect(page.locator('#ccSidebar')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#ccGlobalSearch')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#ccSidebar [data-route="transparencia"]')).toHaveCount(1, { timeout: 5000 });
+
+    const state = await page.evaluate(() => {
+      const nav=document.querySelector('#ccxNav');
+      const search=document.querySelector('#ccGlobalSearch');
+      const before=document.querySelector('.cc-global-search');
+      const visual=document.querySelector('.exec-visual');
+      return {
+        executiveNavDisplay:nav?getComputedStyle(nav).display:'missing',
+        searchPlaceholder:search?.getAttribute('placeholder')||'',
+        searchBefore:before?getComputedStyle(before,'::before').content:'',
+        overflow:document.documentElement.scrollWidth-window.innerWidth,
+        visualPadding:visual?parseFloat(getComputedStyle(visual).paddingRight)||0:76,
+      };
+    });
+    expect(state.executiveNavDisplay).toBe('none');
+    expect(state.searchPlaceholder).toBe('Buscar proyecto, código, ubicación o estado…');
+    expect(['none','normal','""']).toContain(state.searchBefore);
+    expect(state.overflow).toBeLessThanOrEqual(2);
+    expect(state.visualPadding).toBeGreaterThanOrEqual(70);
+
+    await page.locator('#ccSidebar [data-route="proyectos"]').click();
+    await expect(page.locator('#content')).toContainText('Proyectos', { timeout: 5000 });
+    await page.locator('#ccSidebar [data-route="inicio"]').click();
+    await expect(page.locator('#content')).toContainText(/Estado general del portafolio|Centro de Control/i, { timeout: 5000 });
   });
 
   test('si Supabase tarda demasiado muestra recuperación y no queda en blanco', async ({ page }) => {

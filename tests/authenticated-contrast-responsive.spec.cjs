@@ -29,6 +29,7 @@ async function install(page){
     if(path.includes('/rest/v1/workspace_members'))body=[{workspace_id:WORKSPACE_ID,role:'consulta',active:true}];
     else if(path.includes('/rest/v1/profiles'))body=[{full_name:'QA Contraste',active:true}];
     else if(path.includes('/rest/v1/app_state'))body=[{data:fixture,version:1,updated_at:'2026-08-31T00:00:00Z'}];
+    else if(path.includes('/rest/v1/rpc/get_control_center'))body={summary:{projects_total:1,projects_execution:1,projects_finalized:0,portfolio_amount:2307639.52,execution_amount:2307639.52,execution_estimated:250000,execution_paid:190625,execution_progress_pct:10.83,active_alerts:0,budget_projects:0,budget_available:0,critical_projects:0},projects:[],alerts:[],attention:[],reconciliation:[],audit:{total_events:0,integrity_failures:0}};
     else if(path.includes('/auth/v1/logout'))body={};
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(body)});
   });
@@ -48,23 +49,23 @@ for(const vp of [{name:'mobile',width:390,height:844,touch:true},{name:'desktop'
     test('revisa navegación principal y expediente completo',async({page})=>{
       await install(page);
       await page.goto(appUrl,{waitUntil:'domcontentloaded',timeout:60000});
-      await page.waitForSelector('#ccxNav',{timeout:20000});
-      await page.waitForTimeout(1200);
-      for(const section of ['home','projects','budget','alerts','audit','reports']){
-        const btn=page.locator(`#ccxNav [data-ccx="${section}"]`);
-        await expect(btn).toBeVisible();await btn.click();await page.waitForTimeout(420);
-        await assertContrast(page,`${vp.name} sección ${section}`);
+      await expect(page.locator('#ccSidebar')).toBeVisible({timeout:20000});
+      await page.waitForTimeout(900);
+      for(const route of ['inicio','proyectos','presupuesto','transparencia']){
+        const btn=page.locator(`#ccSidebar [data-route="${route}"]`);
+        await expect(btn).toBeVisible();await btn.click();await page.waitForTimeout(350);
+        await assertContrast(page,`${vp.name} ruta ${route}`);
       }
-      await page.locator('#ccxNav [data-ccx="projects"]').click();await page.waitForTimeout(350);
-      const search=page.locator('#projectSearch');if(await search.count()){await search.fill('QA CONTRASTE');await page.waitForTimeout(300)}
+      await page.locator('#ccSidebar [data-route="proyectos"]').click();await page.waitForTimeout(300);
+      const search=page.locator('#ccGlobalSearch');await expect(search).toBeVisible();await search.fill('QA CONTRASTE');await search.press('Enter');await page.waitForTimeout(250);
       const open=page.locator(`[data-ccx-open="${PROJECT_ID}"], [data-open="${PROJECT_ID}"]`).first();
-      await expect(open).toBeVisible();await open.click();await page.waitForSelector('#tabBody',{timeout:15000});await page.waitForTimeout(800);
+      await expect(open).toBeVisible();await open.click();await page.waitForSelector('#tabBody',{timeout:15000});await page.waitForTimeout(500);
       await assertContrast(page,`${vp.name} expediente`);
       const tabs=page.locator('nav.tabs button[data-tab], .tabs button[data-tab]');const count=await tabs.count();
       expect(count).toBeGreaterThanOrEqual(9);
       for(let i=0;i<count;i++){
         const tab=tabs.nth(i);if(!(await tab.isVisible()))continue;
-        const label=((await tab.textContent())||`tab-${i}`).replace(/\s+/g,' ').trim();await tab.click();await page.waitForTimeout(300);
+        const label=((await tab.textContent())||`tab-${i}`).replace(/\s+/g,' ').trim();await tab.click();await page.waitForTimeout(220);
         await assertContrast(page,`${vp.name} pestaña ${label}`,'#tabBody');
       }
     });

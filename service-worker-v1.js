@@ -1,4 +1,4 @@
-const CACHE='cc-static-v1-20260901-control-centers-v6-alerts-audit';
+const CACHE='cc-static-v1-20260903-recovery-v2';
 const STATIC_EXT=/\.(?:js|css|webp|png|jpg|jpeg|woff2?)(?:\?|$)/i;
 
 self.addEventListener('install',event=>event.waitUntil(self.skipWaiting()));
@@ -14,22 +14,19 @@ self.addEventListener('fetch',event=>{
   const url=new URL(request.url);
   if(url.origin!==self.location.origin||!STATIC_EXT.test(url.pathname+url.search))return;
 
-  // Stale-while-revalidate: la interfaz abre rápido y comprueba en segundo plano
-  // si existe una versión más reciente. El cambio de CACHE fuerza la renovación
-  // de los recursos visuales sin alterar datos, autenticación ni sesiones.
+  // Network-first: prioriza siempre la versión publicada más reciente.
+  // Solo usa caché como respaldo si la red falla, evitando conservar JS viejo
+  // después de una corrección crítica del dashboard.
   event.respondWith((async()=>{
     const cache=await caches.open(CACHE);
-    const cached=await cache.match(request);
-    const network=fetch(request,{cache:'no-cache'}).then(response=>{
-      if(response.ok)event.waitUntil(cache.put(request,response.clone()));
+    try{
+      const response=await fetch(request,{cache:'no-store'});
+      if(response&&response.ok)event.waitUntil(cache.put(request,response.clone()));
       return response;
-    }).catch(()=>null);
-
-    if(cached){
-      event.waitUntil(network);
-      return cached;
+    }catch(error){
+      const cached=await cache.match(request);
+      if(cached)return cached;
+      return new Response('Recurso no disponible sin conexión.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});
     }
-    const response=await network;
-    return response||new Response('Recurso no disponible sin conexión.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});
   })());
 });

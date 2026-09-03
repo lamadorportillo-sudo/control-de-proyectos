@@ -1,4 +1,4 @@
-// Prueba crítica: protege contra regresiones de pantalla en blanco y ciclos de arranque autenticado.
+// Prueba crítica V2: protege contra pantalla en blanco y ciclos de arranque autenticado del dashboard.
 const { test, expect } = require('@playwright/test');
 
 const appUrl = process.env.APP_URL || 'http://127.0.0.1:4173/';

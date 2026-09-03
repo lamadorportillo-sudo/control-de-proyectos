@@ -1,14 +1,15 @@
-/* CONTROL CONTRACTUAL · DASHBOARD SIMPLIFICADO V5 · ESTABLE
+/* CONTROL CONTRACTUAL · DASHBOARD SIMPLIFICADO V6 · ESTABLE
    Mejora de experiencia web sobre el dashboard existente, sin duplicar datos ni alterar Supabase. */
 (()=>{
 'use strict';
-if(window.__CC_DASHBOARD_SIMPLIFIED_V5__)return;window.__CC_DASHBOARD_SIMPLIFIED_V5__=true;window.__CC_DASHBOARD_SIMPLIFIED_V4__=true;
+if(window.__CC_DASHBOARD_SIMPLIFIED_V6__)return;window.__CC_DASHBOARD_SIMPLIFIED_V6__=true;window.__CC_DASHBOARD_SIMPLIFIED_V5__=true;window.__CC_DASHBOARD_SIMPLIFIED_V4__=true;
 const Q=(s,r=document)=>r.querySelector(s);
 const QA=(s,r=document)=>[...r.querySelectorAll(s)];
 const NativeObserver=window.__ccNativeMutationObserver||window.MutationObserver;
 const H=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const setText=(el,value)=>{if(!el)return;const next=String(value??'');if(el.textContent!==next)el.textContent=next};
 const PORTFOLIO_VIEW_KEY='cc_portfolio_view_v4';
-let working=false;
+let working=false,observerQueued=false;
 let portfolioView=(()=>{const saved=localStorage.getItem(PORTFOLIO_VIEW_KEY);if(['executive','cards','table'].includes(saved))return saved;return localStorage.getItem('cp_dashboard_view_v3')==='compact'?'executive':'cards'})();
 
 function safeView(){try{return typeof view!=='undefined'?view:null}catch{return null}}
@@ -96,12 +97,11 @@ function portfolioViews(){
   const v=safeView(),board=Q('.projects-board');if(!v||v.screen!=='projects'||v.trash||!board)return;
   const switcher=Q('.view-switch',board),grid=Q('.project-grid-v3',board);if(!switcher||!grid)return;
   const cardsBtn=Q('[data-dashboard-view="cards"]',switcher),executiveBtn=Q('[data-dashboard-view="compact"]',switcher);if(!cardsBtn||!executiveBtn)return;
-  cardsBtn.textContent='▦ Tarjetas';executiveBtn.textContent='☰ Ejecutiva';
+  setText(cardsBtn,'▦ Tarjetas');setText(executiveBtn,'☰ Ejecutiva');
   let tableBtn=Q('[data-portfolio-view="table"]',switcher);
   if(!tableBtn){
     tableBtn=document.createElement('button');tableBtn.type='button';tableBtn.dataset.portfolioView='table';tableBtn.textContent='▤ Tabla';
     tableBtn.onclick=e=>{e.preventDefault();e.stopPropagation();rememberPortfolioView('table');setTimeout(enhance,0)};
-    /* Solo se inserta una vez. Reinsertar botones existentes disparaba el observador indefinidamente. */
     switcher.appendChild(tableBtn);
   }
   if(switcher.dataset.portfolioBound!=='1'){
@@ -110,14 +110,19 @@ function portfolioViews(){
   }
   const countHost=Q('.board-controls',board);let badge=Q('.cc-portfolio-count-v4',countHost);
   if(!badge){badge=document.createElement('span');badge.className='cc-portfolio-count-v4';countHost.prepend(badge)}
-  const currentCards=QA(':scope > .project-v3',grid);badge.textContent=`${currentCards.length||QA('.cc-pt-row',grid).length} visibles`;
+  const currentCards=QA(':scope > .project-v3',grid);setText(badge,`${currentCards.length||QA('.cc-pt-row',grid).length} visibles`);
   executiveBtn.classList.toggle('active',portfolioView==='executive');cardsBtn.classList.toggle('active',portfolioView==='cards');tableBtn.classList.toggle('active',portfolioView==='table');
   if(portfolioView==='table'){if(!Q('.cc-portfolio-table-v4',grid)&&currentCards.length)renderPortfolioTable(grid,currentCards);return}
   grid.classList.remove('cc-portfolio-table-mode');
 }
 
 function enhance(){if(working)return;working=true;try{regroupSidebar();welcome();lifecycle();portfolioViews()}finally{working=false}}
-if(NativeObserver)new NativeObserver(()=>enhance()).observe(document.getElementById('app')||document.documentElement,{childList:true,subtree:true});
+function queueEnhance(){
+  if(observerQueued)return;observerQueued=true;
+  const run=()=>{observerQueued=false;enhance()};
+  (typeof requestAnimationFrame==='function'?requestAnimationFrame:setTimeout)(run);
+}
+if(NativeObserver)new NativeObserver(queueEnhance).observe(document.getElementById('app')||document.documentElement,{childList:true,subtree:true});
 window.addEventListener('cc:data-changed',()=>setTimeout(enhance,40));
 setTimeout(enhance,0);setTimeout(enhance,300);setTimeout(enhance,1000);
 })();

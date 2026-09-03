@@ -32,7 +32,8 @@ test.describe('accesibilidad esencial WCAG',()=>{
       await expect(page.locator('#ccGuestEnter')).toBeVisible();
       await page.locator('#ccGuestEnter').click();
       await expect(page.locator('body')).toHaveClass(/cc-guest-mode/);
-      await page.locator('#ccxNav [data-ccx="projects"]').click();
+      await expect(page.locator('#ccSidebar')).toBeVisible({timeout:10000});
+      await page.locator('#ccSidebar [data-route="proyectos"]').click();
       await expect(page.locator('.project-v3, .project-card-premium').first()).toBeVisible();
       await scan(page,'portafolio en modo invitado');
     });

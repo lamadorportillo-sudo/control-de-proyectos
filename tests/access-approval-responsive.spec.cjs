@@ -32,7 +32,7 @@ async function installAdminFixture(page) {
     if (path.includes('/rest/v1/workspace_members')) {
       body = [{ workspace_id: WORKSPACE_ID, role: 'admin', active: true }];
     } else if (path.includes('/rest/v1/profiles')) {
-      body = [{ full_name: 'Luis Fernando Amador Portillo', active: true }];
+      body = [{ full_name: 'Administrador QA', active: true }];
     } else if (path.includes('/rest/v1/app_state')) {
       body = [{ data: fixture, version: 1, updated_at: '2026-08-24T12:00:00Z' }];
     } else if (path.includes('/rest/v1/access_requests')) {
@@ -56,16 +56,16 @@ async function installAdminFixture(page) {
 }
 
 test.describe('autorización administrativa de usuarios', () => {
-  test('avisa al administrador, permite aprobar y rechazar', async ({ page }) => {
+  test('avisa al administrador, permite aprobar y rechazar desde el sidebar', async ({ page }) => {
     await installAdminFixture(page);
     await page.goto(appUrl, { waitUntil: 'domcontentloaded' });
 
-    const requestsButton = page.locator('#ccAccessRequestsBtn');
-    await expect(requestsButton).toBeVisible();
+    const requestsButton = page.locator('#ccSidebar [data-route="solicitudes"]');
+    await expect(requestsButton).toBeVisible({timeout:10000});
     await expect(requestsButton).toContainText('2');
     await expect(page.locator('.cc-access-request-notice')).toContainText('2 solicitudes nuevas de usuarios');
 
-    await page.locator('[data-access-open]').click();
+    await requestsButton.click();
     await expect(page.locator('[data-request="aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"]')).toContainText('María Supervisora');
     await expect(page.locator('[data-request="bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"]')).toContainText('Carlos Auditor');
 

@@ -6,6 +6,7 @@ const perf=fs.readFileSync('performance-runtime-v1.js','utf8');
 const storage=fs.readFileSync('storage-quota-fix-v1.js','utf8');
 const stabilizer=fs.readFileSync('stabilize-core-v1.cjs','utf8');
 const inject=fs.readFileSync('inject-portfolio.cjs','utf8');
+const tabs=fs.readFileSync('project-tabs-complete-v1.js','utf8');
 const official=fs.readFileSync('contract-official-format-v1.js','utf8');
 const documents=fs.readFileSync('contract-payment-documents-v1.js','utf8');
 
@@ -14,6 +15,14 @@ assert.match(nav,/view\.screen='projects'/,'Inicio/Proyectos debe manejar el est
 assert.doesNotMatch(nav,/querySelector\(`\[data-ccx=/,'no debe localizar botones ocultos del motor ejecutivo');
 assert.doesNotMatch(nav,/btn\.click\(\)/,'no debe accionar navegación heredada con clics sintéticos');
 assert.match(nav,/cc_main_route_v2/,'debe conservar una sola intención de ruta principal');
+
+// Pestañas: son presentación, no un segundo gestor de dependencias.
+assert.match(tabs,/NAVEGACION COMPLETA DEL EXPEDIENTE V2 · ESTABLE/,'debe estar activa la versión estable de pestañas');
+assert.doesNotMatch(tabs,/function\s+loadPortfolioModules/,'las pestañas no deben volver a cargar el portafolio completo');
+assert.doesNotMatch(tabs,/document\.createElement\(['"]script['"]\)/,'las pestañas no deben inyectar módulos ejecutables');
+for(const file of ['dashboard-executive-v1.js','home-executive-fix-v2.js','industrial-home-v1.js','portfolio-redesign-v1.js','project-portfolio-detail-v1.js','portfolio-screen-fix-v1.js']){
+  assert(!tabs.includes(file),`las pestañas no pueden reactivar la capa retirada ${file}`);
+}
 
 // Rendimiento: nunca volver a secuestrar MutationObserver global.
 assert.match(perf,/__ccNativeMutationObserver/,'debe conservar referencia al observador nativo');
@@ -72,4 +81,4 @@ for(const file of ['dashboard-executive-v1.js','home-executive-fix-v2.js','indus
   assert(stabilizer.includes(`'${file}'`),`stabilize-core debe retirar ${file}`);
 }
 
-console.log('core-stability-regressions: navegación, Inicio único, login seguro, runtime, fotos, documentos y arranque autenticado por fases blindados');
+console.log('core-stability-regressions: navegación, pestañas sin cargador duplicado, Inicio único, login seguro, runtime, fotos, documentos y arranque autenticado por fases blindados');

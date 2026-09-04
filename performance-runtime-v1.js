@@ -71,7 +71,7 @@ function bootModules(){
 
   /* Este runtime es una red de seguridad. El cargador autenticado es la
      autoridad primaria; si ya existe exactamente la misma versión no duplica. */
-  scriptOnce('portal-web-v2.js?v=20260903-web3','ccRuntimePortalJs');
+  scriptOnce('portal-web-v2.js?v=20260904-web4','ccRuntimePortalJs');
   scriptOnce('project-detail-v2.js?v=20260901-detail2','ccRuntimeProjectJs');
   scriptOnce('dashboard-simplified-v4.js?v=20260903-dash6','ccRuntimeDashboardJs');
   scriptOnce('payments-center-v1.js?v=20260901-payments1','ccRuntimePaymentsJs');

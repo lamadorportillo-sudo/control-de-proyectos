@@ -1,4 +1,5 @@
 const fs=require('fs');
+const {retiredModules,supplementalModules}=require('./authenticated-module-manifest-v1.cjs');
 
 const path='index.html';
 if(!fs.existsSync(path))throw new Error('No se encontró index.html para estabilizar.');
@@ -14,6 +15,11 @@ function replaceRequired(label,oldText,newText){
 function stripScript(moduleFile){
   const escaped=moduleFile.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   html=html.replace(new RegExp(`<script\\s+src=["']${escaped}(?:\\?[^"']*)?["']\\s*><\\/script>\\s*`,'gi'),'');
+}
+
+function stripScriptFrom(source,moduleFile){
+  const escaped=moduleFile.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return source.replace(new RegExp(`<script\\s+src=["']${escaped}(?:\\?[^"']*)?["']\\s*><\\/script>\\s*`,'gi'),'');
 }
 
 function escapeAttr(v){return String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
@@ -59,15 +65,9 @@ if(!html.includes(recoveryAlert)){
 }
 
 /* 3. CAPAS RETIRADAS: defensa final aunque algún generador histórico vuelva a
-      insertar un dashboard o portafolio obsoleto. */
-const retired=[
-  'dashboard-executive-v1.js',
-  'home-executive-fix-v2.js',
-  'industrial-home-v1.js',
-  'portfolio-redesign-v1.js',
-  'project-portfolio-detail-v1.js',
-  'portfolio-screen-fix-v1.js',
-];
+      insertar un dashboard o portafolio obsoleto. La lista vive en el mismo
+      manifiesto que define los módulos suplementarios autorizados. */
+const retired=[...retiredModules];
 for(const moduleFile of retired)stripScript(moduleFile);
 
 /* 4. ARRANQUE SIN BLOQUEOS EXTERNOS: JSZip es una dependencia del generador
@@ -93,6 +93,17 @@ if(bootPos<0)throw new Error('No se encontró el cierre del núcleo para aislar 
 const cut=bootPos+bootEnd.length;
 let head=html.slice(0,cut),tail=html.slice(cut);
 if(!tail.includes('data-cc-auth-plan')){
+  /* El antiguo project-tabs-complete cargaba estas dependencias de forma
+     dinámica. Ahora se garantiza una sola copia aquí, con versiones y orden
+     auditables. Los scripts quedan inmediatamente convertidos en plan inerte. */
+  for(const [moduleFile,version] of supplementalModules){
+    if(!fs.existsSync(moduleFile))throw new Error(`Falta módulo autenticado requerido: ${moduleFile}`);
+    tail=stripScriptFrom(tail,moduleFile);
+    const bodyClose=tail.toLowerCase().lastIndexOf('</body>');
+    if(bodyClose<0)throw new Error('No se encontró </body> al consolidar módulos autenticados.');
+    tail=tail.slice(0,bodyClose)+`<script src="${moduleFile}?v=${version}"></script>\n`+tail.slice(bodyClose);
+  }
+
   tail=tail.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi,(full,attrs,body)=>{
     const src=String(attrs||'').match(/\bsrc\s*=\s*(["'])(.*?)\1/i)?.[2]||'';
     if(src){
@@ -149,8 +160,6 @@ if(!tail.includes('data-cc-auth-plan')){
     try{await task()}
     catch(error){console.error('Módulo autenticado no cargado:',label,error)}
   };
-
-  const markPlanNodeLoaded=name=>{const n=nodeByBare(name);if(n)loaded.add(name)};
 
   (async()=>{
     /* FASE A · PRIMERA PINTURA AUTENTICADA.
@@ -228,10 +237,14 @@ if(!html.includes('__CC_AUTH_WEB_READY__'))throw new Error('Falta la fase web de
 if(!/<script\s+src=["']private-access-v1\.js\?/i.test(html))throw new Error('El login seguro quedó bloqueado antes de autenticar.');
 if(!/<script\s+src=["']password-recovery-v1\.js\?/i.test(html))throw new Error('La recuperación de contraseña quedó bloqueada antes de autenticar.');
 if(html.includes(loginSuccess))throw new Error('El acceso todavía intenta activar todos los módulos sin recargar el contexto autenticado.');
+for(const [moduleFile] of supplementalModules){
+  const count=(html.match(new RegExp(`data-src=["'][^"']*${moduleFile.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}[^"']*["']`,'gi'))||[]).length;
+  if(count!==1)throw new Error(`El módulo autenticado ${moduleFile} debe aparecer exactamente una vez en el plan; encontrado: ${count}.`);
+}
 for(const moduleFile of retired){
   if(new RegExp(moduleFile.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i').test(html))throw new Error(`Sigue cargada la capa retirada ${moduleFile}.`);
 }
 if(!html.toLowerCase().includes('</html>'))throw new Error('El HTML estabilizado quedó incompleto.');
 
 fs.writeFileSync(path,html,'utf8');
-console.log('Núcleo estabilizado: alta directa, anticipo contractual, login ligero y carga autenticada escalonada.');
+console.log(`Núcleo estabilizado: alta directa, anticipo contractual, login ligero y ${supplementalModules.length} módulos autenticados consolidados.`);

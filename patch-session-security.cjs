@@ -25,6 +25,17 @@ if(!html.includes(newRefreshFetch)){
   html=html.replace(oldRefreshFetch,newRefreshFetch);
 }
 
+/* Accesibilidad del acceso: los textos visuales ya existían, pero estaban en
+   <div> y no tenían asociación semántica con sus controles. Axe los clasifica
+   como fallo crítico de la regla `label`. Convertimos los tres contenedores en
+   <label>, conservando exactamente la misma clase y apariencia. */
+const oldAuthFields='<div class="field reg hidden"><span>Nombre completo</span><input id="authName"></div><div class="field"><span>Correo</span><input id="authEmail" type="email" required autocomplete="email"></div><div class="field"><span>Contraseña</span><input id="authPass" type="password" minlength="8" required autocomplete="current-password"></div>';
+const newAuthFields='<label class="field reg hidden"><span>Nombre completo</span><input id="authName" autocomplete="name"></label><label class="field"><span>Correo</span><input id="authEmail" type="email" required autocomplete="email"></label><label class="field"><span>Contraseña</span><input id="authPass" type="password" minlength="8" required autocomplete="current-password"></label>';
+if(!html.includes(newAuthFields)){
+  if(!html.includes(oldAuthFields))throw new Error('No se encontró la estructura esperada de campos de acceso para asociar sus etiquetas.');
+  html=html.replace(oldAuthFields,newAuthFields);
+}
+
 /* El acceso privado escribe la sesión después de que el HTML ya terminó de
    evaluarse. El cargador autenticado, en cambio, decide qué módulos activar
    durante el arranque. Sin este puente, un login correcto puede quedarse en
@@ -65,6 +76,9 @@ if(!html.includes('cc-staged-login-reload-bridge')){
 if(!html.includes("securitySessionId:priorSession.securitySessionId||''"))throw new Error('La renovación todavía perdería el identificador de seguridad.');
 if(!html.includes("deviceLabel:priorSession.deviceLabel||''"))throw new Error('La renovación todavía perdería la identificación del dispositivo.');
 if(!html.includes('cc-staged-login-reload-bridge'))throw new Error('Falta el puente entre login privado y arranque autenticado.');
+if(!html.includes('<label class="field"><span>Correo</span><input id="authEmail"'))throw new Error('El correo de acceso continúa sin etiqueta semántica.');
+if(!html.includes('<label class="field"><span>Contraseña</span><input id="authPass"'))throw new Error('La contraseña de acceso continúa sin etiqueta semántica.');
+if(!html.includes('<label class="field reg hidden"><span>Nombre completo</span><input id="authName"'))throw new Error('El nombre de registro continúa sin etiqueta semántica.');
 
 fs.writeFileSync(path,html,'utf8');
-console.log('Renovación de token endurecida y login privado enlazado con el arranque autenticado.');
+console.log('Sesión endurecida, login enlazado y campos de acceso etiquetados semánticamente.');

@@ -4,7 +4,7 @@ on:
   push:
     branches: [audit-architecture-fixes]
     paths:
-      - 'scripts/apply-contract-document-audit-fixes.cjs'
+      - 'scripts/apply-contract-document-audit-fixes-v2.cjs'
       - '.github/workflows/apply-contract-document-audit-fixes.yml'
 
 permissions:
@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: '22'
       - name: Aplicar parches exactos
-        run: node scripts/apply-contract-document-audit-fixes.cjs
+        run: node scripts/apply-contract-document-audit-fixes-v2.cjs
       - name: Validar sintaxis y pruebas contractuales
         run: |
           node --check contract-payment-documents-v1.js

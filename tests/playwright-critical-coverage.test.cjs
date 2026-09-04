@@ -6,6 +6,7 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const config=fs.readFileSync(path.join(root,'playwright.config.cjs'),'utf8');
 const workflow=fs.readFileSync(path.join(root,'.github/workflows/architecture-validation.yml'),'utf8');
+const responsiveWorkflow=fs.readFileSync(path.join(root,'.github/workflows/responsive-audit.yml'),'utf8');
 
 const critical=[
   'architecture-auth-boot',
@@ -26,6 +27,8 @@ test('los escenarios críticos pedidos por CI también están permitidos por tes
   }
 });
 
-test('la validación arquitectónica ejecuta Playwright con cero reintentos para no ocultar fallos',()=>{
+test('las validaciones de navegador ejecutan Playwright con cero reintentos para no ocultar fallos',()=>{
+  assert.match(config,/retries:\s*0/,'la configuración global no debe reintentar fallos');
   assert.match(workflow,/playwright test[\s\S]*--workers=1\s+--retries=0/);
+  assert.match(responsiveWorkflow,/playwright test\s+--workers=1\s+--retries=0/);
 });

@@ -66,9 +66,9 @@ jobs:
           grep -q 'ui-stability-v1.js?v=20260904-stable2' index.html
           grep -q 'contract-explicit-rules-v1.js?v=20260904-explicit1' index.html
           grep -q 'project-evaluation-dashboard-v1.js?v=20260904-projectevaluation2' index.html
+          grep -q 'contract-document-safety-v1.js?v=20260904-docsafety3' index.html
           grep -q 'contract-payment-documents-v1.js?v=20260904-advance-docs4' index.html
           grep -q 'contract-preview-v1.js?v=20260904-preview2' index.html
-          grep -q 'contract-document-safety-v1.js?v=20260904-docsafety2' index.html
           grep -q '__CC_AUTH_BOOT_FAILED__' index.html
           grep -q '__CC_AUTH_MODULE_ERRORS__' index.html
           grep -q 'data-cc-auth-loader data-cc-auth-plan' index.html

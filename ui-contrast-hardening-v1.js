@@ -127,6 +127,56 @@ function install(){
     color:#f8fbff!important;opacity:1!important;text-shadow:none!important;
   }
 
+  /* Inicio: neutralizar restos del antiguo tema claro dentro del centro de seguimiento. */
+  body:not(.print-report) #content .followup-panel,
+  body:not(.print-report) #content .quick-panel{
+    background:#0d1520!important;background-image:none!important;color:#f8fbff!important;
+    border-color:#31445f!important;
+  }
+  body:not(.print-report) #content .followup-panel .eyebrow,
+  body:not(.print-report) #content .quick-panel .eyebrow{
+    color:#b8d1ff!important;opacity:1!important;
+  }
+  body:not(.print-report) #content .followup-panel .muted,
+  body:not(.print-report) #content .quick-panel .muted{
+    color:#c3d1df!important;opacity:1!important;
+  }
+  body:not(.print-report) #content .followup-count{
+    background:#102b52!important;background-image:none!important;color:#fff!important;
+    border-color:#4f78ad!important;opacity:1!important;
+  }
+  body:not(.print-report) #content .followup-mini{
+    background:#09131d!important;background-image:none!important;color:#f8fbff!important;
+    border-color:#2c4055!important;
+  }
+  body:not(.print-report) #content .followup-mini small{color:#c3d1df!important;opacity:1!important}
+  body:not(.print-report) #content .followup-mini b{color:#f8fbff!important;opacity:1!important}
+  body:not(.print-report) #content .followup-mini.danger b{color:#fecaca!important}
+  body:not(.print-report) #content .followup-mini.warn b{color:#fef08a!important}
+  body:not(.print-report) #content .followup-mini.good b{color:#bbf7d0!important}
+
+  /* Alertas compactas del Inicio: fondo y texto deben pertenecer al mismo tema. */
+  body:not(.print-report) #content .cp-alerts-compact{
+    background:#09131d!important;background-image:none!important;color:#f8fbff!important;
+    border-color:#31445f!important;
+  }
+  body:not(.print-report) #content .cp-alerts-head b,
+  body:not(.print-report) #content .cp-alert-chip strong{color:#f8fbff!important;opacity:1!important}
+  body:not(.print-report) #content .cp-alerts-head small{color:#c3d1df!important;opacity:1!important}
+  body:not(.print-report) #content .cp-alert-chip{
+    background:#0d1825!important;background-image:none!important;color:#d6e2ef!important;
+    border-color:#33485e!important;opacity:1!important;
+  }
+  body:not(.print-report) #content .cp-alerts-open{
+    background:#102039!important;background-image:none!important;color:#f8fbff!important;
+    border-color:#405675!important;
+  }
+
+  /* La nota de proyectos es oscura por la guardia; sus descendientes también deben ser claros. */
+  body:not(.print-report) #content .cp-project-search-note b{
+    color:#f8fbff!important;opacity:1!important;
+  }
+
   /* Dashboard evaluativo del expediente: textos pequeños con margen suficiente sobre superficies claras. */
   body:not(.print-report) #content .ped-shell .ped-kpi span,
   body:not(.print-report) #content .ped-shell .ped-panel-head p,

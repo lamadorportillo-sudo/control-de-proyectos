@@ -130,11 +130,28 @@ async function clickRoute(page,vp,route){
       const side=document.querySelector('#ccSidebar');
       const overlay=document.querySelector('#ccSidebarOverlay');
       const active=document.querySelector(`#ccSidebar [data-route="${route}"]`);
-      return{open:side?.classList.contains('open')===true,overlay:overlay?.classList.contains('show')===true,active:active?.classList.contains('active')===true};
+      let screen='inaccesible',tab='inaccesible';
+      try{screen=String(view?.screen||'')}catch{}
+      try{tab=String(view?.tab||'')}catch{}
+      return{
+        open:side?.classList.contains('open')===true,
+        overlay:overlay?.classList.contains('show')===true,
+        active:active?.classList.contains('active')===true,
+        buttonClass:active?.className||'',
+        sidebarRoute:side?.dataset?.activeRoute||'',
+        liveRoute:String(window.__ccMainRoute||''),
+        bodyRoute:document.body?.dataset?.ccMainRoute||'',
+        storedRoute:localStorage.getItem('cc_main_route_v2')||'',
+        singleV4:!!window.__CC_SINGLE_NAV_V4__,
+        singleApi:!!window.__ccSingleNav,
+        calculatedRoute:typeof window.__ccSingleNav?.activeRoute==='function'?String(window.__ccSingleNav.activeRoute()||''):'',
+        screen,tab
+      };
     },route);
-    expect(state.open,`La ruta móvil ${route} debe cerrar el sidebar`).toBe(false);
-    expect(state.overlay,`La ruta móvil ${route} debe retirar el fondo del menú`).toBe(false);
-    expect(state.active,`La ruta móvil ${route} debe quedar activa`).toBe(true);
+    const diag=JSON.stringify(state);
+    expect(state.open,`La ruta móvil ${route} debe cerrar el sidebar. ${diag}`).toBe(false);
+    expect(state.overlay,`La ruta móvil ${route} debe retirar el fondo del menú. ${diag}`).toBe(false);
+    expect(state.active,`La ruta móvil ${route} debe quedar activa. ${diag}`).toBe(true);
   }else{
     const btn=page.locator(`#ccSidebar [data-route="${route}"]`);
     await expect(btn).toBeVisible();

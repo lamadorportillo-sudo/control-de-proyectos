@@ -61,20 +61,26 @@ if(!html.includes(recoveryAlert)){
 const retired=[
   'dashboard-executive-v1.js',
   'home-executive-fix-v2.js',
+  'industrial-home-v1.js',
   'portfolio-redesign-v1.js',
   'project-portfolio-detail-v1.js',
   'portfolio-screen-fix-v1.js',
 ];
 for(const moduleFile of retired)stripScript(moduleFile);
 
-/* 4. Verificaciones que deben fallar antes de publicar si la consolidación se
+/* 4. ARRANQUE SIN BLOQUEOS EXTERNOS: JSZip es una dependencia del generador
+      Word y nunca debe convertirse en un script de arranque del portal. */
+html=html.replace(/<script\s+[^>]*src=["']https:\/\/cdn\.jsdelivr\.net\/npm\/jszip[^"']*["'][^>]*><\/script>\s*/gi,'');
+
+/* 5. Verificaciones que deben fallar antes de publicar si la consolidación se
       revierte accidentalmente. */
 if(!html.includes("view.screen='project';view.tab='summary'"))throw new Error('El alta de proyecto no abre su expediente.');
 if(html.includes("const targetPct=Number(contract.recoveryTarget||80);"))throw new Error('Sigue activa la recuperación universal al 80%.');
+if(/<script\s+[^>]*src=["']https:\/\/cdn\.jsdelivr\.net\/npm\/jszip/i.test(html))throw new Error('JSZip volvió a bloquear el arranque del portal.');
 for(const moduleFile of retired){
   if(new RegExp(moduleFile.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i').test(html))throw new Error(`Sigue cargada la capa retirada ${moduleFile}.`);
 }
 if(!html.toLowerCase().includes('</html>'))throw new Error('El HTML estabilizado quedó incompleto.');
 
 fs.writeFileSync(path,html,'utf8');
-console.log('Núcleo estabilizado: alta de proyecto directa, anticipo contractual y capas duplicadas retiradas.');
+console.log('Núcleo estabilizado: alta directa, anticipo contractual, arranque limpio y capas duplicadas retiradas.');

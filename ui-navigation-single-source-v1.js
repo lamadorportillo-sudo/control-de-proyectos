@@ -1,9 +1,10 @@
-/* CONTROL CONTRACTUAL · NAVEGACIÓN ÚNICA V4
+/* CONTROL CONTRACTUAL · NAVEGACIÓN ÚNICA V5
    La barra lateral gobierna directamente la aplicación.
    No dispara botones ocultos ni depende del dashboard ejecutivo legado. */
 (()=>{
 'use strict';
-if(window.__CC_SINGLE_NAV_V4__)return;
+if(window.__CC_SINGLE_NAV_V5__)return;
+window.__CC_SINGLE_NAV_V5__=true;
 window.__CC_SINGLE_NAV_V4__=true;
 window.__CC_SINGLE_NAV_V3__=true;
 window.__CC_SINGLE_NAV_V2__=true;
@@ -45,7 +46,16 @@ function css(){
 .toast{pointer-events:none!important}
 .cc-shell{position:relative!important}.cc-app-column{min-width:0!important;position:relative!important;z-index:1!important}.cc-sidebar{position:relative!important;z-index:30!important;flex:0 0 auto!important}
 .cc-sidebar .cc-nav-admin{margin-top:4px}
-@media(max-width:860px){.cc-sidebar{position:fixed!important;z-index:1000!important}.cc-sidebar-overlay{z-index:999!important}}
+@media(max-width:860px){
+  /* El overlay es hermano del portal y algunas capas históricas crean contextos de
+     apilamiento propios. No se confía únicamente en z-index: el fondo clicable
+     comienza físicamente DESPUÉS del ancho del menú para que nunca pueda cubrir
+     ni interceptar los botones táctiles del sidebar. */
+  .cc-sidebar{position:fixed!important;z-index:1000!important;isolation:isolate!important;pointer-events:auto!important}
+  .cc-sidebar.open,.cc-sidebar .cc-side-btn,.cc-sidebar .cc-side-btn *{pointer-events:auto!important}
+  .cc-sidebar-overlay{z-index:999!important;left:260px!important;pointer-events:auto!important}
+}
+@media(max-width:620px){.cc-sidebar-overlay{left:248px!important}}
 `;
  document.head.appendChild(s);
 }

@@ -48,6 +48,7 @@ jobs:
           node --check tests/architecture-auth-boot.spec.cjs
           node --check tests/accessibility-responsive.spec.cjs
           node --check tests/contract-explicit-rules-browser.spec.cjs
+          node --check tests/contract-document-safety-browser.spec.cjs
           node --test tests/*.test.cjs
 
       - name: Construir exactamente el artefacto estabilizado
@@ -64,6 +65,10 @@ jobs:
           grep -q 'portal-web-v2.js?v=20260904-web4' index.html
           grep -q 'ui-stability-v1.js?v=20260904-stable2' index.html
           grep -q 'contract-explicit-rules-v1.js?v=20260904-explicit1' index.html
+          grep -q 'project-evaluation-dashboard-v1.js?v=20260904-projectevaluation2' index.html
+          grep -q 'contract-payment-documents-v1.js?v=20260904-advance-docs4' index.html
+          grep -q 'contract-preview-v1.js?v=20260904-preview2' index.html
+          grep -q 'contract-document-safety-v1.js?v=20260904-docsafety2' index.html
           grep -q '__CC_AUTH_BOOT_FAILED__' index.html
           grep -q '__CC_AUTH_MODULE_ERRORS__' index.html
           grep -q 'data-cc-auth-loader data-cc-auth-plan' index.html
@@ -99,11 +104,11 @@ jobs:
           cat /tmp/architecture-validation-http.log
           exit 1
 
-      - name: Probar arranque completo, contrato explícito y accesibilidad serious/critical
+      - name: Probar arranque, contrato, documentos y accesibilidad serious/critical
         env:
           APP_URL: http://127.0.0.1:4173/
         shell: bash
-        run: npx playwright test tests/architecture-auth-boot.spec.cjs tests/contract-explicit-rules-browser.spec.cjs tests/accessibility-responsive.spec.cjs --workers=1 --retries=0
+        run: npx playwright test tests/architecture-auth-boot.spec.cjs tests/contract-explicit-rules-browser.spec.cjs tests/contract-document-safety-browser.spec.cjs tests/accessibility-responsive.spec.cjs --workers=1 --retries=0
 
       - name: Guardar diagnóstico si falla
         if: always()

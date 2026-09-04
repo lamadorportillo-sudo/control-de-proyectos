@@ -5,11 +5,14 @@ on:
     branches: [main]
     paths:
       - 'tests/manual-full-project-responsive.spec.cjs'
+      - 'tests/core-stability-regressions.test.cjs'
       - 'stabilize-core-v1.cjs'
       - 'inject-portfolio.cjs'
       - 'ui-navigation-single-source-v1.js'
       - 'performance-runtime-v1.js'
       - 'storage-quota-fix-v1.js'
+      - 'contract-official-format-v1.js'
+      - 'contract-payment-documents-v1.js'
       - '.github/workflows/manual-full-project-v2.yml'
   workflow_dispatch:
 
@@ -36,11 +39,15 @@ jobs:
         run: |
           set -euo pipefail
           node --check tests/manual-full-project-responsive.spec.cjs
+          node --check tests/core-stability-regressions.test.cjs
           node --check stabilize-core-v1.cjs
+          node --test tests/core-stability-regressions.test.cjs
           node build-pages.cjs
           node inject-portfolio.cjs
           node patch-session-security.cjs
           node stabilize-core-v1.cjs
+          grep -q "view.screen='project';view.tab='summary'" index.html
+          grep -q "const targetPct=Number(contract.recoveryTarget||0);" index.html
       - name: Instalar navegador
         shell: bash
         run: |

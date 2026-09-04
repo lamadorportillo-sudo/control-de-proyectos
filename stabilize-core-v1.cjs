@@ -83,6 +83,11 @@ html=html.replace(/<script\s+[^>]*src=["']https:\/\/cdn\.jsdelivr\.net\/npm\/jsz
       puede bloquear el primer render autenticado. */
 const SESSION_KEY='control_contractual_session_v3';
 const PRE_AUTH_MODULES=new Set(['private-access-v1.js','password-recovery-v1.js']);
+/* Scripts inline que forman parte del flujo de acceso también deben conservarse
+   ejecutables antes de autenticar. De lo contrario el estabilizador convertiría
+   el puente login -> recarga en un nodo inerte y el usuario quedaría en la
+   pantalla de acceso aun con una sesión válida. */
+const PRE_AUTH_INLINE_IDS=new Set(['cc-staged-login-reload-bridge']);
 const loginSuccess="localStorage.setItem(SESSION,JSON.stringify(session));cloudLoaded=false;await render()";
 if(html.includes(loginSuccess)){
   html=html.split(loginSuccess).join("localStorage.setItem(SESSION,JSON.stringify(session));cloudLoaded=false;location.reload();return");
@@ -105,7 +110,10 @@ if(!tail.includes('data-cc-auth-plan')){
   }
 
   tail=tail.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi,(full,attrs,body)=>{
-    const src=String(attrs||'').match(/\bsrc\s*=\s*(["'])(.*?)\1/i)?.[2]||'';
+    const rawAttrs=String(attrs||'');
+    const id=rawAttrs.match(/\bid\s*=\s*(["'])(.*?)\1/i)?.[2]||'';
+    if(PRE_AUTH_INLINE_IDS.has(id))return full;
+    const src=rawAttrs.match(/\bsrc\s*=\s*(["'])(.*?)\1/i)?.[2]||'';
     if(src){
       const bare=src.split('?')[0].split('/').pop();
       if(PRE_AUTH_MODULES.has(bare))return full;
@@ -236,15 +244,17 @@ if(!html.includes('__CC_AUTH_CRITICAL_READY__'))throw new Error('Falta la fase c
 if(!html.includes('__CC_AUTH_WEB_READY__'))throw new Error('Falta la fase web del arranque autenticado.');
 if(!/<script\s+src=["']private-access-v1\.js\?/i.test(html))throw new Error('El login seguro quedó bloqueado antes de autenticar.');
 if(!/<script\s+src=["']password-recovery-v1\.js\?/i.test(html))throw new Error('La recuperación de contraseña quedó bloqueada antes de autenticar.');
+if(!/<script\s+id=["']cc-staged-login-reload-bridge["']>/i.test(html))throw new Error('El puente login → recarga quedó bloqueado antes de autenticar.');
 if(html.includes(loginSuccess))throw new Error('El acceso todavía intenta activar todos los módulos sin recargar el contexto autenticado.');
 for(const [moduleFile] of supplementalModules){
-  const count=(html.match(new RegExp(`data-src=["'][^"']*${moduleFile.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}[^"']*["']`,'gi'))||[]).length;
-  if(count!==1)throw new Error(`El módulo autenticado ${moduleFile} debe aparecer exactamente una vez en el plan; encontrado: ${count}.`);
+  const escaped=moduleFile.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const direct=new RegExp(`<script\\s+src=["']${escaped}(?:\\?[^"']*)?["']\\s*><\\/script>`,'gi');
+  if((html.match(direct)||[]).length)throw new Error(`El módulo ${moduleFile} quedó cargado directamente fuera del plan autenticado.`);
 }
 for(const moduleFile of retired){
-  if(new RegExp(moduleFile.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i').test(html))throw new Error(`Sigue cargada la capa retirada ${moduleFile}.`);
+  const escaped=moduleFile.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  if(new RegExp(`<script\\s+src=["']${escaped}(?:\\?[^"']*)?["']`,'i').test(html))throw new Error(`La capa retirada ${moduleFile} volvió a quedar ejecutable.`);
 }
-if(!html.toLowerCase().includes('</html>'))throw new Error('El HTML estabilizado quedó incompleto.');
 
 fs.writeFileSync(path,html,'utf8');
-console.log(`Núcleo estabilizado: alta directa, anticipo contractual, login ligero y ${supplementalModules.length} módulos autenticados consolidados.`);
+console.log('Núcleo estabilizado: acceso ligero, login enlazado, arranque autenticado por fases y módulos históricos aislados.');

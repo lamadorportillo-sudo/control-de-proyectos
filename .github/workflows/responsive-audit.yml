@@ -8,6 +8,8 @@ on:
       - 'index.html'
       - '*.js'
       - '*.cjs'
+      - '*.css'
+      - 'scripts/**'
       - 'tests/**'
       - 'supabase/**'
       - 'playwright.config.cjs'
@@ -59,6 +61,8 @@ jobs:
           node --check patch-session-security.cjs
           echo '[node --check] stabilize-core-v1.cjs'
           node --check stabilize-core-v1.cjs
+          echo '[node --check] scripts/audit-system-1000.cjs'
+          node --check scripts/audit-system-1000.cjs
           echo '[node --check] playwright.config.cjs'
           node --check playwright.config.cjs
           echo '=== PRUEBAS ESTRUCTURALES ==='
@@ -84,6 +88,8 @@ jobs:
             fi
           done
           grep -q '</html>' index.html
+          echo '=== AUDITORÍA INTEGRAL NO REPETIDA ==='
+          node scripts/audit-system-1000.cjs
 
       - name: Instalar dependencias de auditoría
         shell: bash

@@ -1,6 +1,7 @@
 const { defineConfig } = require('@playwright/test');
 
 const manualSimulation = process.env.CC_MANUAL_SIM === '1';
+const browserName = process.env.BROWSER_NAME || 'chromium';
 
 module.exports = defineConfig({
   testDir: './tests',
@@ -12,7 +13,7 @@ module.exports = defineConfig({
   workers: 1,
   reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
   use: {
-    browserName: 'chromium',
+    browserName,
     headless: true,
     ignoreHTTPSErrors: true,
     actionTimeout: 12000,

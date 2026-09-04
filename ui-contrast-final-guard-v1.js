@@ -1,7 +1,8 @@
-/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V5 ===== */
+/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V6 ===== */
 (()=>{
 'use strict';
-if(window.__CC_CONTRAST_FINAL_GUARD_V5__)return;
+if(window.__CC_CONTRAST_FINAL_GUARD_V6__)return;
+window.__CC_CONTRAST_FINAL_GUARD_V6__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V5__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V4__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V3__=true;
@@ -36,11 +37,9 @@ function install(){
     color:#f8fbff!important;opacity:1!important;
   }
 
-  /* Transparencia · esta vista fue diseñada con tarjetas claras. La capa
-     general oscura no debe cambiar sus títulos a blanco ni aclarar demasiado
-     sus textos secundarios. Los tonos siguientes superan AA sobre blanco y
-     sobre los fondos verde/gris muy claros propios del portal. */
-  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-head h2,
+  /* Transparencia · las tarjetas son claras, pero la cabecera principal vive
+     directamente sobre el lienzo azul oscuro. Se corrigen ambas superficies
+     por separado para no resolver una a costa de romper la otra. */
   html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-source h3,
   html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-section-head h3,
   html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-kpi strong,
@@ -49,8 +48,6 @@ function install(){
   html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-const b{
     color:#26372b!important;opacity:1!important;
   }
-  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-head p,
-  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-period label span,
   html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-kpi small,
   html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-kpi span,
   html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-section-head p,
@@ -60,6 +57,16 @@ function install(){
   html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-form label span,
   html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-template-note{
     color:#536158!important;opacity:1!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-head h2{
+    color:#f4f8fc!important;opacity:1!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-head p,
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-period label span{
+    color:#d3deea!important;opacity:1!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-head .eyebrow{
+    color:#9fc5ff!important;opacity:1!important;
   }
   html body.cc-portal-v2:not(.print-report) #content .tr-source .eyebrow{
     color:#315a7c!important;opacity:1!important;

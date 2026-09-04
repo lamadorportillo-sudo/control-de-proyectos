@@ -53,9 +53,9 @@ const supplementalModules=[
   ['ui-visibility-audit-v1.js','20260831-visibility4'],
   ['ui-contrast-hardening-v1.js','20260831-contrast5'],
   ['contract-official-format-v1.js','20260831-phone3'],
-  ['contract-payment-documents-v1.js','20260831-advance-docs3'],
-  ['contract-preview-v1.js','20260831-preview1'],
-  ['contract-document-safety-v1.js','20260904-docsafety1'],
+  ['contract-payment-documents-v1.js','20260904-advance-docs4'],
+  ['contract-preview-v1.js','20260904-preview2'],
+  ['contract-document-safety-v1.js','20260904-docsafety2'],
 ];
 
 module.exports={retiredModules,preAuthModules,supplementalModules};

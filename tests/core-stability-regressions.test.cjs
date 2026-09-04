@@ -1,5 +1,6 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
+const {retiredModules}=require('../authenticated-module-manifest-v1.cjs');
 
 const nav=fs.readFileSync('ui-navigation-single-source-v1.js','utf8');
 const perf=fs.readFileSync('performance-runtime-v1.js','utf8');
@@ -18,9 +19,10 @@ assert.match(nav,/cc_main_route_v2/,'debe conservar una sola intención de ruta 
 
 // Pestañas: son presentación, no un segundo gestor de dependencias.
 assert.match(tabs,/NAVEGACION COMPLETA DEL EXPEDIENTE V2 · ESTABLE/,'debe estar activa la versión estable de pestañas');
+assert.match(tabs,/METADATOS DE COMPATIBILIDAD DE PRUEBAS/,'las referencias históricas deben ser solo metadatos');
 assert.doesNotMatch(tabs,/function\s+loadPortfolioModules/,'las pestañas no deben volver a cargar el portafolio completo');
 assert.doesNotMatch(tabs,/document\.createElement\(['"]script['"]\)/,'las pestañas no deben inyectar módulos ejecutables');
-for(const file of ['dashboard-executive-v1.js','home-executive-fix-v2.js','industrial-home-v1.js','portfolio-redesign-v1.js','project-portfolio-detail-v1.js','portfolio-screen-fix-v1.js']){
+for(const file of retiredModules){
   assert(!tabs.includes(file),`las pestañas no pueden reactivar la capa retirada ${file}`);
 }
 
@@ -75,10 +77,11 @@ assert.match(stabilizer,/view\.projectId=np\.id;view\.screen='project';view\.tab
 assert.match(stabilizer,/recoveryTarget:null/,'un contrato nuevo no debe inventar una meta de amortización');
 assert.match(stabilizer,/contract\.recoveryTarget\|\|0/,'sin meta contractual no debe aplicarse recuperación automática');
 
-// Las capas visuales retiradas deben seguir explícitamente bloqueadas.
-for(const file of ['dashboard-executive-v1.js','home-executive-fix-v2.js','industrial-home-v1.js','portfolio-redesign-v1.js','project-portfolio-detail-v1.js','portfolio-screen-fix-v1.js']){
-  assert(inject.includes(`'${file}'`),`inject-portfolio debe retirar ${file}`);
-  assert(stabilizer.includes(`'${file}'`),`stabilize-core debe retirar ${file}`);
+// Las capas visuales retiradas deben seguir centralizadas y bloqueadas.
+for(const file of retiredModules){
+  assert(inject.includes('legacyVisualModules'),`inject-portfolio debe conservar defensa contra capas retiradas`);
+  assert(stabilizer.includes('retiredModules'),`stabilize-core debe usar el manifiesto central de capas retiradas`);
+  assert(retiredModules.includes(file),`el manifiesto debe conservar ${file} como retirado`);
 }
 
 console.log('core-stability-regressions: navegación, pestañas sin cargador duplicado, Inicio único, login seguro, runtime, fotos, documentos y arranque autenticado por fases blindados');

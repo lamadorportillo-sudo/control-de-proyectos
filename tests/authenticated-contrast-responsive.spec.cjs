@@ -1,5 +1,4 @@
 const { test, expect } = require('@playwright/test');
-const AxeBuilder = require('@axe-core/playwright').default;
 
 const appUrl=process.env.APP_URL||'http://127.0.0.1:4173/';
 const USER_ID='91111111-1111-4111-8111-111111111111';
@@ -41,11 +40,67 @@ async function install(page){
 }
 
 async function assertContrast(page,label,include='#content'){
-  const axe=new AxeBuilder({page}).withRules(['color-contrast']);
-  if(include)axe.include(include);
-  const result=await axe.analyze();
-  const bad=result.violations.filter(v=>v.id==='color-contrast'&&['serious','critical'].includes(v.impact)).map(v=>({impact:v.impact,targets:v.nodes.slice(0,12).flatMap(n=>n.target)}));
-  expect(bad,`${label}: contraste insuficiente`).toEqual([]);
+  const issues=await page.locator(include).evaluate(root=>{
+    const clamp=v=>Math.max(0,Math.min(255,Number(v)||0));
+    const parseColor=value=>{
+      const nums=String(value||'').match(/[\d.]+/g)?.map(Number)||[];
+      if(nums.length<3)return null;
+      return{r:clamp(nums[0]),g:clamp(nums[1]),b:clamp(nums[2]),a:nums.length>3?Math.max(0,Math.min(1,nums[3])):1};
+    };
+    const blend=(top,bottom)=>{
+      const a=top?.a??1,ba=bottom?.a??1,outA=a+ba*(1-a)||1;
+      return{
+        r:(top.r*a+bottom.r*ba*(1-a))/outA,
+        g:(top.g*a+bottom.g*ba*(1-a))/outA,
+        b:(top.b*a+bottom.b*ba*(1-a))/outA,
+        a:outA
+      };
+    };
+    const lum=color=>{
+      const f=v=>{v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4)};
+      return 0.2126*f(color.r)+0.7152*f(color.g)+0.0722*f(color.b);
+    };
+    const ratio=(a,b)=>{const l1=lum(a),l2=lum(b);return (Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05)};
+    const background=el=>{
+      const chain=[];let cur=el;
+      while(cur&&cur.nodeType===1){chain.push(cur);if(cur===document.documentElement)break;cur=cur.parentElement}
+      let out={r:255,g:255,b:255,a:1};
+      for(const node of chain.reverse()){
+        const c=parseColor(getComputedStyle(node).backgroundColor);
+        if(c&&c.a>0)out=blend(c,out);
+      }
+      return out;
+    };
+    const selector=el=>{
+      if(el.id)return`#${el.id}`;
+      const cls=[...el.classList].slice(0,3).join('.');
+      return`${el.tagName.toLowerCase()}${cls?'.'+cls:''}`;
+    };
+    const visible=el=>{
+      const cs=getComputedStyle(el);
+      if(cs.display==='none'||cs.visibility==='hidden'||Number(cs.opacity)===0)return false;
+      return el.getClientRects().length>0;
+    };
+    const directText=el=>[...el.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE).map(n=>n.textContent||'').join(' ').replace(/\s+/g,' ').trim();
+    const out=[];
+    for(const el of [root,...root.querySelectorAll('*')]){
+      if(!visible(el))continue;
+      const text=directText(el);if(!text)continue;
+      const cs=getComputedStyle(el);
+      const fg=parseColor(cs.color);if(!fg)continue;
+      const bg=background(el);
+      let alpha=fg.a;
+      for(let cur=el;cur&&cur.nodeType===1;cur=cur.parentElement)alpha*=Math.max(0,Math.min(1,Number(getComputedStyle(cur).opacity)||0));
+      const effectiveFg=blend({...fg,a:alpha},bg);
+      const actual=ratio(effectiveFg,bg);
+      const size=parseFloat(cs.fontSize)||16,weight=parseInt(cs.fontWeight,10)||400;
+      const required=size>=24||(size>=18.66&&weight>=700)?3:4.5;
+      if(actual+0.01<required)out.push({target:selector(el),text:text.slice(0,90),ratio:Number(actual.toFixed(2)),required,size:Number(size.toFixed(1)),weight,color:cs.color,background:cs.backgroundColor});
+      if(out.length>=30)break;
+    }
+    return out;
+  });
+  expect(issues,`${label}: contraste WCAG insuficiente`).toEqual([]);
 }
 
 async function openSidebarIfNeeded(page,vp){
@@ -75,6 +130,7 @@ for(const vp of [{name:'mobile',width:390,height:844,touch:true},{name:'desktop'
       await install(page);
       await page.goto(appUrl,{waitUntil:'domcontentloaded',timeout:60000});
       await expect(page.locator('#ccSidebar')).toBeVisible({timeout:20000});
+      await page.addStyleTag({content:'*,*::before,*::after{animation:none!important;transition:none!important}'});
       await page.waitForTimeout(900);
       for(const route of ['inicio','proyectos','presupuesto','transparencia']){
         await clickRoute(page,vp,route);

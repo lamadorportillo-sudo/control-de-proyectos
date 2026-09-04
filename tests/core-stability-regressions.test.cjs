@@ -36,10 +36,14 @@ assert(stabilizer.includes('jsdelivr')&&stabilizer.includes('jszip'),'el estabil
 
 // Acceso: sin sesión solo quedan el núcleo, login seguro y recuperación.
 assert.match(stabilizer,/SESSION_KEY='control_contractual_session_v3'/,'debe usar la misma sesión real del portal');
-assert.match(stabilizer,/data-cc-auth-loader/,'los scripts funcionales deben quedar detrás del acceso autenticado');
+assert.match(stabilizer,/data-cc-auth-script/,'los scripts funcionales deben convertirse en un plan inerte hasta autenticar');
+assert.match(stabilizer,/data-cc-auth-loader data-cc-auth-plan/,'debe existir un único cargador autenticado');
 assert.match(stabilizer,/PRE_AUTH_MODULES=new Set\(\['private-access-v1\.js','password-recovery-v1\.js'\]\)/,'login seguro y recuperación deben permanecer disponibles sin sesión');
 assert.match(stabilizer,/PRE_AUTH_MODULES\.has\(bare\)/,'el aislamiento debe respetar la lista mínima de módulos de acceso');
 assert.match(stabilizer,/location\.reload\(\);return/,'después de ingresar debe recargar una sola vez el contexto autenticado completo');
+assert.match(stabilizer,/script\.async=false/,'los módulos autenticados deben mantener el orden original');
+assert.match(stabilizer,/for\(const node of nodes\)/,'los módulos autenticados deben ejecutarse secuencialmente');
+assert.doesNotMatch(stabilizer,/document\.write\s*\(/,'no debe volver a usarse document.write para activar módulos');
 assert.match(stabilizer,/bootEnd='render\(\);\\n<\/script>'/,'el aislamiento debe empezar después del núcleo de acceso');
 assert.match(stabilizer,/El login seguro quedó bloqueado antes de autenticar/,'la construcción debe fallar si se bloquea private-access');
 assert.match(stabilizer,/La recuperación de contraseña quedó bloqueada antes de autenticar/,'la construcción debe fallar si se bloquea password-recovery');
@@ -55,4 +59,4 @@ for(const file of ['dashboard-executive-v1.js','home-executive-fix-v2.js','indus
   assert(stabilizer.includes(`'${file}'`),`stabilize-core debe retirar ${file}`);
 }
 
-console.log('core-stability-regressions: navegación, Inicio único, login seguro ligero, runtime, fotos, documentos y núcleo blindados');
+console.log('core-stability-regressions: navegación, Inicio único, login seguro ligero, runtime, fotos, documentos y carga autenticada secuencial blindados');

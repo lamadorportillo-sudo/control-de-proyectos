@@ -41,7 +41,7 @@ test('las versiones publicadas renuevan los módulos corregidos',()=>{
   assert.match(runtime,/portal-web-v2\.js\?v=20260904-web4/);
   assert.match(runtime,/dashboard-simplified-v4\.js\?v=20260903-dash6/);
   assert.match(runtime,/service-worker-v1\.js\?v=20260903-sw2/);
-  assert.match(portal,/PORTAL WEB V3 · ESTABLE/);
+  assert.match(portal,/PORTAL WEB V4 · PRESENTACIÓN ESTABLE/);
   assert.match(portal,/if\(el\.textContent!==next\)el\.textContent=next/);
   assert.match(dashboard,/DASHBOARD SIMPLIFICADO V6 · ESTABLE/);
   assert.match(dashboard,/setText\(badge,/);

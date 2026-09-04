@@ -1,5 +1,6 @@
 name: Aplicación temporal de correcciones documentales
 
+# v4-r2: reejecución con pruebas específicas por documento
 on:
   push:
     branches: [audit-architecture-fixes]

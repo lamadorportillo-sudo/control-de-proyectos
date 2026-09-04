@@ -55,8 +55,9 @@ const supplementalModules=[
   ['contract-document-safety-v1.js','20260904-docsafety3'],
   ['contract-payment-documents-v1.js','20260904-advance-docs4'],
   ['contract-preview-v1.js','20260904-preview2'],
-  /* Se carga al final porque su montaje amplía las pestañas del expediente.
-     Permisos V5 y alcance V5 ya no mantienen observadores globales sobre body. */
+  /* El guard se ejecuta inmediatamente antes del módulo técnico histórico y
+     filtra su MutationObserver global sin afectar los observadores del resto. */
+  ['technical-control-observer-guard-v1.js','20260904-controlobserver1'],
   ['technical-control-v1.js','20260830-controltecnico1'],
 ];
 

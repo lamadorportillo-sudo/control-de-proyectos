@@ -41,12 +41,25 @@ assert.match(stabilizer,/data-cc-auth-loader data-cc-auth-plan/,'debe existir un
 assert.match(stabilizer,/PRE_AUTH_MODULES=new Set\(\['private-access-v1\.js','password-recovery-v1\.js'\]\)/,'login seguro y recuperación deben permanecer disponibles sin sesión');
 assert.match(stabilizer,/PRE_AUTH_MODULES\.has\(bare\)/,'el aislamiento debe respetar la lista mínima de módulos de acceso');
 assert.match(stabilizer,/location\.reload\(\);return/,'después de ingresar debe recargar una sola vez el contexto autenticado completo');
-assert.match(stabilizer,/script\.async=false/,'los módulos autenticados deben mantener el orden original');
-assert.match(stabilizer,/for\(const node of nodes\)/,'los módulos autenticados deben ejecutarse secuencialmente');
+assert.match(stabilizer,/script\.async=false/,'los módulos autenticados deben mantener el orden de ejecución');
 assert.doesNotMatch(stabilizer,/document\.write\s*\(/,'no debe volver a usarse document.write para activar módulos');
 assert.match(stabilizer,/bootEnd='render\(\);\\n<\/script>'/,'el aislamiento debe empezar después del núcleo de acceso');
 assert.match(stabilizer,/El login seguro quedó bloqueado antes de autenticar/,'la construcción debe fallar si se bloquea private-access');
 assert.match(stabilizer,/La recuperación de contraseña quedó bloqueada antes de autenticar/,'la construcción debe fallar si se bloquea password-recovery');
+
+// Arranque autenticado por fases: la primera pintura no debe esperar decenas de módulos.
+assert.match(stabilizer,/__CC_STAGED_AUTH_BOOT__/,'debe declarar el modo de arranque autenticado escalonado');
+assert.match(stabilizer,/FASE A · PRIMERA PINTURA AUTENTICADA/,'debe existir una fase crítica de primera pintura');
+assert.match(stabilizer,/portal-web-v2\.js\?v=20260903-web3/,'el portal debe cargarse en la fase crítica');
+assert.match(stabilizer,/nodeByBare\('project-tabs-complete-v1\.js'\)/,'las pestañas deben adelantarse al primer lote');
+assert.match(stabilizer,/nodeByBare\('ui-navigation-single-source-v1\.js'\)/,'la navegación debe adelantarse al primer lote');
+assert.match(stabilizer,/__CC_AUTH_CRITICAL_READY__/,'debe marcar cuándo la interfaz crítica ya está disponible');
+assert.match(stabilizer,/FASE B · CENTROS WEB PRINCIPALES/,'los centros web deben cargarse después de la primera pintura');
+assert.match(stabilizer,/__CC_AUTH_WEB_READY__/,'debe marcar cuándo los centros web ya están disponibles');
+assert.match(stabilizer,/FASE C · RESTO DEL SISTEMA HISTÓRICO/,'el resto del sistema debe quedar en una tercera fase');
+assert.match(stabilizer,/const performance=nodeByBare\('performance-runtime-v1\.js'\)/,'el coordinador de rendimiento debe identificarse para cargarse al final');
+assert.match(stabilizer,/if\(performance\)await safeRun\('performance-runtime-v1\.js'/,'performance-runtime no debe iniciar una carrera doble durante la primera pintura');
+assert.match(stabilizer,/if\(\+\+count%3===0\)await nextTurn\(\)/,'la carga secundaria debe ceder periódicamente el hilo principal');
 
 // Núcleo generado: altas directas y reglas contractuales no inventadas.
 assert.match(stabilizer,/view\.projectId=np\.id;view\.screen='project';view\.tab='summary'/,'un proyecto nuevo debe abrir su expediente');
@@ -59,4 +72,4 @@ for(const file of ['dashboard-executive-v1.js','home-executive-fix-v2.js','indus
   assert(stabilizer.includes(`'${file}'`),`stabilize-core debe retirar ${file}`);
 }
 
-console.log('core-stability-regressions: navegación, Inicio único, login seguro ligero, runtime, fotos, documentos y carga autenticada secuencial blindados');
+console.log('core-stability-regressions: navegación, Inicio único, login seguro, runtime, fotos, documentos y arranque autenticado por fases blindados');

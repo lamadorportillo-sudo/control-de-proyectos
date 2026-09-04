@@ -4,7 +4,7 @@ on:
   push:
     branches: [audit-architecture-fixes]
     paths:
-      - 'scripts/apply-contract-document-audit-fixes-v2.cjs'
+      - 'scripts/apply-contract-document-audit-fixes-v3.cjs'
       - '.github/workflows/apply-contract-document-audit-fixes.yml'
 
 permissions:
@@ -20,18 +20,19 @@ jobs:
         with:
           node-version: '22'
       - name: Aplicar parches exactos
-        run: node scripts/apply-contract-document-audit-fixes-v2.cjs
+        run: node scripts/apply-contract-document-audit-fixes-v3.cjs
       - name: Validar sintaxis y pruebas contractuales
         run: |
           node --check contract-payment-documents-v1.js
           node --check contract-preview-v1.js
           node --check contract-document-safety-v1.js
-          node --check project-evaluation-dashboard-v1.js
-          node --test tests/contract-payment-documents.test.cjs tests/contract-explicit-rules.test.cjs tests/project-evaluation-dashboard.test.cjs
+          node --check authenticated-module-manifest-v1.cjs
+          node --check project-tabs-complete-v1.js
+          node --test tests/contract-document-safety.test.cjs tests/contract-payment-documents.test.cjs tests/contract-explicit-rules.test.cjs tests/project-evaluation-dashboard.test.cjs
       - name: Guardar únicamente los archivos corregidos
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add contract-payment-documents-v1.js contract-preview-v1.js project-evaluation-dashboard-v1.js project-tabs-complete-v1.js
-          git commit -m "Blindar documentos contractuales contra datos implícitos"
+          git add contract-payment-documents-v1.js authenticated-module-manifest-v1.cjs project-tabs-complete-v1.js
+          git commit -m "Ajustar requisitos por tipo de documento contractual"
           git push origin HEAD:audit-architecture-fixes

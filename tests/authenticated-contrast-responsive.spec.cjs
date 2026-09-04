@@ -39,6 +39,26 @@ async function install(page){
   });
 }
 
+async function waitAuthenticatedReady(page){
+  await page.waitForFunction(
+    ()=>window.__CC_AUTH_MODULES_READY__===true||window.__CC_AUTH_BOOT_FAILED__===true,
+    null,
+    {timeout:20000}
+  );
+  const boot=await page.evaluate(()=>({
+    ready:window.__CC_AUTH_MODULES_READY__===true,
+    failed:window.__CC_AUTH_BOOT_FAILED__===true,
+    errors:Array.isArray(window.__CC_AUTH_MODULE_ERRORS__)?window.__CC_AUTH_MODULE_ERRORS__:[],
+    contrast:!!window.__CC_CONTRAST_HARDENING_V3__,
+    visibility:!!window.__CC_VISIBILITY_AUDIT_V4__
+  }));
+  expect(boot.failed,`Arranque autenticado falló: ${JSON.stringify(boot.errors)}`).toBe(false);
+  expect(boot.ready,`Módulos autenticados incompletos: ${JSON.stringify(boot.errors)}`).toBe(true);
+  expect(boot.contrast,'La guardia final de contraste debe estar instalada antes de auditar la interfaz').toBe(true);
+  expect(boot.visibility,'El auditor de visibilidad debe estar instalado antes de auditar la interfaz').toBe(true);
+  await page.waitForTimeout(100);
+}
+
 async function assertContrast(page,label,include='#content'){
   const issues=await page.locator(include).evaluate(root=>{
     const clamp=v=>Math.max(0,Math.min(255,Number(v)||0));
@@ -114,7 +134,17 @@ async function mobileRouteBox(page,route){
     if(!b)return null;
     const cs=getComputedStyle(b),r=b.getBoundingClientRect();
     if(cs.display==='none'||cs.visibility==='hidden'||Number(cs.opacity)===0||r.width<1||r.height<1)return null;
-    return{x:r.x,y:r.y,width:r.width,height:r.height,text:(b.textContent||'').replace(/\s+/g,' ').trim(),connected:b.isConnected};
+    const x=r.x+r.width/2,y=r.y+r.height/2;
+    const hit=document.elementFromPoint(x,y);
+    return{
+      x:r.x,y:r.y,width:r.width,height:r.height,
+      text:(b.textContent||'').replace(/\s+/g,' ').trim(),
+      connected:b.isConnected,
+      pointerEvents:cs.pointerEvents,
+      hitRoute:hit?.closest?.('#ccSidebar .cc-side-btn[data-route]')?.dataset.route||'',
+      hitTag:hit?.tagName||'',
+      hitClass:typeof hit?.className==='string'?hit.className:''
+    };
   },route);
 }
 
@@ -124,6 +154,8 @@ async function clickRoute(page,vp,route){
     const box=await mobileRouteBox(page,route);
     expect(box,`La ruta móvil ${route} debe existir y tener un área táctil visible`).not.toBeNull();
     expect(box.connected,`La ruta móvil ${route} debe seguir conectada al DOM`).toBe(true);
+    expect(box.pointerEvents,`La ruta móvil ${route} debe aceptar interacción táctil`).not.toBe('none');
+    expect(box.hitRoute,`El centro táctil de ${route} no puede quedar cubierto por el overlay. Hit: ${box.hitTag}.${box.hitClass}`).toBe(route);
     await page.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);
     await page.waitForTimeout(120);
     const state=await page.evaluate(route=>{
@@ -168,8 +200,8 @@ for(const vp of [{name:'mobile',width:390,height:844,touch:true},{name:'desktop'
       await install(page);
       await page.goto(appUrl,{waitUntil:'domcontentloaded',timeout:60000});
       await expect(page.locator('#ccSidebar')).toBeVisible({timeout:20000});
+      await waitAuthenticatedReady(page);
       await page.addStyleTag({content:'*,*::before,*::after{animation:none!important;transition:none!important}'});
-      await page.waitForTimeout(900);
       for(const route of ['inicio','proyectos','presupuesto','transparencia']){
         await clickRoute(page,vp,route);
         await assertContrast(page,`${vp.name} ruta ${route}`);

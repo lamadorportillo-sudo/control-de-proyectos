@@ -34,6 +34,7 @@ jobs:
           node --check build-pages.cjs
           node --check inject-portfolio.cjs
           node --check patch-session-security.cjs
+          node --check stabilize-core-v1.cjs
           node --test tests/*.test.cjs
 
       - name: Reconstruir aplicación para auditoría
@@ -41,6 +42,7 @@ jobs:
           node build-pages.cjs
           node inject-portfolio.cjs
           node patch-session-security.cjs
+          node stabilize-core-v1.cjs
 
       - name: Instalar dependencias de navegador
         shell: bash

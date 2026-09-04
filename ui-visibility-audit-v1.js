@@ -122,7 +122,7 @@ function effectiveBackground(el){
 }
 function directText(el){return [...el.childNodes].some(n=>n.nodeType===3&&String(n.textContent||'').trim().length>0)}
 function requiredRatio(el){const cs=getComputedStyle(el),size=parseFloat(cs.fontSize)||14,weight=parseInt(cs.fontWeight,10)||400;return(size>=24||(size>=18.66&&weight>=700))?3:4.5}
-function knownDarkSurface(el){return !!el.closest('#content .ccx-page,#content .cp-budget-page,#content .cp-exec-only,.modal:not(.report-paper)')}
+function knownDarkSurface(el){return !!el.closest('#content .ccx-page,#content .cp-budget-page,#content .cp-exec-only,#content .followup-panel,#content .quick-panel,#content .cp-alerts-compact,#content .cp-project-search-note,.modal:not(.report-paper)')}
 function bestReadable(bg){
   const dark={r:20,g:32,b:25,a:1},light={r:248,g:251,b:255,a:1};
   return ratio(light,bg)>=ratio(dark,bg)?'light':'dark';

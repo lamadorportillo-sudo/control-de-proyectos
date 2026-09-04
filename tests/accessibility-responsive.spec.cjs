@@ -24,19 +24,12 @@ async function scan(page,label){
 
 test.describe('accesibilidad esencial WCAG',()=>{
   for(const viewport of [{width:390,height:844},{width:1366,height:768}]){
-    test(`login y modo invitado sin hallazgos serious/critical ${viewport.width}x${viewport.height}`,async({page})=>{
+    test(`acceso privado sin hallazgos serious/critical ${viewport.width}x${viewport.height}`,async({page})=>{
       await page.setViewportSize(viewport);
       await page.goto(appUrl,{waitUntil:'domcontentloaded'});
       await expect(page.locator('#authForm')).toBeVisible();
-      await scan(page,'pantalla de acceso');
-
-      await expect(page.locator('#ccGuestEnter')).toBeVisible();
-      await page.locator('#ccGuestEnter').click();
-      await expect(page.locator('body')).toHaveClass(/cc-guest-mode/);
-      await expect(page.locator('#ccSidebar')).toBeVisible({timeout:10000});
-      await page.locator('#ccSidebar [data-route="proyectos"]').click();
-      await expect(page.locator('.project-v3, .project-card-premium').first()).toBeVisible();
-      await scan(page,'portafolio en modo invitado');
+      await expect(page.locator('#ccGuestEnter')).toHaveCount(0);
+      await scan(page,'pantalla de acceso privado');
     });
   }
 });

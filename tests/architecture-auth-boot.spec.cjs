@@ -38,7 +38,7 @@ test.describe('integridad arquitectónica del arranque autenticado',()=>{
   test.use({viewport:{width:1280,height:800}});
 
   test('login seguro recarga el contexto y activa una sola arquitectura autenticada',async({page})=>{
-    test.setTimeout(60000);
+    test.setTimeout(90000);
     const pageErrors=[];
     const consoleErrors=[];
     let topNavigations=0;
@@ -83,9 +83,24 @@ test.describe('integridad arquitectónica del arranque autenticado',()=>{
     expect(activeRoutes.filter(route=>route==='proyectos').length).toBe(1);
     expect(activeRoutes.includes('inicio'),'Inicio y Proyectos no deben quedar activos a la vez').toBe(false);
 
-    // Espera un poco más para descubrir conflictos de versión generados por la
-    // carga histórica. No exige que todos los módulos opcionales hayan terminado.
-    await page.waitForTimeout(1500);
+    // La auditoría no se declara verde al terminar solo la fase crítica: espera
+    // que finalice TODO el plan autenticado y exige cero módulos fallidos.
+    await page.waitForFunction(()=>window.__CC_AUTH_MODULES_READY__===true||window.__CC_AUTH_BOOT_FAILED__===true,null,{timeout:30000});
+    const finalState=await page.evaluate(()=>({
+      ready:window.__CC_AUTH_MODULES_READY__===true,
+      failed:window.__CC_AUTH_BOOT_FAILED__===true,
+      errors:Array.isArray(window.__CC_AUTH_MODULE_ERRORS__)?window.__CC_AUTH_MODULE_ERRORS__:[],
+      performanceV7:window.__CC_PERFORMANCE_RUNTIME_V7__===true
+    }));
+    expect(finalState.failed,`El arranque completo terminó en fallo: ${JSON.stringify(finalState.errors)}`).toBe(false);
+    expect(finalState.ready,`Módulos no listos: ${JSON.stringify(finalState.errors)}`).toBe(true);
+    expect(finalState.errors,'No debe quedar ningún módulo autenticado fallido').toEqual([]);
+    expect(finalState.performanceV7,'Debe ejecutarse el coordinador de rendimiento sin segundo loader').toBe(true);
+
+    // El runtime de rendimiento V7 no puede volver a inyectar scripts. El único
+    // cargador funcional permitido es el plan autenticado de stabilize-core.
+    await expect(page.locator('script[data-cc-runtime]')).toHaveCount(0);
+
     const versionConflicts=consoleErrors.filter(text=>/Conflicto de versión/i.test(text));
     expect(versionConflicts,`Conflictos de versión: ${versionConflicts.join(' | ')}`).toEqual([]);
     expect(pageErrors,`Errores JavaScript: ${pageErrors.join(' | ')}`).toEqual([]);

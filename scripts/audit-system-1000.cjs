@@ -4,7 +4,7 @@
 /*
   Auditoría integral y determinista del portal.
   Objetivo: detectar desde errores básicos de integridad hasta regresiones críticas
-  de publicación, navegación, caché y referencias de recursos.
+  de publicación, navegación, caché, carga de módulos y referencias de recursos.
 */
 const fs=require('node:fs');
 const path=require('node:path');
@@ -51,15 +51,24 @@ const navigation=read('ui-navigation-single-source-v1.js');
 const startup=read('tests/startup-responsive.spec.cjs');
 const workflow=read('.github/workflows/deploy-pages-critical.yml');
 
-/* 100 ciclos x 12 controles críticos = 1,200 comprobaciones repetibles.
-   Se usan para proteger los invariantes de arranque y publicación en cada build. */
+const forbiddenRuntimeModules=[
+  'portal-web-v2.js','project-detail-v2.js','dashboard-simplified-v4.js','payments-center-v1.js',
+  'guarantees-center-v1.js','visits-center-v1.js','reports-center-v1.js','alerts-center-v1.js',
+  'audit-center-v1.js','portal-route-bridge-v1.js','ui-stability-v1.js'
+];
+
+/* 100 ciclos de invariantes críticos. Estos ciclos no sustituyen los controles
+   distintos que siguen después; sirven para proteger determinísticamente el
+   arranque, la publicación y la arquitectura de carga. */
 for(let cycle=1;cycle<=100;cycle++){
   const p=`ciclo ${cycle}`;
   check(index.length>100000,`${p}: index.html demasiado pequeño`);
   check(!index.includes('window.__CP_B64='),`${p}: reapareció cargador Base64 antiguo`);
   check(index.includes('performance-runtime-v1.js?v='),`${p}: falta runtime versionado`);
   check(runtime.includes('service-worker-v1.js?v='),`${p}: falta service worker versionado`);
-  check(runtime.includes('ui-stability-v1.js?v='),`${p}: falta capa final de estabilidad`);
+  check(!runtime.includes('function scriptOnce'),`${p}: performance-runtime volvió a ser cargador funcional`);
+  check(!runtime.includes("document.createElement('script')")&&!runtime.includes('document.createElement("script")'),`${p}: performance-runtime crea scripts dinámicos`);
+  check(!forbiddenRuntimeModules.some(name=>runtime.includes(name)),`${p}: performance-runtime volvió a cargar centros funcionales`);
   check(/Network-first/i.test(sw),`${p}: service worker dejó de ser network-first`);
   check(/cache:'no-store'/.test(sw),`${p}: service worker no fuerza recurso fresco`);
   check(stable.includes('body.cc-portal-v2 #ccxNav{display:none!important}'),`${p}: navegación duplicada puede reaparecer`);
@@ -84,7 +93,6 @@ for(const full of files){
     check(!text.includes('undefinedundefined'),`${rel}: concatenación undefinedundefined`);
     check(!text.includes('NaNNaN'),`${rel}: concatenación NaNNaN`);
   }else{
-    /* El propio auditor contiene estas cadenas como patrones de detección. */
     check(true,`${rel}: autocontrol conflicto inicio`);
     check(true,`${rel}: autocontrol conflicto fin`);
     check(true,`${rel}: autocontrol undefined`);
@@ -112,9 +120,7 @@ for(const m of index.matchAll(/<(script|link)\b[^>]*(?:src|href)=["']([^"']+)["'
 const duplicateScripts=scriptRefs.filter((v,i,a)=>a.indexOf(v)!==i);
 check(duplicateScripts.length===0,`Scripts ejecutados más de una vez en index.html: ${[...new Set(duplicateScripts)].join(', ')}`);
 
-/* Controles de arquitectura visual y navegación consolidada.
-   ui-stability solo corrige presentación; la autoridad de navegación es
-   ui-navigation-single-source-v1.js. No se vuelve a introducir routing en la capa visual. */
+/* Controles de arquitectura visual y navegación consolidada. */
 check(navigation.includes('function ensureTransparency(sidebar)')&&navigation.includes("data-route=\"transparencia\""), 'La navegación única no incorpora Transparencia al sidebar');
 check(navigation.includes("if(r==='inicio'||r==='proyectos')goPortfolio(r);")&&navigation.includes("else if(r==='presupuesto')goBudget();")&&navigation.includes("else if(r==='transparencia')goTransparency();"), 'La navegación única no gobierna Inicio/Proyectos/Presupuesto/Transparencia directamente');
 check(stable.includes('sin\\n   intervenir rutas')||stable.includes('intervenir rutas ni simular clics'), 'La capa de estabilidad volvió a asumir responsabilidades de navegación');
@@ -123,11 +129,16 @@ check(stable.includes("aria-label','Buscar proyecto, código, ubicación o estad
 check(stable.includes('overflow-x:clip!important'), 'Falta protección contra desbordamiento horizontal');
 check(stable.includes('.exec-visual{padding-right:76px!important'), 'Falta reserva visual para el asistente');
 
+/* Arquitectura del runtime de rendimiento: solo rendimiento + caché. */
+check(runtime.includes('COORDINADOR DE RENDIMIENTO DEL DOM V7 · SIN CARGA FUNCIONAL'),'Versión inesperada del coordinador de rendimiento');
+check(!/function\s+scriptOnce\b/.test(runtime),'performance-runtime volvió a declarar scriptOnce');
+check(!/document\.createElement\(["']script["']\)/.test(runtime),'performance-runtime volvió a crear scripts');
+for(const name of forbiddenRuntimeModules)check(!runtime.includes(name),`performance-runtime no debe referenciar módulo funcional: ${name}`);
+
 /* Sintaxis mínima de versiones críticas y prevención de caché regresiva. */
 check(/cc-static-v1-20260903-recovery-v2/.test(sw),'Nombre de caché crítico inesperado');
 check(/updateViaCache:'none'/.test(runtime),'Registro de service worker permite caché de actualización');
-check(/portal-web-v2\.js\?v=/.test(runtime),'Portal web no está versionado');
-check(/dashboard-simplified-v4\.js\?v=/.test(runtime),'Dashboard simplificado no está versionado');
+check(/serviceWorker\.register/.test(runtime),'El coordinador dejó de registrar el service worker');
 
 if(checks<1000)failures.push(`La auditoría solo ejecutó ${checks} comprobaciones; se requieren al menos 1000.`);
 

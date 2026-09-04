@@ -24,6 +24,33 @@ function stripScriptFrom(source,moduleFile){
 
 function escapeAttr(v){return String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
 
+/* El constructor histórico puede dejar dos etiquetas del mismo archivo cuando
+   una copia usa atributos como defer/data-* y otra es la versión final añadida
+   al cierre del body. Como después todas pasan al plan autenticado, conservar
+   ambas produce una carrera de versiones. Se conserva la ÚLTIMA referencia
+   local de cada archivo .js, que es la que build-pages acaba de canonizar. */
+function dedupeLocalScriptsByBare(source){
+  const re=/<script\b[^>]*\bsrc\s*=\s*(["'])(.*?)\1[^>]*>\s*<\/script>\s*/gi;
+  const matches=[];
+  let m;
+  while((m=re.exec(source))){
+    const src=String(m[2]||'');
+    if(/^(?:https?:)?\/\//i.test(src)||/^(?:data:|blob:)/i.test(src))continue;
+    const bare=src.split(/[?#]/)[0].split('/').pop();
+    if(!bare||!bare.toLowerCase().endsWith('.js'))continue;
+    matches.push({start:m.index,end:re.lastIndex,bare,src});
+  }
+  const lastByBare=new Map();
+  matches.forEach((item,index)=>lastByBare.set(item.bare,index));
+  const removals=matches.filter((item,index)=>lastByBare.get(item.bare)!==index);
+  if(!removals.length)return source;
+  let out='',cursor=0;
+  for(const item of removals){out+=source.slice(cursor,item.start);cursor=item.end}
+  out+=source.slice(cursor);
+  console.log(`Versiones estáticas duplicadas retiradas antes del plan autenticado: ${removals.length}.`);
+  return out;
+}
+
 /* 1. CREAR PROYECTO: al guardar un proyecto nuevo se abre directamente su
       expediente. Se elimina el paso extra Inicio -> Proyectos -> buscar. */
 const projectCreateOld="db.projects.push(np);audit('CREAR','Proyecto',np.id,data);rememberExecutionDuration(np.id,data.budget,data.type,data.executionDays,'proyecto')}saveDB();m.remove();renderApp();toast('Proyecto guardado y sincronizado.')";
@@ -100,6 +127,11 @@ if(!tail.includes('data-cc-auth-plan')){
     if(bodyClose<0)throw new Error('No se encontró </body> al consolidar módulos autenticados.');
     tail=tail.slice(0,bodyClose)+`<script src="${moduleFile}?v=${version}"></script>\n`+tail.slice(bodyClose);
   }
+
+  /* Elimina cualquier copia histórica con atributos diferentes antes de volver
+     ejecutables los módulos. La detección de conflicto en runSrc se mantiene:
+     no se ocultan conflictos dinámicos, se corrige la causa estática. */
+  tail=dedupeLocalScriptsByBare(tail);
 
   tail=tail.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi,(full,attrs,body)=>{
     const src=String(attrs||'').match(/\bsrc\s*=\s*(["'])(.*?)\1/i)?.[2]||'';
@@ -262,10 +294,17 @@ for(const [moduleFile] of supplementalModules){
   const count=(html.match(new RegExp(`data-src=["'][^"']*${moduleFile.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}[^"']*["']`,'gi'))||[]).length;
   if(count!==1)throw new Error(`El módulo autenticado ${moduleFile} debe aparecer exactamente una vez en el plan; encontrado: ${count}.`);
 }
+const plannedByBare=new Map();
+for(const match of html.matchAll(/data-src=["']([^"']+\.js(?:\?[^"']*)?)["']/gi)){
+  const src=match[1],bare=src.split(/[?#]/)[0].split('/').pop();
+  if(/^(?:https?:)?\/\//i.test(src)||!bare)continue;
+  if(plannedByBare.has(bare))throw new Error(`El plan autenticado contiene más de una versión/copia de ${bare}: ${plannedByBare.get(bare)} y ${src}.`);
+  plannedByBare.set(bare,src);
+}
 for(const moduleFile of retired){
   if(new RegExp(moduleFile.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i').test(html))throw new Error(`Sigue cargada la capa retirada ${moduleFile}.`);
 }
 if(!html.toLowerCase().includes('</html>'))throw new Error('El HTML estabilizado quedó incompleto.');
 
 fs.writeFileSync(path,html,'utf8');
-console.log(`Núcleo estabilizado: alta directa, anticipo contractual, login ligero y ${supplementalModules.length} módulos autenticados consolidados.`);
+console.log(`Núcleo estabilizado: alta directa, anticipo contractual, login ligero y ${supplementalModules.length} módulos autenticados consolidados sin versiones estáticas duplicadas.`);

@@ -108,7 +108,9 @@ async function openSidebarIfNeeded(page,vp){
   const toggle=page.locator('#ccMobileToggle');
   await expect(toggle).toBeVisible();
   await toggle.click();
-  await expect(page.locator('#ccSidebar')).toHaveClass(/open/);
+  await page.waitForTimeout(60);
+  const open=await page.evaluate(()=>document.querySelector('#ccSidebar')?.classList.contains('open')===true);
+  expect(open,'El menú móvil debe abrirse con el botón ☰').toBe(true);
 }
 
 async function clickRoute(page,vp,route){
@@ -119,9 +121,20 @@ async function clickRoute(page,vp,route){
     const box=await btn.boundingBox();
     expect(box,`La ruta móvil ${route} debe tener un área táctil visible`).not.toBeNull();
     await page.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);
-    await expect(page.locator('#ccSidebar')).not.toHaveClass(/open/);
-    await expect(page.locator('#ccSidebarOverlay')).not.toHaveClass(/show/);
-    await expect(btn).toHaveClass(/active/);
+    await page.waitForTimeout(120);
+    const state=await page.evaluate(route=>{
+      const side=document.querySelector('#ccSidebar');
+      const overlay=document.querySelector('#ccSidebarOverlay');
+      const active=document.querySelector(`#ccSidebar [data-route="${route}"]`);
+      return{
+        open:side?.classList.contains('open')===true,
+        overlay:overlay?.classList.contains('show')===true,
+        active:active?.classList.contains('active')===true
+      };
+    },route);
+    expect(state.open,`La ruta móvil ${route} debe cerrar el sidebar`).toBe(false);
+    expect(state.overlay,`La ruta móvil ${route} debe retirar el fondo del menú`).toBe(false);
+    expect(state.active,`La ruta móvil ${route} debe quedar activa`).toBe(true);
   }else{
     await btn.click();
     await expect(btn).toHaveClass(/active/);

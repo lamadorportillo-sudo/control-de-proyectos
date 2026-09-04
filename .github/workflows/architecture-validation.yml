@@ -1,0 +1,112 @@
+name: Validación aislada de arquitectura
+
+on:
+  push:
+    branches: [audit-architecture-fixes]
+    paths:
+      - '*.js'
+      - '*.cjs'
+      - 'tests/**'
+      - '.github/workflows/architecture-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: architecture-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  architecture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v6
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Validar sintaxis y contratos de arquitectura
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in ./*.js; do
+            [ -f "$f" ] || continue
+            node --check "$f"
+          done
+          node --check authenticated-module-manifest-v1.cjs
+          node --check build-pages.cjs
+          node --check inject-portfolio.cjs
+          node --check patch-session-security.cjs
+          node --check stabilize-core-v1.cjs
+          node --check tests/architecture-auth-boot.spec.cjs
+          node --test tests/*.test.cjs
+
+      - name: Construir exactamente el artefacto estabilizado
+        shell: bash
+        run: |
+          set -euo pipefail
+          node build-pages.cjs
+          node inject-portfolio.cjs
+          node patch-session-security.cjs
+          node stabilize-core-v1.cjs
+          test -s index.html
+          grep -q 'private-access-v1.js?v=20260904-private6' index.html
+          grep -q 'performance-runtime-v1.js?v=20260904-perf10' index.html
+          grep -q 'portal-web-v2.js?v=20260904-web4' index.html
+          grep -q 'ui-stability-v1.js?v=20260904-stable2' index.html
+          grep -q '__CC_AUTH_BOOT_FAILED__' index.html
+          grep -q '__CC_AUTH_MODULE_ERRORS__' index.html
+          grep -q 'data-cc-auth-loader data-cc-auth-plan' index.html
+          for retired in system-ui-refinement-v2.js dashboard-executive-v1.js home-executive-fix-v2.js industrial-home-v1.js portfolio-redesign-v1.js project-portfolio-detail-v1.js portfolio-screen-fix-v1.js; do
+            if grep -q "$retired" index.html; then
+              echo "El artefacto reactivó un módulo retirado: $retired" >&2
+              exit 1
+            fi
+          done
+
+      - name: Ejecutar comprobaciones masivas de integridad
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/audit-system-1000.cjs
+
+      - name: Instalar navegador de validación
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-package-lock
+          npx playwright install --with-deps chromium
+
+      - name: Servir artefacto aislado
+        shell: bash
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/architecture-validation-http.log 2>&1 &
+          echo $! > /tmp/architecture-validation-http.pid
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/architecture-validation-http.log
+          exit 1
+
+      - name: Probar login, recarga y arranque autenticado
+        env:
+          APP_URL: http://127.0.0.1:4173/
+        shell: bash
+        run: npx playwright test tests/architecture-auth-boot.spec.cjs --workers=1 --retries=0
+
+      - name: Guardar diagnóstico si falla
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: architecture-validation-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7

@@ -26,6 +26,19 @@ html body:not(.print-report) #ccxSync > b{
 html body:not(.print-report) .ccx-head .eyebrow[data-cc-contrast="dark"]{
   color:#315f9e!important;
 }
+
+/* Encabezado del portafolio en modo invitado sobre superficies claras. */
+html body.cc-guest-mode:not(.print-report) .ccx-head h2{
+  color:#17324d!important;
+}
+html body.cc-guest-mode:not(.print-report) .ccx-head p:not(.eyebrow){
+  color:#4b5f73!important;
+}
+
+/* Aviso inferior del modo invitado: texto pequeño requiere contraste reforzado. */
+html body.cc-guest-mode:not(.print-report) .footer-note{
+  color:#44566a!important;
+}
 `;
 document.head.appendChild(style);
 })();

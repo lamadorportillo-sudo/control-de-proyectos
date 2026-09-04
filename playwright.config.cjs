@@ -4,12 +4,12 @@ const manualSimulation = process.env.CC_MANUAL_SIM === '1';
 
 module.exports = defineConfig({
   testDir: './tests',
-  // La validación arquitectónica forma parte del navegador real aunque no lleve
-  // "responsive" en el nombre. Mantenerla aquí evita el falso verde de un
-  // workflow que instala Chromium pero termina con "No tests found".
+  // La validación arquitectónica debe incluir todos los escenarios críticos que
+  // los workflows invocan explícitamente. Playwright aplica testMatch incluso
+  // cuando se pasan archivos por CLI; omitirlos aquí produciría un falso verde.
   testMatch: manualSimulation
     ? /manual-project-entry-simulation\.spec\.cjs/
-    : /(?:.*responsive.*|architecture-auth-boot)\.spec\.cjs/,
+    : /(?:.*responsive.*|architecture-auth-boot|admin-mfa-enforcement-browser|contract-explicit-rules-browser|contract-document-safety-browser)\.spec\.cjs/,
   timeout: 90000,
   expect: { timeout: 12000 },
   fullyParallel: false,

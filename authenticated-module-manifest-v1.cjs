@@ -45,6 +45,10 @@ const supplementalModules=[
   ['ui-theme-unifier-v1.js','20260824-theme3d2'],
   ['engineering-visibility-fix-v1.js','20260822-visibility1'],
   ['ui-operational-polish-v1.js','20260822-operational2'],
+  /* El Manual histórico reescribe el texto de su propio botón desde un
+     MutationObserver global. La guardia impide que esa escritura se alimente
+     a sí misma y conserva la detección de contenedores nuevos. */
+  ['engineering-manual-observer-guard-v1.js','20260904-manualobserver1'],
   ['engineering-manual-reference-v1.js','20260823-manual2'],
   ['technical-control-permissions-v1.js','20260904-controltecnicoperm5'],
   ['technical-control-scope-v2.js','20260904-controlscope5'],

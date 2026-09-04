@@ -4,6 +4,7 @@ const fs=require('node:fs');
 
 const permissions=fs.readFileSync('technical-control-permissions-v1.js','utf8');
 const scope=fs.readFileSync('technical-control-scope-v2.js','utf8');
+const observerGuard=fs.readFileSync('technical-control-observer-guard-v1.js','utf8');
 const security=fs.readFileSync('security-runtime-v1.js','utf8');
 const manifest=require('../authenticated-module-manifest-v1.cjs');
 
@@ -24,6 +25,14 @@ test('permisos y alcance técnico no recorren todo el DOM durante el arranque au
   assert.doesNotMatch(scope,/Date\.now\(\)-started>5000/,'el alcance no debe activarse a mitad del boot por timeout');
 });
 
+test('la guardia del control técnico filtra el observador histórico antes de instalarlo',()=>{
+  assert.match(observerGuard,/__CC_TECH_CONTROL_OBSERVER_GUARD_V1__/);
+  assert.match(observerGuard,/target===document\.documentElement/);
+  assert.match(observerGuard,/relevant\(mutations\)/);
+  assert.match(observerGuard,/window\.MutationObserver=TechnicalControlMutationObserver/);
+  assert.match(observerGuard,/window\.MutationObserver=Original/);
+});
+
 test('seguridad de sesión difiere el observador DOM hasta terminar el arranque autenticado',()=>{
   assert.match(security,/__CC_SECURITY_RUNTIME_V4__/);
   assert.match(security,/armDomObserverAfterBoot/);
@@ -37,9 +46,11 @@ test('seguridad de sesión difiere el observador DOM hasta terminar el arranque 
 
 test('el control técnico pesado queda al final del plan autenticado',()=>{
   const names=manifest.supplementalModules.map(x=>x[0]);
+  assert.equal(names.at(-2),'technical-control-observer-guard-v1.js');
   assert.equal(names.at(-1),'technical-control-v1.js');
   const versions=new Map(manifest.supplementalModules);
   assert.equal(versions.get('security-runtime-v1.js'),'20260904-security4');
   assert.equal(versions.get('technical-control-permissions-v1.js'),'20260904-controltecnicoperm5');
   assert.equal(versions.get('technical-control-scope-v2.js'),'20260904-controlscope5');
+  assert.equal(versions.get('technical-control-observer-guard-v1.js'),'20260904-controlobserver1');
 });

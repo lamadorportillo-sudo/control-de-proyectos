@@ -1,34 +1,26 @@
-/* CONTROL CONTRACTUAL · PORTAL WEB V3 · ESTABLE
-   Capa de navegación y experiencia web. No sustituye la lógica existente. */
+/* CONTROL CONTRACTUAL · PORTAL WEB V4 · PRESENTACIÓN ESTABLE
+   Construye la estructura visual del portal. La navegación principal pertenece
+   a ui-navigation-single-source-v1.js y los centros a portal-route-bridge-v1.js. */
 (()=>{
 'use strict';
-if(window.__CC_PORTAL_WEB_V3__)return;window.__CC_PORTAL_WEB_V3__=true;window.__CC_PORTAL_WEB_V2__=true;
+if(window.__CC_PORTAL_WEB_V4__)return;
+window.__CC_PORTAL_WEB_V4__=true;
+window.__CC_PORTAL_WEB_V3__=true;
+window.__CC_PORTAL_WEB_V2__=true;
 
 const $q=(s,r=document)=>r.querySelector(s);
 const NativeObserver=window.__ccNativeMutationObserver||window.MutationObserver;
 let enhancing=false,observerQueued=false;
 const setText=(el,value)=>{if(!el)return;const next=String(value??'');if(el.textContent!==next)el.textContent=next};
 
-function currentScreen(){
-  try{return typeof view!=='undefined'?view.screen:'projects'}catch{return'projects'}
-}
-function currentTab(){
-  try{return typeof view!=='undefined'?view.tab:'summary'}catch{return'summary'}
-}
-function goProjects(){
-  try{view.screen='projects';view.projectId=null;view.tab='summary';view.trash=false;if(typeof renderApp==='function')renderApp()}catch(e){console.warn(e)}
-}
-function goBudget(){
-  try{view.screen='budgetPortfolio';view.projectId=null;if(typeof renderApp==='function')renderApp()}catch(e){console.warn(e)}
-}
-function openProjectTab(title,tab){
+function openProjects(){
   try{
-    if(typeof dashboardProjectPicker==='function')return dashboardProjectPicker(title,null,(p)=>{view.projectId=p.id;view.screen='project';view.tab=tab;renderApp()});
-    goProjects();
+    if(window.__ccSingleNav?.goPortfolio)return window.__ccSingleNav.goPortfolio('proyectos');
+    view.screen='projects';view.projectId=null;view.tab='summary';view.trash=false;
+    if(typeof renderApp==='function')renderApp();
   }catch(e){console.warn(e)}
 }
 function quick(action){try{if(typeof dashboardQuickAction==='function')dashboardQuickAction(action)}catch(e){console.warn(e)}}
-function showAudit(){try{if(typeof auditModal==='function')auditModal()}catch(e){console.warn(e)}}
 function showArchitecture(){
   const html=`<div class="cc-architecture">
     <div class="cc-arch-intro"><b>Arquitectura de Control Contractual</b><br>La página mantiene el tema de gestión integral de proyectos municipales. Los canales y servicios auxiliares apoyan el expediente; Supabase continúa como base principal del sistema.</div>
@@ -61,28 +53,21 @@ function showFieldMode(){
   try{
     if(typeof openModal!=='function')return;
     const modal=openModal('Accesos rápidos de supervisión',html);
-    modal.querySelectorAll('[data-field]').forEach(b=>b.onclick=()=>{const a=b.dataset.field;modal.remove();if(a==='visit')quick('visit');else if(a==='estimate')quick('estimate');else if(a==='guarantee')quick('guarantee');else if(a==='report')quick('report');else if(a==='architecture')showArchitecture();else goProjects()});
+    modal.querySelectorAll('[data-field]').forEach(b=>b.onclick=()=>{
+      const a=b.dataset.field;modal.remove();
+      if(a==='visit')quick('visit');
+      else if(a==='estimate')quick('estimate');
+      else if(a==='guarantee')quick('guarantee');
+      else if(a==='report')quick('report');
+      else if(a==='architecture')showArchitecture();
+      else openProjects();
+    });
   }catch(e){console.warn(e)}
 }
-function setActive(sidebar){
-  const screen=currentScreen(),tab=currentTab();
-  sidebar.querySelectorAll('.cc-side-btn').forEach(b=>{
-    const route=b.dataset.route;
-    let active=false;
-    if(route==='inicio'||route==='proyectos')active=screen==='projects'&&route==='inicio';
-    if(route==='presupuesto')active=screen==='budgetPortfolio';
-    if(screen==='project'){
-      if(route==='contratos')active=tab==='contract'||tab==='controls';
-      else if(route==='pagos')active=tab==='estimates'||tab==='payments';
-      else if(route==='visitas')active=tab==='visits';
-      else if(route==='garantias')active=tab==='guarantees';
-      else if(route==='reportes')active=tab==='reports';
-      else if(route==='proyectos')active=tab==='summary'||tab==='procurement'||tab==='changes';
-    }
-    b.classList.toggle('active',active);
-  });
+function syncBadge(sidebar){
   const count=$q('.rail-attention-count')?.textContent?.trim()||$q('.followup-count')?.textContent?.trim()||'';
-  const badge=sidebar.querySelector('[data-alert-badge]');if(badge){setText(badge,count||'0');badge.style.display=count&&count!=='0'?'grid':'none'}
+  const badge=sidebar.querySelector('[data-alert-badge]');
+  if(badge){setText(badge,count||'0');badge.style.display=count&&count!=='0'?'grid':'none'}
 }
 function createSidebar(shell){
   const aside=document.createElement('aside');aside.className='cc-sidebar';aside.id='ccSidebar';
@@ -113,22 +98,12 @@ function createSidebar(shell){
       <button class="cc-sidebar-logout" data-route="logout">↪ Cerrar sesión</button>
     </div>`;
   shell.insertBefore(aside,shell.firstChild);
-  aside.querySelectorAll('[data-route]').forEach(b=>b.addEventListener('click',()=>{
-    const route=b.dataset.route;
-    closeMobile();
-    if(route==='inicio'||route==='proyectos')goProjects();
-    else if(route==='presupuesto')goBudget();
-    else if(route==='contratos')openProjectTab('Abrir contrato de proyecto','contract');
-    else if(route==='pagos')openProjectTab('Pagos y estimaciones','estimates');
-    else if(route==='visitas')openProjectTab('Visitas de obra','visits');
-    else if(route==='garantias')openProjectTab('Garantías contractuales','guarantees');
-    else if(route==='reportes')openProjectTab('Informes del proyecto','reports');
-    else if(route==='alertas'){goProjects();setTimeout(()=>{($q('.rail-card')||$q('.followup-center'))?.scrollIntoView({behavior:'smooth',block:'start'})},180)}
-    else if(route==='auditoria')showAudit();
-    else if(route==='campo')showFieldMode();
-    else if(route==='arquitectura')showArchitecture();
-    else if(route==='logout')$q('#logoutBtn')?.click();
-  }));
+
+  /* El portal solo atiende acciones auxiliares que no son rutas de expediente.
+     Inicio, Proyectos, Presupuesto y centros globales quedan sin listener local. */
+  aside.querySelector('[data-route="campo"]')?.addEventListener('click',()=>{closeMobile();showFieldMode()});
+  aside.querySelector('[data-route="arquitectura"]')?.addEventListener('click',()=>{closeMobile();showArchitecture()});
+  aside.querySelector('[data-route="logout"]')?.addEventListener('click',()=>{closeMobile();$q('#logoutBtn')?.click()});
   return aside;
 }
 function createCommandbar(column){
@@ -142,7 +117,10 @@ function createCommandbar(column){
   search.addEventListener('input',()=>{
     const local=$q('#projectSearch');if(local){local.value=search.value;local.dispatchEvent(new Event('input',{bubbles:true}))}
   });
-  search.addEventListener('keydown',e=>{if(e.key!=='Enter')return;try{view.search=search.value.trim();view.screen='projects';view.projectId=null;renderApp()}catch{}});
+  search.addEventListener('keydown',e=>{
+    if(e.key!=='Enter')return;
+    try{view.search=search.value.trim();view.screen='projects';view.projectId=null;renderApp();setTimeout(()=>window.__ccSingleNav?.refresh?.(),0)}catch{}
+  });
   return bar;
 }
 function createOverlay(){let o=$q('#ccSidebarOverlay');if(o)return o;o=document.createElement('div');o.id='ccSidebarOverlay';o.className='cc-sidebar-overlay';o.onclick=closeMobile;document.body.appendChild(o);return o}
@@ -160,11 +138,12 @@ function enhance(){
     const app=$q('#app'),shell=app?.querySelector('.shell');
     if(!shell||app.querySelector('.auth'))return;
     document.body.classList.add('cc-portal-v2');shell.classList.add('cc-shell');
-    let sidebar=shell.querySelector('#ccSidebar')||createSidebar(shell);
+    const sidebar=shell.querySelector('#ccSidebar')||createSidebar(shell);
     let column=shell.querySelector('.cc-app-column');
     if(!column){column=document.createElement('div');column.className='cc-app-column';[...shell.children].filter(x=>x!==sidebar).forEach(x=>column.appendChild(x));shell.appendChild(column)}
     if(!column.querySelector('#ccCommandbar'))createCommandbar(column);
-    createOverlay();syncIdentity(sidebar);setActive(sidebar);
+    createOverlay();syncIdentity(sidebar);syncBadge(sidebar);
+    window.__ccSingleNav?.refresh?.();
   }finally{enhancing=false}
 }
 function queueEnhance(){
@@ -173,7 +152,7 @@ function queueEnhance(){
   (typeof requestAnimationFrame==='function'?requestAnimationFrame:setTimeout)(run);
 }
 
-if(NativeObserver){new NativeObserver(queueEnhance).observe(document.getElementById('app')||document.documentElement,{childList:true,subtree:true})}
+if(NativeObserver)new NativeObserver(queueEnhance).observe(document.getElementById('app')||document.documentElement,{childList:true,subtree:true});
 window.addEventListener('resize',()=>{if(innerWidth>860)closeMobile()},{passive:true});
 setTimeout(enhance,0);setTimeout(enhance,350);setTimeout(enhance,1200);
 })();

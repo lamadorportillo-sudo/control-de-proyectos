@@ -6,6 +6,8 @@ const perf=fs.readFileSync('performance-runtime-v1.js','utf8');
 const storage=fs.readFileSync('storage-quota-fix-v1.js','utf8');
 const stabilizer=fs.readFileSync('stabilize-core-v1.cjs','utf8');
 const inject=fs.readFileSync('inject-portfolio.cjs','utf8');
+const official=fs.readFileSync('contract-official-format-v1.js','utf8');
+const documents=fs.readFileSync('contract-payment-documents-v1.js','utf8');
 
 // Navegación: la barra lateral debe gobernar directamente la vista.
 assert.match(nav,/view\.screen='projects'/,'Inicio/Proyectos debe manejar el estado real de la vista');
@@ -23,6 +25,13 @@ assert.match(storage,/photoLocalCacheOmitted=true/,'debe distinguir foto omitida
 assert.doesNotMatch(storage,/photoStoredInCloud=true/,'no puede afirmar que una foto está en nube sin confirmación del uploader');
 assert.match(storage,/cc:data-changed/,'un guardado debe avisar al resto de módulos para refrescar la interfaz');
 
+// Documentos: JSZip puede cargarse al generar Word, nunca durante el arranque.
+assert.doesNotMatch(official,/document\.createElement\(['"]script['"]\).*JSZIP_URL/s,'la corrección institucional no debe iniciar una descarga CDN');
+assert.doesNotMatch(official,/ensureJSZip\(\)/,'no debe existir un cargador JSZip ejecutado al iniciar');
+assert.match(official,/watchForLazyJSZip\(\)/,'la corrección debe esperar la carga solicitada por el generador');
+assert.match(documents,/async function zipLib\(\).*loadScript\(JSZIP_URL/s,'JSZip se conserva como dependencia diferida del generador Word');
+assert.match(documents,/async function generate\(/,'la carga documental ocurre dentro de una acción explícita de generación');
+
 // Núcleo generado: altas directas y reglas contractuales no inventadas.
 assert.match(stabilizer,/view\.projectId=np\.id;view\.screen='project';view\.tab='summary'/,'un proyecto nuevo debe abrir su expediente');
 assert.match(stabilizer,/recoveryTarget:null/,'un contrato nuevo no debe inventar una meta de amortización');
@@ -34,4 +43,4 @@ for(const file of ['dashboard-executive-v1.js','home-executive-fix-v2.js','portf
   assert(stabilizer.includes(`'${file}'`),`stabilize-core debe retirar ${file}`);
 }
 
-console.log('core-stability-regressions: navegación, runtime, fotos y núcleo blindados');
+console.log('core-stability-regressions: navegación, runtime, fotos, documentos y núcleo blindados');

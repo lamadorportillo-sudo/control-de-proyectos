@@ -4,6 +4,7 @@
    segundo gestor de dependencias y permite verificar versiones y orden. */
 
 const retiredModules=[
+  'system-ui-refinement-v2.js',
   'dashboard-executive-v1.js',
   'home-executive-fix-v2.js',
   'industrial-home-v1.js',

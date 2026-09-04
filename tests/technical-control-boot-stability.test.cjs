@@ -8,12 +8,12 @@ const security=fs.readFileSync('security-runtime-v1.js','utf8');
 const manifest=require('../authenticated-module-manifest-v1.cjs');
 
 test('permisos y alcance técnico no recorren todo el DOM durante el arranque autenticado',()=>{
-  assert.match(permissions,/__CC_TECH_CONTROL_PERMISSIONS_V4__/);
-  assert.match(permissions,/armObserverAfterBoot/);
+  assert.match(permissions,/__CC_TECH_CONTROL_PERMISSIONS_V5__/);
+  assert.match(permissions,/armAfterBoot/);
   assert.match(permissions,/cc:authenticated-modules-ready/);
-  assert.match(permissions,/mutations\.some\(relevantMutation\)/);
-  assert.doesNotMatch(permissions,/Date\.now\(\)-started>5000/,'no debe existir un temporizador que active el observador antes de acabar el boot');
-  assert.doesNotMatch(permissions,/new MutationObserver\(\(\)=>\{apply\(\)/,'no debe reaparecer el observador global síncrono');
+  assert.doesNotMatch(permissions,/new MutationObserver|new NativeObserver/,'permisos técnicos no deben mantener un observador DOM global');
+  assert.doesNotMatch(permissions,/observer\.observe\((?:document\.body|document\.documentElement)/,'permisos no deben observar body/documentElement');
+  assert.doesNotMatch(permissions,/Date\.now\(\)-started>5000/,'no debe existir un temporizador que active un observador antes de acabar el boot');
 
   assert.match(scope,/__CC_TECH_CONTROL_SCOPE_V5__/);
   assert.match(scope,/armAfterBoot/);
@@ -40,6 +40,6 @@ test('el control técnico pesado queda al final del plan autenticado',()=>{
   assert.equal(names.at(-1),'technical-control-v1.js');
   const versions=new Map(manifest.supplementalModules);
   assert.equal(versions.get('security-runtime-v1.js'),'20260904-security4');
-  assert.equal(versions.get('technical-control-permissions-v1.js'),'20260904-controltecnicoperm4');
+  assert.equal(versions.get('technical-control-permissions-v1.js'),'20260904-controltecnicoperm5');
   assert.equal(versions.get('technical-control-scope-v2.js'),'20260904-controlscope5');
 });

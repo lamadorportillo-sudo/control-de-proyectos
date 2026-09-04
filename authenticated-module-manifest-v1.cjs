@@ -47,7 +47,7 @@ const supplementalModules=[
   ['ui-operational-polish-v1.js','20260822-operational2'],
   ['engineering-manual-reference-v1.js','20260823-manual2'],
   ['technical-control-permissions-v1.js','20260904-controltecnicoperm4'],
-  ['technical-control-scope-v2.js','20260904-controlscope4'],
+  ['technical-control-scope-v2.js','20260904-controlscope5'],
   ['immersive-engineering-experience-v1.js','20260828-immersive2'],
   ['ui-visibility-audit-v1.js','20260831-visibility4'],
   ['ui-contrast-hardening-v1.js','20260831-contrast5'],
@@ -55,8 +55,8 @@ const supplementalModules=[
   ['contract-document-safety-v1.js','20260904-docsafety3'],
   ['contract-payment-documents-v1.js','20260904-advance-docs4'],
   ['contract-preview-v1.js','20260904-preview2'],
-  /* Se carga al final porque su montaje observa y amplía las pestañas del
-     expediente. Así no compite con la inserción secuencial del resto del plan. */
+  /* Se carga al final porque su montaje amplía las pestañas del expediente.
+     El alcance visible V5 ya no mantiene un observador global sobre body. */
   ['technical-control-v1.js','20260830-controltecnico1'],
 ];
 

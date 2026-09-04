@@ -1,56 +1,36 @@
-/* CONTROL CONTRACTUAL · NAVEGACION UNICA V1
-   La barra lateral es la única navegación principal visible.
-   Conserva compatibilidad interna con el motor ejecutivo legado sin exponerlo al usuario. */
+/* CONTROL CONTRACTUAL · NAVEGACIÓN ÚNICA V2
+   La barra lateral gobierna directamente la aplicación.
+   No dispara botones ocultos ni depende del dashboard ejecutivo legado. */
 (()=>{
 'use strict';
-if(window.__CC_SINGLE_NAV_V1__)return;window.__CC_SINGLE_NAV_V1__=true;
+if(window.__CC_SINGLE_NAV_V2__)return;
+window.__CC_SINGLE_NAV_V2__=true;
+window.__CC_SINGLE_NAV_V1__=true;
+
 const Q=(s,r=document)=>r.querySelector(s);
 const QA=(s,r=document)=>[...r.querySelectorAll(s)];
 const NativeObserver=window.__ccNativeMutationObserver||window.MutationObserver;
+const ROUTE_KEY='cc_main_route_v2';
 let queued=false,cleaning=false,sideObserver=null,observedSidebar=null;
 
 function role(){try{return String(cloudRole||'')}catch{return''}}
 function screen(){try{return String(view?.screen||'')}catch{return''}}
 function tab(){try{return String(view?.tab||'')}catch{return''}}
-function executiveSection(){try{return localStorage.getItem('cc_exec_section_v2')||'home'}catch{return'home'}}
-let requestedExecutive=executiveSection();
+function storedRoute(){try{return localStorage.getItem(ROUTE_KEY)||'inicio'}catch{return'inicio'}}
+function rememberRoute(route){try{localStorage.setItem(ROUTE_KEY,route)}catch{}window.__ccMainRoute=route}
 function toastSafe(message){try{if(typeof toast==='function')toast(message)}catch{}}
 
 function css(){
  if(Q('#cc-single-nav-style'))return;
  const s=document.createElement('style');s.id='cc-single-nav-style';s.textContent=`
-/* Una sola navegación visible: sidebar */
 #ccxNav,#ccxSync,[data-cp-main-tabs],#cpExecutiveNav,.cp-main-tabs{display:none!important;visibility:hidden!important;pointer-events:none!important}
-/* Los botones administrativos originales se conservan como motores internos y se exponen por el sidebar. */
 #ccTeamBtn,#ccAccessRequestsBtn,#ccSecurityBtn{display:none!important}
-/* Una notificación nunca debe bloquear botones o navegación. */
 .toast{pointer-events:none!important}
-/* Evita que la columna de contenido invada la barra lateral. */
 .cc-shell{position:relative!important}.cc-app-column{min-width:0!important;position:relative!important;z-index:1!important}.cc-sidebar{position:relative!important;z-index:30!important;flex:0 0 auto!important}
 .cc-sidebar .cc-nav-admin{margin-top:4px}
-.cc-side-btn[data-route="transparencia"] .cc-side-icon{font-weight:900}
 @media(max-width:860px){.cc-sidebar{position:fixed!important;z-index:1000!important}.cc-sidebar-overlay{z-index:999!important}}
 `;
  document.head.appendChild(s);
-}
-
-function driveExecutive(section){
- requestedExecutive=section;
- try{localStorage.setItem('cc_exec_section_v2',section)}catch{}
- const nav=Q('#ccxNav');
- const btn=nav?.querySelector(`[data-ccx="${section}"]`);
- if(btn){
-  try{btn.click();setTimeout(queue,0);return true}catch{}
- }
- try{
-  if(typeof view!=='undefined'){
-   if(section==='budget'){view.screen='budgetPortfolio';view.projectId=null}
-   else{view.screen='projects';view.projectId=null;view.tab='summary'}
-  }
-  if(typeof renderApp==='function')renderApp();
-  setTimeout(queue,0);
-  return true;
- }catch(e){console.warn('No se pudo cambiar de sección ejecutiva.',e);return false}
 }
 
 function sideButton(route,label,icon){
@@ -75,7 +55,7 @@ function ensureAdmin(sidebar){
  const specs=[['usuarios','Usuarios','U'],['solicitudes','Solicitudes','S'],['seguridad','Seguridad','✓']];
  for(const [route,text,icon] of specs)if(!nav.querySelector(`[data-route="${route}"]`))nav.appendChild(sideButton(route,text,icon));
  const pending=Q('#ccAccessRequestsBtn .cc-access-count')?.textContent?.trim()||'';
- let req=nav.querySelector('[data-route="solicitudes"]');
+ const req=nav.querySelector('[data-route="solicitudes"]');
  let badge=req?.querySelector('.cc-nav-badge');
  if(pending){if(!badge){badge=document.createElement('span');badge.className='cc-nav-badge';req.appendChild(badge)}badge.textContent=pending;badge.style.display='grid'}else badge?.remove();
 }
@@ -99,35 +79,57 @@ function activeRoute(){
  if(document.body.classList.contains('cc-reports-center-active'))return'reportes';
  if(document.body.classList.contains('cc-alerts-center-active'))return'alertas';
  if(document.body.classList.contains('cc-audit-center-active'))return'auditoria';
- if(s==='projects'){
-  const current=requestedExecutive||executiveSection();
-  return current==='projects'?'proyectos':'inicio';
- }
- return'';
+ if(s==='projects')return storedRoute()==='proyectos'?'proyectos':storedRoute()==='alertas'?'alertas':'inicio';
+ return storedRoute();
 }
+
 function syncActive(sidebar){
  const r=activeRoute();
- QA('.cc-side-btn',sidebar).forEach(b=>{
-  const should=b.dataset.route===r;
-  if(b.classList.contains('active')!==should)b.classList.toggle('active',should);
- });
+ QA('.cc-side-btn',sidebar).forEach(b=>b.classList.toggle('active',b.dataset.route===r));
 }
+
 function watchSidebar(sidebar){
  if(!NativeObserver||observedSidebar===sidebar)return;
  sideObserver?.disconnect?.();observedSidebar=sidebar;
  sideObserver=new NativeObserver(mutations=>{
   if(cleaning)return;
-  for(const m of mutations){
-   if(m.type==='attributes'&&m.attributeName==='class'&&m.target?.matches?.('.cc-side-btn')){queue();break}
-  }
+  if(mutations.some(m=>m.type==='attributes'||m.type==='childList'))queue();
  });
- sideObserver.observe(sidebar,{subtree:true,attributes:true,attributeFilter:['class']});
+ sideObserver.observe(sidebar,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
 }
 
 function sanitizeLegacy(){
- const legacy=QA('#ccxNav,#ccxSync,[data-cp-main-tabs],#cpExecutiveNav,.cp-main-tabs');
- for(const el of legacy){el.setAttribute('aria-hidden','true');el.setAttribute('inert','');}
+ for(const el of QA('#ccxNav,#ccxSync,[data-cp-main-tabs],#cpExecutiveNav,.cp-main-tabs')){
+  el.setAttribute('aria-hidden','true');el.setAttribute('inert','');
+ }
  QA('[data-tr-nav],[data-tr-exec]').forEach(el=>{if(!el.closest('#ccSidebar')){el.setAttribute('aria-hidden','true');el.setAttribute('inert','')}});
+}
+
+function goPortfolio(route){
+ rememberRoute(route);
+ try{
+  if(typeof view!=='undefined'){
+   view.screen='projects';view.projectId=null;view.tab='summary';view.trash=false;
+  }
+  if(typeof renderApp==='function')renderApp();
+  setTimeout(()=>{
+   if(route==='proyectos')Q('.projects-board,.project-grid-v3,.dashboard-project-grid')?.scrollIntoView({behavior:'smooth',block:'start'});
+   else window.scrollTo({top:0,behavior:'smooth'});
+   queue();
+  },80);
+  return true;
+ }catch(e){console.warn('No se pudo abrir el portafolio.',e);return false}
+}
+
+function goBudget(){
+ rememberRoute('presupuesto');
+ try{view.screen='budgetPortfolio';view.projectId=null;view.tab='summary';renderApp();setTimeout(queue,0)}catch(e){console.warn(e)}
+}
+
+function goTransparency(){
+ rememberRoute('transparencia');
+ if(typeof window.__ccOpenTransparencyDirect==='function')return window.__ccOpenTransparencyDirect();
+ try{view.screen='transparency';view.projectId=null;view.tab='summary';renderApp();setTimeout(queue,0)}catch(e){console.warn(e)}
 }
 
 function ensure(){
@@ -143,33 +145,33 @@ function queue(){if(queued)return;queued=true;const run=()=>{queued=false;ensure
 document.addEventListener('click',event=>{
  const b=event.target.closest?.('#ccSidebar .cc-side-btn[data-route]');if(!b)return;
  const r=b.dataset.route;
+
+ /* Guardar intención incluso para rutas atendidas por portal-web. */
+ if(!['campo','arquitectura','logout'].includes(r))rememberRoute(r);
+
  if(r==='inicio'||r==='proyectos'||r==='presupuesto'||r==='transparencia'||r==='usuarios'||r==='solicitudes'||r==='seguridad'){
   event.preventDefault();event.stopImmediatePropagation();
-  if(r==='inicio')driveExecutive('home');
-  else if(r==='proyectos')driveExecutive('projects');
-  else if(r==='presupuesto')driveExecutive('budget');
-  else if(r==='transparencia'){
-   requestedExecutive='transparency';
-   if(typeof window.__ccOpenTransparencyDirect==='function')window.__ccOpenTransparencyDirect();
-   else{try{view.screen='transparency';view.projectId=null;view.tab='summary';renderApp()}catch{}}
-  }
+  if(r==='inicio'||r==='proyectos')goPortfolio(r);
+  else if(r==='presupuesto')goBudget();
+  else if(r==='transparencia')goTransparency();
   else if(r==='usuarios'){
    if(typeof window.adminUsersModal==='function')window.adminUsersModal();else Q('#ccTeamBtn')?.click();
-  }
-  else if(r==='solicitudes'){
+  }else if(r==='solicitudes'){
    const original=Q('#ccAccessRequestsBtn');if(original)original.click();else toastSafe('No hay solicitudes pendientes o el control todavía se está cargando.');
-  }
-  else if(r==='seguridad'){
+  }else if(r==='seguridad'){
    if(typeof window.securityCenterModal==='function')window.securityCenterModal();else Q('#ccSecurityBtn')?.click();
   }
-  // Marca la ruta al instante y vuelve a comprobar después del render heredado.
-  syncActive(Q('#ccSidebar'));
-  setTimeout(queue,0);setTimeout(queue,40);setTimeout(queue,180);return;
+  setTimeout(queue,0);setTimeout(queue,80);return;
  }
+
+ /* Contratos, pagos, visitas, garantías, reportes, alertas y auditoría
+    continúan usando sus módulos actuales; aquí solo se sincroniza el estado. */
+ setTimeout(queue,0);setTimeout(queue,120);
 },true);
 
 if(NativeObserver)new NativeObserver(queue).observe(Q('#app')||document.documentElement,{childList:true,subtree:true});
 window.addEventListener('cc:route-changed',queue);
+window.addEventListener('cc:data-changed',queue);
 setTimeout(ensure,0);setTimeout(ensure,250);setTimeout(ensure,900);
-window.__ccSingleNav={refresh:ensure,driveExecutive};
+window.__ccSingleNav={refresh:ensure,goPortfolio,goBudget,goTransparency};
 })();

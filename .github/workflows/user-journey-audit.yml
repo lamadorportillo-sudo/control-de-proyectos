@@ -36,7 +36,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          node --check authenticated-module-manifest-v1.cjs
           node --check ui-navigation-single-source-v1.js
+          node --check ui-stability-v1.js
+          node --check performance-runtime-v1.js
+          node --check private-access-v1.js
+          node --check core-hardening-v1.js
           node --check stabilize-core-v1.cjs
           node --check tests/full-user-journey-responsive.spec.cjs
           node --check tests/project-create-route-responsive.spec.cjs
@@ -45,9 +50,12 @@ jobs:
           node patch-session-security.cjs
           node stabilize-core-v1.cjs
           grep -q 'ui-navigation-single-source-v1.js?v=20260903-singlenav2' index.html
+          grep -q 'private-access-v1.js?v=20260904-private6' index.html
+          grep -q 'performance-runtime-v1.js?v=20260904-perf10' index.html
+          grep -q '__CC_AUTH_BOOT_FAILED__' index.html
           grep -q "view.screen='project';view.tab='summary'" index.html
           grep -q "const targetPct=Number(contract.recoveryTarget||0);" index.html
-          for retired in dashboard-executive-v1.js home-executive-fix-v2.js portfolio-redesign-v1.js project-portfolio-detail-v1.js portfolio-screen-fix-v1.js; do
+          for retired in system-ui-refinement-v2.js dashboard-executive-v1.js home-executive-fix-v2.js industrial-home-v1.js portfolio-redesign-v1.js project-portfolio-detail-v1.js portfolio-screen-fix-v1.js; do
             if grep -q "$retired" index.html; then
               echo "Sigue cargada navegación/dashboard heredado: $retired" >&2
               exit 1

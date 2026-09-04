@@ -132,12 +132,13 @@ jobs:
           grep -q 'save_app_state' index.html
           grep -q 'performance-runtime-v1.js?v=20260904-perf10' index.html
           grep -q 'COORDINADOR DE RENDIMIENTO DEL DOM V6' performance-runtime-v1.js
-          grep -q 'portal-web-v2.js?v=20260903-web3' performance-runtime-v1.js
+          grep -q 'portal-web-v2.js?v=20260904-web4' performance-runtime-v1.js
           grep -q 'dashboard-simplified-v4.js?v=20260903-dash6' performance-runtime-v1.js
           grep -q 'service-worker-v1.js?v=20260903-sw2' performance-runtime-v1.js
           grep -q 'ui-stability-v1.js?v=20260904-stable2' performance-runtime-v1.js
           grep -q 'cc-static-v1-20260903-recovery-v2' service-worker-v1.js
-          grep -q 'PORTAL WEB V3 · ESTABLE' portal-web-v2.js
+          grep -q 'PORTAL WEB V4 · PRESENTACIÓN ESTABLE' portal-web-v2.js
+          grep -q 'Inicio, Proyectos, Presupuesto y centros globales quedan sin listener local' portal-web-v2.js
           grep -q 'DASHBOARD SIMPLIFICADO V6 · ESTABLE' dashboard-simplified-v4.js
           grep -q 'ESTABILIDAD VISUAL V2' ui-stability-v1.js
           grep -q 'project-tabs-complete-v1.js?v=20260831-tabscomplete34' index.html

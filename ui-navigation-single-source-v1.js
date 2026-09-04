@@ -1,9 +1,10 @@
-/* CONTROL CONTRACTUAL · NAVEGACIÓN ÚNICA V2
+/* CONTROL CONTRACTUAL · NAVEGACIÓN ÚNICA V3
    La barra lateral gobierna directamente la aplicación.
    No dispara botones ocultos ni depende del dashboard ejecutivo legado. */
 (()=>{
 'use strict';
-if(window.__CC_SINGLE_NAV_V2__)return;
+if(window.__CC_SINGLE_NAV_V3__)return;
+window.__CC_SINGLE_NAV_V3__=true;
 window.__CC_SINGLE_NAV_V2__=true;
 window.__CC_SINGLE_NAV_V1__=true;
 
@@ -19,6 +20,10 @@ function tab(){try{return String(view?.tab||'')}catch{return''}}
 function storedRoute(){try{return localStorage.getItem(ROUTE_KEY)||'inicio'}catch{return'inicio'}}
 function rememberRoute(route){try{localStorage.setItem(ROUTE_KEY,route)}catch{}window.__ccMainRoute=route}
 function toastSafe(message){try{if(typeof toast==='function')toast(message)}catch{}}
+function closeMobileNav(){
+ const side=Q('#ccSidebar'),overlay=Q('#ccSidebarOverlay');
+ side?.classList.remove('open');overlay?.classList.remove('show');
+}
 
 function css(){
  if(Q('#cc-single-nav-style'))return;
@@ -146,6 +151,10 @@ document.addEventListener('click',event=>{
  const b=event.target.closest?.('#ccSidebar .cc-side-btn[data-route]');if(!b)return;
  const r=b.dataset.route;
 
+ /* En móvil el menú es un panel temporal: al elegir cualquier destino debe
+    cerrarse para devolver inmediatamente el foco y el espacio al contenido. */
+ closeMobileNav();
+
  /* Guardar intención incluso para rutas atendidas por portal-web. */
  if(!['campo','arquitectura','logout'].includes(r))rememberRoute(r);
 
@@ -173,5 +182,5 @@ if(NativeObserver)new NativeObserver(queue).observe(Q('#app')||document.document
 window.addEventListener('cc:route-changed',queue);
 window.addEventListener('cc:data-changed',queue);
 setTimeout(ensure,0);setTimeout(ensure,250);setTimeout(ensure,900);
-window.__ccSingleNav={refresh:ensure,goPortfolio,goBudget,goTransparency};
+window.__ccSingleNav={refresh:ensure,goPortfolio,goBudget,goTransparency,closeMobileNav};
 })();

@@ -1,7 +1,8 @@
-/* ===== CONTROL TÉCNICO · PERMISOS E IDIOMA V3 ===== */
+/* ===== CONTROL TÉCNICO · PERMISOS E IDIOMA V4 ===== */
 (()=>{
 'use strict';
-if(typeof window==='undefined'||typeof document==='undefined'||window.__CC_TECH_CONTROL_PERMISSIONS_V3__)return;
+if(typeof window==='undefined'||typeof document==='undefined'||window.__CC_TECH_CONTROL_PERMISSIONS_V4__)return;
+window.__CC_TECH_CONTROL_PERMISSIONS_V4__=true;
 window.__CC_TECH_CONTROL_PERMISSIONS_V3__=true;
 window.__CC_TECH_CONTROL_PERMISSIONS_V2__=true;
 window.__CC_TECH_CONTROL_PERMISSIONS_V1__=true;
@@ -77,13 +78,10 @@ function startObserver(){
  observer=new MutationObserver(mutations=>{if(mutations.some(relevantMutation))scheduleApply()});
  observe();scheduleApply();
 }
-function startObserverAfterBoot(){
- const started=Date.now();
- const check=()=>{
-   if(window.__CC_AUTH_MODULES_READY__===true||window.__CC_AUTH_BOOT_FAILED__===true||Date.now()-started>5000){startObserver();return}
-   setTimeout(check,100);
- };
- setTimeout(check,0);
+function armObserverAfterBoot(){
+ if(window.__CC_AUTH_MODULES_READY__===true){startObserver();return}
+ document.addEventListener('cc:authenticated-modules-ready',startObserver,{once:true});
+ document.addEventListener('cc:authenticated-modules-partial',startObserver,{once:true});
 }
 async function resolve(){
  if(busy)return canEdit;busy=true;installCss();
@@ -104,9 +102,8 @@ document.addEventListener('click',e=>{
  if(typeof say==='function')say('Esta cuenta tiene acceso de consulta. No puede modificar el control técnico.');
 },true);
 
-// Durante el arranque autenticado no recorremos ni reescribimos el DOM en cada
-// inserción de script. Primero resolvemos el permiso; el observador empieza sólo
-// cuando el plan autenticado ya terminó y además filtra mutaciones relevantes.
+// El observador jamás se activa por temporizador durante la carga secuencial de
+// módulos. Solo se arma cuando el cargador autenticado declara que terminó.
 setTimeout(resolve,0);setTimeout(()=>{if(!loaded&&!busy)resolve()},800);
-startObserverAfterBoot();
+armObserverAfterBoot();
 })();

@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "project_ref": "flethujkrharehjikwgj",
+  "project_name": "control de proyectos",
+  "captured_at": "2026-09-04",
+  "description": "Inventario canónico de Edge Functions activas. Toda función desplegada debe existir en control de versiones bajo supabase/functions/<slug>/index.ts y conservar la configuración verify_jwt indicada aquí.",
+  "functions": [
+    {"slug":"request-access","verify_jwt":false},
+    {"slug":"manage-users","verify_jwt":true},
+    {"slug":"halu-chat","verify_jwt":true},
+    {"slug":"secure-login","verify_jwt":false},
+    {"slug":"secure-mfa","verify_jwt":true},
+    {"slug":"meeting-transcribe","verify_jwt":true},
+    {"slug":"telegram-webhook","verify_jwt":false},
+    {"slug":"telegram-link","verify_jwt":true},
+    {"slug":"telegram-setup","verify_jwt":true},
+    {"slug":"openai-diagnostic","verify_jwt":true},
+    {"slug":"telegram-gateway","verify_jwt":false},
+    {"slug":"telegram-avatar-setup","verify_jwt":true},
+    {"slug":"sheets-export","verify_jwt":false},
+    {"slug":"telegram-router","verify_jwt":false},
+    {"slug":"visit-image-sanitizer","verify_jwt":false},
+    {"slug":"visit-photo-reloader","verify_jwt":false},
+    {"slug":"visit-report-exporter","verify_jwt":false},
+    {"slug":"incoming-visit-photo-validator","verify_jwt":false},
+    {"slug":"visit-photo-quality-hook","verify_jwt":false},
+    {"slug":"document-public","verify_jwt":false},
+    {"slug":"document-publisher","verify_jwt":true},
+    {"slug":"contract-document-analyzer","verify_jwt":true}
+  ]
+}

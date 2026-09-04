@@ -1,7 +1,8 @@
-/* ===== ALCANCE VISIBLE DEL CONTROL TÉCNICO V3 ===== */
+/* ===== ALCANCE VISIBLE DEL CONTROL TÉCNICO V4 ===== */
 (()=>{
 'use strict';
-if(typeof window==='undefined'||typeof document==='undefined'||window.__CC_TECH_CONTROL_SCOPE_V3__)return;
+if(typeof window==='undefined'||typeof document==='undefined'||window.__CC_TECH_CONTROL_SCOPE_V4__)return;
+window.__CC_TECH_CONTROL_SCOPE_V4__=true;
 window.__CC_TECH_CONTROL_SCOPE_V3__=true;
 window.__CC_TECH_CONTROL_SCOPE_V2__=true;
 const HIDDEN=new Set(['calidad','seguridad','ambiental']);
@@ -20,19 +21,23 @@ function prune(){
   }
 }
 function guard(){
-  const api=window.__ccTechnicalControl;if(!api||api.__scopeV3)return;
+  const api=window.__ccTechnicalControl;if(!api||api.__scopeV4)return;
   const original=api.renderModule?.bind(api);
   if(original)api.renderModule=(key,...rest)=>original(HIDDEN.has(String(key||''))?'actas':key,...rest);
   api.visibleModules=['actas','bitacora','consultas','riesgos','recepcion'];
   api.hiddenHistoricalModules=[...HIDDEN];
-  api.__scopeV3=true;api.__scopeV2=true;
+  api.__scopeV4=true;api.__scopeV3=true;api.__scopeV2=true;
 }
 function run(){queued=false;observer?.disconnect();try{guard();prune()}finally{observe()}}
 function schedule(){if(queued)return;queued=true;requestAnimationFrame(run)}
 function relevant(m){for(const n of m.addedNodes||[]){if(n.nodeType!==1)continue;const e=n;if(e.matches?.(ROOT_SELECTOR)||e.closest?.(ROOT_SELECTOR)||e.querySelector?.(ROOT_SELECTOR))return true}return false}
 function observe(){if(!observerStarted)return;const target=document.body||document.documentElement;if(target)observer.observe(target,{childList:true,subtree:true})}
 function startObserver(){if(observerStarted)return;observerStarted=true;observer=new MutationObserver(ms=>{if(ms.some(relevant))schedule()});observe();schedule()}
-function afterBoot(){const started=Date.now();const check=()=>{if(window.__CC_AUTH_MODULES_READY__===true||window.__CC_AUTH_BOOT_FAILED__===true||Date.now()-started>5000){startObserver();return}setTimeout(check,100)};setTimeout(check,0)}
+function armAfterBoot(){
+  if(window.__CC_AUTH_MODULES_READY__===true){startObserver();return}
+  document.addEventListener('cc:authenticated-modules-ready',startObserver,{once:true});
+  document.addEventListener('cc:authenticated-modules-partial',startObserver,{once:true});
+}
 document.addEventListener('click',e=>{if(e.target.closest?.('[data-cc-technical-control]'))setTimeout(schedule,0)},true);
-afterBoot();
+armAfterBoot();
 })();

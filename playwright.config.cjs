@@ -4,7 +4,12 @@ const manualSimulation = process.env.CC_MANUAL_SIM === '1';
 
 module.exports = defineConfig({
   testDir: './tests',
-  testMatch: manualSimulation ? /manual-project-entry-simulation\.spec\.cjs/ : /.*responsive.*\.spec\.cjs/,
+  // La validación arquitectónica forma parte del navegador real aunque no lleve
+  // "responsive" en el nombre. Mantenerla aquí evita el falso verde de un
+  // workflow que instala Chromium pero termina con "No tests found".
+  testMatch: manualSimulation
+    ? /manual-project-entry-simulation\.spec\.cjs/
+    : /(?:.*responsive.*|architecture-auth-boot)\.spec\.cjs/,
   timeout: 90000,
   expect: { timeout: 12000 },
   fullyParallel: false,

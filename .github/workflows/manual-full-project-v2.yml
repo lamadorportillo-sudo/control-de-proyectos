@@ -6,9 +6,14 @@ on:
     paths:
       - 'tests/manual-full-project-responsive.spec.cjs'
       - 'tests/core-stability-regressions.test.cjs'
+      - 'authenticated-module-manifest-v1.cjs'
+      - 'build-pages.cjs'
+      - 'core-hardening-v1.js'
       - 'stabilize-core-v1.cjs'
       - 'inject-portfolio.cjs'
+      - 'private-access-v1.js'
       - 'ui-navigation-single-source-v1.js'
+      - 'ui-stability-v1.js'
       - 'performance-runtime-v1.js'
       - 'storage-quota-fix-v1.js'
       - 'contract-official-format-v1.js'
@@ -38,6 +43,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          node --check authenticated-module-manifest-v1.cjs
+          node --check build-pages.cjs
+          node --check core-hardening-v1.js
+          node --check private-access-v1.js
+          node --check performance-runtime-v1.js
+          node --check ui-stability-v1.js
           node --check tests/manual-full-project-responsive.spec.cjs
           node --check tests/core-stability-regressions.test.cjs
           node --check stabilize-core-v1.cjs
@@ -46,6 +57,9 @@ jobs:
           node inject-portfolio.cjs
           node patch-session-security.cjs
           node stabilize-core-v1.cjs
+          grep -q 'private-access-v1.js?v=20260904-private6' index.html
+          grep -q 'performance-runtime-v1.js?v=20260904-perf10' index.html
+          grep -q '__CC_AUTH_BOOT_FAILED__' index.html
           grep -q "view.screen='project';view.tab='summary'" index.html
           grep -q "const targetPct=Number(contract.recoveryTarget||0);" index.html
       - name: Instalar navegador

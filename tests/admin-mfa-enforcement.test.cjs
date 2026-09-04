@@ -17,7 +17,7 @@ const manageUsers=read('supabase/functions/manage-users/index.ts');
 
 test('la migración final restaura MFA obligatorio para administradores',()=>{
   assert.ok(path.basename(restoreMigration)>path.basename(optionalMigration),'la restauración debe ejecutarse después de la migración que dejó MFA opcional');
-  assert.match(optional,/MFA queda como protección opcional/i);
+  assert.match(optional,/2FA queda como protección opcional/i);
   assert.match(restore,/drop function if exists private\.keep_mfa_optional\(\)/);
   assert.match(restore,/interval '72 hours'/);
   assert.match(restore,/create trigger workspace_members_admin_mfa_deadline_trg/);

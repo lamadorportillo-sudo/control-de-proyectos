@@ -1,7 +1,8 @@
-/* ===== SEGURIDAD DE SESIÓN Y CONTENIDO V3 ===== */
+/* ===== SEGURIDAD DE SESIÓN Y CONTENIDO V4 ===== */
 (()=>{
 'use strict';
-if(window.__CC_SECURITY_RUNTIME_V1__)return;
+if(window.__CC_SECURITY_RUNTIME_V4__)return;
+window.__CC_SECURITY_RUNTIME_V4__=true;
 window.__CC_SECURITY_RUNTIME_V1__=true;
 
 const SESSION_KEY='control_contractual_session_v3';
@@ -11,6 +12,7 @@ const IDLE_WARNING=25*60*1000;
 const ABSOLUTE_LIMIT=12*60*60*1000;
 const HEARTBEAT_EVERY=2*60*1000;
 let lastActivity=Date.now(),warned=false,loggingOut=false,lastTouchWrite=0,heartbeatRunning=false,pendingLogoutReason='';
+let domObserver=null,domObserverStarted=false,domSyncQueued=false,domSweepTimer=null;
 
 function session(){try{return JSON.parse(localStorage.getItem(SESSION_KEY)||'null')}catch{return null}}
 function userId(){return session()?.userId||''}
@@ -51,6 +53,27 @@ function stampReports(){
 }
 
 function restrictBulkExport(){const allowed=role()==='admin';document.querySelectorAll('[data-ccx-backup]').forEach(btn=>{if(!allowed){btn.setAttribute('hidden','');btn.setAttribute('aria-hidden','true');btn.tabIndex=-1}else{btn.removeAttribute('hidden');btn.removeAttribute('aria-hidden')}})}
+function syncSecurityUi(){stampReports();restrictBulkExport();wrapSignOut()}
+function observeDom(){const target=document.body||document.documentElement;if(target)domObserver?.observe(target,{subtree:true,childList:true})}
+function scheduleDomSync(){
+ if(domSyncQueued)return;domSyncQueued=true;
+ requestAnimationFrame(()=>{
+  domSyncQueued=false;
+  if(domObserverStarted)domObserver?.disconnect();
+  try{syncSecurityUi()}finally{if(domObserverStarted)observeDom()}
+ });
+}
+function startDomObserver(){
+ if(domObserverStarted)return;domObserverStarted=true;
+ domObserver=new MutationObserver(()=>scheduleDomSync());
+ observeDom();scheduleDomSync();
+ if(!domSweepTimer)domSweepTimer=setInterval(scheduleDomSync,2500);
+}
+function armDomObserverAfterBoot(){
+ if(window.__CC_AUTH_MODULES_READY__===true){startDomObserver();return}
+ document.addEventListener('cc:authenticated-modules-ready',startDomObserver,{once:true});
+ document.addEventListener('cc:authenticated-modules-partial',startDomObserver,{once:true});
+}
 
 function touch(){const s=session();if(!s)return;lastActivity=Date.now();warned=false;if(lastActivity-lastTouchWrite>5000){lastTouchWrite=lastActivity;try{localStorage.setItem(activityKey(),String(lastActivity))}catch{}}}
 
@@ -100,7 +123,7 @@ function enforce(){const s=session();if(!s)return;const now=Date.now(),start=Num
 
 function privacyOnBackground(){if(!session())return document.body.classList.remove('cc-content-shield');document.body.classList.toggle('cc-content-shield',document.visibilityState==='hidden');if(document.visibilityState==='visible')setTimeout(heartbeat,200)}
 function cleanConsultaCache(){if(role()!=='consulta')return;try{localStorage.removeItem(STORE_KEY)}catch{}}
-function run(){css();meta();frameGuard();initSessionClock();stampReports();restrictBulkExport();wrapSignOut();setTimeout(heartbeat,3500)}
+function run(){css();meta();frameGuard();initSessionClock();syncSecurityUi();armDomObserverAfterBoot();setTimeout(heartbeat,3500)}
 
 ['pointerdown','keydown','touchstart','mousedown'].forEach(type=>addEventListener(type,touch,{passive:true,capture:true}));
 addEventListener('scroll',touch,{passive:true,capture:true});
@@ -108,8 +131,7 @@ document.addEventListener('visibilitychange',privacyOnBackground,{passive:true})
 addEventListener('pagehide',cleanConsultaCache,{passive:true});
 addEventListener('storage',e=>{if(e.key===SESSION_KEY&&!e.newValue&&session()===null)location.reload();if(e.key&&e.key.startsWith('cc_security_last_activity_v1:'))lastActivity=Math.max(lastActivity,Number(e.newValue||0))});
 document.addEventListener('click',e=>{const b=e.target.closest?.('[data-ccx-backup]');if(b&&role()!=='admin'){e.preventDefault();e.stopImmediatePropagation();say('El respaldo completo está reservado para administradores.')}},true);
-new MutationObserver(()=>{stampReports();restrictBulkExport();wrapSignOut()}).observe(document.documentElement,{subtree:true,childList:true});
-setInterval(enforce,30000);setInterval(heartbeat,HEARTBEAT_EVERY);setInterval(()=>{stampReports();restrictBulkExport();wrapSignOut()},2500);
+setInterval(enforce,30000);setInterval(heartbeat,HEARTBEAT_EVERY);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run();
-window.__ccSecurity={enforce,touch,logout,heartbeat,stampReports,restrictBulkExport,clearLocalContractCache};
+window.__ccSecurity={enforce,touch,logout,heartbeat,stampReports,restrictBulkExport,clearLocalContractCache,scheduleDomSync};
 })();

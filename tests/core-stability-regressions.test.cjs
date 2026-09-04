@@ -10,6 +10,7 @@ const inject=fs.readFileSync('inject-portfolio.cjs','utf8');
 const tabs=fs.readFileSync('project-tabs-complete-v1.js','utf8');
 const official=fs.readFileSync('contract-official-format-v1.js','utf8');
 const documents=fs.readFileSync('contract-payment-documents-v1.js','utf8');
+const privateAccess=fs.readFileSync('private-access-v1.js','utf8');
 
 // Navegación: la barra lateral debe gobernar directamente la vista.
 assert.match(nav,/view\.screen='projects'/,'Inicio/Proyectos debe manejar el estado real de la vista');
@@ -51,7 +52,9 @@ assert.match(stabilizer,/data-cc-auth-script/,'los scripts funcionales deben con
 assert.match(stabilizer,/data-cc-auth-loader data-cc-auth-plan/,'debe existir un único cargador autenticado');
 assert.match(stabilizer,/PRE_AUTH_MODULES=new Set\(\['private-access-v1\.js','password-recovery-v1\.js'\]\)/,'login seguro y recuperación deben permanecer disponibles sin sesión');
 assert.match(stabilizer,/PRE_AUTH_MODULES\.has\(bare\)/,'el aislamiento debe respetar la lista mínima de módulos de acceso');
-assert.match(stabilizer,/location\.reload\(\);return/,'después de ingresar debe recargar una sola vez el contexto autenticado completo');
+assert.match(privateAccess,/localStorage\.setItem\(SESSION,JSON\.stringify\(session\)\);cloudLoaded=false;location\.reload\(\);return;/,'el login seguro real debe reiniciar una sola vez el contexto para activar el plan autenticado');
+assert.doesNotMatch(privateAccess,/cloudLoaded=false;await render\(\)/,'el login seguro no debe quedarse en un render parcial sin reactivar el cargador autenticado');
+assert.match(stabilizer,/location\.reload\(\);return/,'el estabilizador debe conservar compatibilidad con el login histórico embebido');
 assert.match(stabilizer,/script\.async=false/,'los módulos autenticados deben mantener el orden de ejecución');
 assert.doesNotMatch(stabilizer,/document\.write\s*\(/,'no debe volver a usarse document.write para activar módulos');
 assert.match(stabilizer,/bootEnd='render\(\);\\n<\/script>'/,'el aislamiento debe empezar después del núcleo de acceso');

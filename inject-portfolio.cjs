@@ -20,7 +20,7 @@ const modules=[
   ['integrity-diagnostics-v1.js','20260826-integrity1'],
   ['hero-typography-v1.js','20260830-hero1'],
   /* Última capa: una sola navegación visible, sin accionar menús ocultos. */
-  ['ui-navigation-single-source-v1.js','20260903-singlenav2'],
+  ['ui-navigation-single-source-v1.js','20260904-singlenav3'],
 ];
 
 if(!fs.existsSync(htmlFile)) throw new Error('No se encontró index.html.');

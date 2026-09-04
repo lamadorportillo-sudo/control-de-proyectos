@@ -2,6 +2,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const {retiredModules,preAuthModules}=require('../authenticated-module-manifest-v1.cjs');
 
+const portalWeb=fs.readFileSync('portal-web-v2.js','utf8');
 const nav=fs.readFileSync('ui-navigation-single-source-v1.js','utf8');
 const uiStability=fs.readFileSync('ui-stability-v1.js','utf8');
 const perf=fs.readFileSync('performance-runtime-v1.js','utf8');
@@ -14,7 +15,15 @@ const official=fs.readFileSync('contract-official-format-v1.js','utf8');
 const documents=fs.readFileSync('contract-payment-documents-v1.js','utf8');
 const privateAccess=fs.readFileSync('private-access-v1.js','utf8');
 
-// Navegación: la barra lateral debe gobernar directamente la vista.
+// Portal: crea estructura visual, pero no vuelve a decidir las rutas principales.
+assert.match(portalWeb,/PORTAL WEB V4 · PRESENTACIÓN ESTABLE/,'el portal debe estar en modo presentación');
+assert.doesNotMatch(portalWeb,/function\s+goBudget/,'el portal no debe conservar un router de presupuesto paralelo');
+assert.doesNotMatch(portalWeb,/function\s+openProjectTab/,'el portal no debe abrir pestañas como segundo router');
+assert.doesNotMatch(portalWeb,/function\s+setActive/,'el portal no debe competir por el estado activo del sidebar');
+assert.match(portalWeb,/data-route="campo"[\s\S]*data-route="arquitectura"[\s\S]*data-route="logout"/,'las acciones auxiliares válidas deben permanecer disponibles');
+assert.match(portalWeb,/Inicio, Proyectos, Presupuesto y centros globales quedan sin listener local/,'debe documentar la separación de responsabilidades de navegación');
+
+// Navegación: la barra lateral gobierna directamente la vista.
 assert.match(nav,/view\.screen='projects'/,'Inicio/Proyectos debe manejar el estado real de la vista');
 assert.doesNotMatch(nav,/querySelector\(`\[data-ccx=/,'no debe localizar botones ocultos del motor ejecutivo');
 assert.doesNotMatch(nav,/btn\.click\(\)/,'no debe accionar navegación heredada con clics sintéticos');
@@ -82,6 +91,7 @@ assert.match(stabilizer,/preAuthModules/,'la construcción debe validar los mód
 // Arranque autenticado por fases: la primera pintura no debe esperar decenas de módulos.
 assert.match(stabilizer,/__CC_STAGED_AUTH_BOOT__/,'debe declarar el modo de arranque autenticado escalonado');
 assert.match(stabilizer,/FASE A · PRIMERA PINTURA AUTENTICADA/,'debe existir una fase crítica de primera pintura');
+assert.match(stabilizer,/portal-web-v2\.js\?v=20260904-web4/,'debe cargar la versión del portal que ya no compite por rutas');
 assert.match(stabilizer,/requireRun\('portal-web-v2\.js'/,'el portal es obligatorio para declarar lista la fase crítica');
 assert.match(stabilizer,/Falta project-tabs-complete-v1\.js en el plan autenticado/,'las pestañas críticas ausentes deben fallar explícitamente');
 assert.match(stabilizer,/Falta ui-navigation-single-source-v1\.js en el plan autenticado/,'la navegación crítica ausente debe fallar explícitamente');
@@ -109,4 +119,4 @@ for(const file of retiredModules){
   assert(retiredModules.includes(file),`el manifiesto debe conservar ${file} como retirado`);
 }
 
-console.log('core-stability-regressions: navegación única, estabilidad visual aislada, login seguro, presupuesto global de nube, versiones canónicas y arranque autenticado por fases blindados');
+console.log('core-stability-regressions: portal de presentación, navegación única, login seguro, presupuesto global de nube, versiones canónicas y arranque por fases blindados');

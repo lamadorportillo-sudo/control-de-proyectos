@@ -10,6 +10,7 @@ const legacyVisualModules=[
   'system-ui-refinement-v2.js',
   'dashboard-executive-v1.js',
   'home-executive-fix-v2.js',
+  'industrial-home-v1.js',
   'portfolio-redesign-v1.js',
   'project-portfolio-detail-v1.js',
   'portfolio-screen-fix-v1.js',

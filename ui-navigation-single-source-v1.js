@@ -1,4 +1,4 @@
-/* CONTROL CONTRACTUAL · NAVEGACIÓN ÚNICA V5
+/* CONTROL CONTRACTUAL · NAVEGACIÓN ÚNICA V4 · ENDURECIDA V5
    La barra lateral gobierna directamente la aplicación.
    No dispara botones ocultos ni depende del dashboard ejecutivo legado. */
 (()=>{

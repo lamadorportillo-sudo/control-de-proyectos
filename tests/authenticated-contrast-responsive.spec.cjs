@@ -49,12 +49,7 @@ async function assertContrast(page,label,include='#content'){
     };
     const blend=(top,bottom)=>{
       const a=top?.a??1,ba=bottom?.a??1,outA=a+ba*(1-a)||1;
-      return{
-        r:(top.r*a+bottom.r*ba*(1-a))/outA,
-        g:(top.g*a+bottom.g*ba*(1-a))/outA,
-        b:(top.b*a+bottom.b*ba*(1-a))/outA,
-        a:outA
-      };
+      return{r:(top.r*a+bottom.r*ba*(1-a))/outA,g:(top.g*a+bottom.g*ba*(1-a))/outA,b:(top.b*a+bottom.b*ba*(1-a))/outA,a:outA};
     };
     const lum=color=>{
       const f=v=>{v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4)};
@@ -113,29 +108,36 @@ async function openSidebarIfNeeded(page,vp){
   expect(open,'El menú móvil debe abrirse con el botón ☰').toBe(true);
 }
 
+async function mobileRouteBox(page,route){
+  return page.evaluate(route=>{
+    const b=document.querySelector(`#ccSidebar .cc-side-btn[data-route="${route}"]`);
+    if(!b)return null;
+    const cs=getComputedStyle(b),r=b.getBoundingClientRect();
+    if(cs.display==='none'||cs.visibility==='hidden'||Number(cs.opacity)===0||r.width<1||r.height<1)return null;
+    return{x:r.x,y:r.y,width:r.width,height:r.height,text:(b.textContent||'').replace(/\s+/g,' ').trim(),connected:b.isConnected};
+  },route);
+}
+
 async function clickRoute(page,vp,route){
   await openSidebarIfNeeded(page,vp);
-  const btn=page.locator(`#ccSidebar [data-route="${route}"]`);
-  await expect(btn).toBeVisible();
   if(vp.name==='mobile'){
-    const box=await btn.boundingBox();
-    expect(box,`La ruta móvil ${route} debe tener un área táctil visible`).not.toBeNull();
+    const box=await mobileRouteBox(page,route);
+    expect(box,`La ruta móvil ${route} debe existir y tener un área táctil visible`).not.toBeNull();
+    expect(box.connected,`La ruta móvil ${route} debe seguir conectada al DOM`).toBe(true);
     await page.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);
     await page.waitForTimeout(120);
     const state=await page.evaluate(route=>{
       const side=document.querySelector('#ccSidebar');
       const overlay=document.querySelector('#ccSidebarOverlay');
       const active=document.querySelector(`#ccSidebar [data-route="${route}"]`);
-      return{
-        open:side?.classList.contains('open')===true,
-        overlay:overlay?.classList.contains('show')===true,
-        active:active?.classList.contains('active')===true
-      };
+      return{open:side?.classList.contains('open')===true,overlay:overlay?.classList.contains('show')===true,active:active?.classList.contains('active')===true};
     },route);
     expect(state.open,`La ruta móvil ${route} debe cerrar el sidebar`).toBe(false);
     expect(state.overlay,`La ruta móvil ${route} debe retirar el fondo del menú`).toBe(false);
     expect(state.active,`La ruta móvil ${route} debe quedar activa`).toBe(true);
   }else{
+    const btn=page.locator(`#ccSidebar [data-route="${route}"]`);
+    await expect(btn).toBeVisible();
     await btn.click();
     await expect(btn).toHaveClass(/active/);
   }

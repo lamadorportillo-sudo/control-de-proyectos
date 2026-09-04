@@ -28,12 +28,21 @@ async function mockBackend(page){
 }
 
 async function login(page){
+  let topNavigations=0;
+  page.on('framenavigated',frame=>{if(frame===page.mainFrame())topNavigations++});
   await mockBackend(page);
   await page.goto(appUrl,{waitUntil:'domcontentloaded',timeout:30000});
   await expect(page.locator('#authForm')).toBeVisible({timeout:10000});
   await page.locator('#authEmail').fill('qa-contrato@example.com');
   await page.locator('#authPass').fill('Contrato-Seguro-2026!');
   await page.locator('#authSubmit').click();
+
+  // El login seguro navega de nuevo para arrancar los módulos autenticados con
+  // la sesión ya persistida. No se debe esperar el estado final del window que
+  // corresponde a la pantalla de acceso anterior.
+  await expect.poll(()=>topNavigations,{timeout:15000,message:'El login contractual no recargó el contexto autenticado'}).toBeGreaterThanOrEqual(2);
+  await expect(page.locator('#ccSidebar')).toBeVisible({timeout:15000});
+  await page.waitForFunction(()=>window.__CC_AUTH_CRITICAL_READY__===true||window.__CC_AUTH_BOOT_FAILED__===true,null,{timeout:15000});
   await page.waitForFunction(()=>window.__CC_AUTH_MODULES_READY__===true||window.__CC_AUTH_BOOT_FAILED__===true,null,{timeout:30000});
   const boot=await page.evaluate(()=>({ready:window.__CC_AUTH_MODULES_READY__===true,failed:window.__CC_AUTH_BOOT_FAILED__===true,errors:window.__CC_AUTH_MODULE_ERRORS__||[]}));
   expect(boot.failed,JSON.stringify(boot.errors)).toBe(false);

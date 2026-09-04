@@ -3,8 +3,10 @@ const fs=require('node:fs');
 const {retiredModules}=require('../authenticated-module-manifest-v1.cjs');
 
 const nav=fs.readFileSync('ui-navigation-single-source-v1.js','utf8');
+const uiStability=fs.readFileSync('ui-stability-v1.js','utf8');
 const perf=fs.readFileSync('performance-runtime-v1.js','utf8');
 const storage=fs.readFileSync('storage-quota-fix-v1.js','utf8');
+const coreHardening=fs.readFileSync('core-hardening-v1.js','utf8');
 const stabilizer=fs.readFileSync('stabilize-core-v1.cjs','utf8');
 const inject=fs.readFileSync('inject-portfolio.cjs','utf8');
 const tabs=fs.readFileSync('project-tabs-complete-v1.js','utf8');
@@ -17,6 +19,13 @@ assert.match(nav,/view\.screen='projects'/,'Inicio/Proyectos debe manejar el est
 assert.doesNotMatch(nav,/querySelector\(`\[data-ccx=/,'no debe localizar botones ocultos del motor ejecutivo');
 assert.doesNotMatch(nav,/btn\.click\(\)/,'no debe accionar navegación heredada con clics sintéticos');
 assert.match(nav,/cc_main_route_v2/,'debe conservar una sola intención de ruta principal');
+
+// Estabilidad visual: nunca debe volver a convertirse en un segundo router.
+assert.match(uiStability,/ESTABILIDAD VISUAL V2/,'la capa de estabilidad debe declararse solo visual');
+assert.doesNotMatch(uiStability,/function\s+hiddenExecutive/,'la estabilidad visual no debe buscar navegación ejecutiva oculta');
+assert.doesNotMatch(uiStability,/function\s+fallbackRoute/,'la estabilidad visual no debe decidir rutas de respaldo');
+assert.doesNotMatch(uiStability,/stopImmediatePropagation\(/,'la estabilidad visual no debe competir por los clics del sidebar');
+assert.doesNotMatch(uiStability,/\.click\(\)/,'la estabilidad visual no debe disparar navegación sintética');
 
 // Pestañas: son presentación, no un segundo gestor de dependencias.
 assert.match(tabs,/NAVEGACION COMPLETA DEL EXPEDIENTE V2 · ESTABLE/,'debe estar activa la versión estable de pestañas');
@@ -31,6 +40,14 @@ for(const file of retiredModules){
 assert.match(perf,/__ccNativeMutationObserver/,'debe conservar referencia al observador nativo');
 assert.doesNotMatch(perf,/window\.MutationObserver\s*=/,'no debe reemplazar MutationObserver global');
 assert.doesNotMatch(perf,/MAX_PASSES/,'no debe descartar actualizaciones después de un número fijo de pasadas');
+
+// Arranque de nube: 12 s es presupuesto total, no 12 s por cada petición.
+assert.match(coreHardening,/let startupDeadline=0/,'debe existir un límite temporal compartido del arranque');
+assert.match(coreHardening,/function beginStartupBudget\(\)/,'debe iniciar un presupuesto global de arranque');
+assert.match(coreHardening,/const remaining=Math\.max\(1,deadline-Date\.now\(\)\)/,'cada petición debe usar solo el tiempo restante del presupuesto global');
+assert.match(coreHardening,/const deadline=beginStartupBudget\(\);[\s\S]*workspace_members[\s\S]*profiles[\s\S]*readCloudRow\(deadline\)/,'membresía, perfil y estado deben compartir el mismo deadline');
+assert.match(coreHardening,/finally\{\s*clearStartupBudget\(\);\s*\}/,'el presupuesto debe liberarse cuando termine el arranque');
+assert.match(coreHardening,/deadline\?await startupSbFetch\(path,undefined,deadline\):await sbFetch\(path\)/,'las lecturas posteriores al arranque no deben heredar un deadline vencido');
 
 // Fotografías: una reducción de caché local no equivale a carga confirmada en nube.
 assert.match(storage,/photoLocalCacheOmitted=true/,'debe distinguir foto omitida de la copia local');
@@ -87,4 +104,4 @@ for(const file of retiredModules){
   assert(retiredModules.includes(file),`el manifiesto debe conservar ${file} como retirado`);
 }
 
-console.log('core-stability-regressions: navegación, pestañas sin cargador duplicado, Inicio único, login seguro, runtime, fotos, documentos y arranque autenticado por fases blindados');
+console.log('core-stability-regressions: navegación única, estabilidad visual aislada, login seguro, presupuesto global de nube, runtime, fotos, documentos y arranque autenticado por fases blindados');

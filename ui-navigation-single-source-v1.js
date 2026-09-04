@@ -1,9 +1,10 @@
-/* CONTROL CONTRACTUAL · NAVEGACIÓN ÚNICA V3
+/* CONTROL CONTRACTUAL · NAVEGACIÓN ÚNICA V4
    La barra lateral gobierna directamente la aplicación.
    No dispara botones ocultos ni depende del dashboard ejecutivo legado. */
 (()=>{
 'use strict';
-if(window.__CC_SINGLE_NAV_V3__)return;
+if(window.__CC_SINGLE_NAV_V4__)return;
+window.__CC_SINGLE_NAV_V4__=true;
 window.__CC_SINGLE_NAV_V3__=true;
 window.__CC_SINGLE_NAV_V2__=true;
 window.__CC_SINGLE_NAV_V1__=true;
@@ -17,8 +18,19 @@ let queued=false,cleaning=false,sideObserver=null,observedSidebar=null;
 function role(){try{return String(cloudRole||'')}catch{return''}}
 function screen(){try{return String(view?.screen||'')}catch{return''}}
 function tab(){try{return String(view?.tab||'')}catch{return''}}
-function storedRoute(){try{return localStorage.getItem(ROUTE_KEY)||'inicio'}catch{return'inicio'}}
-function rememberRoute(route){try{localStorage.setItem(ROUTE_KEY,route)}catch{}window.__ccMainRoute=route}
+function storedRoute(){
+ try{
+  const live=String(window.__ccMainRoute||document.body?.dataset?.ccMainRoute||'').trim();
+  if(live)return live;
+  return localStorage.getItem(ROUTE_KEY)||'inicio';
+ }catch{return String(window.__ccMainRoute||'inicio')}
+}
+function rememberRoute(route){
+ const r=String(route||'inicio');
+ window.__ccMainRoute=r;
+ try{if(document.body)document.body.dataset.ccMainRoute=r}catch{}
+ try{localStorage.setItem(ROUTE_KEY,r)}catch{}
+}
 function toastSafe(message){try{if(typeof toast==='function')toast(message)}catch{}}
 function closeMobileNav(){
  const side=Q('#ccSidebar'),overlay=Q('#ccSidebarOverlay');
@@ -84,13 +96,22 @@ function activeRoute(){
  if(document.body.classList.contains('cc-reports-center-active'))return'reportes';
  if(document.body.classList.contains('cc-alerts-center-active'))return'alertas';
  if(document.body.classList.contains('cc-audit-center-active'))return'auditoria';
- if(s==='projects')return storedRoute()==='proyectos'?'proyectos':storedRoute()==='alertas'?'alertas':'inicio';
+ if(s==='projects'){
+  const intended=storedRoute();
+  return intended==='proyectos'?'proyectos':intended==='alertas'?'alertas':'inicio';
+ }
  return storedRoute();
 }
 
 function syncActive(sidebar){
+ if(!sidebar)return;
  const r=activeRoute();
- QA('.cc-side-btn',sidebar).forEach(b=>b.classList.toggle('active',b.dataset.route===r));
+ QA('.cc-side-btn',sidebar).forEach(b=>{
+  const on=b.dataset.route===r;
+  b.classList.toggle('active',on);
+  if(on)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
+ });
+ sidebar.dataset.activeRoute=r;
 }
 
 function watchSidebar(sidebar){
@@ -112,11 +133,14 @@ function sanitizeLegacy(){
 
 function goPortfolio(route){
  rememberRoute(route);
+ syncActive(Q('#ccSidebar'));
  try{
   if(typeof view!=='undefined'){
    view.screen='projects';view.projectId=null;view.tab='summary';view.trash=false;
   }
   if(typeof renderApp==='function')renderApp();
+  queue();
+  requestAnimationFrame(()=>queue());
   setTimeout(()=>{
    if(route==='proyectos')Q('.projects-board,.project-grid-v3,.dashboard-project-grid')?.scrollIntoView({behavior:'smooth',block:'start'});
    else window.scrollTo({top:0,behavior:'smooth'});
@@ -127,14 +151,14 @@ function goPortfolio(route){
 }
 
 function goBudget(){
- rememberRoute('presupuesto');
- try{view.screen='budgetPortfolio';view.projectId=null;view.tab='summary';renderApp();setTimeout(queue,0)}catch(e){console.warn(e)}
+ rememberRoute('presupuesto');syncActive(Q('#ccSidebar'));
+ try{view.screen='budgetPortfolio';view.projectId=null;view.tab='summary';renderApp();queue();setTimeout(queue,0)}catch(e){console.warn(e)}
 }
 
 function goTransparency(){
- rememberRoute('transparencia');
+ rememberRoute('transparencia');syncActive(Q('#ccSidebar'));
  if(typeof window.__ccOpenTransparencyDirect==='function')return window.__ccOpenTransparencyDirect();
- try{view.screen='transparency';view.projectId=null;view.tab='summary';renderApp();setTimeout(queue,0)}catch(e){console.warn(e)}
+ try{view.screen='transparency';view.projectId=null;view.tab='summary';renderApp();queue();setTimeout(queue,0)}catch(e){console.warn(e)}
 }
 
 function ensure(){
@@ -160,8 +184,12 @@ document.addEventListener('click',event=>{
     cerrarse para devolver inmediatamente el foco y el espacio al contenido. */
  closeMobileNav();
 
- /* Guardar intención incluso para rutas atendidas por portal-web. */
- if(!['campo','arquitectura','logout'].includes(r))rememberRoute(r);
+ /* Guardar intención incluso para rutas atendidas por portal-web. La memoria
+    viva es la autoridad durante la sesión y localStorage queda como persistencia. */
+ if(!['campo','arquitectura','logout'].includes(r)){
+  rememberRoute(r);
+  syncActive(Q('#ccSidebar'));
+ }
 
  if(r==='inicio'||r==='proyectos'||r==='presupuesto'||r==='transparencia'||r==='usuarios'||r==='solicitudes'||r==='seguridad'){
   event.preventDefault();event.stopImmediatePropagation();
@@ -187,5 +215,5 @@ if(NativeObserver)new NativeObserver(queue).observe(Q('#app')||document.document
 window.addEventListener('cc:route-changed',queue);
 window.addEventListener('cc:data-changed',queue);
 setTimeout(ensure,0);setTimeout(ensure,250);setTimeout(ensure,900);
-window.__ccSingleNav={refresh:ensure,goPortfolio,goBudget,goTransparency,closeMobileNav};
+window.__ccSingleNav={refresh:ensure,goPortfolio,goBudget,goTransparency,closeMobileNav,activeRoute,rememberRoute};
 })();

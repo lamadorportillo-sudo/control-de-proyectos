@@ -1,0 +1,91 @@
+name: Compatibilidad Firefox y WebKit
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'index.html'
+      - '*.js'
+      - '*.cjs'
+      - '*.css'
+      - 'tests/**'
+      - 'supabase/**'
+      - 'playwright.config.cjs'
+      - 'package.json'
+      - '.github/workflows/cross-browser-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cross-browser-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compatibility:
+    name: ${{ matrix.browser }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [firefox, webkit]
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v6
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Validar y reconstruir aplicación
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check playwright.config.cjs
+          node --test tests/*.test.cjs
+          node build-pages.cjs
+          node inject-portfolio.cjs
+          node patch-session-security.cjs
+          node stabilize-core-v1.cjs
+          node scripts/audit-system-1000.cjs
+
+      - name: Instalar navegador de compatibilidad
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-package-lock
+          npx playwright install --with-deps "${{ matrix.browser }}"
+
+      - name: Levantar aplicación local
+        shell: bash
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/control-proyectos-cross-browser.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/control-proyectos-cross-browser.log
+          exit 1
+
+      - name: Probar responsive y WCAG en ${{ matrix.browser }}
+        env:
+          APP_URL: http://127.0.0.1:4173/
+          BROWSER_NAME: ${{ matrix.browser }}
+        shell: bash
+        run: npx playwright test tests/responsive-audit.spec.cjs tests/accessibility-responsive.spec.cjs --workers=1 --retries=0
+
+      - name: Guardar evidencia
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cross-browser-${{ matrix.browser }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14

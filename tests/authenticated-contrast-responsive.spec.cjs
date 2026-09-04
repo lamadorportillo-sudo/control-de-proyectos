@@ -115,10 +115,16 @@ async function clickRoute(page,vp,route){
   await openSidebarIfNeeded(page,vp);
   const btn=page.locator(`#ccSidebar [data-route="${route}"]`);
   await expect(btn).toBeVisible();
-  await btn.click();
   if(vp.name==='mobile'){
+    const box=await btn.boundingBox();
+    expect(box,`La ruta móvil ${route} debe tener un área táctil visible`).not.toBeNull();
+    await page.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);
     await expect(page.locator('#ccSidebar')).not.toHaveClass(/open/);
     await expect(page.locator('#ccSidebarOverlay')).not.toHaveClass(/show/);
+    await expect(btn).toHaveClass(/active/);
+  }else{
+    await btn.click();
+    await expect(btn).toHaveClass(/active/);
   }
   await page.waitForTimeout(350);
 }

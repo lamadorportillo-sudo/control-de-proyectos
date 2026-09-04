@@ -1,10 +1,12 @@
-/* ===== PERSISTENCIA SEGURA · CONTROL DE CUOTA LOCAL V2 ===== */
+/* ===== PERSISTENCIA SEGURA · CONTROL DE CUOTA LOCAL V3 ===== */
 (()=>{
 'use strict';
-if(window.__CC_STORAGE_QUOTA_FIX_V2__)return;
+if(window.__CC_STORAGE_QUOTA_FIX_V3__)return;
+window.__CC_STORAGE_QUOTA_FIX_V3__=true;
 window.__CC_STORAGE_QUOTA_FIX_V2__=true;
 
 const isImageData=v=>typeof v==='string'&&/^data:image\//i.test(v);
+
 function slimLocalState(source){
   const seen=new WeakSet();
   const walk=(v,key='')=>{
@@ -22,7 +24,9 @@ function slimLocalState(source){
     for(const [k,val] of Object.entries(v)){
       if(isImageData(val)&&(k==='src'||k==='dataUrl'||k==='data_url'||k==='image'||k==='url')){
         out[k]='';
-        out.photoStoredInCloud=true;
+        /* No afirmar que la imagen está en nube. Esta copia reducida solo
+           indica que el navegador omitió el Base64 para no exceder la cuota. */
+        out.photoLocalCacheOmitted=true;
         continue;
       }
       const next=walk(val,k);
@@ -32,18 +36,26 @@ function slimLocalState(source){
   };
   return walk(source);
 }
+
 function tryStore(value){
-  try{localStorage.setItem(STORE,JSON.stringify(value));return true}catch(err){console.warn('Guardado local completo no disponible',err);return false}
+  try{localStorage.setItem(STORE,JSON.stringify(value));return true}
+  catch(err){console.warn('Guardado local no disponible',err);return false}
 }
+
+function signalDataChanged(){
+  try{window.dispatchEvent(new CustomEvent('cc:data-changed',{detail:{source:'saveDB'}}))}catch{}
+}
+
 function install(){
   try{
-    if(typeof saveDB!=='function'||saveDB.__ccSafeStorageV2)return;
+    if(typeof saveDB!=='function'||saveDB.__ccSafeStorageV3)return;
+    const originalSave=saveDB;
     const safeSave=function(){
       try{if(typeof syncAllProjectProgress==='function')syncAllProjectProgress()}catch(e){console.warn('No se pudo recalcular avance antes de guardar',e)}
-      let fullSaved=false,localSaved=false;
+
+      let localSaved=false;
       try{
-        fullSaved=tryStore(db);
-        localSaved=fullSaved;
+        localSaved=tryStore(db);
         if(!localSaved){
           const slim=slimLocalState(db);
           try{localStorage.removeItem(STORE)}catch{}
@@ -51,24 +63,41 @@ function install(){
           if(localSaved){try{sessionStorage.setItem('cc_storage_quota_notice','1')}catch{}}
         }
       }catch(err){console.error('Persistencia local no bloqueante',err)}
+
+      let cloudQueued=false;
       try{
-        if(typeof cloudLoaded!=='undefined'&&cloudLoaded&&session?.accessToken&&typeof scheduleCloudSave==='function')scheduleCloudSave();
+        if(typeof cloudLoaded!=='undefined'&&cloudLoaded&&session?.accessToken&&typeof scheduleCloudSave==='function'){
+          scheduleCloudSave();
+          cloudQueued=true;
+        }
       }catch(e){console.warn('Sincronización en nube pendiente',e)}
-      // Nunca bloquea un formulario por un problema del almacenamiento local.
-      return localSaved||fullSaved;
+
+      signalDataChanged();
+      /* El guardado puede continuar aunque localStorage esté lleno, siempre
+         que la sincronización remota haya sido programada. Nunca se informa
+         aquí que una foto ya está en nube: eso solo debe hacerlo el uploader. */
+      return localSaved||cloudQueued;
     };
+    safeSave.__ccSafeStorageV3=true;
     safeSave.__ccSafeStorageV2=true;
+    safeSave.__ccOriginalSave=originalSave;
     saveDB=safeSave;
     window.__ccSafeSlimState=slimLocalState;
-  }catch(e){console.error('No se pudo instalar la persistencia segura V2',e)}
+  }catch(e){console.error('No se pudo instalar la persistencia segura V3',e)}
 }
+
 function notifyIfNeeded(){
   try{
     if(sessionStorage.getItem('cc_storage_quota_notice')!=='1')return;
     sessionStorage.removeItem('cc_storage_quota_notice');
-    setTimeout(()=>{try{toast('La copia local se optimizó para evitar bloqueos. Los cambios continúan sincronizándose en la nube.')}catch{}},250);
+    setTimeout(()=>{
+      try{toast('La copia local se redujo para evitar bloqueo. Las fotografías solo se consideran sincronizadas cuando Supabase confirma su carga.')}catch{}
+    },250);
   }catch{}
 }
-install();notifyIfNeeded();
-setTimeout(install,250);setTimeout(install,1000);
+
+install();
+notifyIfNeeded();
+setTimeout(install,250);
+setTimeout(install,1000);
 })();

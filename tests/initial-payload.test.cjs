@@ -1,5 +1,6 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
+const {retiredModules}=require('../authenticated-module-manifest-v1.cjs');
 
 const html=fs.readFileSync('index.html','utf8');
 const refs=[...html.matchAll(/<script\s+[^>]*src=["']([^"']+)/g)].map(match=>match[1].split('?')[0]);
@@ -17,7 +18,9 @@ assert(html.includes('rel="preconnect" href="https://flethujkrharehjikwgj.supaba
 assert(/rel="preload" href="performance-runtime-v1\.js\?v=[^"]+"/.test(html),'Debe anticipar el coordinador de rendimiento con una versión vigente');
 
 const injector=fs.readFileSync('inject-portfolio.cjs','utf8');
-assert(injector.includes("'system-ui-refinement-v2.js'"),'El inyector debe reconocer la capa visual V2 como legado para retirarla');
+assert(retiredModules.includes('system-ui-refinement-v2.js'),'El manifiesto debe declarar la capa visual V2 como retirada');
+assert(injector.includes("require('./authenticated-module-manifest-v1.cjs')"),'El inyector debe consumir el manifiesto canónico de módulos retirados');
+assert(injector.includes('retiredModules'),'El inyector debe retirar las capas heredadas desde una sola fuente');
 assert(injector.includes("'system-ui-refinement-v3.js'"),'El inyector debe cargar la capa visual final V3');
 assert(injector.includes("'integrity-diagnostics-v1.js'"),'El inyector debe cargar el diagnóstico contractual no destructivo');
 

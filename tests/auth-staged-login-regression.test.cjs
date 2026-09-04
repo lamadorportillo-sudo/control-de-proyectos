@@ -13,5 +13,8 @@ assert.match(patch,/current&&current!==before/,'la recarga solo debe ocurrir cua
 assert.match(patch,/Date\.now\(\)-started>15000/,'el observador de login debe autolimitarse y no quedar ejecutándose indefinidamente');
 assert.match(patch,/location\.reload\(\)/,'una autenticación nueva debe reiniciar el documento para activar los módulos autenticados');
 assert.match(patch,/private-access-v1\\\.js/,'el puente debe insertarse junto al módulo real de acceso privado');
+assert.match(stabilizer,/PRE_AUTH_INLINE_IDS=new Set\(\['cc-staged-login-reload-bridge'\]\)/,'el estabilizador debe reconocer el puente como script previo a autenticación');
+assert.match(stabilizer,/PRE_AUTH_INLINE_IDS\.has\(id\)\)return full/,'el estabilizador no debe convertir el puente en un script inerte');
+assert.match(stabilizer,/El puente login → recarga quedó bloqueado antes de autenticar/,'la construcción debe fallar si el puente deja de ser ejecutable');
 
-console.log('auth-staged-login-regression: transición login -> arranque autenticado protegida');
+console.log('auth-staged-login-regression: transición login -> arranque autenticado protegida hasta el HTML final');

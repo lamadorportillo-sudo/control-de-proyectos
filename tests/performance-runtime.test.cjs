@@ -19,6 +19,7 @@ assert.match(src,/contain-intrinsic-size/,'reserva espacio sin calcular el conte
 assert.match(src,/script\.async=false/,'los módulos críticos mantienen orden de ejecución explícito');
 assert.match(src,/normalized\(link\.getAttribute\('href'\)/,'los estilos deben deduplicarse por URL real y no solo por id');
 assert.match(src,/Conflicto de versión en runtime/,'el runtime debe denunciar dos versiones distintas del mismo módulo');
+assert.match(src,/portal-web-v2\.js\?v=20260904-web4/,'el runtime debe solicitar el portal que ya no funciona como segundo router');
 assert.match(src,/scriptOnce\('portal-web-v2\.js/,'carga el portal web una sola vez');
 assert.match(src,/scriptOnce\('dashboard-simplified-v4\.js/,'carga un único dashboard vigente');
 assert.match(src,/ui-stability-v1\.js\?v=20260904-stable2/,'debe usar la versión visual sin funciones de router');

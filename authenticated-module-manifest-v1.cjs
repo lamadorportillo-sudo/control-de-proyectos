@@ -1,7 +1,6 @@
-/* Fuente única de módulos suplementarios para el arranque autenticado.
-   Estos recursos antes se cargaban desde project-tabs-complete-v1.js.
-   Mantenerlos aquí evita que una capa visual vuelva a convertirse en un
-   segundo gestor de dependencias y permite verificar versiones y orden. */
+/* Fuente única de módulos para el arranque autenticado.
+   Mantener nombres y versiones aquí evita que pestañas, build, estabilizador y
+   workflows creen catálogos incompatibles. */
 
 const retiredModules=[
   'system-ui-refinement-v2.js',
@@ -11,6 +10,12 @@ const retiredModules=[
   'portfolio-redesign-v1.js',
   'project-portfolio-detail-v1.js',
   'portfolio-screen-fix-v1.js',
+];
+
+/* Únicos módulos que pueden ejecutarse sin sesión. */
+const preAuthModules=[
+  ['private-access-v1.js','20260904-private6'],
+  ['password-recovery-v1.js','20260822-password1'],
 ];
 
 const supplementalModules=[
@@ -51,4 +56,4 @@ const supplementalModules=[
   ['contract-preview-v1.js','20260831-preview1'],
 ];
 
-module.exports={retiredModules,supplementalModules};
+module.exports={retiredModules,preAuthModules,supplementalModules};

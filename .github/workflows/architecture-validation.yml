@@ -32,6 +32,15 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Validar inventario de Edge Functions
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check scripts/check-supabase-edge-functions.cjs
+          node scripts/check-supabase-edge-functions.cjs
+
       - name: Validar sintaxis y contratos de arquitectura
         shell: bash
         run: |
@@ -46,7 +55,9 @@ jobs:
           node --check patch-session-security.cjs
           node --check stabilize-core-v1.cjs
           node --check scripts/audit-system-1000.cjs
+          node --check scripts/check-supabase-edge-functions.cjs
           node --check tests/admin-mfa-enforcement.test.cjs
+          node --check tests/edge-functions-source-control.test.cjs
           node --check tests/admin-mfa-enforcement-browser.spec.cjs
           node --check tests/architecture-auth-boot.spec.cjs
           node --check tests/accessibility-responsive.spec.cjs

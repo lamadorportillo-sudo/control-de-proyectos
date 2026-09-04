@@ -8,6 +8,7 @@ on:
       - '*.js'
       - '*.cjs'
       - 'tests/full-user-journey-responsive.spec.cjs'
+      - 'tests/project-create-route-responsive.spec.cjs'
       - '.github/workflows/user-journey-audit.yml'
   workflow_dispatch:
 
@@ -21,7 +22,7 @@ concurrency:
 jobs:
   journey:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 18
     steps:
       - name: Descargar repositorio
         uses: actions/checkout@v6
@@ -36,11 +37,22 @@ jobs:
         run: |
           set -euo pipefail
           node --check ui-navigation-single-source-v1.js
+          node --check stabilize-core-v1.cjs
           node --check tests/full-user-journey-responsive.spec.cjs
+          node --check tests/project-create-route-responsive.spec.cjs
           node build-pages.cjs
           node inject-portfolio.cjs
           node patch-session-security.cjs
-          grep -q 'ui-navigation-single-source-v1.js?v=20260903-singlenav1' index.html
+          node stabilize-core-v1.cjs
+          grep -q 'ui-navigation-single-source-v1.js?v=20260903-singlenav2' index.html
+          grep -q "view.screen='project';view.tab='summary'" index.html
+          grep -q "const targetPct=Number(contract.recoveryTarget||0);" index.html
+          for retired in dashboard-executive-v1.js home-executive-fix-v2.js portfolio-redesign-v1.js project-portfolio-detail-v1.js portfolio-screen-fix-v1.js; do
+            if grep -q "$retired" index.html; then
+              echo "Sigue cargada navegación/dashboard heredado: $retired" >&2
+              exit 1
+            fi
+          done
           grep -q '</html>' index.html
 
       - name: Instalar Playwright
@@ -64,7 +76,7 @@ jobs:
       - name: Ejecutar ingreso desde cero y recorrido completo
         env:
           APP_URL: http://127.0.0.1:4173/
-        run: npx playwright test tests/full-user-journey-responsive.spec.cjs
+        run: npx playwright test tests/full-user-journey-responsive.spec.cjs tests/project-create-route-responsive.spec.cjs --workers=1 --retries=0
 
       - name: Guardar evidencia si hay fallo
         if: always()

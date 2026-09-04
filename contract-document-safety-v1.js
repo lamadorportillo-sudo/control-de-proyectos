@@ -1,9 +1,10 @@
-/* ===== CONTROL CONTRACTUAL · BLINDAJE DE DOCUMENTOS V2 ===== */
+/* ===== CONTROL CONTRACTUAL · BLINDAJE DE DOCUMENTOS V3 ===== */
 (()=>{
 'use strict';
 if(window.__CC_CONTRACT_DOCUMENT_SAFETY_V1__)return;
 window.__CC_CONTRACT_DOCUMENT_SAFETY_V1__=true;
 window.__CC_CONTRACT_DOCUMENT_SAFETY_V2__=true;
+window.__CC_CONTRACT_DOCUMENT_SAFETY_V3__=true;
 
 const A=v=>Array.isArray(v)?v:[];
 const N=v=>Number.isFinite(Number(v))?Number(v):0;
@@ -13,11 +14,11 @@ const number=(o,k)=>own(o,k)&&o[k]!==''&&o[k]!==null&&o[k]!==undefined&&Number.i
 const eq=(a,b,tol=.0001)=>a!==null&&Math.abs(Number(a)-Number(b))<=tol;
 const say=m=>{try{toast(m)}catch{try{alert(m)}catch{console.warn(m)}}};
 
-const PROFILE_REQUIRED=[
-  'mayorName','mayorDni','contractorGender','contractorDni','contractorProfession',
-  'contractorCivilStatus','contractorNationality','contractorAddress','treasuryRecipient',
-  'treasuryDepartment','supervisorName','supervisorUnit'
-];
+const PROFILE_REQUIRED_BY_KIND={
+  contract:['mayorName','mayorDni','contractorGender','contractorDni','contractorProfession','contractorCivilStatus','contractorNationality','contractorAddress'],
+  advanceRemittance:['treasuryRecipient','treasuryDepartment','supervisorName','supervisorUnit','noteDate'],
+  startOrder:['mayorName','supervisorName','projectDepartment','projectMunicipality','projectVillage','officialStartDate']
+};
 
 function context(){
   let project=null,contract=null;
@@ -28,16 +29,27 @@ function context(){
   }catch{}
   return{project,contract};
 }
-function profileMissing(c){
+function profileMissing(c,kind='all'){
   const p=c?.documentProfile&&typeof c.documentProfile==='object'?c.documentProfile:{};
-  return PROFILE_REQUIRED.filter(k=>!text(p,k));
+  const keys=kind==='all'?[...new Set(Object.values(PROFILE_REQUIRED_BY_KIND).flat())]:(PROFILE_REQUIRED_BY_KIND[kind]||[]);
+  return keys.filter(k=>!text(p,k));
+}
+function baseIdentityIssues(p,c,{amount=false,signature=false}={}){
+  const issues=[];
+  if(!text(p,'name'))issues.push('Defina el nombre del proyecto.');
+  if(!text(p,'code'))issues.push('Defina el código del proyecto.');
+  if(!text(c,'contractor'))issues.push('Defina el contratista o ejecutor.');
+  if(amount&&!(number(c,'originalAmount')>0))issues.push('Defina expresamente el monto original del contrato.');
+  if(signature&&!text(c,'signature'))issues.push('Defina la fecha de firma del contrato.');
+  return issues;
 }
 function contractCompatibility(p,c){
   const issues=[];
   if(!c)return['Primero registre el contrato.'];
+  issues.push(...baseIdentityIssues(p,c,{amount:true,signature:true}));
   const ctl=c.controls&&typeof c.controls==='object'?c.controls:{};
-  const missing=profileMissing(c);
-  if(missing.length)issues.push(`Confirme los datos del documento en “Revisar datos” (${missing.length} campo${missing.length===1?'':'s'} pendiente${missing.length===1?'':'s'}).`);
+  const missing=profileMissing(c,'contract');
+  if(missing.length)issues.push(`Confirme los datos propios del contrato en “Revisar datos” (${missing.length} campo${missing.length===1?'':'s'} pendiente${missing.length===1?'':'s'}).`);
   if(!text(ctl,'financingSource'))issues.push('Defina la fuente de financiamiento en Cláusulas y controles.');
   if(!(N(c.executionDays)>0))issues.push('Defina el plazo contractual en días.');
   if(number(ctl,'penaltyDailyPct')===null)issues.push('Defina expresamente la multa diaria, incluso si es 0%.');
@@ -70,18 +82,21 @@ function contractCompatibility(p,c){
 function noteCompatibility(p,c){
   const issues=[];
   if(!c)return['Primero registre el contrato.'];
+  issues.push(...baseIdentityIssues(p,c,{amount:true}));
   const ctl=c.controls&&typeof c.controls==='object'?c.controls:{};
-  const missing=profileMissing(c);if(missing.length)issues.push('Confirme los datos del documento en “Revisar datos”.');
+  const missing=profileMissing(c,'advanceRemittance');if(missing.length)issues.push(`Confirme los datos propios de la nota de remisión en “Revisar datos” (${missing.length} pendiente${missing.length===1?'':'s'}).`);
   if(!text(ctl,'financingSource'))issues.push('Defina la fuente de financiamiento.');
-  const pct=number(c,'advanceRequestedPct'),approved=N(c.advanceApproved),amount=N(c.originalAmount||c.currentAmount||p?.budget);
+  const pct=number(c,'advanceRequestedPct'),approved=N(c.advanceApproved),amount=N(c.originalAmount);
   if(!(approved>0||(pct!==null&&pct>0&&amount>0)))issues.push('No existe un anticipo solicitado o aprobado válido.');
   return issues;
 }
 function startCompatibility(p,c){
   const issues=[];
   if(!c)return['Primero registre el contrato.'];
-  const ctl=c.controls&&typeof c.controls==='object'?c.controls:{},profile=c.documentProfile&&typeof c.documentProfile==='object'?c.documentProfile:{};
-  for(const key of ['mayorName','supervisorName','projectDepartment','projectMunicipality','projectVillage','officialStartDate'])if(!text(profile,key))issues.push(`Falta ${key} en los datos para la orden de inicio.`);
+  issues.push(...baseIdentityIssues(p,c));
+  const ctl=c.controls&&typeof c.controls==='object'?c.controls:{};
+  const missing=profileMissing(c,'startOrder');
+  if(missing.length)issues.push(`Confirme los datos propios de la orden de inicio en “Revisar datos” (${missing.length} pendiente${missing.length===1?'':'s'}).`);
   if(!text(ctl,'financingSource'))issues.push('Defina la fuente de financiamiento.');
   return issues;
 }
@@ -121,5 +136,5 @@ function wrapApi(){
 }
 wrapApi();setTimeout(wrapApi,0);setTimeout(wrapApi,500);
 new MutationObserver(()=>wrapApi()).observe(document.documentElement,{childList:true,subtree:true});
-window.__ccContractDocumentSafety={validate,contractCompatibility,noteCompatibility,startCompatibility,profileMissing,block};
+window.__ccContractDocumentSafety={validate,contractCompatibility,noteCompatibility,startCompatibility,profileMissing,block,PROFILE_REQUIRED_BY_KIND};
 })();

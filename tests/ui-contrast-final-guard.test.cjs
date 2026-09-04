@@ -14,7 +14,11 @@ assert.match(guard,/#cpExecutionOnly strong/,'los montos de lectura operativa de
 assert.match(guard,/\.cc-life-step:not\(\.has-data\) > b/,'los conteos vacíos del ciclo de vida deben superar contraste mínimo');
 assert.match(guard,/#536476!important/,'los conteos neutros deben usar el gris validado para superficie clara');
 
-const last=supplementalModules.at(-1);
-assert.deepEqual(last,['ui-contrast-final-guard-v1.js','20260904-contrast-final1'],'la guardia final debe cargarse después de todos los módulos históricos');
+const names=supplementalModules.map(([name])=>name);
+const guardAt=names.indexOf('ui-contrast-final-guard-v1.js');
+const observerAt=names.indexOf('technical-control-observer-guard-v1.js');
+const technicalAt=names.indexOf('technical-control-v1.js');
+assert.ok(guardAt>=0&&guardAt<observerAt&&observerAt+1===technicalAt,'la corrección visual debe ejecutarse justo antes del par técnico final, sin desplazarlo');
+assert.equal(supplementalModules[guardAt][1],'20260904-contrast-final1','la versión de la guardia final debe quedar fijada en el manifiesto');
 
-console.log('ui-contrast-final-guard: Inicio, lectura operativa y ciclo de vida protegidos al final del arranque');
+console.log('ui-contrast-final-guard: Inicio, lectura operativa y ciclo de vida protegidos antes del cierre técnico');

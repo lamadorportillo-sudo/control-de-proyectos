@@ -25,8 +25,46 @@ if(!html.includes(newRefreshFetch)){
   html=html.replace(oldRefreshFetch,newRefreshFetch);
 }
 
+/* El acceso privado escribe la sesión después de que el HTML ya terminó de
+   evaluarse. El cargador autenticado, en cambio, decide qué módulos activar
+   durante el arranque. Sin este puente, un login correcto puede quedarse en
+   la pantalla de acceso porque los módulos autenticados siguen inertes hasta
+   la siguiente recarga. Observamos únicamente el formulario de acceso: si una
+   sesión nueva aparece después de enviarlo, recargamos una sola vez para que
+   el cargador autenticado arranque en el contexto correcto. */
+const stagedLoginBridge=`<script id="cc-staged-login-reload-bridge">
+(()=>{
+  'use strict';
+  const KEY='control_contractual_session_v3';
+  if(window.__CC_STAGED_LOGIN_RELOAD_BRIDGE__)return;
+  window.__CC_STAGED_LOGIN_RELOAD_BRIDGE__=true;
+  const bind=()=>{
+    const form=document.getElementById('authForm');
+    if(!form||form.dataset.ccStageReload==='1')return;
+    form.dataset.ccStageReload='1';
+    form.addEventListener('submit',()=>{
+      const before=localStorage.getItem(KEY);
+      const started=Date.now();
+      const timer=setInterval(()=>{
+        const current=localStorage.getItem(KEY);
+        if(current&&current!==before){clearInterval(timer);location.reload();return}
+        if(Date.now()-started>15000)clearInterval(timer);
+      },50);
+    },true);
+  };
+  bind();
+  new (window.__ccNativeMutationObserver||MutationObserver)(bind).observe(document.documentElement,{subtree:true,childList:true});
+})();
+</script>`;
+if(!html.includes('cc-staged-login-reload-bridge')){
+  const privateAccess=/<script\s+src=["']private-access-v1\.js(?:\?[^"']*)?["']\s*><\/script>/i;
+  if(!privateAccess.test(html))throw new Error('No se encontró private-access-v1.js para instalar el puente de recarga autenticada.');
+  html=html.replace(privateAccess,match=>match+'\n'+stagedLoginBridge);
+}
+
 if(!html.includes("securitySessionId:priorSession.securitySessionId||''"))throw new Error('La renovación todavía perdería el identificador de seguridad.');
 if(!html.includes("deviceLabel:priorSession.deviceLabel||''"))throw new Error('La renovación todavía perdería la identificación del dispositivo.');
+if(!html.includes('cc-staged-login-reload-bridge'))throw new Error('Falta el puente entre login privado y arranque autenticado.');
 
 fs.writeFileSync(path,html,'utf8');
-console.log('Renovación de token endurecida: sesión de seguridad preservada y respuestas autenticadas sin caché.');
+console.log('Renovación de token endurecida y login privado enlazado con el arranque autenticado.');

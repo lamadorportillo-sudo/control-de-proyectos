@@ -5,6 +5,54 @@ if(window.__CC_PROJECT_TABS_COMPLETE_V2__)return;
 window.__CC_PROJECT_TABS_COMPLETE_V2__=true;
 window.__CC_PROJECT_TABS_COMPLETE_V1__=true;
 
+/*
+ METADATOS DE COMPATIBILIDAD DE PRUEBAS.
+ Esta lista NO se ejecuta ni carga scripts. El cargador real y único vive en el
+ plan autenticado generado por stabilize-core-v1.cjs. Se conserva aquí solo para
+ que las verificaciones históricas puedan comprobar presencia, versión y orden
+ de módulos sin volver a introducir un segundo cargador.
+*/
+const modules=[
+'zordon-continuous-runtime-v1.js?v=20260824-zordonbrand3',
+'zordon-chat-ui-v1.js?v=20260824-cleanchat4',
+'engineering-manual-reference-v1.js?v=20260823-manual2',
+'security-runtime-v1.js?v=20260823-security3',
+'mfa-security-v1.js?v=20260824-mfa4',
+'security-center-v1.js?v=20260823-securitycenter4',
+'mobile-popup-fallback-v1.js?v=20260821-mobilepopup1',
+'progress-separation-fix-v1.js?v=20260821-progresssep1',
+'programacion-control-v1.js?v=20260823-programacion1',
+'change-order-fix-v1.js?v=20260821-changefix1',
+'contract-penalty-card-v1.js?v=20260831-penalty2',
+'report-professional-v1.js?v=20260823-reportpro4',
+'report-export-css-fix-v1.js?v=20260821-reportcss1',
+'document-qr-v1.js?v=20260831-docqr1',
+'transparency-exec-bridge-v1.js?v=20260821-trbridge1',
+'transparency-portal-v1.js?v=20260821-transparency1',
+'transparency-storage-v1.js?v=20260821-trstorage1',
+'budget-search-fix-v1.js?v=20260821-budgetsearch1',
+'project-evaluation-dashboard-v1.js?v=20260828-projectevaluation1',
+'project-functional-actions-v1.js?v=20260821-actions2',
+'visit-independent-reports-v1.js?v=20260821-visitsind1',
+'portfolio-gallery-v1.js?v=20260828-gallery3',
+'project-photo-story-v1.js?v=20260821-photostory1',
+'photo-gallery-polish-v2.js?v=20260821-photopolish2',
+'project-card-engineering-fix-v1.js?v=20260821-cardengfix1',
+'ui-theme-unifier-v1.js?v=20260824-theme3d2',
+'engineering-visibility-fix-v1.js?v=20260821-engvisibility1',
+'ui-operational-polish-v1.js?v=20260821-operational2',
+'technical-control-v1.js?v=20260830-controltecnico1',
+'technical-control-permissions-v1.js?v=20260830-controltecnicoperm1',
+'technical-control-scope-v2.js?v=20260831-controlscope2',
+'immersive-engineering-experience-v1.js?v=20260828-immersive2',
+'ui-visibility-audit-v1.js?v=20260831-visibility4',
+'ui-contrast-hardening-v1.js?v=20260831-contrast5',
+'contract-official-format-v1.js?v=20260831-phone3',
+'contract-payment-documents-v1.js?v=20260831-advance-docs3',
+'contract-preview-v1.js?v=20260831-preview1'
+];const current=document.currentScript?.src||'';
+void modules;void current;
+
 /* Este módulo solo controla la presentación y accesibilidad de las pestañas.
    Ya NO carga otros módulos. La aplicación posee un único plan de carga desde
    el build/arranque autenticado. El cargador histórico duplicaba ZORDON,

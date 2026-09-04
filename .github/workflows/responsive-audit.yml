@@ -109,7 +109,7 @@ jobs:
       - name: Probar acceso, invitado, expedientes, seguridad y accesibilidad
         env:
           APP_URL: http://127.0.0.1:4173/
-        run: npx playwright test
+        run: npx playwright test --workers=1 --retries=0
 
       - name: Guardar diagnóstico y reporte visual
         if: always()

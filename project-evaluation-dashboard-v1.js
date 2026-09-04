@@ -7,7 +7,7 @@ window.__CC_PROJECT_EVALUATION_DASHBOARD_V1__=true;
 
 const A=value=>Array.isArray(value)?value:[];
 const N=value=>Number.isFinite(Number(value))?Number(value):0;
-const H=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[char]));
+const H=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const clamp=(value,min=0,max=100)=>Math.max(min,Math.min(max,N(value)));
 const present=value=>value!==null&&value!==undefined&&String(value).trim()!=='';
 const lower=value=>String(value||'').trim().toLowerCase();

@@ -24,6 +24,7 @@ const modules=[
 'programacion-control-v1.js?v=20260823-programacion1',
 'change-order-fix-v1.js?v=20260821-changefix1',
 'contract-penalty-card-v1.js?v=20260831-penalty2',
+'contract-explicit-rules-v1.js?v=20260904-explicit1',
 'report-professional-v1.js?v=20260823-reportpro4',
 'report-export-css-fix-v1.js?v=20260821-reportcss1',
 'document-qr-v1.js?v=20260831-docqr1',
@@ -31,7 +32,7 @@ const modules=[
 'transparency-portal-v1.js?v=20260821-transparency1',
 'transparency-storage-v1.js?v=20260821-trstorage1',
 'budget-search-fix-v1.js?v=20260821-budgetsearch1',
-'project-evaluation-dashboard-v1.js?v=20260828-projectevaluation1',
+'project-evaluation-dashboard-v1.js?v=20260904-projectevaluation2',
 'project-functional-actions-v1.js?v=20260821-actions2',
 'visit-independent-reports-v1.js?v=20260821-visitsind1',
 'portfolio-gallery-v1.js?v=20260828-gallery3',
@@ -49,7 +50,8 @@ const modules=[
 'ui-contrast-hardening-v1.js?v=20260831-contrast5',
 'contract-official-format-v1.js?v=20260831-phone3',
 'contract-payment-documents-v1.js?v=20260831-advance-docs3',
-'contract-preview-v1.js?v=20260831-preview1'
+'contract-preview-v1.js?v=20260831-preview1',
+'contract-document-safety-v1.js?v=20260904-docsafety1'
 ];const current=document.currentScript?.src||'';
 void modules;void current;
 

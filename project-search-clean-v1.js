@@ -1,7 +1,8 @@
-/* ===== BUSCADOR LIMPIO DE PROYECTOS V2 ===== */
+/* ===== BUSCADOR LIMPIO DE PROYECTOS V3 ===== */
 (()=>{
 'use strict';
-if(window.__CC_PROJECT_SEARCH_CLEAN_V2__)return;
+if(window.__CC_PROJECT_SEARCH_CLEAN_V3__)return;
+window.__CC_PROJECT_SEARCH_CLEAN_V3__=true;
 window.__CC_PROJECT_SEARCH_CLEAN_V2__=true;
 
 function normalize(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()}
@@ -35,6 +36,50 @@ function bind(){
  input.dataset.ccSearchClean='1';
  input.oninput=()=>{try{view.search=input.value}catch{}applySearch(input)};
  if(input.value)applySearch(input);
+}
+
+/* Puente entre la búsqueda superior de la aplicación y Zordon.
+   Antes, Enter podía abrir Proyectos con la consulta visible arriba, pero el
+   buscador local quedaba vacío y Zordon ocultaba todas las tarjetas. */
+function projectBoard(){
+ const boards=[...document.querySelectorAll('.projects-board')];
+ return boards.find(b=>b.offsetParent!==null||b.getClientRects().length)||boards[0]||null;
+}
+function syncGlobalProjectSearch(query){
+ const q=String(query||'').trim();
+ let tries=0;
+ const sync=()=>{
+   const board=projectBoard();
+   const local=board?.querySelector('#projectSearch');
+   if(!board||!local){
+     if(tries++<12)setTimeout(sync,60);
+     return;
+   }
+   if(local.value!==q)local.value=q;
+   try{
+     if(window.__ccZordonProjectSearch?.apply)window.__ccZordonProjectSearch.apply(board,q);
+     else local.dispatchEvent(new Event('input',{bubbles:true}));
+   }catch(_){
+     local.dispatchEvent(new Event('input',{bubbles:true}));
+   }
+ };
+ sync();
+ setTimeout(sync,90);
+ setTimeout(sync,240);
+}
+function activeGlobalQuery(){return String(document.getElementById('ccGlobalSearch')?.value||'').trim()}
+function bindGlobalProjectSearch(){
+ const global=document.getElementById('ccGlobalSearch');
+ if(!global||global.dataset.ccProjectBridge==='1')return;
+ global.dataset.ccProjectBridge='1';
+ global.addEventListener('keydown',e=>{
+   if(e.key!=='Enter')return;
+   const q=String(global.value||'').trim();
+   setTimeout(()=>syncGlobalProjectSearch(q),0);
+ },true);
+ global.addEventListener('input',()=>{
+   if(projectBoard())syncGlobalProjectSearch(global.value);
+ },true);
 }
 
 /* Selector independiente de visitas de campo.
@@ -103,16 +148,17 @@ function bindVisitPicker(){
 }
 
 try{
- if(typeof renderApp==='function'&&!renderApp.__ccSearchClean){const base=renderApp;const wrapped=function(){const r=base.apply(this,arguments);setTimeout(bind,0);setTimeout(bindVisitPicker,0);return r};wrapped.__ccSearchClean=true;renderApp=wrapped}
+ if(typeof renderApp==='function'&&!renderApp.__ccSearchClean){const base=renderApp;const wrapped=function(){const r=base.apply(this,arguments);setTimeout(bind,0);setTimeout(bindGlobalProjectSearch,0);setTimeout(()=>{const q=activeGlobalQuery();if(q&&projectBoard())syncGlobalProjectSearch(q)},0);setTimeout(bindVisitPicker,0);return r};wrapped.__ccSearchClean=true;renderApp=wrapped}
 }catch(e){console.warn(e)}
 document.addEventListener('click',e=>{
- if(e.target.closest?.('[data-ccx="projects"],#cpToggleProjects'))setTimeout(bind,0);
+ if(e.target.closest?.('[data-ccx="projects"],#cpToggleProjects'))setTimeout(()=>{bind();bindGlobalProjectSearch();const q=activeGlobalQuery();if(q)syncGlobalProjectSearch(q)},0);
  if(e.target.closest?.('button,a,[data-open]'))setTimeout(bindVisitPicker,40);
 },true);
 let visitQueued=false;
 new MutationObserver(()=>{
  if(visitQueued)return;visitQueued=true;
- requestAnimationFrame(()=>{visitQueued=false;bindVisitPicker()});
+ requestAnimationFrame(()=>{visitQueued=false;bindVisitPicker();bindGlobalProjectSearch()});
 }).observe(document.documentElement,{childList:true,subtree:true});
-setTimeout(bind,150);setTimeout(bind,700);setTimeout(bindVisitPicker,150);setTimeout(bindVisitPicker,700);
+setTimeout(bind,150);setTimeout(bind,700);setTimeout(bindGlobalProjectSearch,0);setTimeout(bindGlobalProjectSearch,350);setTimeout(()=>{const q=activeGlobalQuery();if(q&&projectBoard())syncGlobalProjectSearch(q)},750);setTimeout(bindVisitPicker,150);setTimeout(bindVisitPicker,700);
+window.__ccProjectSearchBridge={syncGlobalProjectSearch};
 })();

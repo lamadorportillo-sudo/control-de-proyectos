@@ -26,11 +26,13 @@ assert.doesNotMatch(storage,/photoStoredInCloud=true/,'no puede afirmar que una 
 assert.match(storage,/cc:data-changed/,'un guardado debe avisar al resto de módulos para refrescar la interfaz');
 
 // Documentos: JSZip puede cargarse al generar Word, nunca durante el arranque.
+assert.doesNotMatch(official,/const\s+JSZIP_URL/,'la corrección institucional no debe declarar una descarga CDN propia');
 assert.doesNotMatch(official,/document\.createElement\(['"]script['"]\).*JSZIP_URL/s,'la corrección institucional no debe iniciar una descarga CDN');
 assert.doesNotMatch(official,/ensureJSZip\(\)/,'no debe existir un cargador JSZip ejecutado al iniciar');
 assert.match(official,/watchForLazyJSZip\(\)/,'la corrección debe esperar la carga solicitada por el generador');
 assert.match(documents,/async function zipLib\(\).*loadScript\(JSZIP_URL/s,'JSZip se conserva como dependencia diferida del generador Word');
 assert.match(documents,/async function generate\(/,'la carga documental ocurre dentro de una acción explícita de generación');
+assert.match(stabilizer,/cdn\.jsdelivr\.net\/npm\/jszip/,'el estabilizador debe eliminar cualquier script JSZip que vuelva a colarse en el arranque');
 
 // Núcleo generado: altas directas y reglas contractuales no inventadas.
 assert.match(stabilizer,/view\.projectId=np\.id;view\.screen='project';view\.tab='summary'/,'un proyecto nuevo debe abrir su expediente');
@@ -38,9 +40,9 @@ assert.match(stabilizer,/recoveryTarget:null/,'un contrato nuevo no debe inventa
 assert.match(stabilizer,/contract\.recoveryTarget\|\|0/,'sin meta contractual no debe aplicarse recuperación automática');
 
 // Las capas visuales retiradas deben seguir explícitamente bloqueadas.
-for(const file of ['dashboard-executive-v1.js','home-executive-fix-v2.js','portfolio-redesign-v1.js','project-portfolio-detail-v1.js','portfolio-screen-fix-v1.js']){
+for(const file of ['dashboard-executive-v1.js','home-executive-fix-v2.js','industrial-home-v1.js','portfolio-redesign-v1.js','project-portfolio-detail-v1.js','portfolio-screen-fix-v1.js']){
   assert(inject.includes(`'${file}'`),`inject-portfolio debe retirar ${file}`);
   assert(stabilizer.includes(`'${file}'`),`stabilize-core debe retirar ${file}`);
 }
 
-console.log('core-stability-regressions: navegación, runtime, fotos, documentos y núcleo blindados');
+console.log('core-stability-regressions: navegación, Inicio único, runtime, fotos, documentos y núcleo blindados');

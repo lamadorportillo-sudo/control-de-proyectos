@@ -12,6 +12,8 @@ on:
       - 'build-pages.cjs'
       - 'inject-portfolio.cjs'
       - 'patch-session-security.cjs'
+      - 'stabilize-core-v1.cjs'
+      - 'authenticated-module-manifest-v1.cjs'
   workflow_dispatch:
 
 permissions:
@@ -39,10 +41,14 @@ jobs:
         run: |
           set -euo pipefail
           node --check tests/manual-project-entry-simulation.spec.cjs
+          node --check stabilize-core-v1.cjs
           node build-pages.cjs
           node inject-portfolio.cjs
           node patch-session-security.cjs
+          node stabilize-core-v1.cjs
           test -s index.html
+          grep -q 'data-cc-auth-loader data-cc-auth-plan' index.html
+          grep -q "view.screen='project';view.tab='summary'" index.html
 
       - name: Instalar Playwright
         shell: bash

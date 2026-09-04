@@ -61,7 +61,7 @@ const supplementalModules=[
   ['contract-preview-v1.js','20260904-preview2'],
   /* Última corrección visual general, antes del par técnico que debe seguir
      siendo el cierre funcional del plan autenticado. */
-  ['ui-contrast-final-guard-v1.js','20260904-contrast-final1'],
+  ['ui-contrast-final-guard-v1.js','20260904-contrast-final2'],
   /* El guard se ejecuta inmediatamente antes del módulo técnico histórico y
      filtra su MutationObserver global sin afectar los observadores del resto. */
   ['technical-control-observer-guard-v1.js','20260904-controlobserver1'],

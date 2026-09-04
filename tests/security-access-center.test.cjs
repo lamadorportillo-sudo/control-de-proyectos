@@ -33,7 +33,9 @@ assert.match(users,/security_force_reauth\s*:\s*true/,'revocar/restablecer debe 
 assert.match(users,/session_revoked/,'debe auditar el cierre administrativo de sesiones');
 assert.match(users,/security_valid_after/,'las operaciones privilegiadas deben respetar la revocación de tokens antiguos');
 
-assert.match(runtime,/SEGURIDAD DE SESIÓN Y CONTENIDO V3/,'debe estar activa la tercera capa de seguridad local');
+assert.match(runtime,/SEGURIDAD DE SESIÓN Y CONTENIDO V4/,'debe estar activa la cuarta capa de seguridad local');
+assert.match(runtime,/__CC_SECURITY_RUNTIME_V4__/,'el runtime V4 debe quedar identificado para evitar duplicados');
+assert.match(runtime,/armDomObserverAfterBoot/,'el observador de seguridad debe esperar el final del arranque autenticado');
 assert.match(runtime,/HEARTBEAT_EVERY/,'debe existir verificación periódica de sesión');
 assert.match(runtime,/action:'heartbeat'|securityCall\('heartbeat'/,'debe consultar el estado remoto de la sesión');
 assert.match(runtime,/end_session/,'debe registrar el cierre de sesión');
@@ -54,7 +56,7 @@ assert.match(center,/mfa_failure/,'el centro de seguridad debe identificar fallo
 assert.match(center,/mfa_enrolled/,'el centro de seguridad debe identificar activaciones 2FA');
 assert.match(loader,/security-center-v1\.js/,'el cargador principal debe cargar el panel de seguridad');
 assert.match(loader,/securitycenter4/,'el cargador debe renovar caché del centro de seguridad');
-assert.match(loader,/security-runtime-v1\.js\?v=20260823-security3/,'el cargador debe usar la versión que limpia el dispositivo al cerrar sesión');
+assert.match(loader,/security-runtime-v1\.js\?v=20260904-security4/,'los metadatos deben usar la versión que difiere el observador hasta finalizar el boot');
 
 for(const object of ['security_sessions','security_events','security_force_reauth','security_sessions_admin_select','security_events_admin_select'])assert.match(migration,new RegExp(object),`la migración debe incluir ${object}`);
 assert.match(migration,/enable row level security/,'las tablas de seguridad deben usar RLS');

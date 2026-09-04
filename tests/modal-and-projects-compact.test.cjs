@@ -38,7 +38,7 @@ test('las versiones publicadas renuevan los módulos corregidos',()=>{
   assert.match(serviceWorker,/const CACHE='cc-static-v1-20260903-recovery-v2'/);
   assert.match(serviceWorker,/Network-first/i);
   assert.match(serviceWorker,/fetch\(request,\{cache:'no-store'\}\)/);
-  assert.match(runtime,/portal-web-v2\.js\?v=20260903-web3/);
+  assert.match(runtime,/portal-web-v2\.js\?v=20260904-web4/);
   assert.match(runtime,/dashboard-simplified-v4\.js\?v=20260903-dash6/);
   assert.match(runtime,/service-worker-v1\.js\?v=20260903-sw2/);
   assert.match(portal,/PORTAL WEB V3 · ESTABLE/);

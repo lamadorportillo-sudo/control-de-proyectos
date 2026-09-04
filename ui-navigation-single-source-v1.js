@@ -142,6 +142,11 @@ function ensure(){
  try{
   css();sanitizeLegacy();
   const side=Q('#ccSidebar');if(!side)return;
+  /* La navegación principal es canónica. Las capas visuales posteriores no deben
+     retirar, mover o reconstruir sus botones, porque eso provoca carreras de DOM
+     en móvil y pérdida temporal de rutas durante una interacción real. */
+  side.dataset.groupedV4='1';
+  side.dataset.navStable='1';
   ensureTransparency(side);ensureAdmin(side);watchSidebar(side);syncActive(side);
  }finally{cleaning=false}
 }

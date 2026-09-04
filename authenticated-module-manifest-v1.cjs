@@ -59,13 +59,13 @@ const supplementalModules=[
   ['contract-document-safety-v1.js','20260904-docsafety3'],
   ['contract-payment-documents-v1.js','20260904-advance-docs4'],
   ['contract-preview-v1.js','20260904-preview2'],
+  /* Última corrección visual general, antes del par técnico que debe seguir
+     siendo el cierre funcional del plan autenticado. */
+  ['ui-contrast-final-guard-v1.js','20260904-contrast-final1'],
   /* El guard se ejecuta inmediatamente antes del módulo técnico histórico y
      filtra su MutationObserver global sin afectar los observadores del resto. */
   ['technical-control-observer-guard-v1.js','20260904-controlobserver1'],
   ['technical-control-v1.js','20260830-controltecnico1'],
-  /* Última capa: solo fija combinaciones WCAG ya identificadas después de que
-     todos los módulos históricos hayan terminado de inyectar sus estilos. */
-  ['ui-contrast-final-guard-v1.js','20260904-contrast-final1'],
 ];
 
 module.exports={retiredModules,preAuthModules,supplementalModules};

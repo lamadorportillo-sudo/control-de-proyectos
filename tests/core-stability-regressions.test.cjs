@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const {retiredModules}=require('../authenticated-module-manifest-v1.cjs');
+const {retiredModules,preAuthModules}=require('../authenticated-module-manifest-v1.cjs');
 
 const nav=fs.readFileSync('ui-navigation-single-source-v1.js','utf8');
 const uiStability=fs.readFileSync('ui-stability-v1.js','utf8');
@@ -64,10 +64,12 @@ assert.match(documents,/async function generate\(/,'la carga documental ocurre d
 assert(stabilizer.includes('jsdelivr')&&stabilizer.includes('jszip'),'el estabilizador debe eliminar cualquier script JSZip que vuelva a colarse en el arranque');
 
 // Acceso: sin sesión solo quedan el núcleo, login seguro y recuperación.
+assert.deepEqual(preAuthModules.map(([file])=>file),['private-access-v1.js','password-recovery-v1.js'],'el manifiesto debe limitar el acceso previo a login y recuperación');
+assert.equal(preAuthModules.find(([file])=>file==='private-access-v1.js')?.[1],'20260904-private6','la versión del login seguro debe provenir del manifiesto');
 assert.match(stabilizer,/SESSION_KEY='control_contractual_session_v3'/,'debe usar la misma sesión real del portal');
+assert.match(stabilizer,/PRE_AUTH_MODULES=new Set\(preAuthModules\.map/,'el estabilizador debe consumir la lista previa canónica');
 assert.match(stabilizer,/data-cc-auth-script/,'los scripts funcionales deben convertirse en un plan inerte hasta autenticar');
 assert.match(stabilizer,/data-cc-auth-loader data-cc-auth-plan/,'debe existir un único cargador autenticado');
-assert.match(stabilizer,/PRE_AUTH_MODULES=new Set\(\['private-access-v1\.js','password-recovery-v1\.js'\]\)/,'login seguro y recuperación deben permanecer disponibles sin sesión');
 assert.match(stabilizer,/PRE_AUTH_MODULES\.has\(bare\)/,'el aislamiento debe respetar la lista mínima de módulos de acceso');
 assert.match(privateAccess,/localStorage\.setItem\(SESSION,JSON\.stringify\(session\)\);cloudLoaded=false;location\.reload\(\);return;/,'el login seguro real debe reiniciar una sola vez el contexto para activar el plan autenticado');
 assert.doesNotMatch(privateAccess,/cloudLoaded=false;await render\(\)/,'el login seguro no debe quedarse en un render parcial sin reactivar el cargador autenticado');
@@ -75,16 +77,19 @@ assert.match(stabilizer,/location\.reload\(\);return/,'el estabilizador debe con
 assert.match(stabilizer,/script\.async=false/,'los módulos autenticados deben mantener el orden de ejecución');
 assert.doesNotMatch(stabilizer,/document\.write\s*\(/,'no debe volver a usarse document.write para activar módulos');
 assert.match(stabilizer,/bootEnd='render\(\);\\n<\/script>'/,'el aislamiento debe empezar después del núcleo de acceso');
-assert.match(stabilizer,/El login seguro quedó bloqueado antes de autenticar/,'la construcción debe fallar si se bloquea private-access');
-assert.match(stabilizer,/La recuperación de contraseña quedó bloqueada antes de autenticar/,'la construcción debe fallar si se bloquea password-recovery');
+assert.match(stabilizer,/preAuthModules/,'la construcción debe validar los módulos previos desde el manifiesto');
 
 // Arranque autenticado por fases: la primera pintura no debe esperar decenas de módulos.
 assert.match(stabilizer,/__CC_STAGED_AUTH_BOOT__/,'debe declarar el modo de arranque autenticado escalonado');
 assert.match(stabilizer,/FASE A · PRIMERA PINTURA AUTENTICADA/,'debe existir una fase crítica de primera pintura');
-assert.match(stabilizer,/portal-web-v2\.js\?v=20260903-web3/,'el portal debe cargarse en la fase crítica');
-assert.match(stabilizer,/nodeByBare\('project-tabs-complete-v1\.js'\)/,'las pestañas deben adelantarse al primer lote');
-assert.match(stabilizer,/nodeByBare\('ui-navigation-single-source-v1\.js'\)/,'la navegación debe adelantarse al primer lote');
+assert.match(stabilizer,/requireRun\('portal-web-v2\.js'/,'el portal es obligatorio para declarar lista la fase crítica');
+assert.match(stabilizer,/Falta project-tabs-complete-v1\.js en el plan autenticado/,'las pestañas críticas ausentes deben fallar explícitamente');
+assert.match(stabilizer,/Falta ui-navigation-single-source-v1\.js en el plan autenticado/,'la navegación crítica ausente debe fallar explícitamente');
 assert.match(stabilizer,/__CC_AUTH_CRITICAL_READY__/,'debe marcar cuándo la interfaz crítica ya está disponible');
+assert.match(stabilizer,/__CC_AUTH_BOOT_FAILED__/,'un fallo crítico debe quedar explícitamente registrado');
+assert.match(stabilizer,/__CC_AUTH_MODULE_ERRORS__/,'los módulos fallidos deben quedar diagnosticables');
+assert.match(stabilizer,/authenticated-modules-partial/,'una carga parcial no debe anunciarse como completamente lista');
+assert.match(stabilizer,/Conflicto de versión para/,'dos versiones distintas del mismo módulo deben producir un error visible');
 assert.match(stabilizer,/FASE B · CENTROS WEB PRINCIPALES/,'los centros web deben cargarse después de la primera pintura');
 assert.match(stabilizer,/__CC_AUTH_WEB_READY__/,'debe marcar cuándo los centros web ya están disponibles');
 assert.match(stabilizer,/FASE C · RESTO DEL SISTEMA HISTÓRICO/,'el resto del sistema debe quedar en una tercera fase');
@@ -104,4 +109,4 @@ for(const file of retiredModules){
   assert(retiredModules.includes(file),`el manifiesto debe conservar ${file} como retirado`);
 }
 
-console.log('core-stability-regressions: navegación única, estabilidad visual aislada, login seguro, presupuesto global de nube, runtime, fotos, documentos y arranque autenticado por fases blindados');
+console.log('core-stability-regressions: navegación única, estabilidad visual aislada, login seguro, presupuesto global de nube, versiones canónicas y arranque autenticado por fases blindados');

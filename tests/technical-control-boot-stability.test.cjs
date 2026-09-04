@@ -15,12 +15,13 @@ test('permisos y alcance técnico no recorren todo el DOM durante el arranque au
   assert.doesNotMatch(permissions,/Date\.now\(\)-started>5000/,'no debe existir un temporizador que active el observador antes de acabar el boot');
   assert.doesNotMatch(permissions,/new MutationObserver\(\(\)=>\{apply\(\)/,'no debe reaparecer el observador global síncrono');
 
-  assert.match(scope,/__CC_TECH_CONTROL_SCOPE_V4__/);
+  assert.match(scope,/__CC_TECH_CONTROL_SCOPE_V5__/);
   assert.match(scope,/armAfterBoot/);
   assert.match(scope,/cc:authenticated-modules-ready/);
-  assert.match(scope,/ms\.some\(relevant\)/);
+  assert.match(scope,/bindShellObserver/);
+  assert.match(scope,/observer\.observe\(shell,\{childList:true,subtree:true\}\)/);
+  assert.doesNotMatch(scope,/observer\.observe\((?:document\.body|document\.documentElement)/,'el alcance no debe observar globalmente body/documentElement');
   assert.doesNotMatch(scope,/Date\.now\(\)-started>5000/,'el alcance no debe activarse a mitad del boot por timeout');
-  assert.doesNotMatch(scope,/new MutationObserver\(\(\)=>\{guard\(\);prune\(\)\}/,'no debe reaparecer el observador global síncrono');
 });
 
 test('seguridad de sesión difiere el observador DOM hasta terminar el arranque autenticado',()=>{
@@ -40,5 +41,5 @@ test('el control técnico pesado queda al final del plan autenticado',()=>{
   const versions=new Map(manifest.supplementalModules);
   assert.equal(versions.get('security-runtime-v1.js'),'20260904-security4');
   assert.equal(versions.get('technical-control-permissions-v1.js'),'20260904-controltecnicoperm4');
-  assert.equal(versions.get('technical-control-scope-v2.js'),'20260904-controlscope4');
+  assert.equal(versions.get('technical-control-scope-v2.js'),'20260904-controlscope5');
 });

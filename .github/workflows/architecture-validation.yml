@@ -8,6 +8,7 @@ on:
       - '*.cjs'
       - 'scripts/**'
       - 'tests/**'
+      - 'supabase/**'
       - '.github/workflows/architecture-validation.yml'
   workflow_dispatch:
 
@@ -45,6 +46,7 @@ jobs:
           node --check patch-session-security.cjs
           node --check stabilize-core-v1.cjs
           node --check scripts/audit-system-1000.cjs
+          node --check tests/admin-mfa-enforcement.test.cjs
           node --check tests/architecture-auth-boot.spec.cjs
           node --check tests/accessibility-responsive.spec.cjs
           node --check tests/contract-explicit-rules-browser.spec.cjs

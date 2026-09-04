@@ -72,11 +72,11 @@ for(const moduleFile of retired)stripScript(moduleFile);
       Word y nunca debe convertirse en un script de arranque del portal. */
 html=html.replace(/<script\s+[^>]*src=["']https:\/\/cdn\.jsdelivr\.net\/npm\/jszip[^"']*["'][^>]*><\/script>\s*/gi,'');
 
-/* 5. MODO DE ACCESO LIGERO: sin sesión solo se ejecuta el núcleo que dibuja
-      el acceso. Los módulos funcionales y sus MutationObserver quedan aislados
-      hasta que exista una sesión. Al ingresar se recarga una vez para activar
-      el expediente completo en el orden original. */
+/* 5. MODO DE ACCESO LIGERO: sin sesión se conserva únicamente el núcleo y los
+      módulos estrictamente necesarios para login seguro/recuperación. El resto
+      de la aplicación y sus MutationObserver se activa después de autenticar. */
 const SESSION_KEY='control_contractual_session_v3';
+const PRE_AUTH_MODULES=new Set(['private-access-v1.js','password-recovery-v1.js']);
 const loginSuccess="localStorage.setItem(SESSION,JSON.stringify(session));cloudLoaded=false;await render()";
 if(html.includes(loginSuccess)){
   html=html.split(loginSuccess).join("localStorage.setItem(SESSION,JSON.stringify(session));cloudLoaded=false;location.reload();return");
@@ -90,6 +90,8 @@ if(!tail.includes('data-cc-auth-loader')){
   tail=tail.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi,(full,attrs,body)=>{
     const src=String(attrs||'').match(/\bsrc\s*=\s*(["'])(.*?)\1/i)?.[2]||'';
     if(src){
+      const bare=src.split('?')[0].split('/').pop();
+      if(PRE_AUTH_MODULES.has(bare))return full;
       const safe=src.replace(/\\/g,'\\\\').replace(/"/g,'\\"');
       return `<script data-cc-auth-loader>if(localStorage.getItem('${SESSION_KEY}'))document.write("<script src=\\"${safe}\\"><\\/script>");<\/script>`;
     }
@@ -104,6 +106,8 @@ if(!html.includes("view.screen='project';view.tab='summary'"))throw new Error('E
 if(html.includes("const targetPct=Number(contract.recoveryTarget||80);"))throw new Error('Sigue activa la recuperación universal al 80%.');
 if(/<script\s+[^>]*src=["']https:\/\/cdn\.jsdelivr\.net\/npm\/jszip/i.test(html))throw new Error('JSZip volvió a bloquear el arranque del portal.');
 if(!html.includes(`data-cc-auth-loader>if(localStorage.getItem('${SESSION_KEY}'))`))throw new Error('Los módulos funcionales no quedaron aislados del acceso sin sesión.');
+if(!/<script\s+src=["']private-access-v1\.js\?/i.test(html))throw new Error('El login seguro quedó bloqueado antes de autenticar.');
+if(!/<script\s+src=["']password-recovery-v1\.js\?/i.test(html))throw new Error('La recuperación de contraseña quedó bloqueada antes de autenticar.');
 if(html.includes(loginSuccess))throw new Error('El acceso todavía intenta activar todos los módulos sin recargar el contexto autenticado.');
 for(const moduleFile of retired){
   if(new RegExp(moduleFile.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i').test(html))throw new Error(`Sigue cargada la capa retirada ${moduleFile}.`);
@@ -111,4 +115,4 @@ for(const moduleFile of retired){
 if(!html.toLowerCase().includes('</html>'))throw new Error('El HTML estabilizado quedó incompleto.');
 
 fs.writeFileSync(path,html,'utf8');
-console.log('Núcleo estabilizado: alta directa, anticipo contractual, acceso ligero y capas duplicadas retiradas.');
+console.log('Núcleo estabilizado: alta directa, anticipo contractual, login seguro ligero y capas duplicadas retiradas.');

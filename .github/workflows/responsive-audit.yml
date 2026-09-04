@@ -74,7 +74,7 @@ jobs:
           node stabilize-core-v1.cjs
           grep -q 'system-ui-refinement-v3.js' index.html
           grep -q 'integrity-diagnostics-v1.js' index.html
-          grep -q 'ui-navigation-single-source-v1.js?v=20260903-singlenav2' index.html
+          grep -q 'ui-navigation-single-source-v1.js?v=20260904-singlenav3' index.html
           grep -q "view.screen='project';view.tab='summary'" index.html
           grep -q "const targetPct=Number(contract.recoveryTarget||0);" index.html
           for retired in system-ui-refinement-v2.js dashboard-executive-v1.js home-executive-fix-v2.js portfolio-redesign-v1.js project-portfolio-detail-v1.js portfolio-screen-fix-v1.js; do

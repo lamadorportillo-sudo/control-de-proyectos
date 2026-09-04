@@ -19,7 +19,7 @@ const preAuthModules=[
 ];
 
 const supplementalModules=[
-  ['security-runtime-v1.js','20260823-security3'],
+  ['security-runtime-v1.js','20260904-security4'],
   ['mfa-security-v1.js','20260824-mfa4'],
   ['security-center-v1.js','20260823-securitycenter4'],
   ['mobile-popup-fallback-v1.js','20260821-mobilepopup1'],

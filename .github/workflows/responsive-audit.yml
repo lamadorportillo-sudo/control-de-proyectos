@@ -57,6 +57,8 @@ jobs:
           node --check inject-portfolio.cjs
           echo '[node --check] patch-session-security.cjs'
           node --check patch-session-security.cjs
+          echo '[node --check] stabilize-core-v1.cjs'
+          node --check stabilize-core-v1.cjs
           echo '[node --check] playwright.config.cjs'
           node --check playwright.config.cjs
           echo '=== PRUEBAS ESTRUCTURALES ==='
@@ -69,12 +71,18 @@ jobs:
           node build-pages.cjs
           node inject-portfolio.cjs
           node patch-session-security.cjs
+          node stabilize-core-v1.cjs
           grep -q 'system-ui-refinement-v3.js' index.html
           grep -q 'integrity-diagnostics-v1.js' index.html
-          if grep -q 'system-ui-refinement-v2.js' index.html; then
-            echo 'La capa visual V2 redundante todavía está cargada.' >&2
-            exit 1
-          fi
+          grep -q 'ui-navigation-single-source-v1.js?v=20260903-singlenav2' index.html
+          grep -q "view.screen='project';view.tab='summary'" index.html
+          grep -q "const targetPct=Number(contract.recoveryTarget||0);" index.html
+          for retired in system-ui-refinement-v2.js dashboard-executive-v1.js home-executive-fix-v2.js portfolio-redesign-v1.js project-portfolio-detail-v1.js portfolio-screen-fix-v1.js; do
+            if grep -q "$retired" index.html; then
+              echo "La capa redundante $retired todavía está cargada." >&2
+              exit 1
+            fi
+          done
           grep -q '</html>' index.html
 
       - name: Instalar dependencias de auditoría

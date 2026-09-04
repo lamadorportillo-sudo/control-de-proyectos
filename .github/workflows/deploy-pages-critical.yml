@@ -66,7 +66,7 @@ jobs:
           node patch-session-security.cjs
           node stabilize-core-v1.cjs
 
-      - name: Forzar versiones críticas sin caché vieja
+      - name: Forzar versiones críticas sin romper acceso ligero
         shell: bash
         run: |
           set -euo pipefail
@@ -83,21 +83,19 @@ jobs:
               (r'admin-users-v1\.js\?v[^\"\']*', 'admin-users-v1.js?v=20260823-admin-users4', 'admin-users-v1.js'),
               (r'adaptive-chat-learning-v1\.js\?v[^\"\']*', 'adaptive-chat-learning-v1.js?v=20260824-zordon2', 'adaptive-chat-learning-v1.js'),
               (r'ui-navigation-single-source-v1\.js\?v[^\"\']*', 'ui-navigation-single-source-v1.js?v=20260903-singlenav2', 'ui-navigation-single-source-v1.js'),
+              (r'zordon-continuous-runtime-v1\.js\?v[^\"\']*', 'zordon-continuous-runtime-v1.js?v=20260824-zordon4', 'zordon-continuous-runtime-v1.js'),
+              (r'zordon-chat-ui-v1\.js\?v[^\"\']*', 'zordon-chat-ui-v1.js?v=20260824-cleanchat4', 'zordon-chat-ui-v1.js'),
           ]
           for pattern, replacement, label in replacements:
               html, count = re.subn(pattern, replacement, html)
               if count == 0:
                   raise SystemExit(f'No se encontró {label} para renovar su versión.')
 
-          zordon_tag = '<script src="zordon-continuous-runtime-v1.js?v=20260824-zordon4"></script>'
-          chat_tag = '<script src="zordon-chat-ui-v1.js?v=20260824-cleanchat4"></script>'
-          html = re.sub(r'<script\s+src=["\']zordon-continuous-runtime-v1\.js(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
-          html = re.sub(r'<script\s+src=["\']zordon-chat-ui-v1\.js(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
-          html = re.sub(r'<script\s+src=["\']zordon-send-hardfix-v1\.js(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
-          pos = html.lower().rfind('</body>')
-          if pos < 0:
-              raise SystemExit('No se encontró </body> para cargar ZORDON.')
-          html = html[:pos] + zordon_tag + '\n' + chat_tag + '\n' + html[pos:]
+          # El estabilizador ya deja los módulos posteriores al núcleo detrás de
+          # data-cc-auth-loader. Aquí solo renovamos versiones; no reinsertamos
+          # scripts directos que vuelvan a bloquear la pantalla de acceso.
+          if 'data-cc-auth-loader' not in html:
+              raise SystemExit('Se perdió el cargador autenticado de módulos.')
           path.write_text(html, encoding='utf-8')
           PY
 
@@ -130,11 +128,13 @@ jobs:
           grep -q 'ui-navigation-single-source-v1.js?v=20260903-singlenav2' index.html
           grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordon4' index.html
           grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat4' index.html
+          grep -q 'data-cc-auth-loader' index.html
+          grep -q "control_contractual_session_v3" index.html
           grep -q "view.screen='project';view.tab='summary'" index.html
           grep -q "const targetPct=Number(contract.recoveryTarget||0);" index.html
           grep -q 'Sincronización con Supabase en curso' index.html
           grep -q '</html>' index.html
-          for retired in dashboard-executive-v1.js home-executive-fix-v2.js portfolio-redesign-v1.js project-portfolio-detail-v1.js portfolio-screen-fix-v1.js; do
+          for retired in dashboard-executive-v1.js home-executive-fix-v2.js industrial-home-v1.js portfolio-redesign-v1.js project-portfolio-detail-v1.js portfolio-screen-fix-v1.js; do
             if grep -q "$retired" index.html; then
               echo "Sigue cargada capa retirada: $retired" >&2
               exit 1

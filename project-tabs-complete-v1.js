@@ -49,9 +49,9 @@ const modules=[
 'ui-visibility-audit-v1.js?v=20260831-visibility4',
 'ui-contrast-hardening-v1.js?v=20260831-contrast5',
 'contract-official-format-v1.js?v=20260831-phone3',
-'contract-payment-documents-v1.js?v=20260831-advance-docs3',
-'contract-preview-v1.js?v=20260831-preview1',
-'contract-document-safety-v1.js?v=20260904-docsafety1'
+'contract-payment-documents-v1.js?v=20260904-advance-docs4',
+'contract-preview-v1.js?v=20260904-preview2',
+'contract-document-safety-v1.js?v=20260904-docsafety2'
 ];const current=document.currentScript?.src||'';
 void modules;void current;
 

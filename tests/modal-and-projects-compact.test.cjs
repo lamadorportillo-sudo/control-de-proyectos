@@ -25,10 +25,11 @@ test('el portafolio usa expedientes compactos sin portadas pesadas',()=>{
   assert.match(portfolio,/querySelectorAll\('\.project-v3-cover'\)\.forEach\(cover=>cover\.remove\(\)\)/);
 });
 
-test('las versiones publicadas renuevan los módulos corregidos',()=>{
+test('las versiones publicadas conservan una sola autoridad de carga',()=>{
   const index=read('index.html');
   const serviceWorker=read('service-worker-v1.js');
   const runtime=read('performance-runtime-v1.js');
+  const stabilizer=read('stabilize-core-v1.cjs');
   const portal=read('portal-web-v2.js');
   const dashboard=read('dashboard-simplified-v4.js');
   const routes=read('portal-route-bridge-v1.js');
@@ -38,13 +39,16 @@ test('las versiones publicadas renuevan los módulos corregidos',()=>{
   assert.match(serviceWorker,/const CACHE='cc-static-v1-20260903-recovery-v2'/);
   assert.match(serviceWorker,/Network-first/i);
   assert.match(serviceWorker,/fetch\(request,\{cache:'no-store'\}\)/);
-  assert.match(runtime,/portal-web-v2\.js\?v=20260904-web4/);
-  assert.match(runtime,/dashboard-simplified-v4\.js\?v=20260903-dash6/);
+  assert.match(runtime,/COORDINADOR DE RENDIMIENTO DEL DOM V7 · SIN CARGA FUNCIONAL/);
   assert.match(runtime,/service-worker-v1\.js\?v=20260903-sw2/);
+  assert.match(stabilizer,/portal-web-v2\.js\?v=20260904-web4/);
+  assert.match(stabilizer,/dashboard-simplified-v4\.js\?v=20260903-dash6/);
   assert.match(portal,/PORTAL WEB V4 · PRESENTACIÓN ESTABLE/);
   assert.match(portal,/if\(el\.textContent!==next\)el\.textContent=next/);
   assert.match(dashboard,/DASHBOARD SIMPLIFICADO V6 · ESTABLE/);
   assert.match(dashboard,/setText\(badge,/);
-  for(const file of ['payments-center-v1.js','guarantees-center-v1.js','visits-center-v1.js','reports-center-v1.js','alerts-center-v1.js','audit-center-v1.js'])assert.match(runtime,new RegExp(file.replace(/\./g,'\\.')));
+  for(const file of ['portal-web-v2.js','project-detail-v2.js','dashboard-simplified-v4.js','payments-center-v1.js','guarantees-center-v1.js','visits-center-v1.js','reports-center-v1.js','alerts-center-v1.js','audit-center-v1.js','portal-route-bridge-v1.js','ui-stability-v1.js']){
+    assert.ok(!runtime.includes(file),`performance-runtime no debe cargar ${file}`);
+  }
   for(const route of ['contratos','pagos','garantias','visitas','reportes','alertas','auditoria'])assert.match(routes,new RegExp(`route==='${route}'`));
 });

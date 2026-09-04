@@ -16,6 +16,8 @@ function stripScript(moduleFile){
   html=html.replace(new RegExp(`<script\\s+src=["']${escaped}(?:\\?[^"']*)?["']\\s*><\\/script>\\s*`,'gi'),'');
 }
 
+function escapeAttr(v){return String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+
 /* 1. CREAR PROYECTO: al guardar un proyecto nuevo se abre directamente su
       expediente. Se elimina el paso extra Inicio -> Proyectos -> buscar. */
 const projectCreateOld="db.projects.push(np);audit('CREAR','Proyecto',np.id,data);rememberExecutionDuration(np.id,data.budget,data.type,data.executionDays,'proyecto')}saveDB();m.remove();renderApp();toast('Proyecto guardado y sincronizado.')";
@@ -72,9 +74,13 @@ for(const moduleFile of retired)stripScript(moduleFile);
       Word y nunca debe convertirse en un script de arranque del portal. */
 html=html.replace(/<script\s+[^>]*src=["']https:\/\/cdn\.jsdelivr\.net\/npm\/jszip[^"']*["'][^>]*><\/script>\s*/gi,'');
 
-/* 5. MODO DE ACCESO LIGERO: sin sesión se conserva únicamente el núcleo y los
-      módulos estrictamente necesarios para login seguro/recuperación. El resto
-      de la aplicación y sus MutationObserver se activa después de autenticar. */
+/* 5. MODO DE ACCESO LIGERO Y CARGA AUTENTICADA ESTABLE.
+      Sin sesión se conserva únicamente el núcleo y los módulos estrictamente
+      necesarios para login seguro/recuperación. El resto se convierte en un
+      plan de scripts inertes. Con sesión, un único cargador secuencial los
+      ejecuta en el mismo orden original. No usa document.write porque ese
+      mecanismo podía reabrir el parser, bloquear el DOM y dejar el portal
+      autenticado esperando indefinidamente. */
 const SESSION_KEY='control_contractual_session_v3';
 const PRE_AUTH_MODULES=new Set(['private-access-v1.js','password-recovery-v1.js']);
 const loginSuccess="localStorage.setItem(SESSION,JSON.stringify(session));cloudLoaded=false;await render()";
@@ -86,17 +92,55 @@ const bootPos=html.indexOf(bootEnd);
 if(bootPos<0)throw new Error('No se encontró el cierre del núcleo para aislar módulos autenticados.');
 const cut=bootPos+bootEnd.length;
 let head=html.slice(0,cut),tail=html.slice(cut);
-if(!tail.includes('data-cc-auth-loader')){
+if(!tail.includes('data-cc-auth-plan')){
   tail=tail.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi,(full,attrs,body)=>{
     const src=String(attrs||'').match(/\bsrc\s*=\s*(["'])(.*?)\1/i)?.[2]||'';
     if(src){
       const bare=src.split('?')[0].split('/').pop();
       if(PRE_AUTH_MODULES.has(bare))return full;
-      const safe=src.replace(/\\/g,'\\\\').replace(/"/g,'\\"');
-      return `<script data-cc-auth-loader>if(localStorage.getItem('${SESSION_KEY}'))document.write("<script src=\\"${safe}\\"><\\/script>");<\/script>`;
+      return `<script type="application/x-cc-auth" data-cc-auth-script data-src="${escapeAttr(src)}"></script>`;
     }
-    return `<script${attrs}>if(localStorage.getItem('${SESSION_KEY}')){\n${body}\n}<\/script>`;
+    return `<script type="application/x-cc-auth" data-cc-auth-script>${body}</script>`;
   });
+  const loader=`<script data-cc-auth-loader data-cc-auth-plan>
+(()=>{
+  'use strict';
+  const SESSION_KEY='${SESSION_KEY}';
+  if(!localStorage.getItem(SESSION_KEY))return;
+  if(window.__CC_AUTH_MODULE_LOADER__)return;
+  window.__CC_AUTH_MODULE_LOADER__=true;
+  const nodes=[...document.querySelectorAll('script[data-cc-auth-script]')];
+  const run=node=>new Promise((resolve,reject)=>{
+    const src=node.dataset.src||'';
+    const script=document.createElement('script');
+    script.async=false;
+    if(src){
+      script.src=src;
+      script.onload=()=>resolve();
+      script.onerror=()=>reject(new Error('No se pudo cargar '+src));
+      document.body.appendChild(script);
+      return;
+    }
+    try{
+      script.textContent=node.textContent||'';
+      document.body.appendChild(script);
+      script.remove();
+      resolve();
+    }catch(error){reject(error)}
+  });
+  (async()=>{
+    for(const node of nodes){
+      try{await run(node)}
+      catch(error){console.error('Módulo autenticado no cargado:',node.dataset.src||'inline',error)}
+    }
+    window.__CC_AUTH_MODULES_READY__=true;
+    document.dispatchEvent(new CustomEvent('cc:authenticated-modules-ready'));
+  })();
+})();
+</script>`;
+  const bodyClose=tail.toLowerCase().lastIndexOf('</body>');
+  if(bodyClose<0)throw new Error('No se encontró </body> para instalar el cargador autenticado.');
+  tail=tail.slice(0,bodyClose)+loader+'\n'+tail.slice(bodyClose);
   html=head+tail;
 }
 
@@ -105,7 +149,9 @@ if(!tail.includes('data-cc-auth-loader')){
 if(!html.includes("view.screen='project';view.tab='summary'"))throw new Error('El alta de proyecto no abre su expediente.');
 if(html.includes("const targetPct=Number(contract.recoveryTarget||80);"))throw new Error('Sigue activa la recuperación universal al 80%.');
 if(/<script\s+[^>]*src=["']https:\/\/cdn\.jsdelivr\.net\/npm\/jszip/i.test(html))throw new Error('JSZip volvió a bloquear el arranque del portal.');
-if(!html.includes(`data-cc-auth-loader>if(localStorage.getItem('${SESSION_KEY}'))`))throw new Error('Los módulos funcionales no quedaron aislados del acceso sin sesión.');
+if(!html.includes('data-cc-auth-script'))throw new Error('Los módulos funcionales no quedaron convertidos en un plan autenticado.');
+if(!html.includes('data-cc-auth-loader data-cc-auth-plan'))throw new Error('Falta el cargador autenticado secuencial.');
+if(/document\.write\s*\(/.test(html))throw new Error('Reapareció document.write en el HTML autenticado.');
 if(!/<script\s+src=["']private-access-v1\.js\?/i.test(html))throw new Error('El login seguro quedó bloqueado antes de autenticar.');
 if(!/<script\s+src=["']password-recovery-v1\.js\?/i.test(html))throw new Error('La recuperación de contraseña quedó bloqueada antes de autenticar.');
 if(html.includes(loginSuccess))throw new Error('El acceso todavía intenta activar todos los módulos sin recargar el contexto autenticado.');
@@ -115,4 +161,4 @@ for(const moduleFile of retired){
 if(!html.toLowerCase().includes('</html>'))throw new Error('El HTML estabilizado quedó incompleto.');
 
 fs.writeFileSync(path,html,'utf8');
-console.log('Núcleo estabilizado: alta directa, anticipo contractual, login seguro ligero y capas duplicadas retiradas.');
+console.log('Núcleo estabilizado: alta directa, anticipo contractual, login seguro ligero y carga autenticada secuencial.');

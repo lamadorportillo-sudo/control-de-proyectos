@@ -1,8 +1,9 @@
-/* ===== CONTROL CONTRACTUAL · BLINDAJE DE DOCUMENTOS V1 ===== */
+/* ===== CONTROL CONTRACTUAL · BLINDAJE DE DOCUMENTOS V2 ===== */
 (()=>{
 'use strict';
 if(window.__CC_CONTRACT_DOCUMENT_SAFETY_V1__)return;
 window.__CC_CONTRACT_DOCUMENT_SAFETY_V1__=true;
+window.__CC_CONTRACT_DOCUMENT_SAFETY_V2__=true;
 
 const A=v=>Array.isArray(v)?v:[];
 const N=v=>Number.isFinite(Number(v))?Number(v):0;
@@ -35,7 +36,6 @@ function contractCompatibility(p,c){
   const issues=[];
   if(!c)return['Primero registre el contrato.'];
   const ctl=c.controls&&typeof c.controls==='object'?c.controls:{};
-  const profile=c.documentProfile&&typeof c.documentProfile==='object'?c.documentProfile:{};
   const missing=profileMissing(c);
   if(missing.length)issues.push(`Confirme los datos del documento en “Revisar datos” (${missing.length} campo${missing.length===1?'':'s'} pendiente${missing.length===1?'':'s'}).`);
   if(!text(ctl,'financingSource'))issues.push('Defina la fuente de financiamiento en Cláusulas y controles.');
@@ -43,15 +43,16 @@ function contractCompatibility(p,c){
   if(number(ctl,'penaltyDailyPct')===null)issues.push('Defina expresamente la multa diaria, incluso si es 0%.');
   if(number(ctl,'performanceGuaranteePct')===null)issues.push('Defina expresamente la Garantía de Cumplimiento.');
 
-  /* La plantilla Word actual todavía contiene estas condiciones como texto fijo.
-     Hasta que cada párrafo sea parametrizado, solo se permite generar si el
-     contrato confirmó exactamente las condiciones que la plantilla contiene. */
+  /* La plantilla Word vigente conserva varias condiciones como texto fijo. Hasta
+     parametrizar cada párrafo, el sistema trabaja en modo fail-closed: solo se
+     genera cuando el expediente confirma expresamente esas mismas condiciones. */
   const advanceOn=!['No solicitado','Rechazado'].includes(String(c.advanceStatus||'No solicitado'));
   if(!advanceOn)issues.push('La plantilla contractual actual vincula la orden de inicio al anticipo; use una plantilla compatible para contratos sin anticipo.');
   if(advanceOn&&number(c,'advanceRequestedPct')===null&&!(N(c.advanceApproved)>0&&N(c.originalAmount)>0))issues.push('Defina el porcentaje o monto aprobado del anticipo.');
   if(!eq(number(c,'recoveryTarget'),80))issues.push('La plantilla actual establece amortización total del anticipo al 80%; confirme 80% o adapte la plantilla.');
   if(String(ctl.orderStartMode||'')!=='Después del pago/entrega del anticipo'||!eq(number(ctl,'orderStartAfterAdvanceDays'),15))issues.push('La plantilla actual establece orden de inicio 15 días después del anticipo; confirme esa condición o adapte la plantilla.');
   if(ctl.taxApplies!==true||!eq(number(ctl,'taxRatePct'),15))issues.push('La plantilla actual contiene una cláusula tributaria de 15%; confirme esa condición o adapte la plantilla.');
+  if(!/utilidad/i.test(text(ctl,'taxBase')))issues.push('La plantilla actual aplica la retención tributaria sobre la utilidad; confirme esa base o adapte la plantilla.');
   if(!eq(number(ctl,'advanceGuaranteePct'),100))issues.push('La plantilla actual establece Garantía de Anticipo del 100%; confirme esa condición o adapte la plantilla.');
   if(!eq(number(ctl,'performanceExtraMonths'),3))issues.push('La plantilla actual mantiene la Garantía de Cumplimiento 3 meses adicionales; confirme esa condición o adapte la plantilla.');
   if(!eq(number(ctl,'qualityGuaranteePct'),5)||!eq(number(ctl,'qualityGuaranteeDays'),365))issues.push('La plantilla actual establece Garantía de Calidad de 5% por un año; confirme esa condición o adapte la plantilla.');
@@ -60,8 +61,10 @@ function contractCompatibility(p,c){
   if(ctl.successionClauseEnabled!==true||!eq(number(ctl,'successionSuspensionDays'),30))issues.push('La plantilla contiene procedimiento sucesorio con suspensión máxima de 30 días; confírmelo o adapte la plantilla.');
   if(ctl.emergencyClauseEnabled!==true||!eq(number(ctl,'emergencyNoticeDays'),5)||!eq(number(ctl,'emergencyReviewDays'),10))issues.push('La plantilla contiene contingencia por emergencia con plazos de 5 y 10 días; confírmelos o adapte la plantilla.');
   if(String(ctl.priceType||'')!=='Fijo'||ctl.priceAdjustmentAllowed===true)issues.push('La plantilla declara precio fijo sin reajuste automático; confirme esa condición o adapte la plantilla.');
-  if(!text(ctl,'governingLaw'))issues.push('Defina la normativa aplicable.');
-  if(!text(ctl,'disputeJurisdiction'))issues.push('Defina la jurisdicción o mecanismo de solución de conflictos.');
+  const law=text(ctl,'governingLaw');
+  if(!/Ley de Contratación del Estado/i.test(law))issues.push('La plantilla actual declara aplicación de la Ley de Contratación del Estado; confírmela o adapte la plantilla.');
+  const jurisdiction=text(ctl,'disputeJurisdiction');
+  if(!/Contencioso Administrativo/i.test(jurisdiction)||!/Tegucigalpa/i.test(jurisdiction))issues.push('La plantilla actual remite al Juzgado de Letras de lo Contencioso Administrativo de Tegucigalpa; confirme esa jurisdicción o adapte la plantilla.');
   return issues;
 }
 function noteCompatibility(p,c){

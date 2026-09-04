@@ -6,6 +6,7 @@ on:
     paths:
       - '*.js'
       - '*.cjs'
+      - 'scripts/**'
       - 'tests/**'
       - '.github/workflows/architecture-validation.yml'
   workflow_dispatch:
@@ -43,6 +44,7 @@ jobs:
           node --check inject-portfolio.cjs
           node --check patch-session-security.cjs
           node --check stabilize-core-v1.cjs
+          node --check scripts/audit-system-1000.cjs
           node --check tests/architecture-auth-boot.spec.cjs
           node --test tests/*.test.cjs
 

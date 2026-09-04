@@ -47,6 +47,7 @@ jobs:
           node --check scripts/audit-system-1000.cjs
           node --check tests/architecture-auth-boot.spec.cjs
           node --check tests/accessibility-responsive.spec.cjs
+          node --check tests/contract-explicit-rules-browser.spec.cjs
           node --test tests/*.test.cjs
 
       - name: Construir exactamente el artefacto estabilizado
@@ -62,9 +63,10 @@ jobs:
           grep -q 'performance-runtime-v1.js?v=20260904-perf10' index.html
           grep -q 'portal-web-v2.js?v=20260904-web4' index.html
           grep -q 'ui-stability-v1.js?v=20260904-stable2' index.html
+          grep -q 'contract-explicit-rules-v1.js?v=20260904-explicit1' index.html
           grep -q '__CC_AUTH_BOOT_FAILED__' index.html
           grep -q '__CC_AUTH_MODULE_ERRORS__' index.html
-          grep -q 'data-cc-auth-loader data-cc-auth-plan' index.html
+          grep -q 'data-cc-auth-loader data-cc-auth-auth-plan\|data-cc-auth-loader data-cc-auth-plan' index.html
           for retired in system-ui-refinement-v2.js dashboard-executive-v1.js home-executive-fix-v2.js industrial-home-v1.js portfolio-redesign-v1.js project-portfolio-detail-v1.js portfolio-screen-fix-v1.js; do
             if grep -q "$retired" index.html; then
               echo "El artefacto reactivó un módulo retirado: $retired" >&2
@@ -97,11 +99,11 @@ jobs:
           cat /tmp/architecture-validation-http.log
           exit 1
 
-      - name: Probar arranque completo y accesibilidad serious/critical
+      - name: Probar arranque completo, contrato explícito y accesibilidad serious/critical
         env:
           APP_URL: http://127.0.0.1:4173/
         shell: bash
-        run: npx playwright test tests/architecture-auth-boot.spec.cjs tests/accessibility-responsive.spec.cjs --workers=1 --retries=0
+        run: npx playwright test tests/architecture-auth-boot.spec.cjs tests/contract-explicit-rules-browser.spec.cjs tests/accessibility-responsive.spec.cjs --workers=1 --retries=0
 
       - name: Guardar diagnóstico si falla
         if: always()

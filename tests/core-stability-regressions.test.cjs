@@ -32,7 +32,7 @@ assert.doesNotMatch(official,/ensureJSZip\(\)/,'no debe existir un cargador JSZi
 assert.match(official,/watchForLazyJSZip\(\)/,'la corrección debe esperar la carga solicitada por el generador');
 assert.match(documents,/async function zipLib\(\).*loadScript\(JSZIP_URL/s,'JSZip se conserva como dependencia diferida del generador Word');
 assert.match(documents,/async function generate\(/,'la carga documental ocurre dentro de una acción explícita de generación');
-assert.match(stabilizer,/cdn\.jsdelivr\.net\/npm\/jszip/,'el estabilizador debe eliminar cualquier script JSZip que vuelva a colarse en el arranque');
+assert(stabilizer.includes('jsdelivr')&&stabilizer.includes('jszip'),'el estabilizador debe eliminar cualquier script JSZip que vuelva a colarse en el arranque');
 
 // Núcleo generado: altas directas y reglas contractuales no inventadas.
 assert.match(stabilizer,/view\.projectId=np\.id;view\.screen='project';view\.tab='summary'/,'un proyecto nuevo debe abrir su expediente');

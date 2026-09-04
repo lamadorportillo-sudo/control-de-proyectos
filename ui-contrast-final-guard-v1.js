@@ -1,7 +1,8 @@
-/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V3 ===== */
+/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V4 ===== */
 (()=>{
 'use strict';
-if(window.__CC_CONTRAST_FINAL_GUARD_V3__)return;
+if(window.__CC_CONTRAST_FINAL_GUARD_V4__)return;
+window.__CC_CONTRAST_FINAL_GUARD_V4__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V3__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V2__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V1__=true;
@@ -42,6 +43,13 @@ function install(){
   }
   html body.cc-portal-v2:not(.print-report) #content .tr-source .muted{
     color:#536158!important;opacity:1!important;
+  }
+
+  /* Expediente · el bloque de normativa vigente usa una superficie verde muy
+     clara. La capa oscura general no puede recolorear sus etiquetas pequeñas. */
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .cc-current-law small,
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .cc-current-law .law-note{
+    color:#4f675b!important;opacity:1!important;
   }
 
   /* Lectura operativa actual: todo el bloque es una superficie oscura. Las

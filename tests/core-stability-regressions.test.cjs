@@ -34,6 +34,13 @@ assert.match(documents,/async function zipLib\(\).*loadScript\(JSZIP_URL/s,'JSZi
 assert.match(documents,/async function generate\(/,'la carga documental ocurre dentro de una acción explícita de generación');
 assert(stabilizer.includes('jsdelivr')&&stabilizer.includes('jszip'),'el estabilizador debe eliminar cualquier script JSZip que vuelva a colarse en el arranque');
 
+// Acceso: sin sesión no se debe arrancar la batería de módulos funcionales.
+assert.match(stabilizer,/SESSION_KEY='control_contractual_session_v3'/,'debe usar la misma sesión real del portal');
+assert.match(stabilizer,/data-cc-auth-loader/,'los scripts externos deben quedar detrás del acceso autenticado');
+assert.match(stabilizer,/localStorage\.getItem\('\$\{SESSION_KEY\}'\)/,'el cargador debe comprobar sesión antes de activar módulos');
+assert.match(stabilizer,/location\.reload\(\);return/,'después de ingresar debe recargar una sola vez el contexto autenticado completo');
+assert.match(stabilizer,/bootEnd='render\(\);\\n<\/script>'/,'el aislamiento debe empezar después del núcleo de acceso');
+
 // Núcleo generado: altas directas y reglas contractuales no inventadas.
 assert.match(stabilizer,/view\.projectId=np\.id;view\.screen='project';view\.tab='summary'/,'un proyecto nuevo debe abrir su expediente');
 assert.match(stabilizer,/recoveryTarget:null/,'un contrato nuevo no debe inventar una meta de amortización');
@@ -45,4 +52,4 @@ for(const file of ['dashboard-executive-v1.js','home-executive-fix-v2.js','indus
   assert(stabilizer.includes(`'${file}'`),`stabilize-core debe retirar ${file}`);
 }
 
-console.log('core-stability-regressions: navegación, Inicio único, runtime, fotos, documentos y núcleo blindados');
+console.log('core-stability-regressions: navegación, Inicio único, acceso ligero, runtime, fotos, documentos y núcleo blindados');

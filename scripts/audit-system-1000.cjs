@@ -38,7 +38,7 @@ function walk(dir=root,out=[]){
 const critical=[
   'index.html','build-pages.cjs','performance-runtime-v1.js','service-worker-v1.js',
   'portal-web-v2.js','portal-web-v2.css','dashboard-executive-v1.js',
-  'dashboard-simplified-v4.js','portal-route-bridge-v1.js','ui-stability-v1.js',
+  'dashboard-simplified-v4.js','portal-route-bridge-v1.js','ui-navigation-single-source-v1.js','ui-stability-v1.js',
   'tests/startup-responsive.spec.cjs','.github/workflows/deploy-pages-critical.yml'
 ];
 for(const rel of critical)check(exists(rel),`Falta archivo crítico: ${rel}`);
@@ -47,6 +47,7 @@ const index=read('index.html');
 const runtime=read('performance-runtime-v1.js');
 const sw=read('service-worker-v1.js');
 const stable=read('ui-stability-v1.js');
+const navigation=read('ui-navigation-single-source-v1.js');
 const startup=read('tests/startup-responsive.spec.cjs');
 const workflow=read('.github/workflows/deploy-pages-critical.yml');
 
@@ -111,9 +112,12 @@ for(const m of index.matchAll(/<(script|link)\b[^>]*(?:src|href)=["']([^"']+)["'
 const duplicateScripts=scriptRefs.filter((v,i,a)=>a.indexOf(v)!==i);
 check(duplicateScripts.length===0,`Scripts ejecutados más de una vez en index.html: ${[...new Set(duplicateScripts)].join(', ')}`);
 
-/* Controles de arquitectura visual y navegación consolidada. */
-check(stable.includes("dataset.route='transparencia'")||stable.includes('dataset.route="transparencia"'), 'La capa estable no incorpora Transparencia al sidebar');
-check(stable.includes("map={inicio:'home',proyectos:'projects',presupuesto:'budget'}"), 'Sidebar no sincroniza Inicio/Proyectos/Presupuesto con arquitectura ejecutiva');
+/* Controles de arquitectura visual y navegación consolidada.
+   ui-stability solo corrige presentación; la autoridad de navegación es
+   ui-navigation-single-source-v1.js. No se vuelve a introducir routing en la capa visual. */
+check(navigation.includes('function ensureTransparency(sidebar)')&&navigation.includes("data-route=\"transparencia\""), 'La navegación única no incorpora Transparencia al sidebar');
+check(navigation.includes("if(r==='inicio'||r==='proyectos')goPortfolio(r);")&&navigation.includes("else if(r==='presupuesto')goBudget();")&&navigation.includes("else if(r==='transparencia')goTransparency();"), 'La navegación única no gobierna Inicio/Proyectos/Presupuesto/Transparencia directamente');
+check(stable.includes('sin\\n   intervenir rutas')||stable.includes('intervenir rutas ni simular clics'), 'La capa de estabilidad volvió a asumir responsabilidades de navegación');
 check(stable.includes("aria-label','Navegación principal de Control Contractual'"), 'Sidebar sin etiqueta accesible');
 check(stable.includes("aria-label','Buscar proyecto, código, ubicación o estado'"), 'Buscador global sin etiqueta accesible');
 check(stable.includes('overflow-x:clip!important'), 'Falta protección contra desbordamiento horizontal');

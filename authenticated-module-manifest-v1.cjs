@@ -63,6 +63,9 @@ const supplementalModules=[
      filtra su MutationObserver global sin afectar los observadores del resto. */
   ['technical-control-observer-guard-v1.js','20260904-controlobserver1'],
   ['technical-control-v1.js','20260830-controltecnico1'],
+  /* Última capa: solo fija combinaciones WCAG ya identificadas después de que
+     todos los módulos históricos hayan terminado de inyectar sus estilos. */
+  ['ui-contrast-final-guard-v1.js','20260904-contrast-final1'],
 ];
 
 module.exports={retiredModules,preAuthModules,supplementalModules};

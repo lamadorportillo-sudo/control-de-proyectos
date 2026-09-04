@@ -35,7 +35,7 @@ const supplementalModules=[
   ['transparency-portal-v1.js','20260822-transparency1'],
   ['transparency-storage-v1.js','20260821-trstorage1'],
   ['budget-search-fix-v1.js','20260821-budgetsearch1'],
-  ['project-evaluation-dashboard-v1.js','20260828-projectevaluation1'],
+  ['project-evaluation-dashboard-v1.js','20260904-projectevaluation2'],
   ['project-functional-actions-v1.js','20260821-actions2'],
   ['visit-independent-reports-v1.js','20260821-visitsind1'],
   ['portfolio-gallery-v1.js','20260828-gallery3'],
@@ -55,6 +55,7 @@ const supplementalModules=[
   ['contract-official-format-v1.js','20260831-phone3'],
   ['contract-payment-documents-v1.js','20260831-advance-docs3'],
   ['contract-preview-v1.js','20260831-preview1'],
+  ['contract-document-safety-v1.js','20260904-docsafety1'],
 ];
 
 module.exports={retiredModules,preAuthModules,supplementalModules};

@@ -89,22 +89,23 @@ jobs:
               if count == 0:
                   raise SystemExit(f'No se encontró {label} para renovar su versión.')
 
-          if 'data-cc-auth-loader' not in html:
-              raise SystemExit('Se perdió el cargador autenticado de módulos.')
+          loader_marker = '<script data-cc-auth-loader data-cc-auth-plan>'
+          if loader_marker not in html:
+              raise SystemExit('Se perdió el cargador autenticado secuencial de módulos.')
 
-          # ZORDON no forma parte del paquete histórico reconstruido. Se conserva,
-          # pero únicamente detrás de la sesión para no bloquear la pantalla de acceso.
+          # ZORDON no forma parte del paquete histórico reconstruido. Se conserva
+          # como parte del mismo plan autenticado secuencial; nunca mediante
+          # document.write ni como script directo de la pantalla de acceso.
           for name in ('zordon-continuous-runtime-v1.js','zordon-chat-ui-v1.js','zordon-send-hardfix-v1.js'):
               html = re.sub(r'<script\s+src=["\']'+re.escape(name)+r'(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
-          session_key = 'control_contractual_session_v3'
-          def auth_loader(src):
-              return '<script data-cc-auth-loader>if(localStorage.getItem("'+session_key+'"))document.write("<script src=\\"'+src+'\\"><\\/script>");</script>'
-          zordon = auth_loader('zordon-continuous-runtime-v1.js?v=20260824-zordon4')
-          chat = auth_loader('zordon-chat-ui-v1.js?v=20260824-cleanchat4')
-          pos = html.lower().rfind('</body>')
-          if pos < 0:
-              raise SystemExit('No se encontró </body> para cargar ZORDON.')
-          html = html[:pos] + zordon + '\n' + chat + '\n' + html[pos:]
+              html = re.sub(r'<script[^>]*data-cc-auth-script[^>]*data-src=["\'][^"\']*'+re.escape(name)+r'[^"\']*["\'][^>]*></script>\s*', '', html, flags=re.I)
+
+          zordon = '<script type="application/x-cc-auth" data-cc-auth-script data-src="zordon-continuous-runtime-v1.js?v=20260824-zordon4"></script>'
+          chat = '<script type="application/x-cc-auth" data-cc-auth-script data-src="zordon-chat-ui-v1.js?v=20260824-cleanchat4"></script>'
+          html = html.replace(loader_marker, zordon + '\n' + chat + '\n' + loader_marker, 1)
+
+          if 'document.write(' in html:
+              raise SystemExit('Reapareció document.write en el artefacto autenticado.')
           path.write_text(html, encoding='utf-8')
           PY
 
@@ -137,7 +138,8 @@ jobs:
           grep -q 'ui-navigation-single-source-v1.js?v=20260903-singlenav2' index.html
           grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordon4' index.html
           grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat4' index.html
-          grep -q 'data-cc-auth-loader' index.html
+          grep -q 'data-cc-auth-script' index.html
+          grep -q 'data-cc-auth-loader data-cc-auth-plan' index.html
           grep -q "control_contractual_session_v3" index.html
           grep -q "view.screen='project';view.tab='summary'" index.html
           grep -q "const targetPct=Number(contract.recoveryTarget||0);" index.html
@@ -149,6 +151,10 @@ jobs:
               exit 1
             fi
           done
+          if grep -q 'document.write(' index.html; then
+            echo 'Reapareció document.write en el HTML publicado.' >&2
+            exit 1
+          fi
           if grep -q 'window.__CP_B64=' index.html; then
             echo 'El HTML generado todavía contiene el cargador Base64.' >&2
             exit 1

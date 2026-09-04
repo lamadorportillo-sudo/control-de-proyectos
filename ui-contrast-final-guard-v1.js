@@ -1,7 +1,8 @@
-/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V2 ===== */
+/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V3 ===== */
 (()=>{
 'use strict';
-if(window.__CC_CONTRAST_FINAL_GUARD_V2__)return;
+if(window.__CC_CONTRAST_FINAL_GUARD_V3__)return;
+window.__CC_CONTRAST_FINAL_GUARD_V3__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V2__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V1__=true;
 
@@ -31,6 +32,16 @@ function install(){
   html body.cc-portal-v2:not(.print-report) #content .exec-overview .exec-bar-label b,
   html body.cc-portal-v2:not(.print-report) #content .exec-overview .exec-finance b{
     color:#f8fbff!important;opacity:1!important;
+  }
+
+  /* Transparencia · la tarjeta de documentos fuente es una superficie clara.
+     Evitar que los colores secundarios globales del tema oscuro entren en esa
+     tarjeta: ambos tonos superan 4.5:1 sobre blanco para texto pequeño. */
+  html body.cc-portal-v2:not(.print-report) #content .tr-source .eyebrow{
+    color:#315a7c!important;opacity:1!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content .tr-source .muted{
+    color:#536158!important;opacity:1!important;
   }
 
   /* Lectura operativa actual: todo el bloque es una superficie oscura. Las

@@ -1,7 +1,8 @@
-/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V1 ===== */
+/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V2 ===== */
 (()=>{
 'use strict';
-if(window.__CC_CONTRAST_FINAL_GUARD_V1__)return;
+if(window.__CC_CONTRAST_FINAL_GUARD_V2__)return;
+window.__CC_CONTRAST_FINAL_GUARD_V2__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V1__=true;
 
 const STYLE_ID='cc-contrast-final-guard-v1-style';
@@ -10,7 +11,12 @@ function install(){
   if(!s){s=document.createElement('style');s.id=STYLE_ID;document.head.appendChild(s)}
   s.textContent=`
   /* Inicio · visual circular: el disco interior debe existir también como
-     background-color real (no solo ::after) para lectores y auditores WCAG. */
+     background-color real (no solo ::after) para lectores y auditores WCAG.
+     El visual 3D histórico puede dejar opacity inline en medio de una animación;
+     se neutraliza para que la legibilidad no dependa del instante del render. */
+  html body.cc-portal-v2:not(.print-report) #content .exec-overview .portfolio-ring{
+    opacity:1!important;
+  }
   html body.cc-portal-v2:not(.print-report) #content .exec-overview .portfolio-ring-content{
     background-color:#07111f!important;
     color:#f8fbff!important;
@@ -65,10 +71,10 @@ function install(){
     border-color:#5b91df!important;
   }
 
-  /* Ciclo de vida: los conteos vacíos viven sobre superficie clara. Un gris
-     más oscuro conserva el diseño y supera 4.5:1 sin convertirlos en alertas. */
+  /* Ciclo de vida: la banda es oscura. Los conteos sin datos siguen siendo
+     secundarios, pero conservan contraste AA sin parecer una alerta activa. */
   html body.cc-portal-v2:not(.print-report) #content .cc-life-step:not(.has-data) > b{
-    color:#536476!important;opacity:1!important;
+    color:#d3deea!important;opacity:1!important;
   }
   `;
 }

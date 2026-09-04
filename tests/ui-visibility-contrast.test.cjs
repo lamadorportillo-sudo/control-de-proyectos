@@ -9,6 +9,10 @@ assert.match(src,/function requiredRatio/,'debe calcular el umbral según tamañ
 assert.match(src,/\?3:4\.5/,'texto normal debe respetar contraste WCAG 4.5:1 y texto grande 3:1');
 assert.match(src,/effectiveBackground/,'el contraste debe evaluarse contra el fondo efectivo real');
 assert.match(src,/function knownDarkSurface/,'debe identificar superficies oscuras conocidas antes de reparar el texto');
+assert.match(src,/#content \.followup-panel/,'el centro de seguimiento debe reconocerse como superficie oscura');
+assert.match(src,/#content \.quick-panel/,'los accesos rápidos deben reconocerse como superficie oscura');
+assert.match(src,/#content \.cp-alerts-compact/,'las alertas compactas deben reconocerse como superficie oscura');
+assert.match(src,/#content \.cp-project-search-note/,'la nota de proyectos debe reconocerse como superficie oscura');
 assert.match(src,/function bestReadable/,'fuera de superficies conocidas debe elegir el color con mejor contraste real');
 assert.match(src,/knownDarkSurface\(el\)\?'light':bestReadable\(bg\)/,'una superficie oscura conocida nunca debe recibir reparación de texto oscuro');
 assert.match(src,/data-cc-readable/,'debe existir reparación contextual de contraste');
@@ -29,4 +33,4 @@ const immersiveAt=modules.lastIndexOf('immersive-engineering-experience-v1.js');
 assert.ok(visibilityAt>themeAt&&visibilityAt>operationalAt&&visibilityAt>immersiveAt,'el auditor de contraste debe cargarse después de las capas visuales');
 assert.match(modules,/ui-visibility-audit-v1\.js\?v=20260831-visibility4/,'el cargador debe usar la versión corregida V4 del auditor');
 
-console.log('ui-visibility-contrast: V4 contextual, modales, sincronización, estados deshabilitados y orden de carga verificados');
+console.log('ui-visibility-contrast: V4 contextual, Inicio, modales, sincronización, estados deshabilitados y orden de carga verificados');

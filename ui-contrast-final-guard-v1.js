@@ -1,7 +1,8 @@
-/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V4 ===== */
+/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V5 ===== */
 (()=>{
 'use strict';
-if(window.__CC_CONTRAST_FINAL_GUARD_V4__)return;
+if(window.__CC_CONTRAST_FINAL_GUARD_V5__)return;
+window.__CC_CONTRAST_FINAL_GUARD_V5__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V4__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V3__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V2__=true;
@@ -35,9 +36,31 @@ function install(){
     color:#f8fbff!important;opacity:1!important;
   }
 
-  /* Transparencia · la tarjeta de documentos fuente es una superficie clara.
-     Evitar que los colores secundarios globales del tema oscuro entren en esa
-     tarjeta: ambos tonos superan 4.5:1 sobre blanco para texto pequeño. */
+  /* Transparencia · esta vista fue diseñada con tarjetas claras. La capa
+     general oscura no debe cambiar sus títulos a blanco ni aclarar demasiado
+     sus textos secundarios. Los tonos siguientes superan AA sobre blanco y
+     sobre los fondos verde/gris muy claros propios del portal. */
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-head h2,
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-source h3,
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-section-head h3,
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-kpi strong,
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-row b,
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-empty b,
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-const b{
+    color:#26372b!important;opacity:1!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-head p,
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-period label span,
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-kpi small,
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-kpi span,
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-section-head p,
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-row small,
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-empty span,
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-const small,
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-form label span,
+  html body.cc-portal-v2:not(.print-report) #content .tr-page .tr-template-note{
+    color:#536158!important;opacity:1!important;
+  }
   html body.cc-portal-v2:not(.print-report) #content .tr-source .eyebrow{
     color:#315a7c!important;opacity:1!important;
   }

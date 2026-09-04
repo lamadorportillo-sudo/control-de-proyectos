@@ -24,10 +24,15 @@ assert.match(portalWeb,/data-route="campo"[\s\S]*data-route="arquitectura"[\s\S]
 assert.match(portalWeb,/Inicio, Proyectos, Presupuesto y centros globales quedan sin listener local/,'debe documentar la separación de responsabilidades de navegación');
 
 // Navegación: la barra lateral gobierna directamente la vista.
+assert.match(nav,/NAVEGACIÓN ÚNICA V4/,'debe estar activa la navegación canónica V4');
 assert.match(nav,/view\.screen='projects'/,'Inicio/Proyectos debe manejar el estado real de la vista');
 assert.doesNotMatch(nav,/querySelector\(`\[data-ccx=/,'no debe localizar botones ocultos del motor ejecutivo');
 assert.doesNotMatch(nav,/btn\.click\(\)/,'no debe accionar navegación heredada con clics sintéticos');
 assert.match(nav,/cc_main_route_v2/,'debe conservar una sola intención de ruta principal');
+assert.match(nav,/window\.__ccMainRoute\|\|document\.body\?\.dataset\?\.ccMainRoute/,'la intención viva de navegación debe prevalecer sobre persistencia histórica durante la sesión');
+assert.match(nav,/document\.body\.dataset\.ccMainRoute=r/,'cada ruta elegida debe quedar reflejada inmediatamente en el DOM canónico');
+assert.match(nav,/syncActive\(Q\('#ccSidebar'\)\)/,'la barra lateral debe sincronizar su estado activo durante la interacción, sin esperar otro render');
+assert.match(nav,/aria-current','page'/,'la ruta activa debe quedar expuesta semánticamente');
 
 // Estabilidad visual: nunca debe volver a convertirse en un segundo router.
 assert.match(uiStability,/ESTABILIDAD VISUAL V2/,'la capa de estabilidad debe declararse solo visual');
@@ -119,4 +124,4 @@ for(const file of retiredModules){
   assert(retiredModules.includes(file),`el manifiesto debe conservar ${file} como retirado`);
 }
 
-console.log('core-stability-regressions: portal de presentación, navegación única, login seguro, presupuesto global de nube, versiones canónicas y arranque por fases blindados');
+console.log('core-stability-regressions: portal de presentación, navegación única, estado móvil canónico, login seguro, presupuesto global de nube, versiones canónicas y arranque por fases blindados');

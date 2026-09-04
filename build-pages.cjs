@@ -1,6 +1,7 @@
 const fs=require('fs');
 const zlib=require('zlib');
 const vm=require('vm');
+const {retiredModules}=require('./authenticated-module-manifest-v1.cjs');
 
 const files=Array.from({length:12},(_,i)=>`bundle-${String(i+1).padStart(2,'0')}.js`);
 let b64='';
@@ -187,7 +188,10 @@ const lateModules=[
   ['portfolio-screen-fix-v1.js','20260821-screenfix1'],
   ['project-photo-story-v1.js','20260821-photostory1'],
 ];
-for(const [module,version] of lateModules){
+const activeLateModules=lateModules.filter(([module])=>!retiredModules.includes(module));
+const skippedRetired=lateModules.filter(([module])=>retiredModules.includes(module)).map(([module])=>module);
+if(skippedRetired.length)console.log(`Módulos retirados omitidos por el constructor: ${skippedRetired.join(', ')}`);
+for(const [module,version] of activeLateModules){
   if(!fs.existsSync(module)) throw new Error(`No se encontró ${module}.`);
   try{new vm.Script(fs.readFileSync(module,'utf8'),{filename:module})}catch(err){throw new Error(`JavaScript inválido en ${module}: ${err.message}`)}
   const re=new RegExp(`<script\\s+src=["']${module.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&')}(?:\\?[^"']*)?["']\\s*></script>\\s*`,'gi');

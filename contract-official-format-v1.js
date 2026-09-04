@@ -1,13 +1,13 @@
-/* ===== CONTROL CONTRACTUAL · CORRECCIÓN INSTITUCIONAL DE FORMATOS ===== */
+/* ===== CONTROL CONTRACTUAL · CORRECCIÓN INSTITUCIONAL DE FORMATOS V2 ===== */
 (()=>{
 'use strict';
-if(window.__CC_OFFICIAL_CONTRACT_FORMAT_V1__)return;
+if(window.__CC_OFFICIAL_CONTRACT_FORMAT_V2__)return;
+window.__CC_OFFICIAL_CONTRACT_FORMAT_V2__=true;
 window.__CC_OFFICIAL_CONTRACT_FORMAT_V1__=true;
 
 const CORRECT_PHONE='9864-2006';
 const WRONG_PHONES=['9865-2258','9865 - 2258','9865 2258','98652258'];
-const JSZIP_URL='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
-let patched=false;
+let patched=false,watcher=null;
 
 function replaceLogicalText(xml,from,to){
   if(!xml||!from)return xml;
@@ -76,18 +76,33 @@ function patchJSZip(){
   wrapped.__ccMunicipalPhoneFix=true;
   window.JSZip.loadAsync=wrapped;
   patched=true;
+  watcher?.disconnect?.();watcher=null;
   console.info('Formatos contractuales: teléfono municipal fijado en',CORRECT_PHONE);
   return true;
 }
 
-function ensureJSZip(){
+function watchForLazyJSZip(){
+  /* JSZip NO se descarga al iniciar la página. El generador contractual lo
+     solicita únicamente cuando el usuario genera un Word/ZIP. En ese momento
+     esta capa detecta la biblioteca y aplica la corrección institucional. */
   if(patchJSZip())return;
-  const existing=[...document.scripts].find(s=>/jszip@3\.10\.1\/dist\/jszip\.min\.js/i.test(s.src||''));
-  if(existing){existing.addEventListener('load',patchJSZip,{once:true});return}
-  const s=document.createElement('script');s.src=JSZIP_URL;s.async=true;s.onload=patchJSZip;s.onerror=()=>console.warn('No se pudo preparar la corrección de teléfono en los formatos.');document.head.appendChild(s);
+  const NativeObserver=window.__ccNativeMutationObserver||window.MutationObserver;
+  if(!NativeObserver||watcher)return;
+  watcher=new NativeObserver(mutations=>{
+    for(const mutation of mutations){
+      for(const node of mutation.addedNodes||[]){
+        if(node?.tagName!=='SCRIPT')continue;
+        const src=String(node.src||'');
+        if(!/jszip(?:@|\/).*jszip(?:\.min)?\.js/i.test(src))continue;
+        node.addEventListener('load',patchJSZip,{once:true});
+      }
+    }
+    patchJSZip();
+  });
+  watcher.observe(document.head||document.documentElement,{childList:true,subtree:true});
 }
 
 window.ccMunicipalFormatData=Object.assign({},window.ccMunicipalFormatData||{},{phone:CORRECT_PHONE});
-ensureJSZip();
-let tries=0;const timer=setInterval(()=>{tries++;if(patchJSZip()||tries>80)clearInterval(timer)},100);
+window.ccApplyMunicipalFormatFix=patchJSZip;
+watchForLazyJSZip();
 })();

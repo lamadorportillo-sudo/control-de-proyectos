@@ -4,7 +4,7 @@ on:
   push:
     branches: [audit-architecture-fixes]
     paths:
-      - 'scripts/apply-contract-document-audit-fixes-v3.cjs'
+      - 'scripts/apply-contract-document-audit-fixes-v4.cjs'
       - '.github/workflows/apply-contract-document-audit-fixes.yml'
 
 permissions:
@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: '22'
       - name: Aplicar parches exactos
-        run: node scripts/apply-contract-document-audit-fixes-v3.cjs
+        run: node scripts/apply-contract-document-audit-fixes-v4.cjs
       - name: Validar sintaxis y pruebas contractuales
         run: |
           node --check contract-payment-documents-v1.js
@@ -29,10 +29,10 @@ jobs:
           node --check authenticated-module-manifest-v1.cjs
           node --check project-tabs-complete-v1.js
           node --test tests/contract-document-safety.test.cjs tests/contract-payment-documents.test.cjs tests/contract-explicit-rules.test.cjs tests/project-evaluation-dashboard.test.cjs
-      - name: Guardar únicamente los archivos corregidos
+      - name: Guardar únicamente el generador corregido
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add contract-payment-documents-v1.js authenticated-module-manifest-v1.cjs project-tabs-complete-v1.js
-          git commit -m "Ajustar requisitos por tipo de documento contractual"
+          git add contract-payment-documents-v1.js
+          git commit -m "Ajustar generador a requisitos por documento"
           git push origin HEAD:audit-architecture-fixes

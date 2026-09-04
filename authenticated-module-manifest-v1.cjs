@@ -27,6 +27,7 @@ const supplementalModules=[
   ['programacion-control-v1.js','20260823-programacion4'],
   ['change-order-fix-v1.js','20260821-changefix1'],
   ['contract-penalty-card-v1.js','20260831-penalty2'],
+  ['contract-explicit-rules-v1.js','20260904-explicit1'],
   ['report-professional-v1.js','20260823-reportpro4'],
   ['report-export-css-fix-v1.js','20260821-reportcss1'],
   ['document-qr-v1.js','20260831-docqr1'],

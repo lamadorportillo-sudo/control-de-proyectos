@@ -136,16 +136,18 @@ for(const name of retiredModules){
 /* Referencias locales del HTML publicado. */
 const refs=[];
 const scriptRefs=[];
+let refIndex=0;
 for(const m of index.matchAll(/<(script|link)\b[^>]*(?:src|href)=["']([^"']+)["'][^>]*>/gi)){
   const tag=m[1].toLowerCase();
   const ref=m[2];
   if(/^(?:https?:|data:|blob:|#|mailto:|tel:)/i.test(ref))continue;
   const clean=ref.split(/[?#]/)[0].replace(/^\.\//,'');
   if(!clean||clean.startsWith('/'))continue;
+  const n=++refIndex;
   refs.push(clean);
   if(tag==='script')scriptRefs.push(clean);
-  check(exists(clean),`referencia local existe: ${clean}`);
-  check(!/\s/.test(clean),`referencia local sin espacios inseguros: ${clean}`);
+  check(exists(clean),`referencia local #${n} ${tag} existe: ${clean}`);
+  check(!/\s/.test(clean),`referencia local #${n} ${tag} sin espacios inseguros: ${clean}`);
 }
 const duplicateScripts=scriptRefs.filter((v,i,a)=>a.indexOf(v)!==i);
 check(duplicateScripts.length===0,`scripts ejecutables sin duplicados: ${[...new Set(duplicateScripts)].join(', ')||'ninguno'}`);

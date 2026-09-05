@@ -1,7 +1,8 @@
-/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V7 ===== */
+/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V8 ===== */
 (()=>{
 'use strict';
-if(window.__CC_CONTRAST_FINAL_GUARD_V7__)return;
+if(window.__CC_CONTRAST_FINAL_GUARD_V8__)return;
+window.__CC_CONTRAST_FINAL_GUARD_V8__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V7__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V6__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V5__=true;
@@ -36,6 +37,14 @@ function install(){
   html body.cc-portal-v2:not(.print-report) #content .exec-overview .exec-bar-label b,
   html body.cc-portal-v2:not(.print-report) #content .exec-overview .exec-finance b{
     color:#f8fbff!important;opacity:1!important;
+  }
+
+  /* Tarjetas de proyecto · algunas reglas históricas del tema claro conservan
+     #213027 en el título aunque la tarjeta final sea oscura. El título del
+     expediente debe pertenecer siempre a la misma superficie visual. */
+  html body.cc-portal-v2:not(.print-report) #content .project-card-premium h3,
+  html body.cc-portal-v2:not(.print-report) #content .project-v3 h3{
+    color:#f8fbff!important;opacity:1!important;text-shadow:none!important;
   }
 
   /* Transparencia · las tarjetas son claras, pero la cabecera principal vive

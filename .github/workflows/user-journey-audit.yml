@@ -2,6 +2,15 @@ name: Recorrido real de usuario
 
 on:
   push:
+    branches: [main, audit-architecture-fixes]
+    paths:
+      - 'index.html'
+      - '*.js'
+      - '*.cjs'
+      - 'tests/full-user-journey-responsive.spec.cjs'
+      - 'tests/project-create-route-responsive.spec.cjs'
+      - '.github/workflows/user-journey-audit.yml'
+  pull_request:
     branches: [main]
     paths:
       - 'index.html'
@@ -16,7 +25,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: user-journey-${{ github.ref }}
+  group: user-journey-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -52,6 +61,8 @@ jobs:
           grep -q 'ui-navigation-single-source-v1.js?v=20260903-singlenav2' index.html
           grep -q 'private-access-v1.js?v=20260904-private6' index.html
           grep -q 'performance-runtime-v1.js?v=20260904-perf10' index.html
+          grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordon4' index.html
+          grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat4' index.html
           grep -q '__CC_AUTH_BOOT_FAILED__' index.html
           grep -q "view.screen='project';view.tab='summary'" index.html
           grep -q "const targetPct=Number(contract.recoveryTarget||0);" index.html

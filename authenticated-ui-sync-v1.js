@@ -1,8 +1,9 @@
-/* CONTROL CONTRACTUAL · SINCRONIZACIÓN DE INTERFAZ AUTENTICADA V1
-   Coordina la búsqueda superior con ZORDON y refresca decoraciones tardías sin crear un segundo router. */
+/* CONTROL CONTRACTUAL · SINCRONIZACIÓN DE INTERFAZ AUTENTICADA V2
+   Coordina la búsqueda superior con ZORDON, conserva la consulta visible tras el rerender y refresca decoraciones tardías sin crear un segundo router. */
 (()=>{
 'use strict';
-if(window.__CC_AUTHENTICATED_UI_SYNC_V1__)return;
+if(window.__CC_AUTHENTICATED_UI_SYNC_V2__)return;
+window.__CC_AUTHENTICATED_UI_SYNC_V2__=true;
 window.__CC_AUTHENTICATED_UI_SYNC_V1__=true;
 
 const NativeObserver=window.__ccNativeMutationObserver||window.MutationObserver;
@@ -29,6 +30,18 @@ function syncProjectQuery(query){
   setTimeout(run,220);
 }
 
+function restoreGlobalQuery(query){
+  const q=String(query||'').trim();
+  const run=()=>{
+    const input=document.getElementById('ccGlobalSearch');
+    if(input&&input.value!==q)input.value=q;
+  };
+  run();
+  if(typeof requestAnimationFrame==='function')requestAnimationFrame(run);
+  setTimeout(run,80);
+  setTimeout(run,220);
+}
+
 function routeGlobalSearch(event){
   if(event.key!=='Enter')return;
   const input=event.currentTarget;
@@ -36,6 +49,8 @@ function routeGlobalSearch(event){
   event.preventDefault();
   event.stopImmediatePropagation();
   try{
+    /* ZORDON conserva la autoridad de búsqueda. El filtro literal histórico
+       permanece vacío para no ejecutar dos motores distintos sobre la lista. */
     view.search='';
     view.screen='projects';
     view.projectId=null;
@@ -44,6 +59,7 @@ function routeGlobalSearch(event){
     renderApp();
   }catch(error){console.warn('No se pudo abrir Proyectos desde la búsqueda global.',error)}
   setTimeout(()=>window.__ccSingleNav?.refresh?.(),0);
+  restoreGlobalQuery(query);
   syncProjectQuery(query);
 }
 
@@ -78,5 +94,5 @@ run();
 refreshLateDashboard();
 setTimeout(()=>{run();refreshLateDashboard()},120);
 setTimeout(()=>{run();refreshLateDashboard()},420);
-window.__ccAuthenticatedUiSync={run,syncProjectQuery,refreshLateDashboard};
+window.__ccAuthenticatedUiSync={run,syncProjectQuery,restoreGlobalQuery,refreshLateDashboard};
 })();

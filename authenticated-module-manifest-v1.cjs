@@ -19,6 +19,11 @@ const preAuthModules=[
 ];
 
 const supplementalModules=[
+  /* Estos dos módulos son críticos para la primera navegación autenticada.
+     Sus versiones viven aquí para que arquitectura y publicación prueben
+     exactamente el mismo artefacto. */
+  ['project-tabs-complete-v1.js','20260831-tabscomplete34'],
+  ['ui-navigation-single-source-v1.js','20260903-singlenav2'],
   ['security-runtime-v1.js','20260904-security4'],
   ['mfa-security-v1.js','20260824-mfa4'],
   ['security-center-v1.js','20260823-securitycenter4'],
@@ -66,6 +71,11 @@ const supplementalModules=[
      filtra su MutationObserver global sin afectar los observadores del resto. */
   ['technical-control-observer-guard-v1.js','20260904-controlobserver1'],
   ['technical-control-v1.js','20260830-controltecnico1'],
+  /* ZORDON se cargaba solamente en el workflow de publicación, después de que
+     la arquitectura ya había sido probada. Se integra al manifiesto para que
+     el artefacto validado y el artefacto publicado sean el mismo. */
+  ['zordon-continuous-runtime-v1.js','20260824-zordon4'],
+  ['zordon-chat-ui-v1.js','20260824-cleanchat4'],
 ];
 
 module.exports={retiredModules,preAuthModules,supplementalModules};

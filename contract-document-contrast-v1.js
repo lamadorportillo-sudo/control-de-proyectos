@@ -1,7 +1,8 @@
-/* ===== CONTROL CONTRACTUAL · CONTRASTE DOCUMENTAL V2 ===== */
+/* ===== CONTROL CONTRACTUAL · CONTRASTE DOCUMENTAL V3 ===== */
 (()=>{
 'use strict';
-if(window.__CC_CONTRACT_DOCUMENT_CONTRAST_V2__)return;
+if(window.__CC_CONTRACT_DOCUMENT_CONTRAST_V3__)return;
+window.__CC_CONTRACT_DOCUMENT_CONTRAST_V3__=true;
 window.__CC_CONTRACT_DOCUMENT_CONTRAST_V2__=true;
 window.__CC_CONTRACT_DOCUMENT_CONTRAST_V1__=true;
 
@@ -36,18 +37,38 @@ function install(){
   html body.cc-portal-v2:not(.print-report) #content #tabBody .cc2-archive .cc2-empty small{
     background-color:#f4f8fb!important;color:#4f6578!important;opacity:1!important;
   }
-  /* Bloque de generación de contrato/anticipo/orden de inicio: superficie
-     clara independiente del repositorio cc2. */
+
+  /* Bloque de generación de contrato/anticipo/orden de inicio. La tarjeta usa
+     un degradado, pero declara también una base sólida para conservar contraste
+     verificable aun cuando otras capas no puedan resolver background-image. */
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .cc-payment-docs{
+    background-color:#f8fbfd!important;color:#173247!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .cc-payment-docs .cc-payment-docs-head,
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .cc-payment-docs .cc-payment-docs-head h3{
+    color:#173247!important;opacity:1!important;text-shadow:none!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .cc-payment-docs .cc-payment-docs-kicker{
+    color:#075167!important;opacity:1!important;text-shadow:none!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .cc-payment-docs .cc-payment-docs-head p{
+    color:#354f63!important;opacity:1!important;text-shadow:none!important;
+  }
   html body.cc-portal-v2:not(.print-report) #content #tabBody .cc-payment-docs .cc-payment-doc{
     background-color:#fff!important;color:#173247!important;
   }
   html body.cc-portal-v2:not(.print-report) #content #tabBody .cc-payment-docs .cc-payment-doc small{
     background-color:#fff!important;color:#536b7e!important;opacity:1!important;
   }
-  /* Cabecera de cada pago. data-cc-readable="dark" confirma que el contenido
-     se dibuja sobre la tarjeta clara del expediente. */
-  html body.cc-portal-v2:not(.print-report) #content #tabBody .cc2-archive .cc2-payment-head small[data-cc-readable="dark"]{
-    color:#425d73!important;opacity:1!important;text-shadow:none!important;
+
+  /* Cada pago vive en una tarjeta clara propia. El encabezado no porta un
+     atributo de contraste en el DOM real, por lo que la regla debe apoyarse en
+     la clase estructural estable y no en una marca que nunca se renderiza. */
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .cc2-archive .cc2-payment-head{
+    background-color:#fff!important;color:#173247!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .cc2-archive .cc2-payment-head small{
+    background-color:#fff!important;color:#425d73!important;opacity:1!important;text-shadow:none!important;
   }
   `;
 }

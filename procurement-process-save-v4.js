@@ -95,7 +95,15 @@ async function saveForm(form){
 
     show(form,cloudOk?'Datos del proceso guardados y sincronizados.':'Datos del proceso guardados. La sincronización en la nube continuará automáticamente.',true);
     setTimeout(()=>{
-      try{const modal=form.closest('.modal');modal?.remove();const c=A(db?.contracts).find(x=>x.projectId===p.id)||null;if(typeof renderProcurement==='function')renderProcurement(p,c)}catch(e){console.warn(e)}
+      try{
+        /* openModal devuelve el contenedor .modal-bg. El guardado V4 antiguo
+           eliminaba solo .modal y dejaba una capa transparente capturando todos
+           los clics del expediente. Se retira siempre el contenedor completo. */
+        const overlay=form.closest('.modal-bg');
+        if(overlay)overlay.remove();else form.closest('.modal')?.remove();
+        const c=A(db?.contracts).find(x=>x.projectId===p.id)||null;
+        if(typeof renderProcurement==='function')renderProcurement(p,c)
+      }catch(e){console.warn(e)}
     },180);
   }catch(err){console.error('Guardado V4',err);show(form,`No se pudo guardar: ${String(err?.message||err)}`)}
   finally{form.dataset.ccSavingV4='';if(btn){btn.disabled=false;btn.textContent=old}}

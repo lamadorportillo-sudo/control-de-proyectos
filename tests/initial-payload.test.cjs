@@ -3,7 +3,10 @@ const fs=require('node:fs');
 const {retiredModules}=require('../authenticated-module-manifest-v1.cjs');
 
 const html=fs.readFileSync('index.html','utf8');
-const refs=[...html.matchAll(/<script\s+[^>]*src=["']([^"']+)/g)].map(match=>match[1].split('?')[0]);
+// Solo cuenta scripts ejecutables en la carga inicial. Los módulos autenticados se
+// publican como <script type="application/x-cc-auth" data-src="…"> y son inertes
+// hasta que el cargador autenticado los activa; data-src no debe confundirse con src.
+const refs=[...html.matchAll(/<script\s+src=["']([^"']+)/g)].map(match=>match[1].split('?')[0]);
 const directBytes=refs.reduce((sum,file)=>sum+(fs.existsSync(file)?fs.statSync(file).size:0),0);
 const forbidden=['fhis-cost-data-v1.js','assets/cost-knowledge/index.js','cost-program-v1.js','law-knowledge-v1.js','legal-assistant-v2.js'];
 
@@ -24,4 +27,4 @@ assert(injector.includes('retiredModules'),'El inyector debe retirar las capas h
 assert(injector.includes("'system-ui-refinement-v3.js'"),'El inyector debe cargar la capa visual final V3');
 assert(injector.includes("'integrity-diagnostics-v1.js'"),'El inyector debe cargar el diagnóstico contractual no destructivo');
 
-console.log(`initial-payload: ${refs.length} scripts directos, ${directBytes} bytes de JavaScript inicial`);
+console.log(`initial-payload: ${refs.length} scripts ejecutables directos, ${directBytes} bytes de JavaScript inicial`);

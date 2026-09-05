@@ -1,7 +1,8 @@
-/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V6 ===== */
+/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V7 ===== */
 (()=>{
 'use strict';
-if(window.__CC_CONTRAST_FINAL_GUARD_V6__)return;
+if(window.__CC_CONTRAST_FINAL_GUARD_V7__)return;
+window.__CC_CONTRAST_FINAL_GUARD_V7__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V6__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V5__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V4__=true;
@@ -80,6 +81,22 @@ function install(){
   html body.cc-portal-v2:not(.print-report) #content #tabBody .cc-current-law small,
   html body.cc-portal-v2:not(.print-report) #content #tabBody .cc-current-law .law-note{
     color:#4f675b!important;opacity:1!important;
+  }
+
+  /* Disponibilidad presupuestaria · todos los importes principales viven sobre
+     tarjetas oscuras. Una regla histórica del tema claro heredaba #203027 en
+     los KPI normales, dejando los valores en 1.35:1. Se fija el color junto con
+     la superficie para superar WCAG sin depender del orden de carga. */
+  html body.cc-portal-v2:not(.print-report) #content .cp-budget-kpi,
+  html body.cc-portal-v2:not(.print-report) #content .cp-exec-metric,
+  html body.cc-portal-v2:not(.print-report) #content .cp-exec-ring-card{
+    background-color:#0a131d!important;color:#f8fbff!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content .cp-budget-kpi strong,
+  html body.cc-portal-v2:not(.print-report) #content .cp-exec-metric strong,
+  html body.cc-portal-v2:not(.print-report) #content .cp-exec-ring-card strong,
+  html body.cc-portal-v2:not(.print-report) #content .cp-exec-ring-card b{
+    color:#f8fbff!important;opacity:1!important;text-shadow:none!important;
   }
 
   /* Lectura operativa actual: todo el bloque es una superficie oscura. Las

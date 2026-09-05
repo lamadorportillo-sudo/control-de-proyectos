@@ -64,6 +64,10 @@ const supplementalModules=[
   ['contract-document-safety-v1.js','20260904-docsafety3'],
   ['contract-payment-documents-v1.js','20260904-advance-docs4'],
   ['contract-preview-v1.js','20260904-preview2'],
+  /* ZORDON antes del cierre técnico: se prueba y publica dentro del mismo plan,
+     sin desplazar el guard y el control técnico que deben quedar al final. */
+  ['zordon-continuous-runtime-v1.js','20260824-zordon4'],
+  ['zordon-chat-ui-v1.js','20260824-cleanchat4'],
   /* Última corrección visual general, antes del par técnico que debe seguir
      siendo el cierre funcional del plan autenticado. */
   ['ui-contrast-final-guard-v1.js','20260904-contrast-final6'],
@@ -71,11 +75,6 @@ const supplementalModules=[
      filtra su MutationObserver global sin afectar los observadores del resto. */
   ['technical-control-observer-guard-v1.js','20260904-controlobserver1'],
   ['technical-control-v1.js','20260830-controltecnico1'],
-  /* ZORDON se cargaba solamente en el workflow de publicación, después de que
-     la arquitectura ya había sido probada. Se integra al manifiesto para que
-     el artefacto validado y el artefacto publicado sean el mismo. */
-  ['zordon-continuous-runtime-v1.js','20260824-zordon4'],
-  ['zordon-chat-ui-v1.js','20260824-cleanchat4'],
 ];
 
 module.exports={retiredModules,preAuthModules,supplementalModules};

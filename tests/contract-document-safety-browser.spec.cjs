@@ -37,9 +37,6 @@ async function login(page){
   await page.locator('#authPass').fill('Documento-Seguro-2026!');
   await page.locator('#authSubmit').click();
 
-  // El login seguro recarga la página para evaluar el plan autenticado con la
-  // sesión persistida. Esperar primero esa navegación evita observar el window
-  // anterior y convierte esta prueba en el mismo recorrido real del arranque.
   await expect.poll(()=>topNavigations,{timeout:15000,message:'El login documental no recargó el contexto autenticado'}).toBeGreaterThanOrEqual(2);
   await expect(page.locator('#ccSidebar')).toBeVisible({timeout:15000});
   await page.waitForFunction(()=>window.__CC_AUTH_CRITICAL_READY__===true||window.__CC_AUTH_BOOT_FAILED__===true,null,{timeout:15000});
@@ -49,6 +46,16 @@ async function login(page){
   expect(boot.ready,JSON.stringify(boot.errors)).toBe(true);
 }
 
+function diagnosticClickSource(){
+  const stops=[];
+  const originalStop=Event.prototype.stopPropagation,originalImmediate=Event.prototype.stopImmediatePropagation,originalPrevent=Event.prototype.preventDefault;
+  const record=(kind,event)=>{if(event?.type==='click'&&event?.target?.matches?.('[data-cc-doc-contract]'))stops.push({kind,stack:String(new Error(`qa-${kind}`).stack||'').split('\n').slice(1,7).join('\n')})};
+  Event.prototype.stopPropagation=function(){record('stopPropagation',this);return originalStop.call(this)};
+  Event.prototype.stopImmediatePropagation=function(){record('stopImmediatePropagation',this);return originalImmediate.call(this)};
+  Event.prototype.preventDefault=function(){record('preventDefault',this);return originalPrevent.call(this)};
+  return{stops,restore(){Event.prototype.stopPropagation=originalStop;Event.prototype.stopImmediatePropagation=originalImmediate;Event.prototype.preventDefault=originalPrevent}};
+}
+
 test.describe('blindaje de documentos contractuales',()=>{
   test.use({viewport:{width:1280,height:800}});
 
@@ -56,35 +63,41 @@ test.describe('blindaje de documentos contractuales',()=>{
     test.setTimeout(90000);
     const pageErrors=[];page.on('pageerror',e=>pageErrors.push(e.message));
     await login(page);
-    const state=await page.evaluate(projectId=>{
-      view.screen='project';view.projectId=projectId;
-      const p=db.projects.find(x=>x.id===projectId),c=db.contracts.find(x=>x.projectId===projectId);
-      const issues=window.__ccContractDocumentSafety.validate('contract',p,c);
-      const button=document.createElement('button');button.type='button';button.dataset.ccDocContract='1';button.id='qaUnsafeContractButton';let downstream=false;button.addEventListener('click',()=>{downstream=true});document.body.appendChild(button);button.click();
-      return{loaded:window.__CC_CONTRACT_DOCUMENT_SAFETY_V2__===true,issues,downstream};
-    },PROJECT_ID);
+    const state=await page.evaluate(({projectId,diagSource})=>{
+      const diagnostic=(0,eval)(`(${diagSource})`)();
+      try{
+        view.screen='project';view.projectId=projectId;
+        const p=db.projects.find(x=>x.id===projectId),c=db.contracts.find(x=>x.projectId===projectId);
+        const issues=window.__ccContractDocumentSafety.validate('contract',p,c);
+        const button=document.createElement('button');button.type='button';button.dataset.ccDocContract='1';button.id='qaUnsafeContractButton';let downstream=false;button.addEventListener('click',()=>{downstream=true});document.body.appendChild(button);button.click();
+        return{loaded:window.__CC_CONTRACT_DOCUMENT_SAFETY_V2__===true,issues,downstream,stops:diagnostic.stops};
+      }finally{diagnostic.restore()}
+    },{projectId:PROJECT_ID,diagSource:diagnosticClickSource.toString()});
     expect(state.loaded).toBe(true);
     expect(state.issues.length).toBeGreaterThan(5);
     expect(state.issues.some(x=>/80%/.test(x))).toBeTruthy();
-    expect(state.downstream).toBe(false);
-    await expect(page.locator('.toast').last()).toContainText(/Documento bloqueado por control contractual/i);
+    expect(state.downstream,JSON.stringify(state.stops,null,2)).toBe(false);
+    await expect(page.locator('.toast').last(),JSON.stringify(state.stops,null,2)).toContainText(/Documento bloqueado por control contractual/i);
     expect(pageErrors,`Errores JavaScript: ${pageErrors.join(' | ')}`).toEqual([]);
   });
 
   test('permite continuar solo cuando el expediente confirma la plantilla vigente',async({page})=>{
     test.setTimeout(90000);
     await login(page);
-    const state=await page.evaluate(projectId=>{
-      view.screen='project';view.projectId=projectId;
-      const p=db.projects.find(x=>x.id===projectId),c=db.contracts.find(x=>x.projectId===projectId);
-      c.advanceRequestedPct=15;c.recoveryTarget=80;c.executionDays=90;
-      c.documentProfile={mayorName:'Alcalde QA',mayorDni:'0000-0000-00000',contractorGender:'Masculino',contractorDni:'1111-1111-11111',contractorProfession:'Ingeniero Civil',contractorCivilStatus:'casado',contractorNationality:'hondureña',contractorAddress:'Santa María, La Paz',treasuryRecipient:'Tesorero QA',treasuryDepartment:'Tesorería Municipal',supervisorName:'Supervisor QA',supervisorUnit:'Unidad de Proyectos',projectDepartment:'La Paz',projectMunicipality:'Santa María',projectVillage:'Barrio El Centro',officialStartDate:'2026-01-16'};
-      c.controls={financingSource:'Fondos Municipales',penaltyDailyPct:0.18,performanceGuaranteePct:15,performanceExtraMonths:3,advanceGuaranteePct:100,qualityGuaranteePct:5,qualityGuaranteeDays:365,changeOrderLimitPct:10,accumulatedChangeLimitPct:25,rescissionCureDays:10,successionClauseEnabled:true,successionSuspensionDays:30,emergencyClauseEnabled:true,emergencyNoticeDays:5,emergencyReviewDays:10,priceType:'Fijo',priceAdjustmentAllowed:false,taxApplies:true,taxRatePct:15,taxBase:'Retención del 15% sobre la utilidad conforme cláusula contractual.',orderStartMode:'Después del pago/entrega del anticipo',orderStartAfterAdvanceDays:15,governingLaw:'Ley de Contratación del Estado y su Reglamento, según corresponda.',disputeJurisdiction:'Juzgado de Letras de lo Contencioso Administrativo de Tegucigalpa, Francisco Morazán.'};
-      const issues=window.__ccContractDocumentSafety.validate('contract',p,c);
-      const button=document.createElement('button');button.type='button';button.dataset.ccDocContract='1';let downstream=false;button.addEventListener('click',()=>{downstream=true});document.body.appendChild(button);button.click();
-      return{issues,downstream};
-    },PROJECT_ID);
+    const state=await page.evaluate(({projectId,diagSource})=>{
+      const diagnostic=(0,eval)(`(${diagSource})`)();
+      try{
+        view.screen='project';view.projectId=projectId;
+        const p=db.projects.find(x=>x.id===projectId),c=db.contracts.find(x=>x.projectId===projectId);
+        c.advanceRequestedPct=15;c.recoveryTarget=80;c.executionDays=90;
+        c.documentProfile={mayorName:'Alcalde QA',mayorDni:'0000-0000-00000',contractorGender:'Masculino',contractorDni:'1111-1111-11111',contractorProfession:'Ingeniero Civil',contractorCivilStatus:'casado',contractorNationality:'hondureña',contractorAddress:'Santa María, La Paz',treasuryRecipient:'Tesorero QA',treasuryDepartment:'Tesorería Municipal',supervisorName:'Supervisor QA',supervisorUnit:'Unidad de Proyectos',projectDepartment:'La Paz',projectMunicipality:'Santa María',projectVillage:'Barrio El Centro',officialStartDate:'2026-01-16'};
+        c.controls={financingSource:'Fondos Municipales',penaltyDailyPct:0.18,performanceGuaranteePct:15,performanceExtraMonths:3,advanceGuaranteePct:100,qualityGuaranteePct:5,qualityGuaranteeDays:365,changeOrderLimitPct:10,accumulatedChangeLimitPct:25,rescissionCureDays:10,successionClauseEnabled:true,successionSuspensionDays:30,emergencyClauseEnabled:true,emergencyNoticeDays:5,emergencyReviewDays:10,priceType:'Fijo',priceAdjustmentAllowed:false,taxApplies:true,taxRatePct:15,taxBase:'Retención del 15% sobre la utilidad conforme cláusula contractual.',orderStartMode:'Después del pago/entrega del anticipo',orderStartAfterAdvanceDays:15,governingLaw:'Ley de Contratación del Estado y su Reglamento, según corresponda.',disputeJurisdiction:'Juzgado de Letras de lo Contencioso Administrativo de Tegucigalpa, Francisco Morazán.'};
+        const issues=window.__ccContractDocumentSafety.validate('contract',p,c);
+        const button=document.createElement('button');button.type='button';button.dataset.ccDocContract='1';let downstream=false;button.addEventListener('click',()=>{downstream=true});document.body.appendChild(button);button.click();
+        return{issues,downstream,stops:diagnostic.stops};
+      }finally{diagnostic.restore()}
+    },{projectId:PROJECT_ID,diagSource:diagnosticClickSource.toString()});
     expect(state.issues).toEqual([]);
-    expect(state.downstream).toBe(true);
+    expect(state.downstream,JSON.stringify(state.stops,null,2)).toBe(true);
   });
 });

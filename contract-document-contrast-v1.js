@@ -1,7 +1,8 @@
-/* ===== CONTROL CONTRACTUAL · CONTRASTE DOCUMENTAL V1 ===== */
+/* ===== CONTROL CONTRACTUAL · CONTRASTE DOCUMENTAL V2 ===== */
 (()=>{
 'use strict';
-if(window.__CC_CONTRACT_DOCUMENT_CONTRAST_V1__)return;
+if(window.__CC_CONTRACT_DOCUMENT_CONTRAST_V2__)return;
+window.__CC_CONTRACT_DOCUMENT_CONTRAST_V2__=true;
 window.__CC_CONTRACT_DOCUMENT_CONTRAST_V1__=true;
 
 const STYLE_ID='cc-contract-document-contrast-v1-style';
@@ -34,6 +35,19 @@ function install(){
   }
   html body.cc-portal-v2:not(.print-report) #content #tabBody .cc2-archive .cc2-empty small{
     background-color:#f4f8fb!important;color:#4f6578!important;opacity:1!important;
+  }
+  /* Bloque de generación de contrato/anticipo/orden de inicio: superficie
+     clara independiente del repositorio cc2. */
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .cc-payment-docs .cc-payment-doc{
+    background-color:#fff!important;color:#173247!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .cc-payment-docs .cc-payment-doc small{
+    background-color:#fff!important;color:#536b7e!important;opacity:1!important;
+  }
+  /* Cabecera de cada pago. data-cc-readable="dark" confirma que el contenido
+     se dibuja sobre la tarjeta clara del expediente. */
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .cc2-archive .cc2-payment-head small[data-cc-readable="dark"]{
+    color:#425d73!important;opacity:1!important;text-shadow:none!important;
   }
   `;
 }

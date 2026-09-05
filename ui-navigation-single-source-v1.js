@@ -1,9 +1,10 @@
-/* CONTROL CONTRACTUAL · NAVEGACIÓN ÚNICA V4 · ENDURECIDA V5
+/* CONTROL CONTRACTUAL · NAVEGACIÓN ÚNICA V6 · SIN DOBLE DESPLAZAMIENTO
    La barra lateral gobierna directamente la aplicación.
    No dispara botones ocultos ni depende del dashboard ejecutivo legado. */
 (()=>{
 'use strict';
-if(window.__CC_SINGLE_NAV_V5__)return;
+if(window.__CC_SINGLE_NAV_V6__)return;
+window.__CC_SINGLE_NAV_V6__=true;
 window.__CC_SINGLE_NAV_V5__=true;
 window.__CC_SINGLE_NAV_V4__=true;
 window.__CC_SINGLE_NAV_V3__=true;
@@ -47,10 +48,6 @@ function css(){
 .cc-shell{position:relative!important}.cc-app-column{min-width:0!important;position:relative!important;z-index:1!important}.cc-sidebar{position:relative!important;z-index:30!important;flex:0 0 auto!important}
 .cc-sidebar .cc-nav-admin{margin-top:4px}
 @media(max-width:860px){
-  /* El overlay es hermano del portal y algunas capas históricas crean contextos de
-     apilamiento propios. No se confía únicamente en z-index: el fondo clicable
-     comienza físicamente DESPUÉS del ancho del menú para que nunca pueda cubrir
-     ni interceptar los botones táctiles del sidebar. */
   .cc-sidebar{position:fixed!important;z-index:1000!important;isolation:isolate!important;pointer-events:auto!important}
   .cc-sidebar.open,.cc-sidebar .cc-side-btn,.cc-sidebar .cc-side-btn *{pointer-events:auto!important}
   .cc-sidebar-overlay{z-index:999!important;left:260px!important;pointer-events:auto!important}
@@ -151,11 +148,11 @@ function goPortfolio(route){
   if(typeof renderApp==='function')renderApp();
   queue();
   requestAnimationFrame(()=>queue());
-  setTimeout(()=>{
-   if(route==='proyectos')Q('.projects-board,.project-grid-v3,.dashboard-project-grid')?.scrollIntoView({behavior:'smooth',block:'start'});
-   else window.scrollTo({top:0,behavior:'smooth'});
-   queue();
-  },80);
+  /* No se hace scroll automático al entrar a Proyectos. Antes convivían un
+     scroll aquí y otro en el dashboard, moviendo las tarjetas justo durante el
+     clic de apertura. Inicio sí vuelve arriba, sin animación, para ser estable. */
+  if(route==='inicio')window.scrollTo({top:0,left:0,behavior:'auto'});
+  setTimeout(queue,80);
   return true;
  }catch(e){console.warn('No se pudo abrir el portafolio.',e);return false}
 }
@@ -176,9 +173,6 @@ function ensure(){
  try{
   css();sanitizeLegacy();
   const side=Q('#ccSidebar');if(!side)return;
-  /* La navegación principal es canónica. Las capas visuales posteriores no deben
-     retirar, mover o reconstruir sus botones, porque eso provoca carreras de DOM
-     en móvil y pérdida temporal de rutas durante una interacción real. */
   side.dataset.groupedV4='1';
   side.dataset.navStable='1';
   ensureTransparency(side);ensureAdmin(side);watchSidebar(side);syncActive(side);
@@ -189,13 +183,8 @@ function queue(){if(queued)return;queued=true;const run=()=>{queued=false;ensure
 document.addEventListener('click',event=>{
  const b=event.target.closest?.('#ccSidebar .cc-side-btn[data-route]');if(!b)return;
  const r=b.dataset.route;
-
- /* En móvil el menú es un panel temporal: al elegir cualquier destino debe
-    cerrarse para devolver inmediatamente el foco y el espacio al contenido. */
  closeMobileNav();
 
- /* Guardar intención incluso para rutas atendidas por portal-web. La memoria
-    viva es la autoridad durante la sesión y localStorage queda como persistencia. */
  if(!['campo','arquitectura','logout'].includes(r)){
   rememberRoute(r);
   syncActive(Q('#ccSidebar'));
@@ -216,8 +205,6 @@ document.addEventListener('click',event=>{
   setTimeout(queue,0);setTimeout(queue,80);return;
  }
 
- /* Contratos, pagos, visitas, garantías, reportes, alertas y auditoría
-    continúan usando sus módulos actuales; aquí solo se sincroniza el estado. */
  setTimeout(queue,0);setTimeout(queue,120);
 },true);
 

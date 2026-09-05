@@ -38,6 +38,9 @@ const supplementalModules=[
   ['change-order-fix-v1.js','20260821-changefix1'],
   ['contract-penalty-card-v1.js','20260831-penalty2'],
   ['contract-explicit-rules-v1.js','20260904-explicit1'],
+  /* El monto vigente no es un dato libre: se deriva del monto original más
+     modificaciones aprobadas y se sincroniza antes de guardar. */
+  ['contract-current-amount-sync-v1.js','20260905-contractcurrent1'],
   ['report-professional-v1.js','20260823-reportpro4'],
   ['report-export-css-fix-v1.js','20260821-reportcss1'],
   ['document-qr-v1.js','20260831-docqr1'],
@@ -80,11 +83,14 @@ const supplementalModules=[
      desde este plan para impedir versiones históricas o cargadores secundarios. */
   ['zordon-continuous-runtime-v1.js','20260905-zordon5'],
   ['zordon-project-search-v1.js','20260905-zordonsearch5'],
-  /* Coordina Enter en la búsqueda superior con el motor normalizado de ZORDON
-     y emite un refresco no destructivo para decoraciones cargadas por fases. */
-  ['authenticated-ui-sync-v1.js','20260905-authuisync1'],
+  /* Coordina Enter en la búsqueda superior con el motor normalizado de ZORDON,
+     preserva la consulta visible tras el rerender y refresca decoraciones. */
+  ['authenticated-ui-sync-v1.js','20260905-authuisync2'],
   ['zordon-unified-density-v1.js','20260905-density2'],
   ['zordon-chat-ui-v1.js','20260905-cleanchat5'],
+  /* El expediente documental usa superficies claras y necesita una corrección
+     contextual antes de la guardia visual final. */
+  ['contract-document-contrast-v1.js','20260905-contractdoccontrast1'],
   /* Última corrección visual general, antes del par técnico que debe seguir
      siendo el cierre funcional del plan autenticado. */
   ['ui-contrast-final-guard-v1.js','20260905-contrast-final9'],

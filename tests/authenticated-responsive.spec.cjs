@@ -160,9 +160,10 @@ for (const vp of viewports) {
       await expect(page.locator('#ccxNav')).toBeHidden();
       await expect(page.locator('#ccSidebar [data-route="transparencia"]')).toHaveCount(1);
       if (vp.width > 900) {
+        await expect(page.locator('#ccSidebar')).toBeVisible();
         await expect(page.locator('#ccCommandbar')).toBeVisible();
         await expect(page.locator('#ccCommandbar [data-command]')).toHaveCount(4);
-        await expect(page.locator('.cc-lifecycle-v4')).toBeVisible();
+        await expect(page.locator('#ccSidebar [data-route="inicio"]')).toHaveCount(1);
       }
       await assertNoGlobalOverflow(page, `${vp.name} inicio`);
 

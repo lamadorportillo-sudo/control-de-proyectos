@@ -1,14 +1,19 @@
-/* ===== ZORDON · NÚCLEO DE APRENDIZAJE CONTINUO V3 ===== */
+/* ===== ZORDON · NÚCLEO DE APRENDIZAJE CONTINUO V4 · IDÉMPOTENTE ===== */
 (()=>{
 'use strict';
-if(window.__CC_ZORDON_CONTINUOUS_V3__)return;
+if(window.__CC_ZORDON_CONTINUOUS_V4__)return;
+window.__CC_ZORDON_CONTINUOUS_V4__=true;
 window.__CC_ZORDON_CONTINUOUS_V3__=true;
 
-const VERSION=3;
+const VERSION=4;
 const now=()=>new Date().toISOString();
 const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const normalize=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9ñ]+/g,' ').trim();
-let applying=false,busy=false;
+let applying=false,busy=false,refreshQueued=false;
+
+function setText(el,value){if(!el)return false;const next=String(value??'');if(el.textContent===next)return false;el.textContent=next;return true}
+function setAttr(el,name,value){if(!el)return false;const next=String(value??'');if(el.getAttribute(name)===next)return false;el.setAttribute(name,next);return true}
+function setStyle(el,name,value,priority='important'){if(!el)return false;const current=el.style.getPropertyValue(name),currentPriority=el.style.getPropertyPriority(name);if(current===value&&currentPriority===priority)return false;el.style.setProperty(name,value,priority);return true}
 
 function learningStore(){
   try{
@@ -18,7 +23,7 @@ function learningStore(){
     store.enabled=true;
     store.mode='continuous';
     store.engine='ZORDON';
-    store.version=Math.max(Number(store.version)||0,3);
+    store.version=Math.max(Number(store.version)||0,4);
     if(!store.reportUsage||typeof store.reportUsage!=='object')store.reportUsage={};
     store.lastPolicyAppliedAt=store.lastPolicyAppliedAt||now();
     return store;
@@ -45,7 +50,7 @@ function enforceCore(){
 function fixLearningPanel(root=document){
   const toggle=root?.querySelector?.('#learnOn');
   if(toggle){
-    try{toggle.checked=true;toggle.disabled=true}catch{}
+    try{if(toggle.checked!==true)toggle.checked=true;if(toggle.disabled!==true)toggle.disabled=true}catch{}
     const row=toggle.closest?.('label');
     if(row&&!row.dataset.zordonContinuous){
       row.dataset.zordonContinuous='1';
@@ -53,9 +58,8 @@ function fixLearningPanel(root=document){
     }
   }
   const title=[...root.querySelectorAll?.('h2,h3,b')||[]].find(el=>/aprendizaje adaptativo/i.test(el.textContent||''));
-  if(title&&/aprendizaje adaptativo/i.test(title.textContent||''))title.textContent=(title.textContent||'').replace(/aprendizaje adaptativo/ig,'Aprendizaje continuo ZORDON');
-  const btn=root?.querySelector?.('#learnBtn');
-  if(btn)btn.textContent='🧠 Memoria ZORDON';
+  if(title&&/aprendizaje adaptativo/i.test(title.textContent||''))setText(title,(title.textContent||'').replace(/aprendizaje adaptativo/ig,'Aprendizaje continuo ZORDON'));
+  setText(root?.querySelector?.('#learnBtn'),'🧠 Memoria ZORDON');
 }
 
 function replaceVisibleBrand(value){return String(value||'').replace(/\bHalu\b/gi,'ZORDON')}
@@ -64,26 +68,37 @@ function fixChatBranding(root=document){
   const chat=root?.querySelector?.('#ccEngineerChat');
   const launcher=root?.querySelector?.('#ccEngineerChatLaunch');
   if(chat){
-    chat.setAttribute('aria-label','Chat con ZORDON');
-    const title=chat.querySelector('.cc-eng-chat-head b');if(title)title.textContent='ZORDON · Ingeniero Civil';
-    const subtitle=chat.querySelector('.cc-eng-chat-head small');if(subtitle)subtitle.textContent='Conversación continua · memoria y contexto del proyecto';
+    setAttr(chat,'aria-label','Chat con ZORDON');
+    setText(chat.querySelector('.cc-eng-chat-head b'),'ZORDON · Ingeniero Civil');
+    setText(chat.querySelector('.cc-eng-chat-head small'),'Conversación continua · memoria y contexto del proyecto');
     const first=chat.querySelector('.cc-eng-chat-body > .cc-eng-msg.bot');
     if(first&&!first.dataset.zordonWelcome){
       first.dataset.zordonWelcome='1';
-      first.textContent='Qué tal. Soy ZORDON. Voy a seguir el hilo contigo sin hacerte repetir lo que ya quedó claro. Si hablamos de una obra, relaciono campo, contrato, plazo, pagos y decisiones cuando sea útil; si cambiamos de tema, sigo la conversación normalmente. Dime qué está pasando y parto de ahí.';
+      setText(first,'Qué tal. Soy ZORDON. Voy a seguir el hilo contigo sin hacerte repetir lo que ya quedó claro. Si hablamos de una obra, relaciono campo, contrato, plazo, pagos y decisiones cuando sea útil; si cambiamos de tema, sigo la conversación normalmente. Dime qué está pasando y parto de ahí.');
     }
     const form=chat.querySelector('.cc-eng-chat-form');
     const input=form?.querySelector('textarea');
     const send=form?.querySelector('button[type="submit"]');
-    if(form)form.setAttribute('novalidate','novalidate');
-    if(input){input.style.setProperty('pointer-events','auto','important');input.style.setProperty('position','relative','important');input.style.setProperty('z-index','2147483645','important')}
-    if(send){send.disabled=false;send.setAttribute('aria-disabled','false');send.style.setProperty('pointer-events','auto','important');send.style.setProperty('position','relative','important');send.style.setProperty('z-index','2147483646','important')}
+    if(form&&!form.hasAttribute('novalidate'))form.setAttribute('novalidate','novalidate');
+    if(input){
+      setStyle(input,'pointer-events','auto');setStyle(input,'position','relative');setStyle(input,'z-index','2147483645');
+    }
+    if(send){
+      if(!busy&&send.disabled)send.disabled=false;
+      setAttr(send,'aria-disabled',busy?'true':'false');
+      setStyle(send,'pointer-events',busy?'none':'auto');setStyle(send,'position','relative');setStyle(send,'z-index','2147483646');
+    }
   }
-  if(launcher){launcher.title='Hablar con ZORDON';launcher.setAttribute('aria-label','Hablar con ZORDON')}
+  if(launcher){setAttr(launcher,'title','Hablar con ZORDON');setAttr(launcher,'aria-label','Hablar con ZORDON')}
   for(const target of [chat,launcher].filter(Boolean)){
     const walker=document.createTreeWalker(target,NodeFilter.SHOW_TEXT);let node;
-    while((node=walker.nextNode())){const updated=replaceVisibleBrand(node.nodeValue);if(updated!==node.nodeValue)node.nodeValue=updated}
-    for(const el of target.querySelectorAll?.('[title],[aria-label],[alt]')||[]){for(const attr of ['title','aria-label','alt']){if(!el.hasAttribute(attr))continue;const current=el.getAttribute(attr)||'',updated=replaceVisibleBrand(current);if(updated!==current)el.setAttribute(attr,updated)}}
+    while((node=walker.nextNode())){const current=node.nodeValue||'',updated=replaceVisibleBrand(current);if(updated!==current)node.nodeValue=updated}
+    for(const el of target.querySelectorAll?.('[title],[aria-label],[alt]')||[]){
+      for(const attr of ['title','aria-label','alt']){
+        if(!el.hasAttribute(attr))continue;
+        const current=el.getAttribute(attr)||'',updated=replaceVisibleBrand(current);if(updated!==current)el.setAttribute(attr,updated);
+      }
+    }
   }
 }
 
@@ -149,9 +164,9 @@ function addMessage(kind,text,query=''){
 async function runQuery(text){
   const q=String(text||'').trim();if(!q||busy)return;
   const chat=document.getElementById('ccEngineerChat'),body=chat?.querySelector('.cc-eng-chat-body'),input=chat?.querySelector('textarea'),send=chat?.querySelector('button[type="submit"]');if(!chat||!body)return;
-  busy=true;if(send){send.disabled=true;send.setAttribute('aria-busy','true')}addMessage('user',q);
+  busy=true;if(send){send.disabled=true;send.setAttribute('aria-busy','true');send.setAttribute('aria-disabled','true')}addMessage('user',q);
   const typing=document.createElement('div');typing.className='cc-eng-msg bot';typing.dataset.zordonTyping='1';typing.textContent='ZORDON está revisando el contexto…';body.appendChild(typing);body.scrollTop=body.scrollHeight;
-  try{const reply=await askZordon(q);typing.remove();addMessage('bot',reply||'No encontré una respuesta clara todavía. Dame el dato que falta y sigo desde el contexto actual.',q)}catch(error){typing.remove();addMessage('bot','No pude completar esa consulta en este momento. El contexto de la conversación sigue intacto; inténtalo nuevamente.',q)}finally{busy=false;if(send){send.disabled=false;send.removeAttribute('aria-busy');send.setAttribute('aria-disabled','false')}if(input)input.focus();fixChatBranding(document)}
+  try{const reply=await askZordon(q);typing.remove();addMessage('bot',reply||'No encontré una respuesta clara todavía. Dame el dato que falta y sigo desde el contexto actual.',q)}catch(error){typing.remove();addMessage('bot','No pude completar esa consulta en este momento. El contexto de la conversación sigue intacto; inténtalo nuevamente.',q)}finally{busy=false;if(send){send.disabled=false;send.removeAttribute('aria-busy');send.setAttribute('aria-disabled','false');send.style.setProperty('pointer-events','auto','important')}if(input)input.focus();fixChatBranding(document)}
 }
 
 function consumeInput(form){
@@ -162,8 +177,8 @@ function consumeInput(form){
 }
 
 function installConversationOverride(){
-  if(document.documentElement.dataset.zordonConversation==='3')return;
-  document.documentElement.dataset.zordonConversation='3';
+  if(document.documentElement.dataset.zordonConversation==='4')return;
+  document.documentElement.dataset.zordonConversation='4';
 
   document.addEventListener('submit',event=>{
     const form=event.target;
@@ -198,11 +213,35 @@ function installConversationOverride(){
 function protectToggle(event){const target=event.target;if(target?.id!=='learnOn')return;event.preventDefault();event.stopImmediatePropagation();try{target.checked=true;target.disabled=true}catch{}enforceCore()}
 document.addEventListener('click',protectToggle,true);document.addEventListener('change',protectToggle,true);
 
-const observer=new MutationObserver(()=>{try{enforceCore();fixLearningPanel(document);fixChatBranding(document);installConversationOverride()}catch(error){console.warn('ZORDON: no se pudo aplicar el núcleo continuo.',error)}});
-observer.observe(document.documentElement,{subtree:true,childList:true,characterData:true});
+function mutationRelevant(mutations){
+  for(const mutation of mutations||[]){
+    const target=mutation.target?.nodeType===1?mutation.target:mutation.target?.parentElement;
+    if(target?.closest?.('#ccEngineerChat,#ccEngineerChatLaunch')||target?.matches?.('#learnOn,#learnBtn'))return true;
+    for(const node of mutation.addedNodes||[]){
+      if(node.nodeType!==1)continue;
+      if(node.matches?.('#ccEngineerChat,#ccEngineerChatLaunch,#learnOn,#learnBtn')||node.querySelector?.('#ccEngineerChat,#ccEngineerChatLaunch,#learnOn,#learnBtn'))return true;
+      if(node.closest?.('#ccEngineerChat,#ccEngineerChatLaunch'))return true;
+      if(/\bHalu\b/i.test(node.textContent||''))return true;
+    }
+  }
+  return false;
+}
+function refresh(){
+  try{enforceCore();fixLearningPanel(document);fixChatBranding(document);installConversationOverride()}catch(error){console.warn('ZORDON: no se pudo aplicar el núcleo continuo.',error)}
+}
+function scheduleRefresh(){
+  if(refreshQueued)return;refreshQueued=true;
+  const run=()=>{refreshQueued=false;refresh()};
+  (typeof requestAnimationFrame==='function'?requestAnimationFrame:setTimeout)(run);
+}
 
-const timer=setInterval(()=>{try{enforceCore();fixLearningPanel(document);fixChatBranding(document);installConversationOverride()}catch{}},1500);
-window.addEventListener('pagehide',()=>clearInterval(timer),{once:true});
+const NativeObserver=window.__ccNativeMutationObserver||window.MutationObserver;
+const observer=NativeObserver?new NativeObserver(mutations=>{if(mutationRelevant(mutations))scheduleRefresh()}):null;
+observer?.observe(document.documentElement,{subtree:true,childList:true});
+document.addEventListener('cc:authenticated-modules-ready',scheduleRefresh);
+document.addEventListener('cc:authenticated-modules-partial',scheduleRefresh);
+window.addEventListener('cc:data-changed',scheduleRefresh);
+window.addEventListener('pagehide',()=>observer?.disconnect?.(),{once:true});
 
 window.__ccZordonContinuousCore={
   engine:'ZORDON',version:VERSION,mode:'continuous',
@@ -211,5 +250,5 @@ window.__ccZordonContinuousCore={
   forget(query){return window.__ccZordonLearning?.forget?.(query)||0},suppress(query){return window.__ccZordonLearning?.suppress?.(query)||0},markTemporary(query){return window.__ccZordonLearning?.markTemporary?.(query)||0}
 };
 
-enforceCore();fixLearningPanel(document);fixChatBranding(document);installConversationOverride();setTimeout(()=>{enforceCore();fixLearningPanel(document);fixChatBranding(document);installConversationOverride();persistPolicy()},0);
+refresh();setTimeout(()=>{refresh();persistPolicy()},0);
 })();

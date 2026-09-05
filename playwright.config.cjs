@@ -7,9 +7,11 @@ module.exports = defineConfig({
   // La validación arquitectónica debe incluir todos los escenarios críticos que
   // los workflows invocan explícitamente. Playwright aplica testMatch incluso
   // cuando se pasan archivos por CLI; omitirlos aquí produciría un falso verde.
+  // contract-observer-diagnostic es temporal mientras se aísla el bloqueo móvil
+  // de la pestaña Contrato; debe retirarse junto con su prueba al cerrar el fallo.
   testMatch: manualSimulation
     ? /manual-project-entry-simulation\.spec\.cjs/
-    : /(?:.*responsive.*|architecture-auth-boot|admin-mfa-enforcement-browser|contract-explicit-rules-browser|contract-document-safety-browser)\.spec\.cjs/,
+    : /(?:.*responsive.*|architecture-auth-boot|admin-mfa-enforcement-browser|contract-explicit-rules-browser|contract-document-safety-browser|contract-observer-diagnostic)\.spec\.cjs/,
   timeout: 90000,
   expect: { timeout: 12000 },
   fullyParallel: false,

@@ -11,12 +11,14 @@ async function install(page){
   page.on('console',msg=>{const text=msg.text();if(text.includes('[CC-DIAG]'))console.log(text)});
   await page.addInitScript(({userId,fixture})=>{
     const NativeMO=window.MutationObserver;let nextId=0;
+    window.__CC_DIAG_OBSERVERS__=[];
     window.MutationObserver=class DiagnosticMutationObserver extends NativeMO{
       constructor(callback){
-        const id=++nextId,origin=(new Error('observer-origin')).stack?.split('\n').slice(2,7).join(' | ')||'sin-stack';let calls=0,total=0;
+        const id=++nextId,origin=(new Error('observer-origin')).stack?.split('\n').slice(2,8).join(' | ')||'sin-stack';
+        const rec={id,origin,calls:0,mutations:0};window.__CC_DIAG_OBSERVERS__.push(rec);
         super((mutations,observer)=>{
-          calls++;total+=mutations.length;
-          if(calls===1||calls===5||calls===20||calls===100||calls===500||calls%2000===0)console.log(`[CC-DIAG] MO#${id} calls=${calls} mutations=${total} origin=${origin}`);
+          rec.calls++;rec.mutations+=mutations.length;
+          if(rec.calls===1||rec.calls===5||rec.calls===20||rec.calls===100||rec.calls===500||rec.calls%2000===0)console.log(`[CC-DIAG] MO#${id} calls=${rec.calls} mutations=${rec.mutations} origin=${origin}`);
           return callback(mutations,observer);
         });
       }
@@ -39,29 +41,62 @@ async function install(page){
   });
 }
 
+async function nav(page,route){
+  console.log(`[CC-DIAG] nav ${route}`);
+  await page.evaluate(route=>{
+    if(route==='inicio'||route==='proyectos')return window.__ccSingleNav?.goPortfolio?.(route);
+    if(route==='presupuesto')return window.__ccSingleNav?.goBudget?.();
+    if(route==='transparencia')return window.__ccSingleNav?.goTransparency?.();
+  },route);
+  await page.waitForTimeout(350);
+}
+
+async function dumpObservers(page,label){
+  const rows=await page.evaluate(()=>[...(window.__CC_DIAG_OBSERVERS__||[])].sort((a,b)=>b.calls-a.calls).slice(0,12));
+  console.log(`[CC-DIAG] observers ${label} ${JSON.stringify(rows)}`);
+}
+
 test.describe('diagnóstico temporal de Contrato',()=>{
   test.use({viewport:{width:390,height:844},hasTouch:true});
-  test('identifica el observador o render que bloquea el clic',async({page})=>{
-    test.setTimeout(35000);
+  test('reproduce la ruta móvil completa antes de abrir Contrato',async({page})=>{
+    test.setTimeout(50000);
     await install(page);
     await page.goto(appUrl,{waitUntil:'domcontentloaded',timeout:30000});
     await page.waitForFunction(()=>window.__CC_AUTH_MODULES_READY__===true||window.__CC_AUTH_BOOT_FAILED__===true,null,{timeout:20000});
     const boot=await page.evaluate(()=>({ready:window.__CC_AUTH_MODULES_READY__===true,failed:window.__CC_AUTH_BOOT_FAILED__===true,errors:window.__CC_AUTH_MODULE_ERRORS__||[]}));
     expect(boot.failed,JSON.stringify(boot.errors)).toBe(false);expect(boot.ready).toBe(true);
-    await page.evaluate(projectId=>{
+    await page.addStyleTag({content:'*,*::before,*::after{animation:none!important;transition:none!important}'});
+    await page.evaluate(()=>{
       const wrap=name=>{
         const original=window[name];if(typeof original!=='function'||original.__ccDiag)return;
         const wrapped=function(){console.log(`[CC-DIAG] ENTER ${name}`);const t=performance.now();try{return original.apply(this,arguments)}finally{console.log(`[CC-DIAG] EXIT ${name} ms=${(performance.now()-t).toFixed(1)}`)}};
         wrapped.__ccDiag=true;window[name]=wrapped;
       };
-      ['renderProject','renderContract','projectFinancials','contractControlAlerts','contractControlDefaults'].forEach(wrap);
-      console.log(`[CC-DIAG] renderContract flags=${Object.keys(window.renderContract||{}).join(',')} source=${String(window.renderContract).slice(0,280).replace(/\s+/g,' ')}`);
-      view.screen='project';view.projectId=projectId;view.tab='procurement';renderApp();
-    },PROJECT_ID);
-    await page.waitForSelector('button[data-tab="contract"]',{timeout:5000});
+      ['renderApp','renderProject','renderContract','renderProcurement','projectFinancials','contractControlAlerts','contractControlDefaults'].forEach(wrap);
+      console.log(`[CC-DIAG] renderContract flags=${Object.keys(window.renderContract||{}).join(',')} source=${String(window.renderContract).slice(0,420).replace(/\s+/g,' ')}`);
+    });
+
+    for(const route of ['inicio','proyectos','presupuesto','transparencia','proyectos'])await nav(page,route);
+    await dumpObservers(page,'después-rutas');
+
+    const search=page.locator('#ccGlobalSearch');
+    await expect(search).toBeVisible();
+    await search.fill('QA CONTRASTE');await search.press('Enter');await page.waitForTimeout(250);
+    console.log('[CC-DIAG] búsqueda global ejecutada');
+    const open=page.locator(`[data-ccx-open="${PROJECT_ID}"], [data-open="${PROJECT_ID}"]`).first();
+    await expect(open).toBeVisible();await open.click();await page.waitForSelector('#tabBody',{timeout:8000});await page.waitForTimeout(500);
+    await dumpObservers(page,'expediente-abierto');
+
+    for(const id of ['summary','procurement']){
+      console.log(`[CC-DIAG] clicking ${id}`);
+      await page.locator(`button[data-tab="${id}"]`).click({timeout:5000});await page.waitForTimeout(220);
+      await dumpObservers(page,`después-${id}`);
+    }
+
     console.log('[CC-DIAG] clicking contract');
     await page.locator('button[data-tab="contract"]').click({timeout:12000});
     console.log('[CC-DIAG] contract click returned');
     await expect(page.locator('button[data-tab="contract"]')).toHaveClass(/active/,{timeout:3000});
+    await dumpObservers(page,'después-contract');
   });
 });

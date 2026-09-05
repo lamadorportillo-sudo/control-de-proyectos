@@ -180,57 +180,6 @@ function ensure(){
 }
 function queue(){if(queued)return;queued=true;const run=()=>{queued=false;ensure()};(window.requestAnimationFrame||setTimeout)(run)}
 
-/* system-ui-refinement-v3 observaba el atributo style y a la vez lo escribía
-   desde repairVisibility(). Eso generaba una cadena de mutaciones propia que
-   podía dejar el hilo principal ocupado justo al abrir Contrato. La navegación
-   crítica se carga antes de la fase histórica, así que filtramos únicamente
-   ESE observador por la identidad de su callback y restauramos MutationObserver
-   inmediatamente después de que la capa visual queda instalada. */
-function guardSystemUiObserver(){
- if(window.__CC_SYSTEM_UI_OBSERVER_GUARD_V1__||!NativeObserver)return;
- window.__CC_SYSTEM_UI_OBSERVER_GUARD_V1__=true;
- const original=window.MutationObserver;
- let restored=false,checkTimer=0,hardTimer=0;
- function GuardedObserver(callback){
-  const observer=new NativeObserver(callback);
-  let systemUi=false;
-  try{systemUi=Function.prototype.toString.call(callback).includes('repairVisibility')}catch{}
-  if(systemUi){
-   const nativeObserve=observer.observe.bind(observer);
-   observer.observe=(target,options={})=>{
-    const filter=Array.isArray(options.attributeFilter)?options.attributeFilter:[];
-    const matches=target===document.documentElement&&options.subtree===true&&options.childList===true&&options.attributes===true&&filter.includes('class')&&filter.includes('style');
-    if(matches){
-     const safe={...options,attributeFilter:filter.filter(name=>name!=='style')};
-     return nativeObserve(target,safe);
-    }
-    return nativeObserve(target,options);
-   };
-  }
-  return observer;
- }
- GuardedObserver.prototype=NativeObserver.prototype;
- function restore(){
-  if(restored)return;restored=true;
-  clearTimeout(checkTimer);clearTimeout(hardTimer);
-  if(window.MutationObserver===GuardedObserver)window.MutationObserver=original;
- }
- function arm(){
-  if(restored||window.__CC_SYSTEM_UI_REFINEMENT_V4__)return restore();
-  window.MutationObserver=GuardedObserver;
-  const check=()=>{
-   if(window.__CC_SYSTEM_UI_REFINEMENT_V4__)return restore();
-   if(!restored)checkTimer=setTimeout(check,40);
-  };
-  checkTimer=setTimeout(check,0);
-  hardTimer=setTimeout(restore,5000);
- }
- if(window.__CC_AUTH_CRITICAL_READY__)arm();
- else document.addEventListener('cc:authenticated-critical-ready',arm,{once:true});
- window.addEventListener('pagehide',restore,{once:true});
-}
-guardSystemUiObserver();
-
 document.addEventListener('click',event=>{
  const b=event.target.closest?.('#ccSidebar .cc-side-btn[data-route]');if(!b)return;
  const r=b.dataset.route;

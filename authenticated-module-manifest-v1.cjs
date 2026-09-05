@@ -41,6 +41,10 @@ const supplementalModules=[
   ['transparency-portal-v1.js','20260822-transparency1'],
   ['transparency-storage-v1.js','20260821-trstorage1'],
   ['budget-search-fix-v1.js','20260821-budgetsearch1'],
+  /* El dashboard evaluativo histórico observa documentElement completo. La
+     guardia limita su callback a un máximo de una ejecución por frame para que
+     un cambio de pestaña no pueda encadenar microtareas sin devolver el hilo. */
+  ['project-evaluation-observer-guard-v1.js','20260905-projectevalobserver1'],
   ['project-evaluation-dashboard-v1.js','20260904-projectevaluation2'],
   ['project-functional-actions-v1.js','20260821-actions2'],
   ['visit-independent-reports-v1.js','20260821-visitsind1'],

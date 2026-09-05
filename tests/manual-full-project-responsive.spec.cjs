@@ -73,13 +73,19 @@ test('simulación manual integral de un proyecto municipal inventado',async({pag
   }
   await expect(page.locator('#tabBody')).toContainText(P.contractor);await click(page,'#editProcurement',m);await fill(page,'#prDecision','2026-08-25',m);await sel(page,'#prStatus','Adjudicado',m);await fill(page,'#prRef','ACTA-CM-0825-2026',m);await page.locator('#prFinal').selectOption({label:P.contractor});m.fields++;await fill(page,'#prDiff','La adjudicación coincide con la oferta elegible de menor monto corregido.',m);await click(page,'#procForm button.btn.primary',m);await shot(page,ti,'04-ofertas-y-adjudicacion');
 
-  // CONTRATO + ANTICIPO ANTES DE GARANTÍAS PARA PROBAR REGLA
+  // CONTRATO + CONTROL PREVENTIVO DEL PAGO DE ANTICIPO
   await tab(page,'contract',m);await click(page,'#contractBtn',m);await modal(page,'Registrar contrato',m);
   await fill(page,'#cNumber','CONTRATO-COT121799-2026',m);await fill(page,'#cContractor',P.contractor,m);await fill(page,'#cOriginal',P.contract,m);await expect(page.locator('#cCurrent')).toHaveValue(String(P.contract));await expect(page.locator('#cCurrent')).toHaveAttribute('readonly','');await fill(page,'#cSignature','2026-08-28',m);await fill(page,'#cStart','2026-09-01',m);await fill(page,'#cDays','100',m);await sel(page,'#cStatus','Vigente',m);await sel(page,'#cAdvanceStatus','Pagado',m);
-  await fill(page,'#cAdvPct','15',m);await fill(page,'#cAdvApproved',P.advance,m);await fill(page,'#cAdvPaid',P.advance,m);await fill(page,'#cAdvDate','2026-08-31',m);await fill(page,'#cRecovery','80',m);await fill(page,'#cNotes','Contrato por precios unitarios. Anticipo del 15% sujeto a garantía y amortización progresiva.',m);await click(page,'#contractForm button.btn.primary',m);await expect(page.locator('#tabBody')).toContainText('CONTRATO-COT121799-2026');await shot(page,ti,'05-contrato-con-anticipo-pagado');
+  await fill(page,'#cAdvPct','15',m);await fill(page,'#cAdvApproved',P.advance,m);await fill(page,'#cAdvPaid',P.advance,m);await fill(page,'#cAdvDate','2026-08-31',m);await fill(page,'#cRecovery','80',m);await fill(page,'#cNotes','Contrato por precios unitarios. Anticipo del 15% sujeto a garantía y amortización progresiva.',m);
+  await click(page,'#contractForm button.btn.primary',m);
+  await expect(page.locator('.toast').last()).toContainText(/genera el contrato y la nota de remisión/i);
+  await expect(page.locator('#contractForm')).toBeVisible();
+  expect(await page.evaluate(()=>Array.isArray(window.db?.contracts)&&window.db.contracts.some(c=>c.number==='CONTRATO-COT121799-2026')),'el intento inseguro no debe crear el contrato como pagado').toBe(false);
+  m.findings.push('Control preventivo verificado: el sistema bloquea registrar el anticipo como PAGADO antes de que exista el contrato y se generen contrato/nota de remisión.');
+  await sel(page,'#cAdvanceStatus','Aprobado',m);await fill(page,'#cAdvPct','15',m);await fill(page,'#cAdvApproved',P.advance,m);await fill(page,'#cRecovery','80',m);await click(page,'#contractForm button.btn.primary',m);
+  await expect(page.locator('#tabBody')).toContainText('CONTRATO-COT121799-2026');await shot(page,ti,'05-contrato-con-anticipo-aprobado');
   await tab(page,'controls',m);const alertText=await page.locator('#tabBody').innerText();
-  if(/anticipo pagado.*no se ha registrado/i.test(alertText))m.findings.push('El sistema deja guardar el anticipo como PAGADO sin haber registrado primero la Garantía de Anticipo; la irregularidad se detecta después como alerta, cuando debería impedirse o exigir justificación.');
-  if(/no se ha registrado la Garantía de Cumplimiento/i.test(alertText))m.findings.push('También permite dejar el contrato vigente sin Garantía de Cumplimiento y solo genera una alerta posterior.');
+  if(/no se ha registrado la Garantía de Cumplimiento/i.test(alertText))m.findings.push('El contrato vigente sin Garantía de Cumplimiento queda identificado mediante alerta contractual hasta registrar la garantía.');
 
   // CLÁUSULAS Y CONTROLES
   await click(page,'#editControls',m);const ctl=await modal(page,'Cláusulas y controles',m);if(ctl.controls>=25)m.findings.push(`Cláusulas y controles concentra ${ctl.controls} campos en una sola ventana: demasiada captura de una vez.`);

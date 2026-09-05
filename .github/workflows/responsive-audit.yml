@@ -106,6 +106,15 @@ jobs:
           cat /tmp/control-proyectos-http.log
           exit 1
 
+      - name: Diagnosticar bloqueo de Contrato
+        continue-on-error: true
+        shell: bash
+        env:
+          APP_URL: http://127.0.0.1:4173/
+        run: |
+          set -o pipefail
+          npx playwright test tests/00-contract-observer-diagnostic.spec.cjs --workers=1 --retries=0 --max-failures=1 2>&1 | tee contract-diagnostic.log
+
       - name: Probar acceso, invitado, expedientes, seguridad y accesibilidad
         env:
           APP_URL: http://127.0.0.1:4173/
@@ -118,6 +127,7 @@ jobs:
           name: responsive-audit-report
           path: |
             validation.log
+            contract-diagnostic.log
             playwright-report/
             test-results/
           if-no-files-found: ignore

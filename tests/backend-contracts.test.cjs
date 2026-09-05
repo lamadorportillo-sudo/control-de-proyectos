@@ -3,19 +3,23 @@ const fs=require('node:fs');
 
 const read=file=>fs.readFileSync(file,'utf8');
 const html=read('index.html');
-const rootScripts=[...html.matchAll(/<script\s+[^>]*src=["']([^"']+)/g)]
+// Solo los scripts ejecutables directos forman parte del arranque. Los módulos
+// autenticados se declaran con data-src y se validan por su manifiesto/cargador.
+const rootScripts=[...html.matchAll(/<script\s+src=["']([^"']+)/g)]
   .map(match=>match[1].split('?')[0])
   .filter(src=>!/^https?:/i.test(src));
 const sources=[html,...rootScripts.map(read)].join('\n');
 
 const rpcReferences=[...new Set([...sources.matchAll(/\/rest\/v1\/rpc\/([a-z0-9_]+)/gi)].map(match=>match[1]))].sort();
-// Contrato contrastado con pg_proc del proyecto activo durante la auditoria funcional.
-const publishedRpcs=[
-  'acknowledge_alert','approve_access_request','archive_project','create_workspace_invite',
-  'get_control_center','record_reconciliation_review','reject_access_request','restore_project','save_app_state',
-  'security_lockdown_other_users',
+// Contrato de RPC consumidos actualmente por el cliente. Durante el cierre de
+// auditoría se contrastó pg_proc en producción: acknowledge_alert y
+// record_reconciliation_review continúan disponibles en backend, pero ya no son
+// invocados por la interfaz consolidada y por eso no deben fingirse como carga UI.
+const publishedClientRpcs=[
+  'approve_access_request','archive_project','create_workspace_invite','get_control_center',
+  'reject_access_request','restore_project','save_app_state','security_lockdown_other_users',
 ].sort();
-assert.deepEqual(rpcReferences,publishedRpcs,'La interfaz cambio sus RPC; hay que validar el contrato en Supabase antes de publicar');
+assert.deepEqual(rpcReferences,publishedClientRpcs,'La interfaz cambió sus RPC; hay que validar el contrato en Supabase antes de publicar');
 
 const edgeReferences=[...new Set([...sources.matchAll(/\/functions\/v1\/([a-z0-9_-]+)/gi)].map(match=>match[1]))].sort();
 for(const slug of edgeReferences){
@@ -38,4 +42,4 @@ const chatbot=read('engineer-chatbot-v3.js');
 assert.match(chatbot,/cloudAiAvailable=false/,'Halu debe evitar solicitudes 503 repetidas y conservar el modo local');
 assert.match(chatbot,/Promise\.resolve\(answer\(q\)\)/,'Halu debe conservar una respuesta local cuando falle la IA externa');
 
-console.log(`backend-contracts: ${rpcReferences.length} RPC, ${edgeReferences.length} Edge Functions y ${adminActions.length} acciones verificadas`);
+console.log(`backend-contracts: ${rpcReferences.length} RPC de cliente, ${edgeReferences.length} Edge Functions y ${adminActions.length} acciones verificadas`);

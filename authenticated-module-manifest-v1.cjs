@@ -20,6 +20,10 @@ const preAuthModules=[
 ];
 
 const supplementalModules=[
+  /* Antes de instalar módulos que observan documentElement completo, se
+     gobiernan sus callbacks a una entrega por frame. Esto evita cascadas de
+     microtareas entre observadores globales sin eliminar su funcionalidad. */
+  ['mutation-observer-governor-v1.js','20260905-observergovernor1'],
   /* Estos dos módulos son críticos para la primera navegación autenticada.
      Sus versiones viven aquí para que arquitectura y publicación prueben
      exactamente el mismo artefacto. */

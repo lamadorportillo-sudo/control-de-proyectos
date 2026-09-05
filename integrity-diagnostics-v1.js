@@ -11,7 +11,7 @@ const R=v=>Math.round(N(v)*100)/100;
 const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
 const active=x=>!!x&&!x.voidedAt&&!x.voided_at&&!x.archivedAt&&!x.archived_at&&!/anulad/i.test(String(x.status||''));
 const money=v=>{try{return typeof fmtC==='function'?fmtC(N(v)):`L ${N(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`}catch{return`L ${R(v).toFixed(2)}`}};
-const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const getDB=()=>{try{return typeof db!=='undefined'?db:window.db}catch{return window.db}};
 const getView=()=>{try{return typeof view!=='undefined'?view:window.view}catch{return window.view}};
 

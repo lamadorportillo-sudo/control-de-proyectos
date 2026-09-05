@@ -4,7 +4,7 @@ const {supplementalModules}=require('../authenticated-module-manifest-v1.cjs');
 
 const guard=fs.readFileSync('ui-contrast-final-guard-v1.js','utf8');
 
-assert.match(guard,/GUARDIA FINAL DE CONTRASTE V6/,'debe existir la guardia final WCAG V6');
+assert.match(guard,/GUARDIA FINAL DE CONTRASTE V7/,'debe existir la guardia final WCAG V7');
 assert.match(guard,/#content \.exec-overview \.portfolio-ring\{[\s\S]*opacity:1!important/,'el anillo del Inicio no puede heredar una opacidad de animación');
 assert.match(guard,/#content \.exec-overview \.portfolio-ring-content/,'el anillo del Inicio debe tener un fondo real auditable');
 assert.match(guard,/#content \.exec-overview \.exec-bar-label b/,'los valores financieros del hero deben permanecer claros');
@@ -23,6 +23,8 @@ assert.match(guard,/#536158!important/,'los textos secundarios de superficies cl
 assert.match(guard,/#content #tabBody \.cc-current-law small/,'las etiquetas de normativa del expediente deben quedar protegidas de la capa oscura global');
 assert.match(guard,/#content #tabBody \.cc-current-law \.law-note/,'la nota normativa debe mantener contraste AA sobre su tarjeta clara');
 assert.match(guard,/#4f675b!important/,'la normativa clara debe usar el verde validado con contraste AA');
+assert.match(guard,/#content \.cp-budget-kpi strong/,'los importes KPI del presupuesto no deben heredar texto oscuro sobre la superficie consolidada');
+assert.match(guard,/#content \.cp-exec-metric strong/,'los montos de ejecución presupuestaria deben conservar texto claro');
 assert.match(guard,/#content #cpExecutionOnly/,'la lectura operativa debe quedar anclada a su superficie real');
 assert.match(guard,/#cpExecutionOnly \.cp-exec-badge/,'la insignia de proyectos en ejecución debe fijar fondo y texto conjuntamente');
 assert.match(guard,/#cpExecutionOnly b/,'los valores de lectura operativa deben quedar protegidos');
@@ -35,6 +37,6 @@ const guardAt=names.indexOf('ui-contrast-final-guard-v1.js');
 const observerAt=names.indexOf('technical-control-observer-guard-v1.js');
 const technicalAt=names.indexOf('technical-control-v1.js');
 assert.ok(guardAt>=0&&guardAt<observerAt&&observerAt+1===technicalAt,'la corrección visual debe ejecutarse justo antes del par técnico final, sin desplazarlo');
-assert.equal(supplementalModules[guardAt][1],'20260904-contrast-final6','la versión de la guardia final debe quedar fijada en el manifiesto');
+assert.equal(supplementalModules[guardAt][1],'20260905-contrast-final7','la versión V7 de la guardia final debe quedar fijada en el manifiesto');
 
-console.log('ui-contrast-final-guard: superficies claras y oscuras protegidas por contexto antes del cierre técnico');
+console.log('ui-contrast-final-guard: superficies claras, oscuras y presupuesto protegidos por contexto antes del cierre técnico');

@@ -14,6 +14,9 @@ assert.match(guard,/#content \.ped-head/,'la cabecera evaluativa debe declarar u
 assert.match(guard,/#content \.ped-head \.ped-eyebrow/,'el rótulo del dashboard evaluativo debe conservar contraste AA');
 assert.match(guard,/#content \.ped-head h3/,'el título del dashboard evaluativo debe permanecer claro');
 assert.match(guard,/#content \.ped-head p:last-child/,'el texto secundario del dashboard evaluativo debe permanecer claro');
+assert.match(guard,/#content \.ped-health>span\{[\s\S]*background-color:#fff!important[\s\S]*color:#10243f!important/,'el puntaje evaluativo debe declarar su superficie blanca real y texto oscuro');
+assert.match(guard,/#content \.ped-health>span b/,'el número del indicador evaluativo debe conservar el color oscuro sobre blanco');
+assert.match(guard,/#content \.ped-health>span small/,'el estado del indicador evaluativo debe conservar el color oscuro sobre blanco');
 assert.match(guard,/#content \.tr-page \.tr-head h2/,'la cabecera oscura de transparencia debe conservar título claro');
 assert.match(guard,/#content \.tr-page \.tr-head p/,'la cabecera oscura de transparencia debe conservar texto secundario claro');
 assert.match(guard,/#content \.tr-page \.tr-period label span/,'Mes y Año deben leerse sobre la cabecera oscura');

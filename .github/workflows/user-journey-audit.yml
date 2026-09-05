@@ -68,7 +68,7 @@ jobs:
           grep -q 'BUSCADOR INTELIGENTE DE PROYECTOS V5 · LISTA ESTABLE' zordon-project-search-v1.js
           grep -q 'ZORDON · DENSIDAD UNIFICADA DE INTERFAZ V1' zordon-unified-density-v1.js
           grep -q 'ZORDON · CHAT NATURAL Y CONTINUO V5 · EVENTOS AISLADOS' zordon-chat-ui-v1.js
-          grep -q 'GUARDIA FINAL DE CONTRASTE V8' ui-contrast-final-guard-v1.js
+          grep -q 'GUARDIA FINAL DE CONTRASTE V9' ui-contrast-final-guard-v1.js
           if grep -q 'setInterval(' zordon-continuous-runtime-v1.js; then
             echo 'ZORDON volvió a instalar un intervalo de reescritura permanente.' >&2
             exit 1
@@ -94,7 +94,7 @@ jobs:
           grep -q 'zordon-project-search-v1.js?v=20260905-zordonsearch5' index.html
           grep -q 'zordon-unified-density-v1.js?v=20260905-density2' index.html
           grep -q 'zordon-chat-ui-v1.js?v=20260905-cleanchat5' index.html
-          grep -q 'ui-contrast-final-guard-v1.js?v=20260905-contrast-final8' index.html
+          grep -q 'ui-contrast-final-guard-v1.js?v=20260905-contrast-final9' index.html
           grep -q '__CC_AUTH_BOOT_FAILED__' index.html
           grep -q "view.screen='project';view.tab='summary'" index.html
           grep -q "const targetPct=Number(contract.recoveryTarget||0);" index.html

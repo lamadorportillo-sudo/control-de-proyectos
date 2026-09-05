@@ -67,7 +67,7 @@ const supplementalModules=[
   /* ZORDON antes del cierre técnico: se prueba y publica dentro del mismo plan,
      sin desplazar el guard y el control técnico que deben quedar al final. */
   ['zordon-continuous-runtime-v1.js','20260905-zordon5'],
-  ['zordon-chat-ui-v1.js','20260824-cleanchat4'],
+  ['zordon-chat-ui-v1.js','20260905-cleanchat5'],
   /* Última corrección visual general, antes del par técnico que debe seguir
      siendo el cierre funcional del plan autenticado. */
   ['ui-contrast-final-guard-v1.js','20260904-contrast-final6'],

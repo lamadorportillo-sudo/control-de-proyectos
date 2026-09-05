@@ -69,7 +69,8 @@ jobs:
           grep -q 'PERMISOS E IDIOMA V6 · RESOLUCIÓN TARDÍA SEGURA' technical-control-permissions-v1.js
           grep -q 'REFINAMIENTO GENERAL DE INTERFAZ V5 · OBSERVADOR ESTABLE' system-ui-refinement-v3.js
           grep -q 'ZORDON · NÚCLEO DE APRENDIZAJE CONTINUO V4 · IDÉMPOTENTE' zordon-continuous-runtime-v1.js
-          grep -q 'BUSCADOR INTELIGENTE DE PROYECTOS V4 · RUNTIME AISLADO' zordon-project-search-v1.js
+          grep -q 'BUSCADOR INTELIGENTE DE PROYECTOS V5 · LISTA ESTABLE' zordon-project-search-v1.js
+          grep -q 'ZORDON · DENSIDAD UNIFICADA DE INTERFAZ V1' zordon-unified-density-v1.js
           grep -q 'ZORDON · CHAT NATURAL Y CONTINUO V5 · EVENTOS AISLADOS' zordon-chat-ui-v1.js
           grep -q 'GUARDIA FINAL DE CONTRASTE V7' ui-contrast-final-guard-v1.js
           if grep -q 'setInterval(' zordon-continuous-runtime-v1.js; then
@@ -107,7 +108,8 @@ jobs:
           grep -q 'technical-control-permissions-v1.js?v=20260905-controltecnicoperm6' index.html
           grep -q 'system-ui-refinement-v3.js?v=20260905-system6' index.html
           grep -q 'zordon-continuous-runtime-v1.js?v=20260905-zordon5' index.html
-          grep -q 'zordon-project-search-v1.js?v=20260905-zordonsearch4' index.html
+          grep -q 'zordon-project-search-v1.js?v=20260905-zordonsearch5' index.html
+          grep -q 'zordon-unified-density-v1.js?v=20260905-density2' index.html
           grep -q 'zordon-chat-ui-v1.js?v=20260905-cleanchat5' index.html
           grep -q 'ui-contrast-final-guard-v1.js?v=20260905-contrast-final7' index.html
           grep -q 'contract-explicit-rules-v1.js?v=20260904-explicit1' index.html

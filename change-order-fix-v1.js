@@ -1,7 +1,8 @@
-/* ===== CORRECCIÓN DE ÓRDENES DE CAMBIO / ADENDAS V1 ===== */
+/* ===== CORRECCIÓN DE ÓRDENES DE CAMBIO / ADENDAS V2 · GUARDADO ÚNICO ===== */
 (()=>{
 'use strict';
-if(window.__CC_CHANGE_ORDER_FIX_V1__)return;
+if(window.__CC_CHANGE_ORDER_FIX_V2__)return;
+window.__CC_CHANGE_ORDER_FIX_V2__=true;
 window.__CC_CHANGE_ORDER_FIX_V1__=true;
 
 const A=v=>Array.isArray(v)?v:[];
@@ -35,9 +36,10 @@ window.recalcContract=function(c){
     }
   }catch{}
 
-  /* El código anterior eliminaba una modificación, guardaba y recalculaba después.
-     Guardar aquí garantiza que monto y plazo corregidos sí lleguen a Supabase. */
-  try{if(typeof saveDB==='function')saveDB()}catch{}
+  /* Recalcular no persiste por sí mismo. El flujo que crea, edita o elimina
+     una modificación guarda una sola vez DESPUÉS de esta función. Así se evita
+     que dos sincronizaciones simultáneas compitan y una respuesta antigua
+     restaure el estado previo de la orden de cambio. */
 };
 
 function decorate(){

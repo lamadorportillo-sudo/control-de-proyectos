@@ -51,6 +51,8 @@ jobs:
             echo "[node --check] $f"
             node --check "$f"
           done
+          echo '[node --check] authenticated-module-manifest-v1.cjs'
+          node --check authenticated-module-manifest-v1.cjs
           echo '[node --check] build-pages.cjs'
           node --check build-pages.cjs
           echo '[node --check] inject-portfolio.cjs'
@@ -72,17 +74,29 @@ jobs:
           node inject-portfolio.cjs
           node patch-session-security.cjs
           node stabilize-core-v1.cjs
+          test -s index.html
           grep -q 'system-ui-refinement-v3.js' index.html
           grep -q 'integrity-diagnostics-v1.js' index.html
-          grep -q 'ui-navigation-single-source-v1.js?v=20260904-singlenav3' index.html
+          grep -q 'private-access-v1.js?v=20260904-private6' index.html
+          grep -q 'performance-runtime-v1.js?v=20260904-perf10' index.html
+          grep -q 'project-tabs-complete-v1.js?v=20260831-tabscomplete34' index.html
+          grep -q 'ui-navigation-single-source-v1.js?v=20260903-singlenav2' index.html
+          grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordon4' index.html
+          grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat4' index.html
+          grep -q 'data-cc-auth-loader data-cc-auth-plan' index.html
+          grep -q '__CC_AUTH_BOOT_FAILED__' index.html
           grep -q "view.screen='project';view.tab='summary'" index.html
           grep -q "const targetPct=Number(contract.recoveryTarget||0);" index.html
-          for retired in system-ui-refinement-v2.js dashboard-executive-v1.js home-executive-fix-v2.js portfolio-redesign-v1.js project-portfolio-detail-v1.js portfolio-screen-fix-v1.js; do
+          for retired in system-ui-refinement-v2.js dashboard-executive-v1.js home-executive-fix-v2.js industrial-home-v1.js portfolio-redesign-v1.js project-portfolio-detail-v1.js portfolio-screen-fix-v1.js; do
             if grep -q "$retired" index.html; then
               echo "La capa redundante $retired todavía está cargada." >&2
               exit 1
             fi
           done
+          if grep -q 'document.write(' index.html; then
+            echo 'Reapareció document.write en el artefacto auditado.' >&2
+            exit 1
+          fi
           grep -q '</html>' index.html
 
       - name: Instalar dependencias de auditoría
@@ -106,29 +120,23 @@ jobs:
           cat /tmp/control-proyectos-http.log
           exit 1
 
-      - name: Diagnosticar bloqueo de Contrato
-        continue-on-error: true
+      - name: Ejecutar auditoría responsive completa sin ocultar fallos
         shell: bash
         env:
           APP_URL: http://127.0.0.1:4173/
-          CC_CONTRACT_DIAG: '1'
         run: |
           set -o pipefail
-          npx playwright test --workers=1 --retries=0 --max-failures=1 2>&1 | tee contract-diagnostic.log
+          npx playwright test --workers=1 --retries=0 2>&1 | tee responsive-audit.log
 
-      - name: Publicar diagnóstico inmediato
+      - name: Publicar evidencia de auditoría
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: contract-diagnostic-live
+          name: responsive-audit-report
           path: |
             validation.log
-            contract-diagnostic.log
+            responsive-audit.log
             playwright-report/
             test-results/
           if-no-files-found: ignore
           retention-days: 7
-
-      # MODO TEMPORAL DE DIAGNÓSTICO.
-      # La suite responsive completa se restaura en cuanto se corrija el bloqueo
-      # de la pestaña Contrato y antes de integrar el PR a main.

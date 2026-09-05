@@ -70,7 +70,7 @@ const supplementalModules=[
   ['zordon-chat-ui-v1.js','20260905-cleanchat5'],
   /* Última corrección visual general, antes del par técnico que debe seguir
      siendo el cierre funcional del plan autenticado. */
-  ['ui-contrast-final-guard-v1.js','20260904-contrast-final6'],
+  ['ui-contrast-final-guard-v1.js','20260905-contrast-final7'],
   /* El guard se ejecuta inmediatamente antes del módulo técnico histórico y
      filtra su MutationObserver global sin afectar los observadores del resto. */
   ['technical-control-observer-guard-v1.js','20260904-controlobserver1'],

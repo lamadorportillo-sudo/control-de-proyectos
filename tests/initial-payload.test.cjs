@@ -11,7 +11,7 @@ const directBytes=refs.reduce((sum,file)=>sum+(fs.existsSync(file)?fs.statSync(f
 const forbidden=['fhis-cost-data-v1.js','assets/cost-knowledge/index.js','cost-program-v1.js','law-knowledge-v1.js','legal-assistant-v2.js'];
 
 for(const file of forbidden)assert(!refs.includes(file),`${file} no debe bloquear la carga inicial`);
-assert(refs.includes('feature-lazy-loader-v1.js'),'Debe existir el cargador progresivo');
+assert(/(?:src|data-src)=["']feature-lazy-loader-v1\.js\?v=/.test(html),'Debe existir el cargador progresivo en el plan publicado');
 assert(directBytes<1_000_000,`El JavaScript inicial debe pesar menos de 1 MB; actual: ${directBytes}`);
 assert(fs.statSync('index.html').size<450_000,'La página principal no debe superar 450 KB sin compresión');
 assert(fs.statSync('halu-engineer-cutout-v4.webp').size<100_000,'El avatar de pie debe estar optimizado');

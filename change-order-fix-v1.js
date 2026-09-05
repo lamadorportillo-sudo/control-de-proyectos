@@ -70,6 +70,24 @@ function decorate(){
     <div><small>Variación de plazo</small><strong>${days>=0?'+':''}${days} días</strong></div>
     <div><small>Plazo vigente</small><strong>${Math.trunc(N(c.executionDays))} días</strong></div>
     <div><small>Fecha final vigente</small><strong>${c.end&&typeof dmy==='function'?dmy(c.end):(c.end||'—')}</strong></div>`;
+
+  /* El manejador histórico eliminaba y sincronizaba antes de recalcular el
+     contrato. Se sustituye únicamente en esta pestaña para que la eliminación
+     siga el mismo orden transaccional que crear/editar: mutar -> recalcular ->
+     guardar una vez -> renderizar. */
+  body.querySelectorAll('[data-del-ch]').forEach(b=>{
+    if(b.dataset.ccChangeDeleteV2==='1')return;
+    b.dataset.ccChangeDeleteV2='1';
+    b.onclick=()=>{
+      const x=A(db?.changes).find(z=>z.id===b.dataset.delCh);
+      if(!x||!confirm('¿Eliminar esta modificación?'))return;
+      db.changes=A(db.changes).filter(z=>z.id!==x.id);
+      try{if(typeof audit==='function')audit('ELIMINAR','Modificación',x.id)}catch{}
+      window.recalcContract(c);
+      try{if(typeof saveDB==='function')saveDB()}catch{}
+      try{if(typeof renderProject==='function')renderProject()}catch{}
+    };
+  });
 }
 
 let q=false;

@@ -111,9 +111,10 @@ jobs:
         shell: bash
         env:
           APP_URL: http://127.0.0.1:4173/
+          CC_CONTRACT_DIAG: '1'
         run: |
           set -o pipefail
-          npx playwright test tests/00-contract-observer-diagnostic.spec.cjs --workers=1 --retries=0 --max-failures=1 2>&1 | tee contract-diagnostic.log
+          npx playwright test --workers=1 --retries=0 --max-failures=1 2>&1 | tee contract-diagnostic.log
 
       - name: Publicar diagnóstico inmediato
         if: always()

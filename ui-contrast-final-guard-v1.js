@@ -1,7 +1,8 @@
-/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V8 ===== */
+/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V9 ===== */
 (()=>{
 'use strict';
-if(window.__CC_CONTRAST_FINAL_GUARD_V8__)return;
+if(window.__CC_CONTRAST_FINAL_GUARD_V9__)return;
+window.__CC_CONTRAST_FINAL_GUARD_V9__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V8__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V7__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V6__=true;
@@ -45,6 +46,23 @@ function install(){
   html body.cc-portal-v2:not(.print-report) #content .project-card-premium h3,
   html body.cc-portal-v2:not(.print-report) #content .project-v3 h3{
     color:#f8fbff!important;opacity:1!important;text-shadow:none!important;
+  }
+
+  /* Evaluación del proyecto · la cabecera usa un gradiente oscuro. Se fija un
+     background-color real además del gradiente para que la legibilidad siga
+     siendo correcta cuando el navegador, accesibilidad o impresión no compone
+     la imagen de fondo. */
+  html body.cc-portal-v2:not(.print-report) #content .ped-head{
+    background-color:#10243f!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content .ped-head .ped-eyebrow{
+    color:#d9e9f7!important;opacity:1!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content .ped-head h3{
+    color:#f8fbff!important;opacity:1!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content .ped-head p:last-child{
+    color:#d9e7f4!important;opacity:1!important;
   }
 
   /* Transparencia · las tarjetas son claras, pero la cabecera principal vive

@@ -1,7 +1,8 @@
-/* ===== CORRECCIÓN DE ÓRDENES DE CAMBIO / ADENDAS V1 ===== */
+/* ===== CORRECCIÓN DE ÓRDENES DE CAMBIO / ADENDAS V2 · GUARDADO ÚNICO ===== */
 (()=>{
 'use strict';
-if(window.__CC_CHANGE_ORDER_FIX_V1__)return;
+if(window.__CC_CHANGE_ORDER_FIX_V2__)return;
+window.__CC_CHANGE_ORDER_FIX_V2__=true;
 window.__CC_CHANGE_ORDER_FIX_V1__=true;
 
 const A=v=>Array.isArray(v)?v:[];
@@ -35,9 +36,10 @@ window.recalcContract=function(c){
     }
   }catch{}
 
-  /* El código anterior eliminaba una modificación, guardaba y recalculaba después.
-     Guardar aquí garantiza que monto y plazo corregidos sí lleguen a Supabase. */
-  try{if(typeof saveDB==='function')saveDB()}catch{}
+  /* Recalcular no persiste por sí mismo. El flujo que crea, edita o elimina
+     una modificación guarda una sola vez DESPUÉS de esta función. Así se evita
+     que dos sincronizaciones simultáneas compitan y una respuesta antigua
+     restaure el estado previo de la orden de cambio. */
 };
 
 function decorate(){
@@ -68,6 +70,24 @@ function decorate(){
     <div><small>Variación de plazo</small><strong>${days>=0?'+':''}${days} días</strong></div>
     <div><small>Plazo vigente</small><strong>${Math.trunc(N(c.executionDays))} días</strong></div>
     <div><small>Fecha final vigente</small><strong>${c.end&&typeof dmy==='function'?dmy(c.end):(c.end||'—')}</strong></div>`;
+
+  /* El manejador histórico eliminaba y sincronizaba antes de recalcular el
+     contrato. Se sustituye únicamente en esta pestaña para que la eliminación
+     siga el mismo orden transaccional que crear/editar: mutar -> recalcular ->
+     guardar una vez -> renderizar. */
+  body.querySelectorAll('[data-del-ch]').forEach(b=>{
+    if(b.dataset.ccChangeDeleteV2==='1')return;
+    b.dataset.ccChangeDeleteV2='1';
+    b.onclick=()=>{
+      const x=A(db?.changes).find(z=>z.id===b.dataset.delCh);
+      if(!x||!confirm('¿Eliminar esta modificación?'))return;
+      db.changes=A(db.changes).filter(z=>z.id!==x.id);
+      try{if(typeof audit==='function')audit('ELIMINAR','Modificación',x.id)}catch{}
+      window.recalcContract(c);
+      try{if(typeof saveDB==='function')saveDB()}catch{}
+      try{if(typeof renderProject==='function')renderProject()}catch{}
+    };
+  });
 }
 
 let q=false;

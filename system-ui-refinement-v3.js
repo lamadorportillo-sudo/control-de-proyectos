@@ -1,10 +1,12 @@
-/* ===== CONTROL CONTRACTUAL · REFINAMIENTO GENERAL DE INTERFAZ V4 ===== */
+/* ===== CONTROL CONTRACTUAL · REFINAMIENTO GENERAL DE INTERFAZ V5 · OBSERVADOR ESTABLE ===== */
 (()=>{
 'use strict';
-if(window.__CC_SYSTEM_UI_REFINEMENT_V4__)return;
+if(window.__CC_SYSTEM_UI_REFINEMENT_V5__)return;
+window.__CC_SYSTEM_UI_REFINEMENT_V5__=true;
 window.__CC_SYSTEM_UI_REFINEMENT_V4__=true;
 
 const STYLE_ID='cc-system-ui-refinement-v4-style';
+const NativeObserver=window.__ccNativeMutationObserver||window.MutationObserver;
 function install(){
   if(document.getElementById(STYLE_ID))return;
   const s=document.createElement('style');
@@ -244,19 +246,29 @@ html body:not(.print-report) #ccEngineerChat{right:94px!important;bottom:12px!im
   document.head.appendChild(s);
 }
 
+function clearVisibilityOverrides(el){
+  if(el.style.opacity)el.style.removeProperty('opacity');
+  if(el.style.visibility)el.style.removeProperty('visibility');
+}
 function repairVisibility(){
   install();
-  document.querySelectorAll('.project-v3,.panel,.card,.kpi,.info,.service-tile,.service-project').forEach(el=>{
-    el.style.removeProperty('opacity');
-    el.style.removeProperty('visibility');
-  });
+  document.querySelectorAll('.project-v3,.panel,.card,.kpi,.info,.service-tile,.service-project').forEach(clearVisibilityOverrides);
   document.querySelectorAll('.project-v3').forEach(card=>{
     const rows=[...card.querySelectorAll('.cc-eng-progress')];
     const seen=new Set();
     rows.forEach(row=>{
       const key=String(row.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
       if(!key)return;
-      if(seen.has(key))row.style.display='none'; else seen.add(key);
+      if(seen.has(key)){
+        if(row.dataset.ccUiDuplicate!=='1')row.dataset.ccUiDuplicate='1';
+        if(row.style.display!=='none')row.style.display='none';
+      }else{
+        seen.add(key);
+        if(row.dataset.ccUiDuplicate==='1'){
+          delete row.dataset.ccUiDuplicate;
+          if(row.style.display==='none')row.style.removeProperty('display');
+        }
+      }
     });
   });
 }
@@ -264,9 +276,19 @@ function repairVisibility(){
 install();
 repairVisibility();
 let queued=false;
-new MutationObserver(()=>{
+const schedule=()=>{
   if(queued)return;queued=true;
   requestAnimationFrame(()=>{queued=false;repairVisibility()});
-}).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});
-window.addEventListener('resize',()=>{clearTimeout(window.__ccUiRefineTimer);window.__ccUiRefineTimer=setTimeout(repairVisibility,100)});
+};
+const observer=NativeObserver?new NativeObserver(mutations=>{
+  if(mutations.some(m=>m.type==='childList'||m.type==='attributes'))schedule();
+}):null;
+observer?.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
+const onResize=()=>{clearTimeout(window.__ccUiRefineTimer);window.__ccUiRefineTimer=setTimeout(repairVisibility,100)};
+window.addEventListener('resize',onResize);
+window.addEventListener('pagehide',()=>{
+  observer?.disconnect();
+  window.removeEventListener('resize',onResize);
+  clearTimeout(window.__ccUiRefineTimer);
+},{once:true});
 })();

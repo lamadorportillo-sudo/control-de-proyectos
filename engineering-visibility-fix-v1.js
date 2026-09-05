@@ -1,8 +1,12 @@
-/* ===== CORRECCION DE VISIBILIDAD INGENIERIA V1 ===== */
+/* ===== CORRECCIÓN DE VISIBILIDAD INGENIERÍA V2 ===== */
 (()=>{
 'use strict';
-if(window.__CC_ENGINEERING_VISIBILITY_FIX_V1__)return;
+if(window.__CC_ENGINEERING_VISIBILITY_FIX_V2__)return;
+window.__CC_ENGINEERING_VISIBILITY_FIX_V2__=true;
 window.__CC_ENGINEERING_VISIBILITY_FIX_V1__=true;
+
+const NativeObserver=window.__ccNativeMutationObserver||window.MutationObserver;
+let queued=false,observer=null;
 
 function inject(){
   if(document.getElementById('cc-engineering-visibility-fix-style'))return;
@@ -69,14 +73,43 @@ function inject(){
   document.head.appendChild(s);
 }
 
-function relabel(){
-  const backup=document.getElementById('backupBtn');
-  if(backup){backup.textContent='⇩ Respaldo';backup.title='Descargar respaldo del expediente'}
-  const project=document.getElementById('newProjectBtn');
-  if(project){project.textContent='＋ Nuevo proyecto';project.title='Crear un nuevo proyecto'}
+function setButton(button,text,title){
+  if(!button)return;
+  if(button.textContent!==text)button.textContent=text;
+  if(button.title!==title)button.title=title;
 }
-function run(){inject();relabel()}
-run();
-new MutationObserver(()=>requestAnimationFrame(run)).observe(document.documentElement,{subtree:true,childList:true});
-setTimeout(run,350);setTimeout(run,1000);
+function relabel(){
+  setButton(document.getElementById('backupBtn'),'⇩ Respaldo','Descargar respaldo del expediente');
+  setButton(document.getElementById('newProjectBtn'),'＋ Nuevo proyecto','Crear un nuevo proyecto');
+}
+function run(){queued=false;inject();relabel()}
+function schedule(){
+  if(queued)return;
+  queued=true;
+  const go=()=>run();
+  (typeof requestAnimationFrame==='function'?requestAnimationFrame:setTimeout)(go);
+}
+function containsTarget(nodes){
+  for(const node of nodes||[]){
+    if(node.nodeType!==1)continue;
+    const el=node;
+    if(el.id==='backupBtn'||el.id==='newProjectBtn'||el.querySelector?.('#backupBtn,#newProjectBtn'))return true;
+  }
+  return false;
+}
+function bindObserver(){
+  const root=document.getElementById('app');
+  if(!root||!NativeObserver)return;
+  observer?.disconnect?.();
+  observer=new NativeObserver(mutations=>{
+    if(mutations.some(m=>containsTarget(m.addedNodes)||containsTarget(m.removedNodes)))schedule();
+  });
+  observer.observe(root,{childList:true,subtree:true});
+}
+
+run();bindObserver();
+window.addEventListener('cc:route-changed',schedule);
+document.addEventListener('cc:data-changed',schedule);
+setTimeout(schedule,350);setTimeout(schedule,1000);
+window.addEventListener('pagehide',()=>observer?.disconnect?.(),{once:true});
 })();

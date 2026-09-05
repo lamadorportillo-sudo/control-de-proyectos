@@ -1,6 +1,8 @@
 const fs=require('fs');
 const zlib=require('zlib');
 const vm=require('vm');
+const {retiredModules,preAuthModules}=require('./authenticated-module-manifest-v1.cjs');
+const PERFORMANCE_VERSION='20260904-perf10';
 
 const files=Array.from({length:12},(_,i)=>`bundle-${String(i+1).padStart(2,'0')}.js`);
 let b64='';
@@ -79,7 +81,10 @@ if(!html.includes('projects-list-fix-v1')) html=html.replace('</head>',listCss+'
 
 // Descubre antes los recursos críticos mientras termina de analizar el HTML histórico.
 html=html.replace(/<!-- cc-critical-hints:start -->[\s\S]*?<!-- cc-critical-hints:end -->\s*/gi,'');
-const criticalHints='<!-- cc-critical-hints:start --><link rel="preconnect" href="https://flethujkrharehjikwgj.supabase.co" crossorigin><link rel="preload" href="performance-runtime-v1.js?v=20260823-perf5" as="script"><link rel="preload" href="private-access-v1.js?v=20260823-private5" as="script"><link rel="preload" href="workspace-access-v1.js?v=20260820-master4" as="script"><link rel="preload" href="engineer-chatbot-v3.js?v=20260824-ai5" as="script"><link rel="preload" href="halu-engineer-cutout-v4.webp" as="image" type="image/webp"><!-- cc-critical-hints:end -->';
+const preAuthVersions=new Map(preAuthModules);
+const privateAccessVersion=preAuthVersions.get('private-access-v1.js');
+if(!privateAccessVersion)throw new Error('El manifiesto no define la versión de private-access-v1.js.');
+const criticalHints=`<!-- cc-critical-hints:start --><link rel="preconnect" href="https://flethujkrharehjikwgj.supabase.co" crossorigin><link rel="preload" href="performance-runtime-v1.js?v=${PERFORMANCE_VERSION}" as="script"><link rel="preload" href="private-access-v1.js?v=${privateAccessVersion}" as="script"><link rel="preload" href="workspace-access-v1.js?v=20260820-master4" as="script"><link rel="preload" href="engineer-chatbot-v3.js?v=20260824-ai5" as="script"><link rel="preload" href="halu-engineer-cutout-v4.webp" as="image" type="image/webp"><!-- cc-critical-hints:end -->`;
 html=html.replace('</head>',criticalHints+'\n</head>');
 
 // El avance nunca cambia por sí solo el estado contractual del proyecto.
@@ -127,7 +132,7 @@ if(!html.includes('budget-portfolio-tab-v1.js')){
 }
 
 // Coordina los observadores antes de cargar cualquier módulo funcional.
-const performanceModule='performance-runtime-v1.js',performanceVersion='20260823-perf5';
+const performanceModule='performance-runtime-v1.js',performanceVersion=PERFORMANCE_VERSION;
 if(!fs.existsSync(performanceModule)) throw new Error(`No se encontró ${performanceModule}.`);
 try{new vm.Script(fs.readFileSync(performanceModule,'utf8'),{filename:performanceModule})}catch(err){throw new Error(`JavaScript inválido en ${performanceModule}: ${err.message}`)}
 html=html.replace(/<script\s+src=["']performance-runtime-v1\.js(?:\?[^"']*)?["']\s*><\/script>\s*/gi,'');
@@ -187,13 +192,22 @@ const lateModules=[
   ['portfolio-screen-fix-v1.js','20260821-screenfix1'],
   ['project-photo-story-v1.js','20260821-photostory1'],
 ];
-for(const [module,version] of lateModules){
+const activeLateModules=lateModules
+  .filter(([module])=>!retiredModules.includes(module))
+  .map(([module,version])=>[module,preAuthVersions.get(module)||version]);
+const skippedRetired=lateModules.filter(([module])=>retiredModules.includes(module)).map(([module])=>module);
+if(skippedRetired.length)console.log(`Módulos retirados omitidos por el constructor: ${skippedRetired.join(', ')}`);
+for(const [module,version] of activeLateModules){
   if(!fs.existsSync(module)) throw new Error(`No se encontró ${module}.`);
   try{new vm.Script(fs.readFileSync(module,'utf8'),{filename:module})}catch(err){throw new Error(`JavaScript inválido en ${module}: ${err.message}`)}
   const re=new RegExp(`<script\\s+src=["']${module.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&')}(?:\\?[^"']*)?["']\\s*></script>\\s*`,'gi');
   html=html.replace(re,'');
   const pos=html.toLowerCase().lastIndexOf('</body>');
   html=html.slice(0,pos)+`<script src="${module}?v=${version}"></script>\n`+html.slice(pos);
+}
+
+for(const [module,version] of preAuthModules){
+  if(!html.includes(`${module}?v=${version}`))throw new Error(`La versión canónica previa no quedó aplicada: ${module}?v=${version}`);
 }
 
 const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m=>m[1]);

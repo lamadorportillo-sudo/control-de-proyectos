@@ -1,11 +1,14 @@
-/* ===== CONTROL CONTRACTUAL · SISTEMA VISUAL CORPORATIVO V1 ===== */
+/* ===== CONTROL CONTRACTUAL · SISTEMA VISUAL CORPORATIVO V2 · LEGADO AISLADO ===== */
 (()=>{
 'use strict';
-if(window.__CC_CORPORATE_UI_V1__)return;
+if(window.__CC_CORPORATE_UI_V2__)return;
+window.__CC_CORPORATE_UI_V2__=true;
 window.__CC_CORPORATE_UI_V1__=true;
 
+function portalMode(){return document.body?.classList?.contains('cc-portal-v2')===true}
+
 function injectStyle(){
-  if(document.getElementById('cc-corporate-ui-v1-style'))return;
+  if(portalMode()||document.getElementById('cc-corporate-ui-v1-style'))return;
   const s=document.createElement('style');
   s.id='cc-corporate-ui-v1-style';
   s.textContent=`
@@ -63,12 +66,14 @@ body{background-image:linear-gradient(180deg,#e8f1fb 0,#f2f5f9 240px,#f2f5f9 100
 }
 
 function labels(){
+  if(portalMode())return;
   const map={home:'Dashboard',projects:'Proyectos',budget:'Presupuesto',alerts:'Alertas',audit:'Auditoría',reports:'Reportes'};
   document.querySelectorAll('#ccxNav [data-ccx]').forEach(b=>{const k=b.dataset.ccx;if(map[k])b.textContent=map[k]});
   const g=document.getElementById('ccgNavBtn');if(g)g.textContent='Gacetas';
 }
 
 function brand(){
+  if(portalMode())return;
   document.body.classList.add('cc-corporate-ready');
   document.documentElement.style.colorScheme='light';
   const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.content='#0b4f93';
@@ -80,7 +85,13 @@ function brand(){
   }
 }
 
-function apply(){injectStyle();brand();labels();}
+function apply(){
+  /* El portal V2 posee una autoridad visual oscura propia. Esta capa histórica
+     se conserva para compatibilidad fuera del portal, pero no puede volver a
+     colorear el dashboard moderno ni cambiar color-scheme a light. */
+  if(portalMode())return;
+  injectStyle();brand();labels();
+}
 
 if(typeof renderApp==='function'&&!renderApp.__ccCorporateUi){
   const base=renderApp;

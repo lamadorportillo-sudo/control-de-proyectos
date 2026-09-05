@@ -1,14 +1,17 @@
-/* ===== ZORDON · BUSCADOR INTELIGENTE DE PROYECTOS V3 ===== */
+/* ===== ZORDON · BUSCADOR INTELIGENTE DE PROYECTOS V5 · LISTA ESTABLE ===== */
 (()=>{
 'use strict';
 if(typeof window==='undefined'||typeof document==='undefined')return;
-if(window.__CC_ZORDON_PROJECT_SEARCH_V3__)return;
+if(window.__CC_ZORDON_PROJECT_SEARCH_V5__)return;
+window.__CC_ZORDON_PROJECT_SEARCH_V5__=true;
+window.__CC_ZORDON_PROJECT_SEARCH_V4__=true;
 window.__CC_ZORDON_PROJECT_SEARCH_V3__=true;
 window.__CC_ZORDON_PROJECT_SEARCH_V2__=true;
 window.__CC_ZORDON_PROJECT_SEARCH_V1__=true;
 
-const STYLE_ID='cc-zordon-project-search-v3-style';
+const STYLE_ID='cc-zordon-project-search-v5-style';
 const WRAP='[data-zordon-project-search]';
+const NativeObserver=window.__ccNativeMutationObserver||window.MutationObserver;
 const STOP=new Set(['quiero','quisiera','necesito','muestrame','muestra','mostrar','dame','busca','buscar','encuentra','encontrar','localiza','localizar','proyecto','proyectos','expediente','expedientes','el','la','los','las','un','una','unos','unas','de','del','al','a','en','por','para','con','que','cual','cuales','me','se','y','o','favor']);
 const GROUPS=[
   ['parque','plaza'],
@@ -81,20 +84,16 @@ function installCss(){
   `;document.head.appendChild(s);
 }
 function stateNode(grid){let node=grid.querySelector(':scope > .zordon-project-state');if(!node){node=document.createElement('div');node.className='zordon-project-state';grid.prepend(node)}return node}
-function showState(grid,title,detail){const n=stateNode(grid);n.innerHTML=`<b>${esc(title)}</b><span>${esc(detail)}</span>`;n.style.display='block'}
-function hideState(grid){const n=grid.querySelector(':scope > .zordon-project-state');if(n)n.style.display='none'}
-function hide(card){card.dataset.zordonHidden='1'}
-function show(card){delete card.dataset.zordonHidden}
-function isGuest(){return !!document.body?.classList?.contains('cc-guest-mode')}
+function showState(grid,title,detail){const n=stateNode(grid);n.innerHTML=`<b>${esc(title)}</b><span>${esc(detail)}</span>`;if(n.style.display==='none')n.style.removeProperty('display')}
+function hideState(grid){const n=grid.querySelector(':scope > .zordon-project-state');if(n&&n.style.display!=='none')n.style.display='none'}
+function hide(card){if(card.dataset.zordonHidden!=='1')card.dataset.zordonHidden='1'}
+function show(card){if(card.dataset.zordonHidden==='1')delete card.dataset.zordonHidden}
 function apply(board,query){
   const grid=board.querySelector('.project-grid-v3');if(!grid)return;
   const cards=[...grid.querySelectorAll(':scope > .project-v3')],q=String(query||'').trim(),count=board.querySelector('[data-zordon-count]');
   if(!q){
-    if(isGuest()){
-      cards.forEach(show);hideState(grid);if(count)count.textContent=`${cards.length} proyecto${cards.length===1?'':'s'}`;
-    }else{
-      cards.forEach(hide);showState(grid,'Zordon está listo','Escribe el nombre, código, contratista, ubicación, estado o una frase como “proyectos en ejecución”.');if(count)count.textContent='Esperando búsqueda';
-    }
+    cards.forEach(show);hideState(grid);
+    if(count)count.textContent=`${cards.length} proyecto${cards.length===1?'':'s'}`;
     return;
   }
   if(/^(todos|todas|mostrar todos|muestra todos|ver todos)$/i.test(norm(q))){cards.forEach(show);hideState(grid);if(count)count.textContent=`${cards.length} proyecto${cards.length===1?'':'s'}`;return}
@@ -109,7 +108,7 @@ function mount(board){
   if(!box){
     const old=board.querySelector('#projectSearch');if(old&&!old.matches('[data-zordon-input]')){old.id='projectSearchLegacy';old.setAttribute('aria-hidden','true')}
     box=document.createElement('section');box.className='zordon-project-search';box.dataset.zordonProjectSearch='1';
-    box.innerHTML=`<div class="zordon-project-search-head"><div><small>ZORDON · BÚSQUEDA INTELIGENTE</small><b>¿Qué proyecto quieres ver?</b><span>Escribe como hablas: nombre, código, contratista, comunidad, tipo de obra o estado.</span></div><span class="zordon-project-count" data-zordon-count>Esperando búsqueda</span></div><div class="zordon-project-search-row"><input id="projectSearch" class="zordon-project-search-input search" data-zordon-input data-cc-search-clean="1" type="search" autocomplete="off" spellcheck="false" placeholder="Ej.: parque central · contratista Harold · pavimento colegio · proyectos en ejecución"><button type="button" class="btn zordon-project-clear" data-zordon-clear>Limpiar</button></div><div class="zordon-project-hints"><button type="button" data-zordon-q="parque">Parque</button><button type="button" data-zordon-q="pavimento">Pavimento</button><button type="button" data-zordon-q="iglesia">Iglesia</button><button type="button" data-zordon-q="en ejecución">En ejecución</button><button type="button" data-zordon-q="finalizados">Finalizados</button></div>`;
+    box.innerHTML=`<div class="zordon-project-search-head"><div><small>ZORDON · BÚSQUEDA INTELIGENTE</small><b>¿Qué proyecto quieres ver?</b><span>Escribe como hablas: nombre, código, contratista, comunidad, tipo de obra o estado.</span></div><span class="zordon-project-count" data-zordon-count>Proyectos disponibles</span></div><div class="zordon-project-search-row"><input id="projectSearch" class="zordon-project-search-input search" data-zordon-input data-cc-search-clean="1" type="search" autocomplete="off" spellcheck="false" placeholder="Ej.: parque central · contratista Harold · pavimento colegio · proyectos en ejecución"><button type="button" class="btn zordon-project-clear" data-zordon-clear>Limpiar</button></div><div class="zordon-project-hints"><button type="button" data-zordon-q="parque">Parque</button><button type="button" data-zordon-q="pavimento">Pavimento</button><button type="button" data-zordon-q="iglesia">Iglesia</button><button type="button" data-zordon-q="en ejecución">En ejecución</button><button type="button" data-zordon-q="finalizados">Finalizados</button></div>`;
     const legacy=board.querySelector('.filter-row');if(legacy)legacy.insertAdjacentElement('beforebegin',box);else board.querySelector('.project-grid-v3').insertAdjacentElement('beforebegin',box);
     const input=box.querySelector('[data-zordon-input]');
     const enforce=()=>{apply(board,input.value);setTimeout(()=>apply(board,input.value),0)};
@@ -123,29 +122,16 @@ function mount(board){
 }
 function run(){document.querySelectorAll('.projects-board').forEach(mount)}
 let queued=false;
-const observer=typeof MutationObserver==='function'?new MutationObserver(mutations=>{
-  if(!mutations.some(m=>m.type==='childList'||(m.type==='attributes'&&(m.attributeName==='style'||m.attributeName==='class'))))return;
+const schedule=()=>{
   if(queued)return;queued=true;
   const go=()=>{queued=false;run()};
   if(typeof requestAnimationFrame==='function')requestAnimationFrame(go);else setTimeout(go,0);
-}):null;
-observer?.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
-setTimeout(run,0);setTimeout(run,350);setTimeout(run,1100);
-window.__ccZordonProjectSearch={run,apply,scoreCard};
-})();
-
-/* ZORDON · portada industrial inspirada en el modelo visual del usuario. */
-(()=>{
-'use strict';
-if(typeof window==='undefined'||typeof document==='undefined'||window.__CC_INDUSTRIAL_HOME_LOADER__)return;
-window.__CC_INDUSTRIAL_HOME_LOADER__=true;
-const activate=()=>{try{window.__ccIndustrialHome?.run?.()}catch{}};
-const load=()=>{
-  if(window.__CC_INDUSTRIAL_HOME_V1__){activate();return}
-  if(typeof document.createElement!=='function')return;
-  let s=document.querySelector('script[data-industrial-home-loader]');
-  if(s){s.addEventListener?.('load',activate,{once:true});return}
-  s=document.createElement('script');s.src='industrial-home-v1.js?v=20260831-industrial2';s.async=false;s.dataset.industrialHomeLoader='1';s.onload=activate;document.head.appendChild(s);
 };
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load();
+const observer=typeof NativeObserver==='function'?new NativeObserver(mutations=>{
+  if(mutations.some(m=>m.type==='childList'||(m.type==='attributes'&&m.attributeName==='class')))schedule();
+}):null;
+observer?.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+setTimeout(run,0);setTimeout(run,350);setTimeout(run,1100);
+window.addEventListener('pagehide',()=>observer?.disconnect(),{once:true});
+window.__ccZordonProjectSearch={run,apply,scoreCard,version:5};
 })();

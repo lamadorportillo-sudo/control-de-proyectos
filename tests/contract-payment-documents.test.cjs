@@ -5,16 +5,22 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'contract-payment-documents-v1.js'), 'utf8');
+const preview = fs.readFileSync(path.join(root, 'contract-preview-v1.js'), 'utf8');
+const safety = fs.readFileSync(path.join(root, 'contract-document-safety-v1.js'), 'utf8');
 const phoneFix = fs.readFileSync(path.join(root, 'contract-official-format-v1.js'), 'utf8');
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const loader = fs.readFileSync(path.join(root, 'project-tabs-complete-v1.js'), 'utf8');
 
-test('la página y el cargador global conservan el módulo contractual', () => {
-  assert.match(loader, /contract-payment-documents-v1\.js\?v=20260831-advance-docs3/);
+
+test('la página y el cargador global conservan el módulo contractual y su blindaje', () => {
+  assert.match(loader, /contract-payment-documents-v1\.js\?v=20260904-advance-docs4/);
+  assert.match(loader, /contract-preview-v1\.js\?v=/);
+  assert.match(loader, /contract-document-safety-v1\.js\?v=20260904-docsafety3/);
   assert.match(loader, /contract-official-format-v1\.js\?v=20260831-phone3/);
   const modules = loader.match(/const modules=\[(.*?)\];const current/s)?.[1] || '';
   assert.ok(modules.lastIndexOf('contract-payment-documents-v1.js') > modules.lastIndexOf('zordon-chat-ui-v1.js'));
   assert.ok(modules.lastIndexOf('contract-payment-documents-v1.js') > modules.lastIndexOf('contract-official-format-v1.js'));
+  assert.ok(modules.lastIndexOf('contract-document-safety-v1.js') < modules.lastIndexOf('contract-payment-documents-v1.js'),'el blindaje debe cargar antes del generador para evitar una ventana de carrera');
   const direct = index.lastIndexOf('contract-payment-documents-v1.js');
   if (direct >= 0) assert.ok(direct > index.lastIndexOf('zordon-chat-ui-v1.js'));
 });
@@ -42,6 +48,44 @@ test('el flujo genera los tres documentos y protege el pago del anticipo', () =>
   assert.match(source, /ready:contract&&remittance/);
   assert.match(source, /status!==['"]Pagado['"]/);
   assert.match(source, /e\.stopImmediatePropagation\(\)/);
+  assert.match(source, /__ccContractDocumentSafety\?\.validate/,'el propio generador vuelve a validar aunque se invoque sin pulsar el botón');
+});
+
+test('el generador y la vista previa no fabrican cláusulas ni identidades', () => {
+  for (const forbidden of [
+    'advPct=N(c.advanceRequestedPct)||15',
+    'performancePct=N(ctl.performanceGuaranteePct)||15',
+    'penaltyPct=N(ctl.penaltyDailyPct)||.18',
+    'c.executionDays||90',
+    "financingSource:'Fondos Municipales'",
+    "contractorGender:'Femenino'",
+    "contractorCivilStatus:'soltera'",
+    "mayorName:'EDWIN ALBERTO NICOLAS MORALES'",
+  ]) assert.ok(!source.includes(forbidden),`se eliminó el valor implícito: ${forbidden}`);
+
+  for (const forbidden of [
+    'N(c?.advanceRequestedPct)||15',
+    'N(ctl.penaltyDailyPct)||.18',
+    'Math.trunc(N(c?.executionDays)||90)',
+    'ctl.performanceGuaranteePct||15',
+    'ctl.qualityGuaranteePct||5',
+    'ctl.changeOrderLimitPct||10',
+    'ctl.accumulatedChangeLimitPct||25',
+    "code.includes('COT121706-2026')",
+  ]) assert.ok(!preview.includes(forbidden),`la vista previa no debe conservar: ${forbidden}`);
+
+  assert.match(source, /PROFILE_REQUIRED_BY_KIND=\{contract:/,'los requisitos se separan por tipo de documento');
+  assert.match(source, /advanceRemittance:\['treasuryRecipient','treasuryDepartment','supervisorName','supervisorUnit','noteDate'\]/);
+  assert.match(source, /startOrder:\['mayorName','supervisorName','projectDepartment','projectMunicipality','projectVillage','officialStartDate'\]/);
+  assert.match(source, /Seleccione/,'el sexo gramatical no se precarga');
+  assert.doesNotMatch(source, /female=x\.contractorGender!==['"]Masculino['"]/,'no se infiere Femenino cuando el campo está vacío');
+  assert.doesNotMatch(source, /projectDepartment:'La Paz',projectMunicipality:'Santa María'/,'la ubicación oficial no se rellena silenciosamente');
+  assert.match(safety, /fail-closed/i,'la plantilla específica queda bloqueada si las condiciones no coinciden');
+});
+
+test('contrato y nota usan el monto contractual original, no presupuesto o monto actual como sustituto', () => {
+  assert.match(source, /amount=N\(c\.originalAmount\),adv=advanceAmount\(c\)/);
+  assert.doesNotMatch(source, /amount=N\(c\.originalAmount\|\|c\.currentAmount\|\|p\.budget\)/);
 });
 
 test('los documentos se invalidan cuando cambian sus datos fuente', () => {

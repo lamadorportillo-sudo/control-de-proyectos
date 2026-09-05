@@ -1,28 +1,30 @@
-/* ===== MULTA DIARIA Y ACUMULADA V2 ===== */
+/* ===== MULTA DIARIA Y ACUMULADA V4 · SOLO CLÁUSULA EXPLÍCITA ===== */
 (()=>{
 'use strict';
-if(window.__CC_CONTRACT_PENALTY_CARD_V2__)return;
-window.__CC_CONTRACT_PENALTY_CARD_V2__=true;
+if(window.__CC_CONTRACT_PENALTY_CARD_V4__)return;
+window.__CC_CONTRACT_PENALTY_CARD_V4__=true;
 
 function install(){
-  if(typeof window.renderContract!=='function'||window.renderContract.__ccDailyPenaltyCardV2)return;
+  if(typeof window.renderContract!=='function'||window.renderContract.__ccDailyPenaltyCardV4)return;
   const base=window.renderContract;
   const wrapped=function(p,c){
     const out=base.apply(this,arguments);
     if(!c)return out;
     const grid=document.querySelector('#tabBody .summary-grid');
-    if(!grid||grid.querySelector('.cc-contract-daily-penalty-v2'))return out;
+    if(!grid||grid.querySelector('.cc-contract-daily-penalty-v4'))return out;
 
-    const ctrl=typeof window.contractControlDefaults==='function'
-      ? window.contractControlDefaults(c.controls||{})
-      : (c.controls||{});
-    const rateRaw=ctrl.penaltyDailyPct;
-    const rate=Number(rateRaw===undefined||rateRaw===null||rateRaw===''?0.18:rateRaw)||0;
+    /* IMPORTANTE: no usar contractControlDefaults() para decidir si existe tasa.
+       Esa función histórica puede completar plantillas con porcentajes genéricos.
+       La multa solo existe para este cálculo cuando el contrato la almacenó
+       explícitamente dentro de c.controls. */
+    const rawCtrl=c.controls&&typeof c.controls==='object'?c.controls:{};
+    const rateRaw=rawCtrl.penaltyDailyPct;
+    const hasRate=Object.prototype.hasOwnProperty.call(rawCtrl,'penaltyDailyPct')
+      &&rateRaw!==undefined&&rateRaw!==null&&rateRaw!==''&&Number.isFinite(Number(rateRaw));
+    const rate=hasRate?Number(rateRaw):null;
     const original=Number(c.originalAmount||0);
-    const dailyRaw=original*rate/100;
-    const daily=typeof window.round2==='function'
-      ? window.round2(dailyRaw)
-      : Math.round(dailyRaw*100)/100;
+    const round=v=>typeof window.round2==='function'?window.round2(v):Math.round(Number(v||0)*100)/100;
+    const daily=hasRate?round(original*rate/100):null;
 
     const currentDate=typeof window.today==='function'
       ? window.today()
@@ -34,26 +36,30 @@ function install(){
         : Math.max(0,Math.floor((new Date(currentDate+'T12:00:00')-new Date(c.end+'T12:00:00'))/86400000));
     }
 
-    const accumulatedRaw=daily*lateDays;
-    const accumulated=typeof window.round2==='function'
-      ? window.round2(accumulatedRaw)
-      : Math.round(accumulatedRaw*100)/100;
-    const rateText=typeof window.pct==='function'?window.pct(rate):`${rate.toFixed(2)}%`;
+    const accumulated=hasRate?round(daily*lateDays):null;
+    const rateText=hasRate
+      ? (typeof window.pct==='function'?window.pct(rate):`${rate.toFixed(2)}%`)
+      : 'Definir según contrato';
     const money=v=>typeof window.moneyHTML==='function'
       ? window.moneyHTML(v)
       : `<strong>L ${Number(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong>`;
+    const unset='<strong>Definir según contrato</strong>';
 
     const dailyCard=document.createElement('div');
-    dailyCard.className='info cc-contract-daily-penalty-v2';
-    dailyCard.innerHTML=`<small>Multa diaria por retraso</small>${money(daily)}<div class="words">${rateText} del monto original por cada día de retraso</div>`;
+    dailyCard.className='info cc-contract-daily-penalty-v4';
+    dailyCard.innerHTML=hasRate
+      ? `<small>Multa diaria por retraso</small>${money(daily)}<div class="words">${rateText} del monto original por cada día de retraso, según la cláusula registrada.</div>`
+      : `<small>Multa diaria por retraso</small>${unset}<div class="words">No se calcula ninguna multa hasta registrar el porcentaje establecido expresamente en este contrato.</div>`;
 
     const daysCard=document.createElement('div');
     daysCard.className='info cc-contract-delay-days';
-    daysCard.innerHTML=`<small>Días de atraso</small><strong>${lateDays} día${lateDays===1?'':'s'}</strong><div class="words">${lateDays>0?`Calculados desde el ${typeof window.dmy==='function'?window.dmy(c.end):c.end} hasta hoy`:'Sin atraso contractual a la fecha'}</div>`;
+    daysCard.innerHTML=`<small>Días posteriores al plazo registrado</small><strong>${lateDays} día${lateDays===1?'':'s'}</strong><div class="words">${lateDays>0?`Calculados desde el ${typeof window.dmy==='function'?window.dmy(c.end):c.end} hasta hoy. Este dato no aplica una penalización por sí solo.`:'Sin días posteriores al plazo registrado a la fecha.'}</div>`;
 
     const totalCard=document.createElement('div');
     totalCard.className='info cc-contract-accumulated-penalty';
-    totalCard.innerHTML=`<small>Multa acumulada por atraso</small>${money(accumulated)}<div class="words">${lateDays>0?`${lateDays} día${lateDays===1?'':'s'} × multa diaria de L ${daily.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`:'Se calculará automáticamente al vencer el plazo contractual'}</div>`;
+    totalCard.innerHTML=hasRate
+      ? `<small>Multa acumulada por atraso</small>${money(accumulated)}<div class="words">${lateDays>0?`${lateDays} día${lateDays===1?'':'s'} × multa diaria de L ${daily.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`:'Se calculará cuando exista atraso y una tasa contractual registrada.'}</div>`
+      : `<small>Multa acumulada por atraso</small>${unset}<div class="words">El sistema no presume una tasa de multa. Debe definirse con base en el contrato aplicable.</div>`;
 
     const wide=[...grid.querySelectorAll('.info.wide')].at(-1);
     if(wide){
@@ -65,7 +71,7 @@ function install(){
     }
     return out;
   };
-  wrapped.__ccDailyPenaltyCardV2=true;
+  wrapped.__ccDailyPenaltyCardV4=true;
   window.renderContract=wrapped;
 }
 

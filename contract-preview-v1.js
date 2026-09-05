@@ -22,22 +22,12 @@ function context(){
   if(p&&!c)c=(Array.isArray(d.contracts)?d.contracts:[]).filter(x=>String(x.projectId)===String(p.id)&&!x.voidedAt&&!x.voided_at).slice(-1)[0]||null;
   return {p,c};
 }
-function controls(c){try{return typeof window.contractControlDefaults==='function'?window.contractControlDefaults(c?.controls):Object.assign({penaltyDailyPct:.18,performanceGuaranteePct:15,qualityGuaranteePct:5,changeOrderLimitPct:10,accumulatedChangeLimitPct:25},c?.controls||{})}catch{return Object.assign({penaltyDailyPct:.18,performanceGuaranteePct:15,qualityGuaranteePct:5,changeOrderLimitPct:10,accumulatedChangeLimitPct:25},c?.controls||{})}}
+function controls(c){const raw=c?.controls&&typeof c.controls==='object'?c.controls:{};try{return typeof window.contractControlDefaults==='function'?window.contractControlDefaults(raw):Object.assign({},raw)}catch{return Object.assign({},raw)}}
 function profile(p,c){
-  const saved=c?.documentProfile||{},code=String(p?.code||'').toUpperCase(),school=code.includes('COT121706-2026');
-  return Object.assign({
-    mayorName:school?'EDWIN ALBERTO NICOLAS MORALES':'No identificado',
-    mayorDni:school?'1217-1979-00268':'No identificado',
-    contractorDni:school?'1218-1988-00059':'No identificado',
-    contractorProfession:'Ingeniero Civil',
-    contractorCivilStatus:school?'soltera':'No identificado',
-    contractorNationality:'hondureña',
-    contractorAddress:school?'Residencial La Orquidea, La Paz':'No identificado',
-    contractorRegistry:school?'96':'',
-    contractorRegistryVolume:school?'21':'',
-  },saved);
+  const saved=c?.documentProfile&&typeof c.documentProfile==='object'?c.documentProfile:{};
+  return Object.assign({mayorName:'',mayorDni:'',contractorDni:'',contractorProfession:'',contractorCivilStatus:'',contractorNationality:'',contractorAddress:'',contractorRegistry:'',contractorRegistryVolume:''},saved);
 }
-function advance(c,amount){const pct=N(c?.advanceRequestedPct)||15,approved=N(c?.advanceApproved);return {pct,value:approved>0?approved:amount*pct/100}}
+function advance(c,amount){const raw=c?.advanceRequestedPct,pct=raw!==''&&raw!==null&&raw!==undefined&&Number.isFinite(Number(raw))?Number(raw):(N(c?.advanceApproved)>0&&amount>0?N(c.advanceApproved)/amount*100:null),approved=N(c?.advanceApproved);return {pct,value:approved>0?approved:(pct===null?0:amount*pct/100)}}
 function projectLabel(p){const name=String(p?.name||'Proyecto').trim(),location=String(p?.location||'').trim(),code=String(p?.code||'').trim();return [name,location&&!name.toLowerCase().includes(location.toLowerCase())?location:'',code&&!name.toLowerCase().includes(code.toLowerCase())?code:''].filter(Boolean).join(', ')}
 
 function addCss(){
@@ -50,7 +40,7 @@ function addCss(){
 }
 
 function paper(p,c){
-  const pf=profile(p,c),ctl=controls(c),amount=N(c?.originalAmount||c?.currentAmount||p?.budget),adv=advance(c,amount),penaltyPct=N(ctl.penaltyDailyPct)||.18,penalty=amount*penaltyPct/100,days=Math.max(1,Math.trunc(N(c?.executionDays)||90));
+  const pf=profile(p,c),ctl=controls(c),amount=N(c?.originalAmount||c?.currentAmount||p?.budget),adv=advance(c,amount),penaltyPct=ctl.penaltyDailyPct!==''&&ctl.penaltyDailyPct!==null&&ctl.penaltyDailyPct!==undefined&&Number.isFinite(Number(ctl.penaltyDailyPct))?Number(ctl.penaltyDailyPct):null,penalty=penaltyPct===null?0:amount*penaltyPct/100,days=Math.max(0,Math.trunc(N(c?.executionDays)));
   const registry=pf.contractorRegistry?`Inscripción ${E(pf.contractorRegistry)}${pf.contractorRegistryVolume?`, tomo ${E(pf.contractorRegistryVolume)}`:''}, Registro Mercantil de La Paz.`:'Registro mercantil: no identificado.';
   return `<div class="cc-official-preview-wrap"><article class="cc-official-paper" data-cc-contract-paper>
     <header class="cc-official-head"><h2>Municipalidad de Santa María, La Paz</h2><p>Email: munisantamaria@Yahoo.com · lapazsantamaria@municipalidadhn.info</p><p><b>Tel. ${PHONE}</b></p></header>
@@ -60,10 +50,10 @@ function paper(p,c){
       <tr><td>Contratista</td><td>${E(c?.contractor||'No identificado')} · DNI ${E(pf.contractorDni)}</td></tr>
       <tr><td>Alcalde Municipal</td><td>${E(pf.mayorName)} · DNI ${E(pf.mayorDni)}</td></tr>
       <tr><td>Monto contractual</td><td>${MONEY(amount)}</td></tr>
-      <tr><td>Anticipo</td><td>${MONEY(adv.value)} · ${adv.pct}%</td></tr>
+      <tr><td>Anticipo</td><td>${MONEY(adv.value)} · ${adv.pct===null?'No definido':adv.pct+'%'}</td></tr>
       <tr><td>Plazo</td><td>${days} días calendario</td></tr>
       <tr><td>Firma</td><td>${DATE(c?.signature)}</td></tr>
-      <tr><td>Multa diaria</td><td>${penaltyPct}% del monto contractual · ${MONEY(penalty)} por día de atraso</td></tr>
+      <tr><td>Multa diaria</td><td>${penaltyPct===null?'No definida':penaltyPct+'% del monto contractual · '+MONEY(penalty)+' por día de atraso'}</td></tr>
     </tbody></table>
     <div class="cc-official-body">
       <p>Yo, <b>${E(pf.mayorName)}</b>, actuando en condición de Alcalde Municipal, y por la otra parte <b>${E(c?.contractor||'EL CONTRATISTA')}</b>, ${E(registry)} acuerdan celebrar el contrato correspondiente al proyecto indicado.</p>
@@ -72,7 +62,7 @@ function paper(p,c){
       <p><b>TERCERA: MONTO DEL CONTRATO.</b> Monto contractual registrado: <b>${MONEY(amount)}</b>.</p>
       <p><b>CUARTA Y QUINTA: ANTICIPO Y AMORTIZACIÓN.</b> Anticipo registrado de <b>${MONEY(adv.value)}</b> (${adv.pct}%), sujeto a garantías y amortización progresiva conforme al contrato.</p>
       <p><b>SEXTA: ORDEN DE INICIO.</b> El formato contractual vincula el inicio con la entrega y recepción del anticipo según las condiciones establecidas.</p>
-      <p><b>GARANTÍAS Y CONTROL.</b> Cumplimiento ${E(ctl.performanceGuaranteePct||15)}%; calidad ${E(ctl.qualityGuaranteePct||5)}%; variaciones por orden hasta ${E(ctl.changeOrderLimitPct||10)}% y acumuladas hasta ${E(ctl.accumulatedChangeLimitPct||25)}%, conforme a la configuración contractual.</p>
+      <p><b>GARANTÍAS Y CONTROL.</b> Cumplimiento ${E(ctl.performanceGuaranteePct??'No definido')}%; calidad ${E(ctl.qualityGuaranteePct??'No definido')}%; variaciones por orden hasta ${E(ctl.changeOrderLimitPct??'No definido')}% y acumuladas hasta ${E(ctl.accumulatedChangeLimitPct??'No definido')}%, conforme a la configuración contractual.</p>
       <p><b>DÉCIMA SÉPTIMA A DÉCIMA NOVENA.</b> El formato incluye procedimiento ante emergencias, solución de conflictos y aceptación de las partes.</p>
     </div>
     <div class="cc-official-signatures"><div><b>${E(pf.mayorName)}</b><br>Alcalde Municipal</div><div><b>${E(c?.contractor||'CONTRATISTA')}</b><br>Contratista</div></div>

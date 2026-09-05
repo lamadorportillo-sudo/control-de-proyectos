@@ -1,7 +1,8 @@
-/* ===== VISITAS INDEPENDIENTES E INFORMES INDIVIDUALES V1 ===== */
+/* ===== VISITAS INDEPENDIENTES E INFORMES INDIVIDUALES V2 · CONTRASTE AA ===== */
 (()=>{
 'use strict';
-if(window.__CC_VISIT_INDEPENDENT_REPORTS_V1__)return;
+if(window.__CC_VISIT_INDEPENDENT_REPORTS_V2__)return;
+window.__CC_VISIT_INDEPENDENT_REPORTS_V2__=true;
 window.__CC_VISIT_INDEPENDENT_REPORTS_V1__=true;
 
 const A=v=>Array.isArray(v)?v:[];
@@ -32,9 +33,10 @@ function photosOf(v){
 function css(){
   if(document.getElementById('cc-independent-visits-style'))return;
   const s=document.createElement('style');s.id='cc-independent-visits-style';s.textContent=`
-  .cc-visit-report-picker{display:grid;grid-template-columns:minmax(240px,1.5fr) auto auto;gap:8px;align-items:end;margin:0 0 14px;padding:13px;border:1px solid #dfe6dc;background:#f8faf7;border-radius:14px}
+  .cc-visit-report-picker{display:grid;grid-template-columns:minmax(240px,1.5fr) auto auto;gap:8px;align-items:end;margin:0 0 14px;padding:13px;border:1px solid #dfe6dc;background:#f8faf7;border-radius:14px;color:#243b4a}
   .cc-visit-report-picker .field{margin:0}.cc-visit-report-picker .btn{min-height:40px}
-  .cc-visit-count-note{font-size:10px;color:#68756c;margin:5px 0 0}.cc-visit-print-row{margin-left:5px!important}
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .cc-visit-report-picker .field>span{display:block;background-color:#f8faf7!important;color:#334e68!important;opacity:1!important;text-shadow:none!important}
+  .cc-visit-count-note{font-size:10px;color:#53675b;margin:5px 0 0}.cc-visit-print-row{margin-left:5px!important}
   .cc-visit-community-note{grid-column:1/-1;padding:10px 12px;border:1px solid #c9d8e7;background:#f3f7fb;border-radius:10px;font-size:11px;line-height:1.45;color:#334e68}
   .cc-visit-community-note b{color:#244766}
   @media(max-width:760px){.cc-visit-report-picker{grid-template-columns:1fr}.cc-visit-report-picker .btn{width:100%}}

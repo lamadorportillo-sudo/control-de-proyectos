@@ -1,21 +1,46 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const {retiredModules}=require('../authenticated-module-manifest-v1.cjs');
+const {retiredModules,preAuthModules}=require('../authenticated-module-manifest-v1.cjs');
 
+const portalWeb=fs.readFileSync('portal-web-v2.js','utf8');
 const nav=fs.readFileSync('ui-navigation-single-source-v1.js','utf8');
+const uiStability=fs.readFileSync('ui-stability-v1.js','utf8');
 const perf=fs.readFileSync('performance-runtime-v1.js','utf8');
 const storage=fs.readFileSync('storage-quota-fix-v1.js','utf8');
+const coreHardening=fs.readFileSync('core-hardening-v1.js','utf8');
 const stabilizer=fs.readFileSync('stabilize-core-v1.cjs','utf8');
 const inject=fs.readFileSync('inject-portfolio.cjs','utf8');
 const tabs=fs.readFileSync('project-tabs-complete-v1.js','utf8');
 const official=fs.readFileSync('contract-official-format-v1.js','utf8');
 const documents=fs.readFileSync('contract-payment-documents-v1.js','utf8');
+const privateAccess=fs.readFileSync('private-access-v1.js','utf8');
 
-// Navegación: la barra lateral debe gobernar directamente la vista.
+// Portal: crea estructura visual, pero no vuelve a decidir las rutas principales.
+assert.match(portalWeb,/PORTAL WEB V4 · PRESENTACIÓN ESTABLE/,'el portal debe estar en modo presentación');
+assert.doesNotMatch(portalWeb,/function\s+goBudget/,'el portal no debe conservar un router de presupuesto paralelo');
+assert.doesNotMatch(portalWeb,/function\s+openProjectTab/,'el portal no debe abrir pestañas como segundo router');
+assert.doesNotMatch(portalWeb,/function\s+setActive/,'el portal no debe competir por el estado activo del sidebar');
+assert.match(portalWeb,/data-route="campo"[\s\S]*data-route="arquitectura"[\s\S]*data-route="logout"/,'las acciones auxiliares válidas deben permanecer disponibles');
+assert.match(portalWeb,/Inicio, Proyectos, Presupuesto y centros globales quedan sin listener local/,'debe documentar la separación de responsabilidades de navegación');
+
+// Navegación: la barra lateral gobierna directamente la vista.
+assert.match(nav,/NAVEGACIÓN ÚNICA V6 · SIN DOBLE DESPLAZAMIENTO/,'debe estar activa la navegación canónica V6');
 assert.match(nav,/view\.screen='projects'/,'Inicio/Proyectos debe manejar el estado real de la vista');
 assert.doesNotMatch(nav,/querySelector\(`\[data-ccx=/,'no debe localizar botones ocultos del motor ejecutivo');
 assert.doesNotMatch(nav,/btn\.click\(\)/,'no debe accionar navegación heredada con clics sintéticos');
 assert.match(nav,/cc_main_route_v2/,'debe conservar una sola intención de ruta principal');
+assert.match(nav,/window\.__ccMainRoute\|\|document\.body\?\.dataset\?\.ccMainRoute/,'la intención viva de navegación debe prevalecer sobre persistencia histórica durante la sesión');
+assert.match(nav,/document\.body\.dataset\.ccMainRoute=r/,'cada ruta elegida debe quedar reflejada inmediatamente en el DOM canónico');
+assert.match(nav,/syncActive\(Q\('#ccSidebar'\)\)/,'la barra lateral debe sincronizar su estado activo durante la interacción, sin esperar otro render');
+assert.match(nav,/aria-current','page'/,'la ruta activa debe quedar expuesta semánticamente');
+assert.doesNotMatch(nav,/route==='proyectos'[^\n]*scrollIntoView/,'Proyectos no debe mover las tarjetas mientras se intenta abrir un expediente');
+
+// Estabilidad visual: nunca debe volver a convertirse en un segundo router.
+assert.match(uiStability,/ESTABILIDAD VISUAL V2/,'la capa de estabilidad debe declararse solo visual');
+assert.doesNotMatch(uiStability,/function\s+hiddenExecutive/,'la estabilidad visual no debe buscar navegación ejecutiva oculta');
+assert.doesNotMatch(uiStability,/function\s+fallbackRoute/,'la estabilidad visual no debe decidir rutas de respaldo');
+assert.doesNotMatch(uiStability,/stopImmediatePropagation\(/,'la estabilidad visual no debe competir por los clics del sidebar');
+assert.doesNotMatch(uiStability,/\.click\(\)/,'la estabilidad visual no debe disparar navegación sintética');
 
 // Pestañas: son presentación, no un segundo gestor de dependencias.
 assert.match(tabs,/NAVEGACION COMPLETA DEL EXPEDIENTE V2 · ESTABLE/,'debe estar activa la versión estable de pestañas');
@@ -30,6 +55,14 @@ for(const file of retiredModules){
 assert.match(perf,/__ccNativeMutationObserver/,'debe conservar referencia al observador nativo');
 assert.doesNotMatch(perf,/window\.MutationObserver\s*=/,'no debe reemplazar MutationObserver global');
 assert.doesNotMatch(perf,/MAX_PASSES/,'no debe descartar actualizaciones después de un número fijo de pasadas');
+
+// Arranque de nube: 12 s es presupuesto total, no 12 s por cada petición.
+assert.match(coreHardening,/let startupDeadline=0/,'debe existir un límite temporal compartido del arranque');
+assert.match(coreHardening,/function beginStartupBudget\(\)/,'debe iniciar un presupuesto global de arranque');
+assert.match(coreHardening,/const remaining=Math\.max\(1,deadline-Date\.now\(\)\)/,'cada petición debe usar solo el tiempo restante del presupuesto global');
+assert.match(coreHardening,/const deadline=beginStartupBudget\(\);[\s\S]*workspace_members[\s\S]*profiles[\s\S]*readCloudRow\(deadline\)/,'membresía, perfil y estado deben compartir el mismo deadline');
+assert.match(coreHardening,/finally\{\s*clearStartupBudget\(\);\s*\}/,'el presupuesto debe liberarse cuando termine el arranque');
+assert.match(coreHardening,/deadline\?await startupSbFetch\(path,undefined,deadline\):await sbFetch\(path\)/,'las lecturas posteriores al arranque no deben heredar un deadline vencido');
 
 // Fotografías: una reducción de caché local no equivale a carga confirmada en nube.
 assert.match(storage,/photoLocalCacheOmitted=true/,'debe distinguir foto omitida de la copia local');
@@ -46,25 +79,33 @@ assert.match(documents,/async function generate\(/,'la carga documental ocurre d
 assert(stabilizer.includes('jsdelivr')&&stabilizer.includes('jszip'),'el estabilizador debe eliminar cualquier script JSZip que vuelva a colarse en el arranque');
 
 // Acceso: sin sesión solo quedan el núcleo, login seguro y recuperación.
+assert.deepEqual(preAuthModules.map(([file])=>file),['private-access-v1.js','password-recovery-v1.js'],'el manifiesto debe limitar el acceso previo a login y recuperación');
+assert.equal(preAuthModules.find(([file])=>file==='private-access-v1.js')?.[1],'20260904-private6','la versión del login seguro debe provenir del manifiesto');
 assert.match(stabilizer,/SESSION_KEY='control_contractual_session_v3'/,'debe usar la misma sesión real del portal');
+assert.match(stabilizer,/PRE_AUTH_MODULES=new Set\(preAuthModules\.map/,'el estabilizador debe consumir la lista previa canónica');
 assert.match(stabilizer,/data-cc-auth-script/,'los scripts funcionales deben convertirse en un plan inerte hasta autenticar');
 assert.match(stabilizer,/data-cc-auth-loader data-cc-auth-plan/,'debe existir un único cargador autenticado');
-assert.match(stabilizer,/PRE_AUTH_MODULES=new Set\(\['private-access-v1\.js','password-recovery-v1\.js'\]\)/,'login seguro y recuperación deben permanecer disponibles sin sesión');
 assert.match(stabilizer,/PRE_AUTH_MODULES\.has\(bare\)/,'el aislamiento debe respetar la lista mínima de módulos de acceso');
-assert.match(stabilizer,/location\.reload\(\);return/,'después de ingresar debe recargar una sola vez el contexto autenticado completo');
+assert.match(privateAccess,/localStorage\.setItem\(SESSION,JSON\.stringify\(session\)\);cloudLoaded=false;location\.reload\(\);return;/,'el login seguro real debe reiniciar una sola vez el contexto para activar el plan autenticado');
+assert.doesNotMatch(privateAccess,/cloudLoaded=false;await render\(\)/,'el login seguro no debe quedarse en un render parcial sin reactivar el cargador autenticado');
+assert.match(stabilizer,/location\.reload\(\);return/,'el estabilizador debe conservar compatibilidad con el login histórico embebido');
 assert.match(stabilizer,/script\.async=false/,'los módulos autenticados deben mantener el orden de ejecución');
 assert.doesNotMatch(stabilizer,/document\.write\s*\(/,'no debe volver a usarse document.write para activar módulos');
 assert.match(stabilizer,/bootEnd='render\(\);\\n<\/script>'/,'el aislamiento debe empezar después del núcleo de acceso');
-assert.match(stabilizer,/El login seguro quedó bloqueado antes de autenticar/,'la construcción debe fallar si se bloquea private-access');
-assert.match(stabilizer,/La recuperación de contraseña quedó bloqueada antes de autenticar/,'la construcción debe fallar si se bloquea password-recovery');
+assert.match(stabilizer,/preAuthModules/,'la construcción debe validar los módulos previos desde el manifiesto');
 
 // Arranque autenticado por fases: la primera pintura no debe esperar decenas de módulos.
 assert.match(stabilizer,/__CC_STAGED_AUTH_BOOT__/,'debe declarar el modo de arranque autenticado escalonado');
 assert.match(stabilizer,/FASE A · PRIMERA PINTURA AUTENTICADA/,'debe existir una fase crítica de primera pintura');
-assert.match(stabilizer,/portal-web-v2\.js\?v=20260903-web3/,'el portal debe cargarse en la fase crítica');
-assert.match(stabilizer,/nodeByBare\('project-tabs-complete-v1\.js'\)/,'las pestañas deben adelantarse al primer lote');
-assert.match(stabilizer,/nodeByBare\('ui-navigation-single-source-v1\.js'\)/,'la navegación debe adelantarse al primer lote');
+assert.match(stabilizer,/portal-web-v2\.js\?v=20260904-web4/,'debe cargar la versión del portal que ya no compite por rutas');
+assert.match(stabilizer,/requireRun\('portal-web-v2\.js'/,'el portal es obligatorio para declarar lista la fase crítica');
+assert.match(stabilizer,/Falta project-tabs-complete-v1\.js en el plan autenticado/,'las pestañas críticas ausentes deben fallar explícitamente');
+assert.match(stabilizer,/Falta ui-navigation-single-source-v1\.js en el plan autenticado/,'la navegación crítica ausente debe fallar explícitamente');
 assert.match(stabilizer,/__CC_AUTH_CRITICAL_READY__/,'debe marcar cuándo la interfaz crítica ya está disponible');
+assert.match(stabilizer,/__CC_AUTH_BOOT_FAILED__/,'un fallo crítico debe quedar explícitamente registrado');
+assert.match(stabilizer,/__CC_AUTH_MODULE_ERRORS__/,'los módulos fallidos deben quedar diagnosticables');
+assert.match(stabilizer,/authenticated-modules-partial/,'una carga parcial no debe anunciarse como completamente lista');
+assert.match(stabilizer,/Conflicto de versión para/,'dos versiones distintas del mismo módulo deben producir un error visible');
 assert.match(stabilizer,/FASE B · CENTROS WEB PRINCIPALES/,'los centros web deben cargarse después de la primera pintura');
 assert.match(stabilizer,/__CC_AUTH_WEB_READY__/,'debe marcar cuándo los centros web ya están disponibles');
 assert.match(stabilizer,/FASE C · RESTO DEL SISTEMA HISTÓRICO/,'el resto del sistema debe quedar en una tercera fase');
@@ -84,4 +125,4 @@ for(const file of retiredModules){
   assert(retiredModules.includes(file),`el manifiesto debe conservar ${file} como retirado`);
 }
 
-console.log('core-stability-regressions: navegación, pestañas sin cargador duplicado, Inicio único, login seguro, runtime, fotos, documentos y arranque autenticado por fases blindados');
+console.log('core-stability-regressions: portal de presentación, navegación única V6, estado móvil canónico, login seguro, presupuesto global de nube, versiones canónicas y arranque por fases blindados');

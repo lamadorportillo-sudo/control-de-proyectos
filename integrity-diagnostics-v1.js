@@ -65,61 +65,23 @@ function mountProjectNotice(){
   box.innerHTML=`<div class="panel-head"><div><small class="eyebrow">CONTROL DE INTEGRIDAD</small><h3>Registros que requieren verificación</h3></div><span class="status warn">${issues.length} pendiente${issues.length===1?'':'s'}</span></div><div class="cc-integrity-list">${issues.map(x=>`<div class="alert ${x.level==='danger'?'danger':'warn'}"><b>${E(x.title)}</b><br><span>${E(x.detail)}</span></div>`).join('')}</div><small class="muted">Estos avisos no modifican información contractual. La corrección debe realizarse únicamente con respaldo documental.</small>`;
   host.prepend(box);
 }
-let queued=false;
+let queued=false,observer=null,waitTimer=null,waitStop=null;
 function schedule(){if(queued)return;queued=true;const go=()=>{queued=false;mountProjectNotice()};if(typeof requestAnimationFrame==='function')requestAnimationFrame(go);else go()}
 function observe(){
-  if(typeof document==='undefined'||typeof MutationObserver==='undefined')return false;
+  if(observer||typeof document==='undefined'||typeof MutationObserver==='undefined')return !!observer;
   const app=document.getElementById('app');if(!app)return false;
-  const observer=new MutationObserver(schedule);observer.observe(app,{childList:true,subtree:true});return true;
+  observer=new MutationObserver(schedule);observer.observe(app,{childList:true,subtree:true});return true;
 }
-if(typeof document!=='undefined')setTimeout(()=>{mountProjectNotice();if(!observe()){const wait=setInterval(()=>{if(observe()){clearInterval(wait);mountProjectNotice()}},500);setTimeout(()=>clearInterval(wait),10000)}},0);
+function start(){
+  mountProjectNotice();
+  if(observe())return;
+  waitTimer=setInterval(()=>{if(observe()){clearInterval(waitTimer);waitTimer=null;mountProjectNotice()}},500);
+  waitStop=setTimeout(()=>{if(waitTimer){clearInterval(waitTimer);waitTimer=null}},10000);
+}
+if(typeof document!=='undefined')setTimeout(start,0);
+if(typeof window.addEventListener==='function')window.addEventListener('pagehide',()=>{observer?.disconnect?.();if(waitTimer)clearInterval(waitTimer);if(waitStop)clearTimeout(waitStop)},{once:true});
 window.__ccIntegrityDiagnostics={scanProject,scanAll,derivedAmount,storedAmount,calendarDays,mountProjectNotice};
 })();
 
-/* ZORDON · carga segura del buscador inteligente y compactación del portafolio. */
-(()=>{
-  if(typeof window==='undefined'||window.__CC_ZORDON_PROJECT_SEARCH_LOADER__)return;
-  window.__CC_ZORDON_PROJECT_SEARCH_LOADER__=true;
-  if(typeof document==='undefined'||typeof document.createElement!=='function')return;
-  const installCompact=()=>{
-    if(document.getElementById('cc-zordon-project-compact-loader'))return;
-    const style=document.createElement('style');style.id='cc-zordon-project-compact-loader';style.textContent=`
-      html.zordon-search-boot .projects-board .project-grid-v3>.project-v3{display:none!important}
-      body:not(.print-report) .projects-board .project-grid-v3{grid-template-columns:1fr!important;gap:7px!important}
-      body:not(.print-report) .projects-board .project-v3{min-height:0!important;height:auto!important}
-      body:not(.print-report) .projects-board .project-v3-main{grid-template-columns:minmax(0,1.7fr) minmax(220px,.72fr)!important;gap:7px!important;padding:8px 10px!important}
-      body:not(.print-report) .projects-board .project-v3 h3{font-size:11px!important;line-height:1.22!important;min-height:0!important;margin:3px 0!important}
-      body:not(.print-report) .projects-board .project-v3-contractor{margin-top:4px!important;padding:5px 6px!important}
-      body:not(.print-report) .projects-board .project-v3 .v3-metric{min-height:42px!important;padding:5px 6px!important}
-      body:not(.print-report) .projects-board .project-v3-progress{margin-top:4px!important;gap:5px!important}
-      body:not(.print-report) .projects-board .project-v3-health{margin-top:4px!important;padding-top:4px!important}
-      body:not(.print-report) .projects-board .project-v3-actions{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;padding:5px 7px!important;min-height:0!important}
-      body:not(.print-report) .projects-board .project-v3-actions .btn{min-height:27px!important;padding:4px 7px!important;font-size:8px!important;width:auto!important}
-      body:not(.print-report) .projects-board .project-v3-actions .btn.primary{margin-left:auto!important;min-width:104px!important}
-      @media(max-width:760px){body:not(.print-report) .projects-board .project-v3-main{display:block!important}body:not(.print-report) .projects-board .project-v3-money{margin-top:6px!important}}
-    `;document.head.appendChild(style);
-  };
-  const activate=()=>{document.documentElement.classList.remove('zordon-search-boot');try{window.__ccZordonProjectSearch?.run?.()}catch{}};
-  const load=()=>{
-    installCompact();document.documentElement.classList.add('zordon-search-boot');
-    if(window.__CC_ZORDON_PROJECT_SEARCH_V1__){activate();return}
-    let s=document.querySelector('script[data-zordon-project-search-loader]');if(s){s.addEventListener?.('load',activate,{once:true});return}
-    s=document.createElement('script');s.src='zordon-project-search-v1.js?v=20260831-zordon3';s.async=false;s.dataset.zordonProjectSearchLoader='1';s.onload=activate;s.onerror=()=>document.documentElement.classList.remove('zordon-search-boot');document.head.appendChild(s);
-  };
-  if(document.readyState==='loading'&&typeof document.addEventListener==='function')document.addEventListener('DOMContentLoaded',load,{once:true});else load();
-})();
-
-/* ZORDON · densidad unificada para todas las pestañas restantes. */
-(()=>{
-  if(typeof window==='undefined'||window.__CC_ZORDON_UNIFIED_DENSITY_LOADER__)return;
-  window.__CC_ZORDON_UNIFIED_DENSITY_LOADER__=true;
-  if(typeof document==='undefined'||typeof document.createElement!=='function')return;
-  const activate=()=>{try{window.__ccZordonUnifiedDensity?.run?.()}catch{}};
-  const load=()=>{
-    if(window.__CC_ZORDON_UNIFIED_DENSITY_V1__){activate();return}
-    let s=document.querySelector('script[data-zordon-unified-density-loader]');
-    if(s){s.addEventListener?.('load',activate,{once:true});return}
-    s=document.createElement('script');s.src='zordon-unified-density-v1.js?v=20260831-density1';s.async=false;s.dataset.zordonUnifiedDensityLoader='1';s.onload=activate;document.head.appendChild(s);
-  };
-  if(document.readyState==='loading'&&typeof document.addEventListener==='function')document.addEventListener('DOMContentLoaded',load,{once:true});else load();
-})();
+/* La carga de ZORDON y de la densidad visual pertenece exclusivamente al plan
+   autenticado canónico. Este diagnóstico no crea scripts ni versiones propias. */

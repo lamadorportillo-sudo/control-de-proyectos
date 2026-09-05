@@ -75,7 +75,8 @@ test.describe('autorización administrativa de usuarios', () => {
 
     page.once('dialog', dialog => dialog.accept());
     await page.locator('[data-request="bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"] [data-reject]').click();
-    await expect(requestsButton).toHaveText('Solicitudes');
+    await expect(requestsButton).toContainText('Solicitudes');
+    await expect(requestsButton).not.toContainText(/\d/);
     await expect(page.locator('.cc-access-request-notice')).toHaveCount(0);
   });
 

@@ -14,7 +14,7 @@ const JSZIP_URL='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
 const DOC_CONTRACT='contract';
 const DOC_REMITTANCE='advanceRemittance';
 const DOC_START_ORDER='startOrder';
-const REQUIRED_PROFILE=['contractorDni','contractorProfession','contractorCivilStatus','contractorNationality','contractorAddress'];
+const PROFILE_REQUIRED_BY_KIND={contract:['mayorName','mayorDni','contractorGender','contractorDni','contractorProfession','contractorCivilStatus','contractorNationality','contractorAddress'],advanceRemittance:['treasuryRecipient','treasuryDepartment','supervisorName','supervisorUnit','noteDate'],startOrder:['mayorName','supervisorName','projectDepartment','projectMunicipality','projectVillage','officialStartDate']};
 
 const N=v=>Number.isFinite(Number(v))?Number(v):0;
 const H=v=>typeof window.esc==='function'?window.esc(String(v??'')):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -25,33 +25,16 @@ const SAY=m=>typeof window.toast==='function'?window.toast(m):alert(m);
 const FILE=v=>String(v||'documento').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9_-]+/gi,'-').replace(/^-+|-+$/g,'').slice(0,90)||'documento';
 
 function controls(c){
-  const base={financingSource:'Fondos Municipales',penaltyDailyPct:.18,advanceGuaranteePct:100,performanceGuaranteePct:15,performanceExtraMonths:3,qualityGuaranteePct:5,qualityGuaranteeDays:365,changeOrderLimitPct:10,accumulatedChangeLimitPct:25};
-  try{return typeof window.contractControlDefaults==='function'?window.contractControlDefaults(c?.controls):Object.assign(base,c?.controls||{})}catch{return Object.assign(base,c?.controls||{})}
+  const raw=c?.controls&&typeof c.controls==='object'?c.controls:{};
+  try{return typeof window.contractControlDefaults==='function'?window.contractControlDefaults(raw):Object.assign({},raw)}catch{return Object.assign({},raw)}
 }
 
 function profile(c,p=null){
   const saved=c?.documentProfile&&typeof c.documentProfile==='object'?c.documentProfile:{};
   return Object.assign({
-    mayorName:'EDWIN ALBERTO NICOLAS MORALES',
-    mayorDni:'1217-1979-00268',
-    contractorGender:'Femenino',
-    contractorDni:'',
-    contractorProfession:'Ingeniero Civil',
-    contractorCivilStatus:'soltera',
-    contractorNationality:'hondureña',
-    contractorAddress:'',
-    contractorRegistry:'',
-    contractorRegistryVolume:'',
-    treasuryRecipient:'ALDO ANTONIO VASQUEZ NICOLAS',
-    treasuryDepartment:'DEPARTAMENTO DE TESORERÍA',
-    supervisorName:'ING. LUIS FERNANDO AMADOR PORTILLO',
-    supervisorUnit:'UNIDAD DE PROYECTOS',
-    noteDate:T(),
-    projectDepartment:'La Paz',
-    projectMunicipality:'Santa María',
-    projectVillage:String(p?.location||'').split(',')[0].trim(),
-    executorLegalRepresentative:'',
-    officialStartDate:c?.start||T()
+    mayorName:'',mayorDni:'',contractorGender:'',contractorDni:'',contractorProfession:'',contractorCivilStatus:'',contractorNationality:'',contractorAddress:'',
+    contractorRegistry:'',contractorRegistryVolume:'',treasuryRecipient:'',treasuryDepartment:'',supervisorName:'',supervisorUnit:'',noteDate:'',
+    projectDepartment:'',projectMunicipality:'',projectVillage:'',executorLegalRepresentative:'',officialStartDate:''
   },saved);
 }
 
@@ -63,7 +46,7 @@ function wordsAmount(v){
   const numeric=(Math.abs(value)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   return `${words} ${String(decimal).padStart(2,'0')}/100 LEMPIRAS (L. ${numeric})`;
 }
-function wordsDays(v){const days=Math.max(1,Math.trunc(N(v)||1)),words=typeof window.numberWords==='function'?window.numberWords(days):String(days);return `${String(words).toUpperCase()} DÍAS (${days})`}
+function wordsDays(v){const days=Math.max(0,Math.trunc(N(v))),words=typeof window.numberWords==='function'?window.numberWords(days):String(days);return `${String(words).toUpperCase()} DÍAS (${days})`}
 function longDate(value){const d=new Date(`${value||T()}T12:00:00`);if(Number.isNaN(d.getTime()))return value||'';const text=new Intl.DateTimeFormat('es-HN',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(d);return `Santa María, La Paz, ${text}`}
 function officialDate(value){const d=new Date(`${value||T()}T12:00:00`);if(Number.isNaN(d.getTime()))return value||'';return new Intl.DateTimeFormat('es-HN',{day:'2-digit',month:'long',year:'numeric'}).format(d)}
 function signatureName(value){const text=String(value||'').trim();if(!text||text!==text.toLocaleUpperCase('es'))return text;return text.toLocaleLowerCase('es').replace(/(^|[\s-])([\p{L}])/gu,(_,space,letter)=>space+letter.toLocaleUpperCase('es'))}
@@ -76,6 +59,7 @@ function contractSignatureText(value){
 }
 function projectText(p){const name=String(p?.name||'PROYECTO').toUpperCase(),location=String(p?.location||'').toUpperCase(),code=String(p?.code||'').toUpperCase(),parts=[name];if(location&&!name.includes(location))parts.push(location);if(code&&!name.includes(code))parts.push(code);return parts.join(', ').replace(/,\s*,/g,',').trim()}
 function advanceAmount(c){const pct=N(c?.advanceRequestedPct),approved=N(c?.advanceApproved);return approved>0?approved:N(c?.originalAmount)*pct/100}
+function advancePercent(c){const raw=c?.advanceRequestedPct;if(raw!==''&&raw!==null&&raw!==undefined&&Number.isFinite(Number(raw)))return Number(raw);const amount=N(c?.originalAmount||c?.currentAmount),approved=N(c?.advanceApproved);return amount>0&&approved>0?approved/amount*100:null}
 
 function fingerprint(p,c){
   const data=JSON.stringify({p:[p?.code,p?.name,p?.location],c:[c?.number,c?.contractor,c?.originalAmount,c?.currentAmount,c?.signature,c?.start,c?.end,c?.executionDays,c?.advanceRequestedPct,c?.advanceApproved,c?.advancePaymentDate,c?.recoveryTarget],controls:controls(c),profile:profile(c,p)});
@@ -122,34 +106,34 @@ function decorateEstimates(p,c){if(!c)return;addCss();const body=document.getEle
 
 function openProfile(p,c,afterSave=null){
   if(!c)return SAY('Primero guarda el contrato del proyecto.');
-  const x=profile(c,p),ctl=controls(c),female=x.contractorGender!=='Masculino';
+  const x=profile(c,p),ctl=controls(c);
   const m=window.openModal('Datos para documentos contractuales',`${typeof window.projectContext==='function'?window.projectContext(p,c):''}<form id="ccDocProfileForm" class="form-grid">
-    <p class="cc-doc-profile-note"><b>Estos datos se guardan con el contrato.</b> El nombre del proyecto, código, monto, porcentaje del anticipo y plazo se toman automáticamente del expediente. Revisa también los datos de la orden de inicio.</p>
+    <p class="cc-doc-profile-note"><b>Estos datos se guardan con el contrato.</b> Completa los campos que correspondan al documento que vas a generar. El sistema bloqueará únicamente lo que falte para ese formato.</p>
     <label class="field"><span>Contratista</span><input id="ccdpContractor" required value="${H(c.contractor||'')}"></label>
-    <label class="field"><span>Sexo gramatical</span><select id="ccdpGender"><option>Femenino</option><option>Masculino</option></select></label>
-    <label class="field"><span>DNI del contratista</span><input id="ccdpDni" required value="${H(x.contractorDni)}" placeholder="0000-0000-00000"></label>
-    <label class="field"><span>Profesión u oficio</span><input id="ccdpProfession" required value="${H(x.contractorProfession)}"></label>
-    <label class="field"><span>Estado civil</span><input id="ccdpCivil" required value="${H(x.contractorCivilStatus)}"></label>
-    <label class="field"><span>Nacionalidad</span><input id="ccdpNationality" required value="${H(x.contractorNationality)}"></label>
-    <label class="field wide"><span>Domicilio y residencia</span><input id="ccdpAddress" required value="${H(x.contractorAddress)}"></label>
+    <label class="field"><span>Sexo gramatical</span><select id="ccdpGender"><option value="">Seleccione</option><option>Femenino</option><option>Masculino</option></select></label>
+    <label class="field"><span>DNI del contratista</span><input id="ccdpDni" value="${H(x.contractorDni)}" placeholder="0000-0000-00000"></label>
+    <label class="field"><span>Profesión u oficio</span><input id="ccdpProfession" value="${H(x.contractorProfession)}"></label>
+    <label class="field"><span>Estado civil</span><input id="ccdpCivil" value="${H(x.contractorCivilStatus)}"></label>
+    <label class="field"><span>Nacionalidad</span><input id="ccdpNationality" value="${H(x.contractorNationality)}"></label>
+    <label class="field wide"><span>Domicilio y residencia</span><input id="ccdpAddress" value="${H(x.contractorAddress)}"></label>
     <label class="field"><span>Inscripción mercantil</span><input id="ccdpRegistry" value="${H(x.contractorRegistry)}" placeholder="Ej. 96"></label>
     <label class="field"><span>Tomo mercantil</span><input id="ccdpVolume" value="${H(x.contractorRegistryVolume)}" placeholder="Ej. 21"></label>
-    <label class="field"><span>Fuente de financiamiento</span><input id="ccdpFinancing" value="${H(ctl.financingSource||'Fondos Municipales')}"></label>
-    <label class="field"><span>Fecha de la nota</span><input id="ccdpNoteDate" type="date" required value="${H(x.noteDate||T())}"></label>
-    <label class="field"><span>Departamento del proyecto</span><input id="ccdpProjectDepartment" required value="${H(x.projectDepartment)}"></label>
-    <label class="field"><span>Municipio del proyecto</span><input id="ccdpProjectMunicipality" required value="${H(x.projectMunicipality)}"></label>
-    <label class="field"><span>Aldea / comunidad</span><input id="ccdpProjectVillage" required value="${H(x.projectVillage)}"></label>
-    <label class="field"><span>Fecha oficial de inicio</span><input id="ccdpOfficialStart" type="date" required value="${H(x.officialStartDate||c.start||T())}"></label>
+    <label class="field"><span>Fuente de financiamiento</span><input id="ccdpFinancing" required value="${H(ctl.financingSource||'')}"></label>
+    <label class="field"><span>Fecha de la nota</span><input id="ccdpNoteDate" type="date" value="${H(x.noteDate)}"></label>
+    <label class="field"><span>Departamento del proyecto</span><input id="ccdpProjectDepartment" value="${H(x.projectDepartment)}"></label>
+    <label class="field"><span>Municipio del proyecto</span><input id="ccdpProjectMunicipality" value="${H(x.projectMunicipality)}"></label>
+    <label class="field"><span>Aldea / comunidad</span><input id="ccdpProjectVillage" value="${H(x.projectVillage)}"></label>
+    <label class="field"><span>Fecha oficial de inicio</span><input id="ccdpOfficialStart" type="date" value="${H(x.officialStartDate)}"></label>
     <label class="field wide"><span>Representante legal del ejecutor (opcional)</span><input id="ccdpLegalRepresentative" value="${H(x.executorLegalRepresentative)}" placeholder="Nombre que aparecerá después de Representante Legal"></label>
-    <label class="field"><span>Destinatario de Tesorería</span><input id="ccdpRecipient" required value="${H(x.treasuryRecipient)}"></label>
-    <label class="field"><span>Cargo / departamento</span><input id="ccdpDepartment" required value="${H(x.treasuryDepartment)}"></label>
-    <label class="field"><span>Nombre del alcalde</span><input id="ccdpMayor" required value="${H(x.mayorName)}"></label>
-    <label class="field"><span>DNI del alcalde</span><input id="ccdpMayorDni" required value="${H(x.mayorDni)}"></label>
-    <label class="field"><span>Supervisor firmante</span><input id="ccdpSupervisor" required value="${H(x.supervisorName)}"></label>
-    <label class="field"><span>Unidad del supervisor</span><input id="ccdpUnit" required value="${H(x.supervisorUnit)}"></label>
+    <label class="field"><span>Destinatario de Tesorería</span><input id="ccdpRecipient" value="${H(x.treasuryRecipient)}"></label>
+    <label class="field"><span>Cargo / departamento</span><input id="ccdpDepartment" value="${H(x.treasuryDepartment)}"></label>
+    <label class="field"><span>Nombre del alcalde</span><input id="ccdpMayor" value="${H(x.mayorName)}"></label>
+    <label class="field"><span>DNI del alcalde</span><input id="ccdpMayorDni" value="${H(x.mayorDni)}"></label>
+    <label class="field"><span>Supervisor firmante</span><input id="ccdpSupervisor" value="${H(x.supervisorName)}"></label>
+    <label class="field"><span>Unidad del supervisor</span><input id="ccdpUnit" value="${H(x.supervisorUnit)}"></label>
     <div class="modal-actions"><button type="button" class="btn cancel">Cancelar</button><button class="btn primary">Guardar datos</button></div>
   </form>`);
-  m.querySelector('#ccdpGender').value=female?'Femenino':'Masculino';
+  m.querySelector('#ccdpGender').value=['Femenino','Masculino'].includes(x.contractorGender)?x.contractorGender:'';
   m.querySelector('.cancel').onclick=()=>m.remove();
   m.querySelector('#ccDocProfileForm').onsubmit=e=>{
     e.preventDefault();
@@ -163,14 +147,13 @@ function openProfile(p,c,afterSave=null){
       projectDepartment:m.querySelector('#ccdpProjectDepartment').value.trim(),projectMunicipality:m.querySelector('#ccdpProjectMunicipality').value.trim(),projectVillage:m.querySelector('#ccdpProjectVillage').value.trim(),
       executorLegalRepresentative:m.querySelector('#ccdpLegalRepresentative').value.trim(),officialStartDate:m.querySelector('#ccdpOfficialStart').value
     };
-    c.controls=Object.assign({},c.controls||{},{financingSource:m.querySelector('#ccdpFinancing').value.trim()||'Fondos Municipales'});c.updatedAt=ISO();
+    c.controls=Object.assign({},c.controls||{},{financingSource:m.querySelector('#ccdpFinancing').value.trim()});c.updatedAt=ISO();
     try{window.audit?.('CONFIGURAR','Documentos contractuales',c.id,{projectId:p.id,contractId:c.id});window.saveDB?.()}catch{}
     m.remove();try{window.renderProject?.()}catch{}SAY('Datos guardados para generar los documentos.');if(typeof afterSave==='function')setTimeout(afterSave,30);
   };
 }
 
-function missingProfile(c){const p=profile(c);return REQUIRED_PROFILE.filter(k=>!String(p[k]||'').trim())}
-function missingStartOrderProfile(p,c){const x=profile(c,p);return['projectDepartment','projectMunicipality','projectVillage','officialStartDate'].filter(k=>!String(x[k]||'').trim())}
+function missingProfile(c,kind,p=null){const x=profile(c,p),keys=kind==='all'?[...new Set(Object.values(PROFILE_REQUIRED_BY_KIND).flat())]:(PROFILE_REQUIRED_BY_KIND[kind]||[]);return keys.filter(k=>!String(x[k]||'').trim())}
 function openAdvancePayment(p,c){if(!documentState(p,c).ready)return SAY('Primero genera el contrato y la nota de remisión actualizados.');if(typeof window.contractModal!=='function')return;window.contractModal(p,c);setTimeout(()=>{const s=document.getElementById('cAdvanceStatus');if(!s)return;s.value='Pagado';s.dispatchEvent(new Event('change',{bubbles:true}));document.getElementById('cAdvPaid')?.focus();document.getElementById('cAdvPaid')?.scrollIntoView({behavior:'smooth',block:'center'})},20)}
 function guardContractForm(p,c){const form=document.getElementById('contractForm');if(!form||form.dataset.ccDocGuard)return;form.dataset.ccDocGuard='1';form.addEventListener('submit',e=>{const status=document.getElementById('cAdvanceStatus')?.value;if(status!=='Pagado')return;if(!c){e.preventDefault();e.stopImmediatePropagation();return SAY('Guarda primero el contrato, genera el contrato y la nota de remisión y después registra el pago del anticipo.')}if(!documentState(p,c).ready){e.preventDefault();e.stopImmediatePropagation();SAY('No se puede registrar el pago: faltan el contrato y la nota de remisión actualizados.')}},true)}
 
@@ -181,7 +164,7 @@ function replaceAllLiteral(text,from,to){return text.split(from).join(to)}
 function replaceSequence(text,from,values){let out=text;for(const value of values){const pos=out.indexOf(from);if(pos<0)break;out=out.slice(0,pos)+value+out.slice(pos+from.length)}return out}
 
 function contractReplacements(xml,p,c){
-  const pf=profile(c),ctl=controls(c),amount=N(c.originalAmount||c.currentAmount||p.budget),adv=advanceAmount(c),advPct=N(c.advanceRequestedPct)||15,performancePct=N(ctl.performanceGuaranteePct)||15,performance=amount*performancePct/100,penaltyPct=N(ctl.penaltyDailyPct)||.18,penalty=amount*penaltyPct/100;
+  const pf=profile(c,p),ctl=controls(c),amount=N(c.originalAmount),adv=advanceAmount(c),advPct=advancePercent(c),performancePct=Number(ctl.performanceGuaranteePct),performance=amount*performancePct/100,penaltyPct=Number(ctl.penaltyDailyPct),penalty=amount*penaltyPct/100;
   const treatment=pf.contractorGender==='Masculino'?'el señor':'la señora';
   const registry=pf.contractorRegistry?`debidamente inscrito${pf.contractorGender==='Femenino'?'a':''} bajo el número de inscripción ${pf.contractorRegistry}${pf.contractorRegistryVolume?`, tomo ${pf.contractorRegistryVolume}`:''}, registro mercantil de La Paz`:'debidamente registrado conforme a la documentación que integra el expediente contractual';
   let out=xml;
@@ -196,11 +179,11 @@ function contractReplacements(xml,p,c){
   out=replaceAllLiteral(out,'con domicilio en Residencial La Orquidea, La Paz',`con domicilio y residencia en ${X(pf.contractorAddress)}`);
   out=replaceAllLiteral(out,'CONSTRUCCIÓN DE PAVIMENTO CALLE DEL COLEGIO HACIA CALLE PRINCIPAL, BO. EL CENTRO SANTA MARIA, COT121706-2026, ',`${X(projectText(p))}, `);
   out=replaceAllLiteral(out,'DOS MILLONES TRESCIENTOS SIETE MIL SEISCIENTOS TREINTA Y NUEVE 52/100 LEMPIRAS (L. 2,307,639.52) ',`${X(wordsAmount(amount))} `);
-  out=replaceAllLiteral(out,'procedentes de la fuente Fondos Municipales',`procedentes de la fuente ${X(ctl.financingSource||'Fondos Municipales')}`);
+  out=replaceAllLiteral(out,'procedentes de la fuente Fondos Municipales',`procedentes de la fuente ${X(ctl.financingSource||'')}`);
   const oldAdvance='TRESCIENTOS CUARENTA Y SEIS MIL CIENTO CUARENTA Y CINCO 93/100 LEMPIRAS (L. 346,145.93) ';
   out=replaceSequence(out,oldAdvance,[`${X(wordsAmount(adv))} `,`${X(wordsAmount(adv))} `,`${X(wordsAmount(performance))} `]);
   out=replaceAllLiteral(out,'equivalente al 15',`equivalente al ${X(String(advPct))}`);
-  out=replaceAllLiteral(out,'NOVENTA DÍAS (90) ',`${X(wordsDays(c.executionDays||90))} `);
+  out=replaceAllLiteral(out,'NOVENTA DÍAS (90) ',`${X(wordsDays(c.executionDays))} `);
   out=replaceAllLiteral(out,' CUATRO MIL CIENTO CINCUENTA Y TRES LEMPIRAS CON 75/100 LEMPIRAS (L. 4,153.75)',` ${X(wordsAmount(penalty))}`);
   out=replaceAllLiteral(out,'0.18%',`${X(String(penaltyPct))}%`);
   out=replaceAllLiteral(out,'equivalente al 15%',`equivalente al ${X(String(performancePct))}%`);
@@ -209,7 +192,7 @@ function contractReplacements(xml,p,c){
 }
 
 function noteReplacements(xml,p,c){
-  const pf=profile(c),amount=N(c.originalAmount||c.currentAmount||p.budget),adv=advanceAmount(c);let out=xml;
+  const pf=profile(c),amount=N(c.originalAmount),adv=advanceAmount(c);let out=xml;
   out=replaceAllLiteral(out,'Santa María la Paz, miércoles 12 de agosto de 2026',X(longDate(pf.noteDate||T())));
   out=replaceAllLiteral(out,'ALDO ANTONIO VASQUEZ NICOLAS ',`${X(String(pf.treasuryRecipient).toUpperCase())} `);
   out=replaceAllLiteral(out,'DEPARTAMENTO DE TESORERÍA',X(String(pf.treasuryDepartment).toUpperCase()));
@@ -248,7 +231,7 @@ function startOrderReplacements(xml,p,c){
     ['SANTA MARÍA',String(pf.projectMunicipality||'').toUpperCase()],
     ['ARENALES',String(pf.projectVillage||'').toUpperCase()],
     ['INGEDEM CONSTRUCTORES SOCIEDAD DE RESPONSABILIDAD LIMITADA Con Represéntate Legal, ING. JORGE MOISÉS GONZÁLEZ ESCOBAR',executorLine],
-    ['FONDOS MUNICIPALES',String(ctl.financingSource||'Fondos Municipales').toUpperCase()],
+    ['FONDOS MUNICIPALES',String(ctl.financingSource||'').toUpperCase()],
     ['Ing. Edwin Alberto Nicolas Morales',engineerSignature(pf.mayorName)],
     ['Ing. Luis Fernando Amador P.',engineerSignature(pf.supervisorName)],
     ['INGEDEM CONSTRUCTORES SOCIEDAD DE RESPONSABILIDAD LIMITADA',executor]
@@ -276,8 +259,8 @@ function markGenerated(p,c,kind,filename){c.paymentDocuments=c.paymentDocuments|
 
 async function generate(p,c,kind){
   if(!c)return SAY('Primero registra el contrato.');
-  if(missingProfile(c).length)return openProfile(p,c,()=>generate(p,c,kind));
-  if((kind===DOC_START_ORDER||kind==='all')&&missingStartOrderProfile(p,c).length)return openProfile(p,c,()=>generate(p,c,kind));
+  const safetyIssues=window.__ccContractDocumentSafety?.validate?.(kind,p,c)||[];if(safetyIssues.length)return SAY('Documento bloqueado por control contractual: '+safetyIssues[0]+(safetyIssues.length>1?' ('+safetyIssues.length+' revisiones pendientes)':''));
+  if(missingProfile(c,kind,p).length)return openProfile(p,c,()=>generate(p,c,kind));
   if(advanceAmount(c)<=0&&(kind===DOC_REMITTANCE||kind==='all'))return SAY('El contrato no tiene un anticipo solicitado o aprobado para generar la remisión.');
   const button=document.activeElement instanceof HTMLButtonElement?document.activeElement:null,old=button?.textContent;if(button){button.disabled=true;button.textContent='Generando…'}
   try{

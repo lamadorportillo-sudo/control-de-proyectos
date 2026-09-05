@@ -1,5 +1,5 @@
 const fs=require('fs');
-const {retiredModules,supplementalModules}=require('./authenticated-module-manifest-v1.cjs');
+const {retiredModules,preAuthModules,supplementalModules}=require('./authenticated-module-manifest-v1.cjs');
 
 const path='index.html';
 if(!fs.existsSync(path))throw new Error('No se encontró index.html para estabilizar.');
@@ -23,6 +23,33 @@ function stripScriptFrom(source,moduleFile){
 }
 
 function escapeAttr(v){return String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+
+/* El constructor histórico puede dejar dos etiquetas del mismo archivo cuando
+   una copia usa atributos como defer/data-* y otra es la versión final añadida
+   al cierre del body. Como después todas pasan al plan autenticado, conservar
+   ambas produce una carrera de versiones. Se conserva la ÚLTIMA referencia
+   local de cada archivo .js, que es la que build-pages acaba de canonizar. */
+function dedupeLocalScriptsByBare(source){
+  const re=/<script\b[^>]*\bsrc\s*=\s*(["'])(.*?)\1[^>]*>\s*<\/script>\s*/gi;
+  const matches=[];
+  let m;
+  while((m=re.exec(source))){
+    const src=String(m[2]||'');
+    if(/^(?:https?:)?\/\//i.test(src)||/^(?:data:|blob:)/i.test(src))continue;
+    const bare=src.split(/[?#]/)[0].split('/').pop();
+    if(!bare||!bare.toLowerCase().endsWith('.js'))continue;
+    matches.push({start:m.index,end:re.lastIndex,bare,src});
+  }
+  const lastByBare=new Map();
+  matches.forEach((item,index)=>lastByBare.set(item.bare,index));
+  const removals=matches.filter((item,index)=>lastByBare.get(item.bare)!==index);
+  if(!removals.length)return source;
+  let out='',cursor=0;
+  for(const item of removals){out+=source.slice(cursor,item.start);cursor=item.end}
+  out+=source.slice(cursor);
+  console.log(`Versiones estáticas duplicadas retiradas antes del plan autenticado: ${removals.length}.`);
+  return out;
+}
 
 /* 1. CREAR PROYECTO: al guardar un proyecto nuevo se abre directamente su
       expediente. Se elimina el paso extra Inicio -> Proyectos -> buscar. */
@@ -76,13 +103,10 @@ html=html.replace(/<script\s+[^>]*src=["']https:\/\/cdn\.jsdelivr\.net\/npm\/jsz
 
 /* 5. MODO DE ACCESO LIGERO Y CARGA AUTENTICADA ESCALONADA.
       Sin sesión se conserva únicamente el núcleo y los módulos estrictamente
-      necesarios para login seguro/recuperación. El resto se convierte en un
-      plan inerte. Con sesión primero se dibuja la interfaz crítica (portal,
-      navegación y pestañas); después se cargan, en serie y cediendo tiempo al
-      navegador, el resto de módulos. Así ningún lote grande de observadores
-      puede bloquear el primer render autenticado. */
+      necesarios para login seguro/recuperación. La fuente de verdad de esos
+      módulos es authenticated-module-manifest-v1.cjs. */
 const SESSION_KEY='control_contractual_session_v3';
-const PRE_AUTH_MODULES=new Set(['private-access-v1.js','password-recovery-v1.js']);
+const PRE_AUTH_MODULES=new Set(preAuthModules.map(([moduleFile])=>moduleFile));
 const loginSuccess="localStorage.setItem(SESSION,JSON.stringify(session));cloudLoaded=false;await render()";
 if(html.includes(loginSuccess)){
   html=html.split(loginSuccess).join("localStorage.setItem(SESSION,JSON.stringify(session));cloudLoaded=false;location.reload();return");
@@ -103,6 +127,11 @@ if(!tail.includes('data-cc-auth-plan')){
     if(bodyClose<0)throw new Error('No se encontró </body> al consolidar módulos autenticados.');
     tail=tail.slice(0,bodyClose)+`<script src="${moduleFile}?v=${version}"></script>\n`+tail.slice(bodyClose);
   }
+
+  /* Elimina cualquier copia histórica con atributos diferentes antes de volver
+     ejecutables los módulos. La detección de conflicto en runSrc se mantiene:
+     no se ocultan conflictos dinámicos, se corrige la causa estática. */
+  tail=dedupeLocalScriptsByBare(tail);
 
   tail=tail.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi,(full,attrs,body)=>{
     const src=String(attrs||'').match(/\bsrc\s*=\s*(["'])(.*?)\1/i)?.[2]||'';
@@ -125,7 +154,9 @@ if(!tail.includes('data-cc-auth-plan')){
 
   const nodes=[...document.querySelectorAll('script[data-cc-auth-script]')];
   const bare=src=>String(src||'').split('?')[0].split('/').pop();
+  const normalized=src=>{try{const u=new URL(src,location.href);return u.pathname+u.search}catch{return String(src||'')}};
   const loaded=new Set();
+  const failures=[];
   const nodeByBare=name=>nodes.find(node=>bare(node.dataset.src)===name)||null;
   const nextTurn=()=>new Promise(resolve=>setTimeout(resolve,0));
   const shortPause=()=>new Promise(resolve=>setTimeout(resolve,40));
@@ -136,14 +167,18 @@ if(!tail.includes('data-cc-auth-plan')){
   };
 
   const runSrc=src=>new Promise((resolve,reject)=>{
-    const name=bare(src);
-    if(name&&loaded.has(name))return resolve();
+    const name=bare(src),key=normalized(src);
+    if(key&&loaded.has(key))return resolve();
     const existing=[...document.scripts].find(s=>{
       const x=s.getAttribute('src')||'';return x&&bare(x)===name&&s.type!=='application/x-cc-auth';
     });
-    if(existing){if(name)loaded.add(name);return resolve()}
+    if(existing){
+      const existingKey=normalized(existing.getAttribute('src')||existing.src||'');
+      if(existingKey!==key)return reject(new Error('Conflicto de versión para '+name+': '+existingKey+' frente a '+key));
+      loaded.add(key);return resolve();
+    }
     const script=document.createElement('script');script.async=false;script.src=src;
-    script.onload=()=>{if(name)loaded.add(name);resolve()};
+    script.onload=()=>{if(key)loaded.add(key);resolve()};
     script.onerror=()=>reject(new Error('No se pudo cargar '+src));
     document.body.appendChild(script);
   });
@@ -157,64 +192,78 @@ if(!tail.includes('data-cc-auth-plan')){
   };
 
   const safeRun=async(label,task)=>{
-    try{await task()}
-    catch(error){console.error('Módulo autenticado no cargado:',label,error)}
+    try{await task();return true}
+    catch(error){failures.push({label,error:String(error?.message||error)});console.error('Módulo autenticado no cargado:',label,error);return false}
+  };
+  const requireRun=async(label,task)=>{
+    const ok=await safeRun(label,task);
+    if(!ok)throw new Error('Fallo de módulo crítico: '+label);
   };
 
   (async()=>{
-    /* FASE A · PRIMERA PINTURA AUTENTICADA.
-       El sidebar ya debe existir antes de activar centros secundarios. */
-    styleOnce('portal-web-v2.css?v=20260903-web3','ccAuthPortalCss');
-    styleOnce('project-detail-v2.css?v=20260901-detail2','ccAuthProjectCss');
-    styleOnce('dashboard-simplified-v4.css?v=20260903-dash6','ccAuthDashboardCss');
+    try{
+      /* FASE A · PRIMERA PINTURA AUTENTICADA.
+         El sidebar ya debe existir antes de activar centros secundarios. */
+      styleOnce('portal-web-v2.css?v=20260903-web3','ccAuthPortalCss');
+      styleOnce('project-detail-v2.css?v=20260901-detail2','ccAuthProjectCss');
+      styleOnce('dashboard-simplified-v4.css?v=20260903-dash6','ccAuthDashboardCss');
 
-    await safeRun('portal-web-v2.js',()=>runSrc('portal-web-v2.js?v=20260903-web3'));
-    const tabs=nodeByBare('project-tabs-complete-v1.js');
-    if(tabs)await safeRun('project-tabs-complete-v1.js',()=>runNode(tabs));
-    const nav=nodeByBare('ui-navigation-single-source-v1.js');
-    if(nav)await safeRun('ui-navigation-single-source-v1.js',()=>runNode(nav));
-    await nextTurn();await shortPause();
-    window.__CC_AUTH_CRITICAL_READY__=true;
-    document.dispatchEvent(new CustomEvent('cc:authenticated-critical-ready'));
+      await requireRun('portal-web-v2.js',()=>runSrc('portal-web-v2.js?v=20260904-web4'));
+      const tabs=nodeByBare('project-tabs-complete-v1.js');
+      if(!tabs)throw new Error('Falta project-tabs-complete-v1.js en el plan autenticado.');
+      await requireRun('project-tabs-complete-v1.js',()=>runNode(tabs));
+      const nav=nodeByBare('ui-navigation-single-source-v1.js');
+      if(!nav)throw new Error('Falta ui-navigation-single-source-v1.js en el plan autenticado.');
+      await requireRun('ui-navigation-single-source-v1.js',()=>runNode(nav));
+      await nextTurn();await shortPause();
+      window.__CC_AUTH_CRITICAL_READY__=true;
+      document.dispatchEvent(new CustomEvent('cc:authenticated-critical-ready'));
 
-    /* FASE B · CENTROS WEB PRINCIPALES, UNO A UNO. */
-    const webModules=[
-      'project-detail-v2.js?v=20260901-detail2',
-      'dashboard-simplified-v4.js?v=20260903-dash6',
-      'payments-center-v1.js?v=20260901-payments1',
-      'guarantees-center-v1.js?v=20260901-guarantees1',
-      'visits-center-v1.js?v=20260901-visits1',
-      'reports-center-v1.js?v=20260901-reports1',
-      'alerts-center-v1.js?v=20260901-alerts1',
-      'audit-center-v1.js?v=20260901-audit1',
-      'portal-route-bridge-v1.js?v=20260901-route5',
-      'ui-stability-v1.js?v=20260903-stable1'
-    ];
-    for(let i=0;i<webModules.length;i++){
-      const src=webModules[i];
-      await safeRun(src,()=>runSrc(src));
-      if(i%2===1)await nextTurn();
+      /* FASE B · CENTROS WEB PRINCIPALES, UNO A UNO. */
+      const webModules=[
+        'project-detail-v2.js?v=20260901-detail2',
+        'dashboard-simplified-v4.js?v=20260903-dash6',
+        'payments-center-v1.js?v=20260901-payments1',
+        'guarantees-center-v1.js?v=20260901-guarantees1',
+        'visits-center-v1.js?v=20260901-visits1',
+        'reports-center-v1.js?v=20260901-reports1',
+        'alerts-center-v1.js?v=20260901-alerts1',
+        'audit-center-v1.js?v=20260901-audit1',
+        'portal-route-bridge-v1.js?v=20260901-route5',
+        'ui-stability-v1.js?v=20260904-stable2'
+      ];
+      for(let i=0;i<webModules.length;i++){
+        const src=webModules[i];
+        await safeRun(src,()=>runSrc(src));
+        if(i%2===1)await nextTurn();
+      }
+      window.__CC_AUTH_WEB_READY__=true;
+      document.dispatchEvent(new CustomEvent('cc:authenticated-web-ready'));
+      await shortPause();
+
+      /* FASE C · RESTO DEL SISTEMA HISTÓRICO. */
+      const performance=nodeByBare('performance-runtime-v1.js');
+      const alreadyCritical=new Set(['project-tabs-complete-v1.js','ui-navigation-single-source-v1.js']);
+      let count=0;
+      for(const node of nodes){
+        const name=bare(node.dataset.src),key=normalized(node.dataset.src||'');
+        if(node===performance||alreadyCritical.has(name)||loaded.has(key))continue;
+        await safeRun(name||'inline',()=>runNode(node));
+        if(++count%3===0)await nextTurn();
+      }
+      if(performance)await safeRun('performance-runtime-v1.js',()=>runNode(performance));
+
+      window.__CC_AUTH_MODULE_ERRORS__=failures;
+      window.__CC_AUTH_MODULES_READY__=failures.length===0;
+      document.dispatchEvent(new CustomEvent(failures.length?'cc:authenticated-modules-partial':'cc:authenticated-modules-ready',{detail:{failures:[...failures]}}));
+    }catch(error){
+      failures.push({label:'arranque-critico',error:String(error?.message||error)});
+      window.__CC_AUTH_MODULE_ERRORS__=failures;
+      window.__CC_AUTH_BOOT_FAILED__=true;
+      window.__CC_AUTH_MODULES_READY__=false;
+      console.error('Arranque autenticado incompleto:',error);
+      document.dispatchEvent(new CustomEvent('cc:authenticated-boot-failed',{detail:{failures:[...failures]}}));
     }
-    window.__CC_AUTH_WEB_READY__=true;
-    document.dispatchEvent(new CustomEvent('cc:authenticated-web-ready'));
-    await shortPause();
-
-    /* FASE C · RESTO DEL SISTEMA HISTÓRICO.
-       performance-runtime se deja al final: al encontrar los centros web ya
-       cargados solo agrega estilos/containment y no inicia una carrera doble. */
-    const performance=nodeByBare('performance-runtime-v1.js');
-    const alreadyCritical=new Set(['project-tabs-complete-v1.js','ui-navigation-single-source-v1.js']);
-    let count=0;
-    for(const node of nodes){
-      const name=bare(node.dataset.src);
-      if(node===performance||alreadyCritical.has(name)||loaded.has(name))continue;
-      await safeRun(name||'inline',()=>runNode(node));
-      if(++count%3===0)await nextTurn();
-    }
-    if(performance)await safeRun('performance-runtime-v1.js',()=>runNode(performance));
-
-    window.__CC_AUTH_MODULES_READY__=true;
-    document.dispatchEvent(new CustomEvent('cc:authenticated-modules-ready'));
   })();
 })();
 </script>`;
@@ -234,12 +283,23 @@ if(!html.includes('data-cc-auth-loader data-cc-auth-plan'))throw new Error('Falt
 if(/document\.write\s*\(/.test(html))throw new Error('Reapareció document.write en el HTML autenticado.');
 if(!html.includes('__CC_AUTH_CRITICAL_READY__'))throw new Error('Falta la fase crítica del arranque autenticado.');
 if(!html.includes('__CC_AUTH_WEB_READY__'))throw new Error('Falta la fase web del arranque autenticado.');
-if(!/<script\s+src=["']private-access-v1\.js\?/i.test(html))throw new Error('El login seguro quedó bloqueado antes de autenticar.');
-if(!/<script\s+src=["']password-recovery-v1\.js\?/i.test(html))throw new Error('La recuperación de contraseña quedó bloqueada antes de autenticar.');
+if(!html.includes('__CC_AUTH_BOOT_FAILED__'))throw new Error('Falta señal explícita para un arranque autenticado incompleto.');
+for(const [moduleFile,version] of preAuthModules){
+  const escaped=moduleFile.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const re=new RegExp(`<script\\s+src=["']${escaped}\\?v=${version.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}["']\\s*><\\/script>`,'i');
+  if(!re.test(html))throw new Error(`El módulo previo a autenticación ${moduleFile} no usa la versión canónica ${version}.`);
+}
 if(html.includes(loginSuccess))throw new Error('El acceso todavía intenta activar todos los módulos sin recargar el contexto autenticado.');
 for(const [moduleFile] of supplementalModules){
   const count=(html.match(new RegExp(`data-src=["'][^"']*${moduleFile.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}[^"']*["']`,'gi'))||[]).length;
   if(count!==1)throw new Error(`El módulo autenticado ${moduleFile} debe aparecer exactamente una vez en el plan; encontrado: ${count}.`);
+}
+const plannedByBare=new Map();
+for(const match of html.matchAll(/data-src=["']([^"']+\.js(?:\?[^"']*)?)["']/gi)){
+  const src=match[1],bare=src.split(/[?#]/)[0].split('/').pop();
+  if(/^(?:https?:)?\/\//i.test(src)||!bare)continue;
+  if(plannedByBare.has(bare))throw new Error(`El plan autenticado contiene más de una versión/copia de ${bare}: ${plannedByBare.get(bare)} y ${src}.`);
+  plannedByBare.set(bare,src);
 }
 for(const moduleFile of retired){
   if(new RegExp(moduleFile.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i').test(html))throw new Error(`Sigue cargada la capa retirada ${moduleFile}.`);
@@ -247,4 +307,4 @@ for(const moduleFile of retired){
 if(!html.toLowerCase().includes('</html>'))throw new Error('El HTML estabilizado quedó incompleto.');
 
 fs.writeFileSync(path,html,'utf8');
-console.log(`Núcleo estabilizado: alta directa, anticipo contractual, login ligero y ${supplementalModules.length} módulos autenticados consolidados.`);
+console.log(`Núcleo estabilizado: alta directa, anticipo contractual, login ligero y ${supplementalModules.length} módulos autenticados consolidados sin versiones estáticas duplicadas.`);

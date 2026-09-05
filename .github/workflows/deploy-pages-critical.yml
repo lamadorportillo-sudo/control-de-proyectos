@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'build-pages.cjs'
+      - 'authenticated-module-manifest-v1.cjs'
       - 'inject-portfolio.cjs'
       - 'patch-session-security.cjs'
       - 'stabilize-core-v1.cjs'
@@ -30,7 +31,7 @@ concurrency:
 jobs:
   build-smoke-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 18
     steps:
       - name: Descargar repositorio
         uses: actions/checkout@v6
@@ -50,14 +51,37 @@ jobs:
             [ -f "$f" ] || continue
             node --check "$f"
           done
+          node --check authenticated-module-manifest-v1.cjs
           node --check build-pages.cjs
           node --check inject-portfolio.cjs
           node --check patch-session-security.cjs
           node --check stabilize-core-v1.cjs
           node --check scripts/audit-system-1000.cjs
+          node --check tests/architecture-auth-boot.spec.cjs
           node --check tests/full-user-journey-responsive.spec.cjs
           node --check tests/project-create-route-responsive.spec.cjs
           node --test tests/*.test.cjs
+          grep -q 'NAVEGACIÓN ÚNICA V6 · SIN DOBLE DESPLAZAMIENTO' ui-navigation-single-source-v1.js
+          grep -q 'PERMISOS E IDIOMA V6 · RESOLUCIÓN TARDÍA SEGURA' technical-control-permissions-v1.js
+          grep -q 'REFINAMIENTO GENERAL DE INTERFAZ V5 · OBSERVADOR ESTABLE' system-ui-refinement-v3.js
+          grep -q 'CORRECCIÓN DE ÓRDENES DE CAMBIO / ADENDAS V2 · GUARDADO ÚNICO' change-order-fix-v1.js
+          grep -q 'ZORDON · NÚCLEO DE APRENDIZAJE CONTINUO V4 · IDÉMPOTENTE' zordon-continuous-runtime-v1.js
+          grep -q 'BUSCADOR INTELIGENTE DE PROYECTOS V5 · LISTA ESTABLE' zordon-project-search-v1.js
+          grep -q 'ZORDON · DENSIDAD UNIFICADA DE INTERFAZ V1' zordon-unified-density-v1.js
+          grep -q 'ZORDON · CHAT NATURAL Y CONTINUO V5 · EVENTOS AISLADOS' zordon-chat-ui-v1.js
+          grep -q 'GUARDIA FINAL DE CONTRASTE V10' ui-contrast-final-guard-v1.js
+          if grep -q 'setInterval(' zordon-continuous-runtime-v1.js; then
+            echo 'ZORDON volvió a instalar un intervalo permanente de reescritura del DOM.' >&2
+            exit 1
+          fi
+          if grep -q 'pointInside(' zordon-chat-ui-v1.js; then
+            echo 'ZORDON volvió a capturar clics por coordenadas globales.' >&2
+            exit 1
+          fi
+          if grep -q 'industrial-home-v1.js' zordon-project-search-v1.js; then
+            echo 'El buscador ZORDON volvió a reactivar la portada industrial retirada.' >&2
+            exit 1
+          fi
 
       - name: Reconstruir y estabilizar aplicación
         run: |
@@ -65,49 +89,6 @@ jobs:
           node inject-portfolio.cjs
           node patch-session-security.cjs
           node stabilize-core-v1.cjs
-
-      - name: Forzar versiones críticas sin romper acceso ligero
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-          import re
-
-          path = Path('index.html')
-          html = path.read_text(encoding='utf-8')
-          replacements = [
-              (r'performance-runtime-v1\.js\?v[^\"\']*', 'performance-runtime-v1.js?v=20260903-perf9', 'performance-runtime-v1.js'),
-              (r'project-tabs-complete-v1\.js\?v[^\"\']*', 'project-tabs-complete-v1.js?v=20260831-tabscomplete34', 'project-tabs-complete-v1.js'),
-              (r'private-access-v1\.js\?v[^\"\']*', 'private-access-v1.js?v=20260823-private5', 'private-access-v1.js'),
-              (r'admin-users-v1\.js\?v[^\"\']*', 'admin-users-v1.js?v=20260823-admin-users4', 'admin-users-v1.js'),
-              (r'adaptive-chat-learning-v1\.js\?v[^\"\']*', 'adaptive-chat-learning-v1.js?v=20260824-zordon2', 'adaptive-chat-learning-v1.js'),
-              (r'ui-navigation-single-source-v1\.js\?v[^\"\']*', 'ui-navigation-single-source-v1.js?v=20260903-singlenav2', 'ui-navigation-single-source-v1.js'),
-          ]
-          for pattern, replacement, label in replacements:
-              html, count = re.subn(pattern, replacement, html)
-              if count == 0:
-                  raise SystemExit(f'No se encontró {label} para renovar su versión.')
-
-          loader_marker = '<script data-cc-auth-loader data-cc-auth-plan>'
-          if loader_marker not in html:
-              raise SystemExit('Se perdió el cargador autenticado secuencial de módulos.')
-
-          # ZORDON no forma parte del paquete histórico reconstruido. Se conserva
-          # como parte del mismo plan autenticado secuencial; nunca mediante
-          # document.write ni como script directo de la pantalla de acceso.
-          for name in ('zordon-continuous-runtime-v1.js','zordon-chat-ui-v1.js','zordon-send-hardfix-v1.js'):
-              html = re.sub(r'<script\s+src=["\']'+re.escape(name)+r'(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
-              html = re.sub(r'<script[^>]*data-cc-auth-script[^>]*data-src=["\'][^"\']*'+re.escape(name)+r'[^"\']*["\'][^>]*></script>\s*', '', html, flags=re.I)
-
-          zordon = '<script type="application/x-cc-auth" data-cc-auth-script data-src="zordon-continuous-runtime-v1.js?v=20260824-zordon4"></script>'
-          chat = '<script type="application/x-cc-auth" data-cc-auth-script data-src="zordon-chat-ui-v1.js?v=20260824-cleanchat4"></script>'
-          html = html.replace(loader_marker, zordon + '\n' + chat + '\n' + loader_marker, 1)
-
-          if 'document.write(' in html:
-              raise SystemExit('Reapareció document.write en el artefacto autenticado.')
-          path.write_text(html, encoding='utf-8')
-          PY
 
       - name: Validar artefacto crítico
         shell: bash
@@ -120,32 +101,50 @@ jobs:
           test -s service-worker-v1.js
           test -s ui-stability-v1.js
           test -s ui-navigation-single-source-v1.js
+          test -s system-ui-refinement-v3.js
+          test -s change-order-fix-v1.js
+          test -s zordon-project-search-v1.js
+          test -s zordon-unified-density-v1.js
+          test -s ui-contrast-final-guard-v1.js
           grep -q 'NUCLEO DE INTEGRIDAD Y CONCURRENCIA V1' index.html
           grep -q 'STARTUP_TIMEOUT_MS=12000' index.html
+          grep -q 'startupDeadline' index.html
           grep -q 'Abriendo tu espacio de trabajo' index.html
           grep -q 'save_app_state' index.html
-          grep -q 'performance-runtime-v1.js?v=20260903-perf9' index.html
-          grep -q 'portal-web-v2.js?v=20260903-web3' performance-runtime-v1.js
-          grep -q 'dashboard-simplified-v4.js?v=20260903-dash6' performance-runtime-v1.js
+          grep -q 'performance-runtime-v1.js?v=20260904-perf10' index.html
+          grep -q 'COORDINADOR DE RENDIMIENTO DEL DOM V7 · SIN CARGA FUNCIONAL' performance-runtime-v1.js
           grep -q 'service-worker-v1.js?v=20260903-sw2' performance-runtime-v1.js
-          grep -q 'ui-stability-v1.js?v=20260903-stable1' performance-runtime-v1.js
+          grep -q 'portal-web-v2.js?v=20260904-web4' index.html
+          grep -q 'dashboard-simplified-v4.js?v=20260903-dash6' index.html
+          grep -q 'ui-stability-v1.js?v=20260904-stable2' index.html
           grep -q 'cc-static-v1-20260903-recovery-v2' service-worker-v1.js
-          grep -q 'PORTAL WEB V3 · ESTABLE' portal-web-v2.js
+          grep -q 'PORTAL WEB V4 · PRESENTACIÓN ESTABLE' portal-web-v2.js
+          grep -q 'Inicio, Proyectos, Presupuesto y centros globales quedan sin listener local' portal-web-v2.js
           grep -q 'DASHBOARD SIMPLIFICADO V6 · ESTABLE' dashboard-simplified-v4.js
-          grep -q 'ESTABILIDAD VISUAL Y DE NAVEGACIÓN V1' ui-stability-v1.js
+          grep -q 'ESTABILIDAD VISUAL V2' ui-stability-v1.js
           grep -q 'project-tabs-complete-v1.js?v=20260831-tabscomplete34' index.html
-          grep -q 'private-access-v1.js?v=20260823-private5' index.html
-          grep -q 'ui-navigation-single-source-v1.js?v=20260903-singlenav2' index.html
-          grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordon4' index.html
-          grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat4' index.html
+          grep -q 'private-access-v1.js?v=20260904-private6' index.html
+          grep -q '20260904-private6' authenticated-module-manifest-v1.cjs
+          grep -q 'ui-navigation-single-source-v1.js?v=20260905-singlenav6' index.html
+          grep -q 'technical-control-permissions-v1.js?v=20260905-controltecnicoperm6' index.html
+          grep -q 'system-ui-refinement-v3.js?v=20260905-system6' index.html
+          grep -q 'change-order-fix-v1.js?v=20260905-changefix2' index.html
+          grep -q 'zordon-continuous-runtime-v1.js?v=20260905-zordon5' index.html
+          grep -q 'zordon-project-search-v1.js?v=20260905-zordonsearch5' index.html
+          grep -q 'zordon-unified-density-v1.js?v=20260905-density2' index.html
+          grep -q 'zordon-chat-ui-v1.js?v=20260905-cleanchat5' index.html
+          grep -q 'ui-contrast-final-guard-v1.js?v=20260905-contrast-final10' index.html
           grep -q 'data-cc-auth-script' index.html
           grep -q 'data-cc-auth-loader data-cc-auth-plan' index.html
+          grep -q '__CC_AUTH_BOOT_FAILED__' index.html
+          grep -q '__CC_AUTH_MODULE_ERRORS__' index.html
+          grep -q 'authenticated-modules-partial' index.html
           grep -q "control_contractual_session_v3" index.html
           grep -q "view.screen='project';view.tab='summary'" index.html
           grep -q "const targetPct=Number(contract.recoveryTarget||0);" index.html
           grep -q 'Sincronización con Supabase en curso' index.html
           grep -q '</html>' index.html
-          for retired in dashboard-executive-v1.js home-executive-fix-v2.js industrial-home-v1.js portfolio-redesign-v1.js project-portfolio-detail-v1.js portfolio-screen-fix-v1.js; do
+          for retired in system-ui-refinement-v2.js dashboard-executive-v1.js home-executive-fix-v2.js industrial-home-v1.js portfolio-redesign-v1.js project-portfolio-detail-v1.js portfolio-screen-fix-v1.js; do
             if grep -q "$retired" index.html; then
               echo "Sigue cargada capa retirada: $retired" >&2
               exit 1
@@ -184,6 +183,12 @@ jobs:
           done
           cat /tmp/control-proyectos-critical-http.log
           exit 1
+
+      - name: Probar arquitectura autenticada sin módulos retirados
+        env:
+          APP_URL: http://127.0.0.1:4173/
+        shell: bash
+        run: timeout 120s npx playwright test tests/architecture-auth-boot.spec.cjs --workers=1 --retries=0
 
       - name: Probar arranque y recuperación de nube
         env:

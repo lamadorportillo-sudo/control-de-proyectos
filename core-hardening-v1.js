@@ -15,19 +15,29 @@ let baseState=clone(window.__ccCloudBaseState||null);
 let stateVersion=Number(window.__ccCloudVersion||0)||null;
 let conflictOpen=false;
 
-/* El arranque no puede quedar esperando indefinidamente a Supabase. */
+/* El arranque completo comparte un solo presupuesto de tiempo. Antes cada
+   petición podía consumir 12 s por separado, de modo que membresía + perfil +
+   estado podían inmovilizar la interfaz durante decenas de segundos. */
 const STARTUP_TIMEOUT_MS=12000;
-function withStartupTimeout(promise,label='La conexión con Supabase'){
+let startupDeadline=0;
+function beginStartupBudget(){
+  if(!startupDeadline||Date.now()>=startupDeadline)startupDeadline=Date.now()+STARTUP_TIMEOUT_MS;
+  return startupDeadline;
+}
+function clearStartupBudget(){startupDeadline=0}
+function withStartupTimeout(promise,label='La conexión con Supabase',deadline=beginStartupBudget()){
+  const remaining=Math.max(1,deadline-Date.now());
   let timer=null;
-  const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(`${label} no respondió en ${Math.round(STARTUP_TIMEOUT_MS/1000)} segundos.`)),STARTUP_TIMEOUT_MS)});
+  const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(`${label} agotó el tiempo total de arranque de ${Math.round(STARTUP_TIMEOUT_MS/1000)} segundos.`)),remaining)});
   return Promise.race([Promise.resolve(promise),timeout]).finally(()=>{if(timer)clearTimeout(timer)});
 }
-function startupSbFetch(path,options){return withStartupTimeout(sbFetch(path,options),'La conexión con Supabase')}
+function startupSbFetch(path,options,deadline=beginStartupBudget()){return withStartupTimeout(sbFetch(path,options),'La conexión con Supabase',deadline)}
 async function hardenedEnsureCloudSession(){
   if(!session?.accessToken)return false;
+  const deadline=beginStartupBudget();
   if(session.expiresAt&&Date.now()>session.expiresAt-60000){
-    try{return await withStartupTimeout(refreshCloudSession(),'La renovación de la sesión')}
-    catch(error){console.warn('La renovación de sesión excedió el tiempo de espera.',error?.message||error);return false}
+    try{return await withStartupTimeout(refreshCloudSession(),'La renovación de la sesión',deadline)}
+    catch(error){console.warn('La renovación de sesión excedió el tiempo de arranque.',error?.message||error);return false}
   }
   return true;
 }
@@ -73,9 +83,10 @@ function threeWayMerge(base,local,server){
   }
   return{data:out,conflicts};
 }
-async function readCloudRow(){
+async function readCloudRow(deadline=0){
   if(!cloudWorkspaceId)return null;
-  const r=await startupSbFetch(`/rest/v1/app_state?select=data,version,updated_at&workspace_id=eq.${encodeURIComponent(cloudWorkspaceId)}&limit=1`);
+  const path=`/rest/v1/app_state?select=data,version,updated_at&workspace_id=eq.${encodeURIComponent(cloudWorkspaceId)}&limit=1`;
+  const r=deadline?await startupSbFetch(path,undefined,deadline):await sbFetch(path);
   return r.data?.[0]||null;
 }
 function showConflict(serverData,serverVersion,conflicts){
@@ -95,25 +106,30 @@ function showConflict(serverData,serverVersion,conflicts){
 }
 
 async function hardenedLoadCloudData(){
-  const mem=(await startupSbFetch(`/rest/v1/workspace_members?select=workspace_id,role,active&user_id=eq.${encodeURIComponent(session.userId)}&limit=1`)).data?.[0];
-  if(!mem)throw new Error('No se encontró un espacio de trabajo para este usuario.');
-  cloudWorkspaceId=mem.workspace_id;cloudRole=mem.role||'consulta';
-  const prof=(await startupSbFetch(`/rest/v1/profiles?select=full_name,active&user_id=eq.${encodeURIComponent(session.userId)}&limit=1`)).data?.[0];
-  cloudProfile=prof||{full_name:session.email||'Usuario',active:true};
-  if(cloudProfile.active===false)throw new Error('Este acceso está desactivado.');
-  const row=await readCloudRow();
-  stateVersion=Number(row?.version||1);window.__ccCloudVersion=stateVersion;
-  if(row?.data&&!cloudStateEmpty(row.data)){
-    db=Object.assign(defaultDB(),clone(row.data));
-  }else{
-    let scoped=null;try{scoped=JSON.parse(localStorage.getItem(scopedKey())||'null')}catch{}
-    db=scoped&&typeof scoped==='object'?Object.assign(defaultDB(),scoped):defaultDB();
+  const deadline=beginStartupBudget();
+  try{
+    const mem=(await startupSbFetch(`/rest/v1/workspace_members?select=workspace_id,role,active&user_id=eq.${encodeURIComponent(session.userId)}&limit=1`,undefined,deadline)).data?.[0];
+    if(!mem)throw new Error('No se encontró un espacio de trabajo para este usuario.');
+    cloudWorkspaceId=mem.workspace_id;cloudRole=mem.role||'consulta';
+    const prof=(await startupSbFetch(`/rest/v1/profiles?select=full_name,active&user_id=eq.${encodeURIComponent(session.userId)}&limit=1`,undefined,deadline)).data?.[0];
+    cloudProfile=prof||{full_name:session.email||'Usuario',active:true};
+    if(cloudProfile.active===false)throw new Error('Este acceso está desactivado.');
+    const row=await readCloudRow(deadline);
+    stateVersion=Number(row?.version||1);window.__ccCloudVersion=stateVersion;
+    if(row?.data&&!cloudStateEmpty(row.data)){
+      db=Object.assign(defaultDB(),clone(row.data));
+    }else{
+      let scoped=null;try{scoped=JSON.parse(localStorage.getItem(scopedKey())||'null')}catch{}
+      db=scoped&&typeof scoped==='object'?Object.assign(defaultDB(),scoped):defaultDB();
+    }
+    baseState=clone(row?.data||db||{});window.__ccCloudBaseState=clone(baseState);
+    cloudLoaded=true;
+    const u={id:session.userId,name:cloudProfile.full_name||session.email,email:session.email,role:cloudRole,active:true};
+    db.users=arr(db.users).filter(x=>x.id!==u.id);db.users.unshift(u);
+    saveLocalSnapshot(db);
+  }finally{
+    clearStartupBudget();
   }
-  baseState=clone(row?.data||db||{});window.__ccCloudBaseState=clone(baseState);
-  cloudLoaded=true;
-  const u={id:session.userId,name:cloudProfile.full_name||session.email,email:session.email,role:cloudRole,active:true};
-  db.users=arr(db.users).filter(x=>x.id!==u.id);db.users.unshift(u);
-  saveLocalSnapshot(db);
 }
 
 async function hardenedSaveCloudNow(retryMerge=false){

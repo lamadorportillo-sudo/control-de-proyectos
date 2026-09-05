@@ -1,7 +1,8 @@
-/* ===== INTEGRIDAD CONTRACTUAL Y FINANCIERA V1 ===== */
+/* ===== INTEGRIDAD CONTRACTUAL Y FINANCIERA V2 · REGLAS EXPLÍCITAS ===== */
 (()=>{
 'use strict';
-if(window.__CC_CONTRACT_INTEGRITY_V1__)return;
+if(window.__CC_CONTRACT_INTEGRITY_V2__)return;
+window.__CC_CONTRACT_INTEGRITY_V2__=true;
 window.__CC_CONTRACT_INTEGRITY_V1__=true;
 
 const A=v=>Array.isArray(v)?v:[];
@@ -16,6 +17,7 @@ const active=x=>!!x&&!x.voidedAt&&!x.voided_at&&!/anulad/i.test(String(x.status|
 const certified=x=>active(x)&&['aprobada','aprobado','pagada','pagado'].includes(norm(x.status));
 const paid=x=>active(x)&&['pagada','pagado'].includes(norm(x.status));
 const qualifiedOffer=x=>x?.eligible!==false&&['cumple','admisible'].includes(norm(x?.technicalStatus));
+const hasExplicit=(o,k)=>!!o&&Object.prototype.hasOwnProperty.call(o,k)&&o[k]!==''&&o[k]!==null&&o[k]!==undefined&&Number.isFinite(Number(o[k]));
 const currentAmount=c=>{
   if(!c)return 0;
   const changes=A(db?.changes).filter(x=>active(x)&&x.contractId===c.id&&norm(x.status)==='aprobado');
@@ -115,15 +117,30 @@ async function voidChange(id){const row=A(db?.changes).find(x=>x.id===id);if(!ro
 function addMonths(date,months){if(!date)return'';const d=new Date(`${date}T12:00:00`);d.setMonth(d.getMonth()+Math.max(0,Math.trunc(N(months))));return d.toISOString().slice(0,10)}
 function guaranteeIssues(g,c){
   const out=[];if(!String(g?.number||'').trim())out.push('Falta el número de garantía.');if(!String(g?.issuer||'').trim())out.push('Falta la institución emisora.');if(!String(g?.document||g?.document_ref||'').trim())out.push('Falta la referencia documental.');if(!g?.start||!g?.end)out.push('La vigencia está incompleta.');
-  if(!c)return out;const ctrl=typeof contractControlDefaults==='function'?contractControlDefaults(c.controls||{}):(c.controls||{}),amount=currentAmount(c),applied=N(g?.applied);
-  if(norm(g?.type)==='anticipo'&&N(c.advancePaid)>0&&applied+0.01<N(c.advancePaid))out.push('La garantía de anticipo no cubre el anticipo pagado.');
-  if(norm(g?.type)==='cumplimiento'){
-    const expected=R(amount*N(ctrl.performanceGuaranteePct||15)/100);if(applied+0.01<expected)out.push(`La garantía de cumplimiento es menor al ${N(ctrl.performanceGuaranteePct||15)}% configurado.`);
-    const minEnd=addMonths(c.end,N(ctrl.performanceExtraMonths||0));if(minEnd&&g.end&&g.end<minEnd)out.push(`La vigencia debe cubrir al menos hasta ${minEnd}.`);
+  if(!c)return out;
+  const rawCtrl=c.controls&&typeof c.controls==='object'?c.controls:{};
+  const ctrl=typeof contractControlDefaults==='function'?contractControlDefaults(rawCtrl):rawCtrl;
+  const amount=currentAmount(c),applied=N(g?.applied),type=norm(g?.type);
+  if(type==='anticipo'&&N(c.advancePaid)>0&&applied+0.01<N(c.advancePaid))out.push('La garantía de anticipo no cubre el anticipo pagado.');
+  if(type==='cumplimiento'){
+    if(!hasExplicit(rawCtrl,'performanceGuaranteePct')){
+      out.push('Definir el porcentaje de la Garantía de Cumplimiento según contrato.');
+    }else{
+      const configuredPct=N(rawCtrl.performanceGuaranteePct),expected=R(amount*configuredPct/100);
+      if(applied+0.01<expected)out.push(`La garantía de cumplimiento es menor al ${configuredPct}% configurado.`);
+    }
+    if(hasExplicit(rawCtrl,'performanceExtraMonths')&&N(rawCtrl.performanceExtraMonths)>0){
+      const minEnd=addMonths(c.end,N(rawCtrl.performanceExtraMonths));if(minEnd&&g.end&&g.end<minEnd)out.push(`La vigencia debe cubrir al menos hasta ${minEnd}.`);
+    }
   }
-  if(norm(g?.type)==='calidad'){
-    const expected=R(amount*N(ctrl.qualityGuaranteePct||5)/100);if(applied+0.01<expected)out.push(`La garantía de calidad es menor al ${N(ctrl.qualityGuaranteePct||5)}% configurado.`);
-    if(g.start&&g.end&&typeof daysBetween==='function'&&daysBetween(g.start,g.end)<N(ctrl.qualityGuaranteeDays||0))out.push(`La vigencia es menor a ${N(ctrl.qualityGuaranteeDays||0)} días.`);
+  if(type==='calidad'){
+    if(!hasExplicit(rawCtrl,'qualityGuaranteePct')){
+      out.push('Definir el porcentaje de la Garantía de Calidad según contrato.');
+    }else{
+      const configuredPct=N(rawCtrl.qualityGuaranteePct),expected=R(amount*configuredPct/100);
+      if(applied+0.01<expected)out.push(`La garantía de calidad es menor al ${configuredPct}% configurado.`);
+    }
+    if(hasExplicit(rawCtrl,'qualityGuaranteeDays')&&N(rawCtrl.qualityGuaranteeDays)>0&&g.start&&g.end&&typeof daysBetween==='function'&&daysBetween(g.start,g.end)<N(rawCtrl.qualityGuaranteeDays))out.push(`La vigencia es menor a ${N(rawCtrl.qualityGuaranteeDays)} días.`);
   }
   return out;
 }

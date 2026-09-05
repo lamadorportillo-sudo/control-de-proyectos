@@ -53,7 +53,7 @@ const supplementalModules=[
   ['technical-control-permissions-v1.js','20260904-controltecnicoperm5'],
   ['technical-control-scope-v2.js','20260904-controlscope5'],
   ['immersive-engineering-experience-v1.js','20260828-immersive2'],
-  ['ui-visibility-audit-v1.js','20260831-visibility4'],
+  ['ui-visibility-audit-v1.js','20260904-visibility5'],
   ['ui-contrast-hardening-v1.js','20260831-contrast5'],
   ['contract-official-format-v1.js','20260831-phone3'],
   ['contract-document-safety-v1.js','20260904-docsafety3'],

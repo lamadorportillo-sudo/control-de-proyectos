@@ -13,7 +13,11 @@ test('toda lectura directa de proyecto queda limitada al workspace del vínculo'
   assert.match(source,/async function getProject\(l:any,id:string\)[\s\S]*from\("projects"\)[\s\S]*eq\("workspace_id",l\.workspace_id\)[\s\S]*eq\("id",id\)/,
     'getProject debe filtrar workspace_id antes de devolver el proyecto');
   assert.doesNotMatch(source,/async function getProject\(id:string\)/,'no puede sobrevivir el helper global sin contexto de workspace');
-  assert.doesNotMatch(source,/getProject\((?!l,)[^)]+\)/,'ninguna llamada a getProject puede omitir el vínculo/workspace');
+  const invocations=[...source.matchAll(/getProject\(([^)]*)\)/g)]
+    .map(match=>match[1].trim())
+    .filter(args=>!args.includes(':'));
+  assert.ok(invocations.length>=8,'deben detectarse las llamadas operativas a getProject');
+  for(const args of invocations)assert.match(args,/^l\s*,/,`getProject(${args}) omite el vínculo/workspace`);
 });
 
 test('callbacks con project_id tampoco pueden saltar de workspace',()=>{

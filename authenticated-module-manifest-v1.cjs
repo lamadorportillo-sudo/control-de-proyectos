@@ -90,7 +90,7 @@ const supplementalModules=[
   ['zordon-chat-ui-v1.js','20260905-cleanchat5'],
   /* El expediente documental usa superficies claras y necesita una corrección
      contextual antes de la guardia visual final. */
-  ['contract-document-contrast-v1.js','20260905-contractdoccontrast2'],
+  ['contract-document-contrast-v1.js','20260905-contractdoccontrast3'],
   /* Última corrección visual general, antes del par técnico que debe seguir
      siendo el cierre funcional del plan autenticado. */
   ['ui-contrast-final-guard-v1.js','20260905-contrast-final9'],

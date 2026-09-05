@@ -3,12 +3,13 @@ const fs=require('node:fs');
 
 const read=file=>fs.readFileSync(file,'utf8');
 const html=read('index.html');
-// Solo los scripts ejecutables directos forman parte del arranque. Los módulos
-// autenticados se declaran con data-src y se validan por su manifiesto/cargador.
-const rootScripts=[...html.matchAll(/<script\s+src=["']([^"']+)/g)]
+// El contrato backend abarca tanto scripts ejecutables directos como módulos
+// autenticados declarados de forma inerte con data-src; ambos pueden invocar RPC
+// una vez que el usuario inicia sesión.
+const rootScripts=[...html.matchAll(/<script\s+[^>]*(?:\s|^)(?:src|data-src)=["']([^"']+)/g)]
   .map(match=>match[1].split('?')[0])
   .filter(src=>!/^https?:/i.test(src));
-const sources=[html,...rootScripts.map(read)].join('\n');
+const sources=[html,...[...new Set(rootScripts)].filter(fs.existsSync).map(read)].join('\n');
 
 const rpcReferences=[...new Set([...sources.matchAll(/\/rest\/v1\/rpc\/([a-z0-9_]+)/gi)].map(match=>match[1]))].sort();
 // Contrato de RPC consumidos actualmente por el cliente. Durante el cierre de

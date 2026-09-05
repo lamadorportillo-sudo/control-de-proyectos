@@ -68,52 +68,6 @@ jobs:
           node patch-session-security.cjs
           node stabilize-core-v1.cjs
 
-      - name: Forzar solo versiones aún no centralizadas
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-          import re
-
-          path = Path('index.html')
-          html = path.read_text(encoding='utf-8')
-          replacements = [
-              (r'performance-runtime-v1\.js\?v[^\"\']*', 'performance-runtime-v1.js?v=20260904-perf10', 'performance-runtime-v1.js'),
-              (r'project-tabs-complete-v1\.js\?v[^\"\']*', 'project-tabs-complete-v1.js?v=20260831-tabscomplete34', 'project-tabs-complete-v1.js'),
-              (r'admin-users-v1\.js\?v[^\"\']*', 'admin-users-v1.js?v=20260823-admin-users4', 'admin-users-v1.js'),
-              (r'adaptive-chat-learning-v1\.js\?v[^\"\']*', 'adaptive-chat-learning-v1.js?v=20260824-zordon2', 'adaptive-chat-learning-v1.js'),
-              (r'ui-navigation-single-source-v1\.js\?v[^\"\']*', 'ui-navigation-single-source-v1.js?v=20260903-singlenav2', 'ui-navigation-single-source-v1.js'),
-          ]
-          for pattern, replacement, label in replacements:
-              html, count = re.subn(pattern, replacement, html)
-              if count == 0:
-                  raise SystemExit(f'No se encontró {label} para renovar su versión.')
-
-          # private-access y password-recovery ya toman su versión del manifiesto
-          # canónico durante build-pages; el workflow no debe sobrescribirlas.
-          if 'private-access-v1.js?v=20260904-private6' not in html:
-              raise SystemExit('El artefacto no conserva la versión canónica de private-access-v1.js.')
-
-          loader_marker = '<script data-cc-auth-loader data-cc-auth-plan>'
-          if loader_marker not in html:
-              raise SystemExit('Se perdió el cargador autenticado secuencial de módulos.')
-
-          # ZORDON aún no forma parte del paquete histórico reconstruido. Se
-          # conserva dentro del plan autenticado, nunca en la pantalla de acceso.
-          for name in ('zordon-continuous-runtime-v1.js','zordon-chat-ui-v1.js','zordon-send-hardfix-v1.js'):
-              html = re.sub(r'<script\s+src=["\']'+re.escape(name)+r'(?:\?[^"\']*)?["\']\s*></script>\s*', '', html, flags=re.I)
-              html = re.sub(r'<script[^>]*data-cc-auth-script[^>]*data-src=["\'][^"\']*'+re.escape(name)+r'[^"\']*["\'][^>]*></script>\s*', '', html, flags=re.I)
-
-          zordon = '<script type="application/x-cc-auth" data-cc-auth-script data-src="zordon-continuous-runtime-v1.js?v=20260824-zordon4"></script>'
-          chat = '<script type="application/x-cc-auth" data-cc-auth-script data-src="zordon-chat-ui-v1.js?v=20260824-cleanchat4"></script>'
-          html = html.replace(loader_marker, zordon + '\n' + chat + '\n' + loader_marker, 1)
-
-          if 'document.write(' in html:
-              raise SystemExit('Reapareció document.write en el artefacto autenticado.')
-          path.write_text(html, encoding='utf-8')
-          PY
-
       - name: Validar artefacto crítico
         shell: bash
         run: |

@@ -127,14 +127,20 @@ async function assertNoGlobalOverflow(page, label) {
 
 async function openSidebarIfNeeded(page){
   const sidebar=page.locator('#ccSidebar');
-  if(await sidebar.isVisible().catch(()=>false))return;
   const toggle=page.locator('#ccMobileToggle');
-  if(await toggle.isVisible().catch(()=>false)){await toggle.click();await expect(sidebar).toBeVisible();}
+  if(await toggle.isVisible().catch(()=>false)){
+    const isOpen=await sidebar.evaluate(el=>el.classList.contains('open')).catch(()=>false);
+    if(!isOpen){await toggle.click();await expect(sidebar).toHaveClass(/open/);}
+    return;
+  }
+  await expect(sidebar).toBeVisible();
 }
 async function clickRoute(page,route){
   await openSidebarIfNeeded(page);
   const btn=page.locator(`#ccSidebar [data-route="${route}"]`);
   await expect(btn).toBeVisible();await btn.click();await page.waitForTimeout(260);
+  const toggle=page.locator('#ccMobileToggle');
+  if(await toggle.isVisible().catch(()=>false))await expect(page.locator('#ccSidebar')).not.toHaveClass(/open/);
 }
 
 for (const vp of viewports) {
@@ -154,9 +160,9 @@ for (const vp of viewports) {
       await expect(page.locator('#ccxNav')).toBeHidden();
       await expect(page.locator('#ccSidebar [data-route="transparencia"]')).toHaveCount(1);
       if (vp.width > 900) {
-        await expect(page.locator('.service-strip .service-tile')).toHaveCount(5);
-        const tileRows = await page.locator('.service-strip .service-tile').evaluateAll(tiles => [...new Set(tiles.map(tile => Math.round(tile.getBoundingClientRect().top)))]);
-        expect(tileRows, `${vp.name}: las cinco tarjetas de servicios deben permanecer en una sola línea`).toHaveLength(1);
+        await expect(page.locator('#ccCommandbar')).toBeVisible();
+        await expect(page.locator('#ccCommandbar [data-command]')).toHaveCount(4);
+        await expect(page.locator('.cc-lifecycle-v4')).toBeVisible();
       }
       await assertNoGlobalOverflow(page, `${vp.name} inicio`);
 

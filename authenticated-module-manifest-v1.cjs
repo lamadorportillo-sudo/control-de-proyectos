@@ -23,7 +23,7 @@ const supplementalModules=[
      Sus versiones viven aquí para que arquitectura y publicación prueben
      exactamente el mismo artefacto. */
   ['project-tabs-complete-v1.js','20260831-tabscomplete34'],
-  ['ui-navigation-single-source-v1.js','20260903-singlenav2'],
+  ['ui-navigation-single-source-v1.js','20260905-singlenav6'],
   ['security-runtime-v1.js','20260904-security4'],
   ['mfa-security-v1.js','20260824-mfa4'],
   ['security-center-v1.js','20260823-securitycenter4'],
@@ -55,7 +55,7 @@ const supplementalModules=[
      a sí misma y conserva la detección de contenedores nuevos. */
   ['engineering-manual-observer-guard-v1.js','20260904-manualobserver1'],
   ['engineering-manual-reference-v1.js','20260823-manual2'],
-  ['technical-control-permissions-v1.js','20260904-controltecnicoperm5'],
+  ['technical-control-permissions-v1.js','20260905-controltecnicoperm6'],
   ['technical-control-scope-v2.js','20260904-controlscope5'],
   ['immersive-engineering-experience-v1.js','20260828-immersive2'],
   ['ui-visibility-audit-v1.js','20260904-visibility5'],
@@ -66,7 +66,7 @@ const supplementalModules=[
   ['contract-preview-v1.js','20260904-preview2'],
   /* ZORDON antes del cierre técnico: se prueba y publica dentro del mismo plan,
      sin desplazar el guard y el control técnico que deben quedar al final. */
-  ['zordon-continuous-runtime-v1.js','20260824-zordon4'],
+  ['zordon-continuous-runtime-v1.js','20260905-zordon5'],
   ['zordon-chat-ui-v1.js','20260824-cleanchat4'],
   /* Última corrección visual general, antes del par técnico que debe seguir
      siendo el cierre funcional del plan autenticado. */

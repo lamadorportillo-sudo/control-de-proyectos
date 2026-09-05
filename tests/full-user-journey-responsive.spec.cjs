@@ -90,7 +90,17 @@ for(const vp of [{name:'desktop',width:1366,height:768},{name:'tablet',width:102
    await expect(page.locator('#content')).toContainText('Proyecto de prueba recorrido completo');
    await noOverflow(page,`${vp.name} expediente`);
 
-   // 5. Recorrer cada pestaña real del expediente y comprobar que no queda vacía.
+   // 5. El contrato debe abrir desde la pestaña real del expediente y mostrar
+   //    los datos del contrato ligado al proyecto, no una tarjeta vacía o ajena.
+   const contractTab=page.locator('nav.tabs button[data-tab], .tabs button[data-tab]').filter({hasText:/Contrato/i}).first();
+   await expect(contractTab,'No aparece la pestaña Contrato en el expediente').toBeVisible();
+   await contractTab.click();
+   await expect(page.locator('#tabBody')).toContainText('QA-CON-001',{timeout:8000});
+   await expect(page.locator('#tabBody')).toContainText('Contratista de prueba');
+   await expect(page.locator('#tabBody')).toContainText(/Vigente/i);
+   await noOverflow(page,`${vp.name} contrato`);
+
+   // 6. Recorrer cada pestaña real del expediente y comprobar que no queda vacía.
    const tabs=page.locator('nav.tabs button[data-tab], .tabs button[data-tab]');
    const count=await tabs.count();expect(count,'El expediente debe conservar sus módulos').toBeGreaterThanOrEqual(9);
    for(let i=0;i<count;i++){
@@ -103,14 +113,14 @@ for(const vp of [{name:'desktop',width:1366,height:768},{name:'tablet',width:102
     await noOverflow(page,`${vp.name} ${label}`);
    }
 
-   // 6. Volver al portafolio y luego a Inicio sin depender de la barra ejecutiva antigua.
+   // 7. Volver al portafolio y luego a Inicio sin depender de la barra ejecutiva antigua.
    await page.locator('#ccSidebar [data-route="proyectos"]').click();
    await expect(page.locator('#content')).toContainText('Proyectos',{timeout:8000});
    await page.locator('#ccSidebar [data-route="inicio"]').click();
    await expect(page.locator('#content')).toContainText(/Estado general del portafolio|Centro de Control/i,{timeout:8000});
    await expect(page.locator('#ccSidebar [data-route="inicio"]')).toHaveClass(/active/);
 
-   // 7. Transparencia debe abrir desde el sidebar sin reactivar la navegación heredada.
+   // 8. Transparencia debe abrir desde el sidebar sin reactivar la navegación heredada.
    await page.locator('#ccSidebar [data-route="transparencia"]').click();
    await expect(page.locator('#content')).toContainText(/Portal de Transparencia|Control mensual de formatos/i,{timeout:8000});
    await assertSinglePrimaryNavigation(page);

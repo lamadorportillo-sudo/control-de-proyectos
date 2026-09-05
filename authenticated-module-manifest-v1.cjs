@@ -35,7 +35,7 @@ const supplementalModules=[
   ['mobile-popup-fallback-v1.js','20260821-mobilepopup1'],
   ['progress-separation-fix-v1.js','20260821-progresssep1'],
   ['programacion-control-v1.js','20260823-programacion4'],
-  ['change-order-fix-v1.js','20260821-changefix1'],
+  ['change-order-fix-v1.js','20260905-changefix2'],
   ['contract-penalty-card-v1.js','20260831-penalty2'],
   ['contract-explicit-rules-v1.js','20260904-explicit1'],
   /* El monto vigente no es un dato libre: se deriva del monto original más
@@ -93,7 +93,7 @@ const supplementalModules=[
   ['contract-document-contrast-v1.js','20260905-contractdoccontrast3'],
   /* Última corrección visual general, antes del par técnico que debe seguir
      siendo el cierre funcional del plan autenticado. */
-  ['ui-contrast-final-guard-v1.js','20260905-contrast-final9'],
+  ['ui-contrast-final-guard-v1.js','20260905-contrast-final10'],
   /* El guard se ejecuta inmediatamente antes del módulo técnico histórico y
      filtra su MutationObserver global sin afectar los observadores del resto. */
   ['technical-control-observer-guard-v1.js','20260904-controlobserver1'],

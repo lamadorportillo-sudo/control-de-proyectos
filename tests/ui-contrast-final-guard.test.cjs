@@ -4,7 +4,7 @@ const {supplementalModules}=require('../authenticated-module-manifest-v1.cjs');
 
 const guard=fs.readFileSync('ui-contrast-final-guard-v1.js','utf8');
 
-assert.match(guard,/GUARDIA FINAL DE CONTRASTE V9/,'debe existir la guardia final WCAG V9');
+assert.match(guard,/GUARDIA FINAL DE CONTRASTE V10/,'debe existir la guardia final WCAG V10');
 assert.match(guard,/#content \.exec-overview \.portfolio-ring\{[\s\S]*opacity:1!important/,'el anillo del Inicio no puede heredar una opacidad de animación');
 assert.match(guard,/#content \.exec-overview \.portfolio-ring-content/,'el anillo del Inicio debe tener un fondo real auditable');
 assert.match(guard,/#content \.exec-overview \.exec-bar-label b/,'los valores financieros del hero deben permanecer claros');
@@ -38,6 +38,11 @@ assert.match(guard,/#content #cpExecutionOnly/,'la lectura operativa debe quedar
 assert.match(guard,/#cpExecutionOnly \.cp-exec-badge/,'la insignia de proyectos en ejecución debe fijar fondo y texto conjuntamente');
 assert.match(guard,/#cpExecutionOnly b/,'los valores de lectura operativa deben quedar protegidos');
 assert.match(guard,/#cpExecutionOnly strong/,'los montos de lectura operativa deben quedar protegidos');
+assert.match(guard,/#content #tabBody \.report-paper:not\(\.municipal-award-report\)\{[\s\S]*background:#fff!important[\s\S]*color:#172033!important/,'el informe estándar debe fijar papel blanco y texto oscuro sin alterar adjudicación municipal');
+assert.match(guard,/\.report-paper:not\(\.municipal-award-report\) h1/,'el título del informe estándar debe quedar protegido de reglas oscuras globales');
+assert.match(guard,/\.report-paper:not\(\.municipal-award-report\) small/,'los textos pequeños del informe estándar deben conservar contraste AA');
+assert.match(guard,/\.report-status\.attention\{[\s\S]*color:#754500!important/,'el estado de seguimiento debe usar texto ámbar oscuro sobre superficie clara');
+assert.match(guard,/\.report-mark,/,'la marca azul del informe debe conservar texto blanco tras la corrección contextual');
 assert.match(guard,/\.cc-life-step:not\(\.has-data\) > b/,'los conteos vacíos del ciclo de vida deben superar contraste mínimo');
 assert.match(guard,/#d3deea!important/,'los textos secundarios sobre superficies oscuras deben usar el tono claro validado');
 
@@ -46,6 +51,6 @@ const guardAt=names.indexOf('ui-contrast-final-guard-v1.js');
 const observerAt=names.indexOf('technical-control-observer-guard-v1.js');
 const technicalAt=names.indexOf('technical-control-v1.js');
 assert.ok(guardAt>=0&&guardAt<observerAt&&observerAt+1===technicalAt,'la corrección visual debe ejecutarse justo antes del par técnico final, sin desplazarlo');
-assert.equal(supplementalModules[guardAt][1],'20260905-contrast-final9','la versión V9 de la guardia final debe quedar fijada en el manifiesto');
+assert.equal(supplementalModules[guardAt][1],'20260905-contrast-final10','la versión V10 de la guardia final debe quedar fijada en el manifiesto');
 
-console.log('ui-contrast-final-guard: superficies claras, oscuras, evaluación de proyecto, proyectos y presupuesto protegidos por contexto antes del cierre técnico');
+console.log('ui-contrast-final-guard: superficies claras, oscuras, informes estándar, evaluación, proyectos y presupuesto protegidos por contexto antes del cierre técnico');

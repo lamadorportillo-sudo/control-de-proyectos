@@ -1,19 +1,15 @@
 const { defineConfig } = require('@playwright/test');
 
 const manualSimulation = process.env.CC_MANUAL_SIM === '1';
-const contractDiagnostic = process.env.CC_CONTRACT_DIAG === '1';
 
 module.exports = defineConfig({
   testDir: './tests',
-  // La validación arquitectónica debe incluir todos los escenarios críticos que
-  // los workflows invocan explícitamente. Playwright aplica testMatch incluso
-  // cuando se pasan archivos por CLI; omitirlos aquí produciría un falso verde.
-  // El modo diagnóstico es temporal y aislado: no altera el catálogo normal.
+  // La validación arquitectónica incluye todos los escenarios críticos que los
+  // workflows invocan explícitamente. Playwright aplica testMatch incluso cuando
+  // se pasan archivos por CLI; omitirlos aquí produciría un falso verde.
   testMatch: manualSimulation
     ? /manual-project-entry-simulation\.spec\.cjs/
-    : contractDiagnostic
-      ? /00-contract-observer-diagnostic\.spec\.cjs/
-      : /(?:.*responsive.*|architecture-auth-boot|admin-mfa-enforcement-browser|contract-explicit-rules-browser|contract-document-safety-browser)\.spec\.cjs/,
+    : /(?:.*responsive.*|architecture-auth-boot|admin-mfa-enforcement-browser|contract-explicit-rules-browser|contract-document-safety-browser)\.spec\.cjs/,
   timeout: 90000,
   expect: { timeout: 12000 },
   fullyParallel: false,

@@ -2,7 +2,7 @@ name: Recorrido real de usuario
 
 on:
   push:
-    branches: [main, audit-architecture-fixes]
+    branches: [main]
     paths:
       - 'index.html'
       - '*.js'

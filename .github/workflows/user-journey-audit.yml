@@ -49,6 +49,7 @@ jobs:
           node --check ui-navigation-single-source-v1.js
           node --check technical-control-permissions-v1.js
           node --check zordon-continuous-runtime-v1.js
+          node --check zordon-chat-ui-v1.js
           node --check ui-stability-v1.js
           node --check performance-runtime-v1.js
           node --check private-access-v1.js
@@ -59,8 +60,13 @@ jobs:
           grep -q 'NAVEGACIÓN ÚNICA V6 · SIN DOBLE DESPLAZAMIENTO' ui-navigation-single-source-v1.js
           grep -q 'PERMISOS E IDIOMA V6 · RESOLUCIÓN TARDÍA SEGURA' technical-control-permissions-v1.js
           grep -q 'ZORDON · NÚCLEO DE APRENDIZAJE CONTINUO V4 · IDÉMPOTENTE' zordon-continuous-runtime-v1.js
+          grep -q 'ZORDON · CHAT NATURAL Y CONTINUO V5 · EVENTOS AISLADOS' zordon-chat-ui-v1.js
           if grep -q 'setInterval(' zordon-continuous-runtime-v1.js; then
             echo 'ZORDON volvió a instalar un intervalo de reescritura permanente.' >&2
+            exit 1
+          fi
+          if grep -q 'pointInside(' zordon-chat-ui-v1.js; then
+            echo 'ZORDON volvió a capturar clics por coordenadas globales.' >&2
             exit 1
           fi
           node build-pages.cjs
@@ -72,7 +78,7 @@ jobs:
           grep -q 'private-access-v1.js?v=20260904-private6' index.html
           grep -q 'performance-runtime-v1.js?v=20260904-perf10' index.html
           grep -q 'zordon-continuous-runtime-v1.js?v=20260905-zordon5' index.html
-          grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat4' index.html
+          grep -q 'zordon-chat-ui-v1.js?v=20260905-cleanchat5' index.html
           grep -q '__CC_AUTH_BOOT_FAILED__' index.html
           grep -q "view.screen='project';view.tab='summary'" index.html
           grep -q "const targetPct=Number(contract.recoveryTarget||0);" index.html

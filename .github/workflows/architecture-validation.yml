@@ -65,6 +65,13 @@ jobs:
           node --check tests/contract-explicit-rules-browser.spec.cjs
           node --check tests/contract-document-safety-browser.spec.cjs
           node --test tests/*.test.cjs
+          grep -q 'NAVEGACIÓN ÚNICA V6 · SIN DOBLE DESPLAZAMIENTO' ui-navigation-single-source-v1.js
+          grep -q 'PERMISOS E IDIOMA V6 · RESOLUCIÓN TARDÍA SEGURA' technical-control-permissions-v1.js
+          grep -q 'ZORDON · NÚCLEO DE APRENDIZAJE CONTINUO V4 · IDÉMPOTENTE' zordon-continuous-runtime-v1.js
+          if grep -q 'setInterval(' zordon-continuous-runtime-v1.js; then
+            echo 'ZORDON volvió a instalar un intervalo permanente de reescritura del DOM.' >&2
+            exit 1
+          fi
           if grep -q 'Forzar solo versiones aún no centralizadas' .github/workflows/deploy-pages-critical.yml; then
             echo 'La publicación vuelve a modificar el HTML después de construirlo.' >&2
             exit 1
@@ -84,8 +91,9 @@ jobs:
           grep -q 'portal-web-v2.js?v=20260904-web4' index.html
           grep -q 'ui-stability-v1.js?v=20260904-stable2' index.html
           grep -q 'project-tabs-complete-v1.js?v=20260831-tabscomplete34' index.html
-          grep -q 'ui-navigation-single-source-v1.js?v=20260903-singlenav2' index.html
-          grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordon4' index.html
+          grep -q 'ui-navigation-single-source-v1.js?v=20260905-singlenav6' index.html
+          grep -q 'technical-control-permissions-v1.js?v=20260905-controltecnicoperm6' index.html
+          grep -q 'zordon-continuous-runtime-v1.js?v=20260905-zordon5' index.html
           grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat4' index.html
           grep -q 'contract-explicit-rules-v1.js?v=20260904-explicit1' index.html
           grep -q 'project-evaluation-dashboard-v1.js?v=20260904-projectevaluation2' index.html

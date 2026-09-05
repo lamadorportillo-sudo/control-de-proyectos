@@ -54,7 +54,7 @@ const supplementalModules=[
   ['project-evaluation-observer-guard-v1.js','20260905-projectevalobserver1'],
   ['project-evaluation-dashboard-v1.js','20260904-projectevaluation2'],
   ['project-functional-actions-v1.js','20260821-actions2'],
-  ['visit-independent-reports-v1.js','20260821-visitsind1'],
+  ['visit-independent-reports-v1.js','20260905-visitsind2'],
   ['portfolio-gallery-v1.js','20260828-gallery3'],
   ['project-photo-story-v1.js','20260821-photostory1'],
   ['photo-gallery-polish-v2.js','20260822-photopolish2'],

@@ -71,7 +71,7 @@ const supplementalModules=[
   /* ZORDON antes del cierre técnico: buscador y densidad se cargan únicamente
      desde este plan para impedir versiones históricas o cargadores secundarios. */
   ['zordon-continuous-runtime-v1.js','20260905-zordon5'],
-  ['zordon-project-search-v1.js','20260905-zordonsearch4'],
+  ['zordon-project-search-v1.js','20260905-zordonsearch5'],
   ['zordon-unified-density-v1.js','20260905-density2'],
   ['zordon-chat-ui-v1.js','20260905-cleanchat5'],
   /* Última corrección visual general, antes del par técnico que debe seguir

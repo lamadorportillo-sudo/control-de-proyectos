@@ -50,6 +50,9 @@ const supplementalModules=[
   ['ui-theme-unifier-v1.js','20260824-theme3d2'],
   ['engineering-visibility-fix-v1.js','20260822-visibility1'],
   ['ui-operational-polish-v1.js','20260822-operational2'],
+  /* Refinamiento visual general: ahora forma parte del plan canónico para
+     invalidar la caché de la versión que observaba y reescribía style. */
+  ['system-ui-refinement-v3.js','20260905-system6'],
   /* El Manual histórico reescribe el texto de su propio botón desde un
      MutationObserver global. La guardia impide que esa escritura se alimente
      a sí misma y conserva la detección de contenedores nuevos. */

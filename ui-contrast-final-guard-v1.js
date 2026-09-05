@@ -51,7 +51,9 @@ function install(){
   /* Evaluación del proyecto · la cabecera usa un gradiente oscuro. Se fija un
      background-color real además del gradiente para que la legibilidad siga
      siendo correcta cuando el navegador, accesibilidad o impresión no compone
-     la imagen de fondo. */
+     la imagen de fondo. El centro circular ya era blanco mediante ::after;
+     ahora el contenedor real del puntaje declara esa misma superficie para que
+     el contraste no dependa de un pseudo-elemento. */
   html body.cc-portal-v2:not(.print-report) #content .ped-head{
     background-color:#10243f!important;
   }
@@ -63,6 +65,14 @@ function install(){
   }
   html body.cc-portal-v2:not(.print-report) #content .ped-head p:last-child{
     color:#d9e7f4!important;opacity:1!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content .ped-health>span{
+    background-color:#fff!important;color:#10243f!important;border-radius:999px!important;
+    padding:7px 9px!important;opacity:1!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content .ped-health>span b,
+  html body.cc-portal-v2:not(.print-report) #content .ped-health>span small{
+    color:#10243f!important;opacity:1!important;
   }
 
   /* Transparencia · las tarjetas son claras, pero la cabecera principal vive

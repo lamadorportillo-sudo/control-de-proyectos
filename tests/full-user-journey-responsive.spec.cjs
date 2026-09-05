@@ -34,37 +34,6 @@ async function mockBackend(page){
  });
 }
 
-/* TEMPORAL DE DIAGNÓSTICO: si un MutationObserver supera una frecuencia que no
-   corresponde a interacción humana, lo desconecta y conserva la pila exacta de
-   creación. Esto permite identificar el módulo que secuestra el hilo principal
-   sin recurrir a click({force:true}) ni esconder el fallo. Se eliminará al
-   terminar la corrección. */
-async function installObserverRunawayDiagnostic(page){
- await page.addInitScript(()=>{
-  const Native=window.MutationObserver;if(typeof Native!=='function')return;
-  let seq=0;window.__QA_OBSERVER_RUNAWAY__=null;window.__QA_OBSERVER_STATS__=[];
-  window.MutationObserver=class DiagnosticMutationObserver extends Native{
-   constructor(callback){
-    const id=++seq,stack=String(new Error(`MutationObserver QA ${id}`).stack||'').slice(0,5000);
-    const stat={id,stack,total:0,windowCalls:0,windowStart:performance.now(),disconnected:false};
-    window.__QA_OBSERVER_STATS__.push(stat);
-    super((mutations,observer)=>{
-      const now=performance.now();
-      if(now-stat.windowStart>500){stat.windowStart=now;stat.windowCalls=0}
-      stat.windowCalls++;stat.total++;
-      if(!stat.disconnected&&stat.windowCalls>80){
-        stat.disconnected=true;
-        window.__QA_OBSERVER_RUNAWAY__={id:stat.id,total:stat.total,windowCalls:stat.windowCalls,stack:stat.stack};
-        console.error('QA_OBSERVER_RUNAWAY '+JSON.stringify(window.__QA_OBSERVER_RUNAWAY__));
-        observer.disconnect();return;
-      }
-      callback(mutations,observer);
-    });
-   }
-  };
- });
-}
-
 async function noOverflow(page,label){
  const d=await page.evaluate(()=>({w:document.documentElement.scrollWidth,c:document.documentElement.clientWidth,body:document.body.scrollWidth}));
  expect(d.w,`${label}: overflow documento`).toBeLessThanOrEqual(d.c+3);
@@ -87,8 +56,6 @@ for(const vp of [{name:'desktop',width:1366,height:768},{name:'tablet',width:102
   test('entra desde cero, abre un proyecto y recorre el expediente',async({page},testInfo)=>{
    test.setTimeout(90000);
    const pageErrors=[];page.on('pageerror',e=>pageErrors.push(e.message));
-   page.on('console',msg=>{if(msg.text().startsWith('QA_OBSERVER_RUNAWAY'))console.log(msg.text())});
-   await installObserverRunawayDiagnostic(page);
    await mockBackend(page);
    await page.goto(appUrl,{waitUntil:'domcontentloaded',timeout:30000});
 
@@ -131,9 +98,6 @@ for(const vp of [{name:'desktop',width:1366,height:768},{name:'tablet',width:102
    await expect(page.locator('#tabBody')).toContainText('QA-CON-001',{timeout:8000});
    await expect(page.locator('#tabBody')).toContainText('Contratista de prueba');
    await expect(page.locator('#tabBody')).toContainText(/Vigente/i);
-   const observerRunaway=await page.evaluate(()=>window.__QA_OBSERVER_RUNAWAY__||null);
-   if(observerRunaway)console.log('QA_OBSERVER_DIAGNOSTIC '+JSON.stringify(observerRunaway));
-   expect(observerRunaway,'Se detectó un MutationObserver en bucle; revisar la pila registrada en QA_OBSERVER_DIAGNOSTIC').toBeNull();
    await noOverflow(page,`${vp.name} contrato`);
 
    // 6. Recorrer cada pestaña real del expediente y comprobar que no queda vacía.

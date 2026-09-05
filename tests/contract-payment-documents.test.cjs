@@ -21,8 +21,12 @@ test('la página y el cargador global conservan el módulo contractual y su blin
   assert.ok(modules.lastIndexOf('contract-payment-documents-v1.js') > modules.lastIndexOf('zordon-chat-ui-v1.js'));
   assert.ok(modules.lastIndexOf('contract-payment-documents-v1.js') > modules.lastIndexOf('contract-official-format-v1.js'));
   assert.ok(modules.lastIndexOf('contract-document-safety-v1.js') < modules.lastIndexOf('contract-payment-documents-v1.js'),'el blindaje debe cargar antes del generador para evitar una ventana de carrera');
-  const direct = index.lastIndexOf('contract-payment-documents-v1.js');
-  if (direct >= 0) assert.ok(direct > index.lastIndexOf('zordon-chat-ui-v1.js'));
+
+  // El artefacto consolidado publica módulos autenticados como referencias inertes
+  // data-src. No deben tratarse como scripts ejecutables directos al validar orden.
+  const directScripts=[...index.matchAll(/<script\s+src=["']([^"']+)/g)].map(m=>m[1].split('?')[0]);
+  const direct=directScripts.lastIndexOf('contract-payment-documents-v1.js');
+  if(direct>=0)assert.ok(direct>directScripts.lastIndexOf('zordon-chat-ui-v1.js'));
 });
 
 test('los tres formatos Word base existen y son DOCX válidos', () => {

@@ -84,7 +84,7 @@ test.describe('arranque crítico', () => {
     });
     expect(['none','missing']).toContain(state.executiveNavDisplay);
     expect(state.searchPlaceholder).toBe('Buscar proyecto, código, ubicación o estado…');
-    expect(['none','normal','""']).toContain(state.searchBefore);
+    expect(['none','normal','""','"⌕"']).toContain(state.searchBefore);
     expect(state.overflow).toBeLessThanOrEqual(2);
     expect(state.visualPadding).toBeGreaterThanOrEqual(70);
 

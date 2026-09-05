@@ -3,6 +3,7 @@ const {test,expect}=require('@playwright/test');
 const appUrl=process.env.APP_URL||'http://127.0.0.1:4173/';
 const USER_ID='b1111111-1111-4111-8111-111111111111';
 const WORKSPACE_ID='b2222222-2222-4222-8222-222222222222';
+const RETIRED=['system-ui-refinement-v2.js','dashboard-executive-v1.js','home-executive-fix-v2.js','industrial-home-v1.js','portfolio-redesign-v1.js','project-portfolio-detail-v1.js','portfolio-screen-fix-v1.js'];
 
 const emptyState={
   users:[],projects:[],contracts:[],estimates:[],guarantees:[],changes:[],payments:[],visits:[],
@@ -41,10 +42,12 @@ test.describe('integridad arquitectónica del arranque autenticado',()=>{
     test.setTimeout(90000);
     const pageErrors=[];
     const consoleErrors=[];
+    const requestedScripts=[];
     let topNavigations=0;
     page.on('pageerror',error=>pageErrors.push(error.message));
     page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text())});
     page.on('framenavigated',frame=>{if(frame===page.mainFrame())topNavigations++});
+    page.on('request',request=>{if(request.resourceType()==='script')requestedScripts.push(request.url())});
 
     await mockBackend(page);
     await page.goto(appUrl,{waitUntil:'domcontentloaded',timeout:30000});
@@ -100,6 +103,12 @@ test.describe('integridad arquitectónica del arranque autenticado',()=>{
     // El runtime de rendimiento V7 no puede volver a inyectar scripts. El único
     // cargador funcional permitido es el plan autenticado de stabilize-core.
     await expect(page.locator('script[data-cc-runtime]')).toHaveCount(0);
+
+    // La comprobación estática del HTML no basta: un loader histórico también
+    // podría pedir una capa retirada después del login. Se observa la red real
+    // de las dos navegaciones y se rechaza cualquier solicitud de esos módulos.
+    const retiredRequests=requestedScripts.filter(url=>RETIRED.some(name=>url.includes(`/${name}`)));
+    expect(retiredRequests,`Se solicitaron módulos retirados durante el arranque: ${retiredRequests.join(' | ')}`).toEqual([]);
 
     const versionConflicts=consoleErrors.filter(text=>/Conflicto de versión/i.test(text));
     expect(versionConflicts,`Conflictos de versión: ${versionConflicts.join(' | ')}`).toEqual([]);

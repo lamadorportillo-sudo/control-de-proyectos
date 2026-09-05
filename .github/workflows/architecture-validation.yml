@@ -10,6 +10,7 @@ on:
       - 'tests/**'
       - 'supabase/**'
       - '.github/workflows/architecture-validation.yml'
+      - '.github/workflows/deploy-pages-critical.yml'
   workflow_dispatch:
 
 permissions:
@@ -64,6 +65,10 @@ jobs:
           node --check tests/contract-explicit-rules-browser.spec.cjs
           node --check tests/contract-document-safety-browser.spec.cjs
           node --test tests/*.test.cjs
+          if grep -q 'Forzar solo versiones aún no centralizadas' .github/workflows/deploy-pages-critical.yml; then
+            echo 'La publicación vuelve a modificar el HTML después de construirlo.' >&2
+            exit 1
+          fi
 
       - name: Construir exactamente el artefacto estabilizado
         shell: bash
@@ -78,6 +83,10 @@ jobs:
           grep -q 'performance-runtime-v1.js?v=20260904-perf10' index.html
           grep -q 'portal-web-v2.js?v=20260904-web4' index.html
           grep -q 'ui-stability-v1.js?v=20260904-stable2' index.html
+          grep -q 'project-tabs-complete-v1.js?v=20260831-tabscomplete34' index.html
+          grep -q 'ui-navigation-single-source-v1.js?v=20260903-singlenav2' index.html
+          grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordon4' index.html
+          grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat4' index.html
           grep -q 'contract-explicit-rules-v1.js?v=20260904-explicit1' index.html
           grep -q 'project-evaluation-dashboard-v1.js?v=20260904-projectevaluation2' index.html
           grep -q 'contract-document-safety-v1.js?v=20260904-docsafety3' index.html

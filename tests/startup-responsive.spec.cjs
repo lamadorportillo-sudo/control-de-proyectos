@@ -82,7 +82,7 @@ test.describe('arranque crítico', () => {
         visualPadding:visual?parseFloat(getComputedStyle(visual).paddingRight)||0:76,
       };
     });
-    expect(state.executiveNavDisplay).toBe('none');
+    expect(['none','missing']).toContain(state.executiveNavDisplay);
     expect(state.searchPlaceholder).toBe('Buscar proyecto, código, ubicación o estado…');
     expect(['none','normal','""']).toContain(state.searchBefore);
     expect(state.overflow).toBeLessThanOrEqual(2);

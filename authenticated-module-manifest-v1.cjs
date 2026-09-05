@@ -67,9 +67,10 @@ const supplementalModules=[
   ['contract-document-safety-v1.js','20260904-docsafety3'],
   ['contract-payment-documents-v1.js','20260904-advance-docs4'],
   ['contract-preview-v1.js','20260904-preview2'],
-  /* ZORDON antes del cierre técnico: se prueba y publica dentro del mismo plan,
-     sin desplazar el guard y el control técnico que deben quedar al final. */
+  /* ZORDON antes del cierre técnico: el buscador también queda dentro del plan
+     canónico para impedir que una versión histórica reactive capas retiradas. */
   ['zordon-continuous-runtime-v1.js','20260905-zordon5'],
+  ['zordon-project-search-v1.js','20260905-zordonsearch4'],
   ['zordon-chat-ui-v1.js','20260905-cleanchat5'],
   /* Última corrección visual general, antes del par técnico que debe seguir
      siendo el cierre funcional del plan autenticado. */

@@ -1,15 +1,12 @@
-/* ===== VISIBILIDAD GLOBAL Y CONTRASTE V4 ===== */
+/* ===== VISIBILIDAD GLOBAL Y CONTRASTE V5 · OBSERVADOR IDÉMPOTENTE ===== */
 (()=>{
 'use strict';
-if(window.__CC_VISIBILITY_AUDIT_V4__)return;
+if(window.__CC_VISIBILITY_AUDIT_V5__)return;
+window.__CC_VISIBILITY_AUDIT_V5__=true;
 window.__CC_VISIBILITY_AUDIT_V4__=true;
 
 const STYLE_ID='cc-visibility-audit-style';
-
-function injectCss(){
-  let s=document.getElementById(STYLE_ID);
-  if(!s){s=document.createElement('style');s.id=STYLE_ID;document.head.appendChild(s)}
-  s.textContent=`
+const CSS=`
     /* Cabecera clara: el contraste aquí es deliberado y local, no global. */
     body:not(.print-report) .topbar{
       background:#fbfcfa!important;color:#1f2c23!important;border:1px solid #d9e2d6!important;
@@ -104,6 +101,11 @@ function injectCss(){
       body:not(.print-report) .topbar .userbox{width:100%!important;flex-wrap:wrap!important}
     }
   `;
+
+function injectCss(){
+  let s=document.getElementById(STYLE_ID);
+  if(!s){s=document.createElement('style');s.id=STYLE_ID;document.head.appendChild(s)}
+  if(s.textContent!==CSS)s.textContent=CSS;
 }
 
 function rgb(value){
@@ -147,7 +149,7 @@ function auditContrast(){
 function clarifyHeader(){
   const top=document.querySelector('.topbar');if(!top)return;
   const cloud=top.querySelector('.cloud-pill');if(cloud){const sm=cloud.querySelector('small');if(sm&&!sm.textContent.trim())sm.textContent='NUBE';cloud.title='Estado de sincronización con Supabase';cloud.setAttribute('aria-label','Estado de sincronización con Supabase')}
-  const learn=document.getElementById('learnBtn');if(learn){learn.textContent='🧠 IA / Aprendizaje';learn.title='Abrir aprendizaje adaptativo';learn.setAttribute('aria-label','Abrir aprendizaje adaptativo')}
+  const learn=document.getElementById('learnBtn');if(learn){const label='🧠 IA / Aprendizaje';if(learn.textContent!==label)learn.textContent=label;learn.title='Abrir aprendizaje adaptativo';learn.setAttribute('aria-label','Abrir aprendizaje adaptativo')}
   const backup=document.getElementById('backupBtn');if(backup){backup.title='Descargar respaldo del expediente';backup.setAttribute('aria-label','Descargar respaldo del expediente')}
   const np=document.getElementById('newProjectBtn');if(np){np.title='Crear un nuevo proyecto';np.setAttribute('aria-label','Crear un nuevo proyecto')}
   top.querySelectorAll('button').forEach(b=>{if(!b.textContent.trim()&&!b.getAttribute('aria-label')){b.setAttribute('aria-label','Acción');b.title='Acción'}});

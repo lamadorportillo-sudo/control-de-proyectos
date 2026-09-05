@@ -1,6 +1,7 @@
 /* Fuente única de módulos para el arranque autenticado.
    Mantener nombres y versiones aquí evita que pestañas, build, estabilizador y
-   workflows creen catálogos incompatibles. */
+   workflows creen catálogos incompatibles. Arquitectura, recorrido real,
+   responsive y publicación validan estas mismas versiones antes de liberar. */
 
 const retiredModules=[
   'system-ui-refinement-v2.js',

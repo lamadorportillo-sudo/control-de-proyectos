@@ -4,10 +4,12 @@ const {supplementalModules}=require('../authenticated-module-manifest-v1.cjs');
 
 const guard=fs.readFileSync('ui-contrast-final-guard-v1.js','utf8');
 
-assert.match(guard,/GUARDIA FINAL DE CONTRASTE V7/,'debe existir la guardia final WCAG V7');
+assert.match(guard,/GUARDIA FINAL DE CONTRASTE V8/,'debe existir la guardia final WCAG V8');
 assert.match(guard,/#content \.exec-overview \.portfolio-ring\{[\s\S]*opacity:1!important/,'el anillo del Inicio no puede heredar una opacidad de animación');
 assert.match(guard,/#content \.exec-overview \.portfolio-ring-content/,'el anillo del Inicio debe tener un fondo real auditable');
 assert.match(guard,/#content \.exec-overview \.exec-bar-label b/,'los valores financieros del hero deben permanecer claros');
+assert.match(guard,/#content \.project-card-premium h3/,'los títulos de proyecto deben conservar contraste AA sobre tarjetas oscuras');
+assert.match(guard,/#content \.project-v3 h3/,'la variante compacta de proyecto debe conservar contraste AA');
 assert.match(guard,/#content \.tr-page \.tr-head h2/,'la cabecera oscura de transparencia debe conservar título claro');
 assert.match(guard,/#content \.tr-page \.tr-head p/,'la cabecera oscura de transparencia debe conservar texto secundario claro');
 assert.match(guard,/#content \.tr-page \.tr-period label span/,'Mes y Año deben leerse sobre la cabecera oscura');
@@ -37,6 +39,6 @@ const guardAt=names.indexOf('ui-contrast-final-guard-v1.js');
 const observerAt=names.indexOf('technical-control-observer-guard-v1.js');
 const technicalAt=names.indexOf('technical-control-v1.js');
 assert.ok(guardAt>=0&&guardAt<observerAt&&observerAt+1===technicalAt,'la corrección visual debe ejecutarse justo antes del par técnico final, sin desplazarlo');
-assert.equal(supplementalModules[guardAt][1],'20260905-contrast-final7','la versión V7 de la guardia final debe quedar fijada en el manifiesto');
+assert.equal(supplementalModules[guardAt][1],'20260905-contrast-final8','la versión V8 de la guardia final debe quedar fijada en el manifiesto');
 
-console.log('ui-contrast-final-guard: superficies claras, oscuras y presupuesto protegidos por contexto antes del cierre técnico');
+console.log('ui-contrast-final-guard: superficies claras, oscuras, proyectos y presupuesto protegidos por contexto antes del cierre técnico');

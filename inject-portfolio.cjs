@@ -1,20 +1,14 @@
 const fs=require('fs');
 const vm=require('vm');
+const {retiredModules}=require('./authenticated-module-manifest-v1.cjs');
 
 const htmlFile='index.html';
 
-/* Capas retiradas de forma intencional: todas duplicaban navegación, Inicio,
-   portafolio o detalle de proyecto que ya tienen una versión vigente. Git
-   conserva su historial; no deben seguir ejecutándose en producción. */
-const legacyVisualModules=[
-  'system-ui-refinement-v2.js',
-  'dashboard-executive-v1.js',
-  'home-executive-fix-v2.js',
-  'industrial-home-v1.js',
-  'portfolio-redesign-v1.js',
-  'project-portfolio-detail-v1.js',
-  'portfolio-screen-fix-v1.js',
-];
+/* Capas retiradas de forma intencional. La lista canónica vive en
+   authenticated-module-manifest-v1.cjs para que build, inyector y estabilizador
+   no mantengan catálogos distintos. Git conserva el historial; no deben seguir
+   ejecutándose en producción. */
+const legacyVisualModules=[...retiredModules];
 
 const modules=[
   ['portfolio-gallery-v1.js','20260828-gallery3'],
@@ -26,7 +20,7 @@ const modules=[
   ['integrity-diagnostics-v1.js','20260826-integrity1'],
   ['hero-typography-v1.js','20260830-hero1'],
   /* Última capa: una sola navegación visible, sin accionar menús ocultos. */
-  ['ui-navigation-single-source-v1.js','20260903-singlenav2'],
+  ['ui-navigation-single-source-v1.js','20260904-singlenav3'],
 ];
 
 if(!fs.existsSync(htmlFile)) throw new Error('No se encontró index.html.');

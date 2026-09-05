@@ -8,7 +8,7 @@ const CONTRACT_ID='a4444444-4444-4444-8444-444444444444';
 const fixture={
   users:[],
   projects:[{id:PROJECT_ID,code:'QA-RECORRIDO-001',name:'Proyecto de prueba recorrido completo',description:'Proyecto sintético para probar el flujo real de usuario desde cero.',location:'Santa María, La Paz',type:'Obra',projectType:'Obra',budget:2307639.52,status:'En ejecución',start:'2026-08-05',end:'2026-11-02',executionDays:90,physicalProgress:35,financialProgress:10.83,deletedAt:null,procurement:{offers:[]}}],
-  contracts:[{id:CONTRACT_ID,projectId:PROJECT_ID,number:'QA-CON-001',contractor:'Contratista de prueba',originalAmount:2307639.52,currentAmount:2307639.52,signatureDate:'2026-08-05',start:'2026-08-05',end:'2026-11-02',executionDays:90,status:'Vigente',advanceStatus:'Pagado',advanceApproved:346145.93,advancePaid:346145.93,recoveryTarget:80}],
+  contracts:[{id:CONTRACT_ID,projectId:PROJECT_ID,number:'QA-CON-001',contractor:'Contratista de prueba',originalAmount:2307639.52,currentAmount:2307639.52,signature:'2026-08-05',start:'2026-08-05',end:'2026-11-02',executionDays:90,status:'Vigente',advanceStatus:'Pagado',advanceApproved:346145.93,advancePaid:346145.93,recoveryTarget:80}],
   estimates:[{id:'a5555555-5555-4555-8555-555555555555',projectId:PROJECT_ID,contractId:CONTRACT_ID,number:1,start:'2026-08-05',end:'2026-08-19',gross:250000,advanceApplied:46875,qualityApplied:12500,isrApplied:0,totalDeductions:59375,net:190625,status:'Pagada',paymentDate:'2026-08-20'}],
   guarantees:[{id:'a6666666-6666-4666-8666-666666666666',projectId:PROJECT_ID,contractId:CONTRACT_ID,type:'Cumplimiento',number:'QA-GAR-001',issuer:'Entidad de prueba',base:2307639.52,percentage:15,applied:346145.93,start:'2026-08-05',end:'2026-12-02'}],
   changes:[{id:'a7777777-7777-4777-8777-777777777777',projectId:PROJECT_ID,contractId:CONTRACT_ID,number:1,type:'Orden de cambio',date:'2026-08-18',amountDelta:10000,daysDelta:2,status:'Borrador'}],
@@ -90,7 +90,17 @@ for(const vp of [{name:'desktop',width:1366,height:768},{name:'tablet',width:102
    await expect(page.locator('#content')).toContainText('Proyecto de prueba recorrido completo');
    await noOverflow(page,`${vp.name} expediente`);
 
-   // 5. Recorrer cada pestaña real del expediente y comprobar que no queda vacía.
+   // 5. El contrato debe abrir desde la pestaña real del expediente y mostrar
+   //    los datos del contrato ligado al proyecto, no una tarjeta vacía o ajena.
+   const contractTab=page.locator('nav.tabs button[data-tab], .tabs button[data-tab]').filter({hasText:/Contrato/i}).first();
+   await expect(contractTab,'No aparece la pestaña Contrato en el expediente').toBeVisible();
+   await contractTab.click();
+   await expect(page.locator('#tabBody')).toContainText('QA-CON-001',{timeout:8000});
+   await expect(page.locator('#tabBody')).toContainText('Contratista de prueba');
+   await expect(page.locator('#tabBody')).toContainText(/Vigente/i);
+   await noOverflow(page,`${vp.name} contrato`);
+
+   // 6. Recorrer cada pestaña real del expediente y comprobar que no queda vacía.
    const tabs=page.locator('nav.tabs button[data-tab], .tabs button[data-tab]');
    const count=await tabs.count();expect(count,'El expediente debe conservar sus módulos').toBeGreaterThanOrEqual(9);
    for(let i=0;i<count;i++){
@@ -103,14 +113,14 @@ for(const vp of [{name:'desktop',width:1366,height:768},{name:'tablet',width:102
     await noOverflow(page,`${vp.name} ${label}`);
    }
 
-   // 6. Volver al portafolio y luego a Inicio sin depender de la barra ejecutiva antigua.
+   // 7. Volver al portafolio y luego a Inicio sin depender de la barra ejecutiva antigua.
    await page.locator('#ccSidebar [data-route="proyectos"]').click();
    await expect(page.locator('#content')).toContainText('Proyectos',{timeout:8000});
    await page.locator('#ccSidebar [data-route="inicio"]').click();
    await expect(page.locator('#content')).toContainText(/Estado general del portafolio|Centro de Control/i,{timeout:8000});
    await expect(page.locator('#ccSidebar [data-route="inicio"]')).toHaveClass(/active/);
 
-   // 7. Transparencia debe abrir desde el sidebar sin reactivar la navegación heredada.
+   // 8. Transparencia debe abrir desde el sidebar sin reactivar la navegación heredada.
    await page.locator('#ccSidebar [data-route="transparencia"]').click();
    await expect(page.locator('#content')).toContainText(/Portal de Transparencia|Control mensual de formatos/i,{timeout:8000});
    await assertSinglePrimaryNavigation(page);

@@ -2,6 +2,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 
+const source=fs.readFileSync('integrity-diagnostics-v1.js','utf8');
 const db={
   projects:[{id:'p1',code:'P-001',status:'En ejecución'}],
   contracts:[{id:'c1',projectId:'p1',originalAmount:1000,currentAmount:1150,start:'2026-05-08',end:'2026-06-29',executionDays:90,status:'Activo'}],
@@ -11,13 +12,13 @@ const db={
 const context={
   console,window:null,db,
   document:{getElementById(){return null},querySelector(){return null},querySelectorAll(){return[]}},
-  MutationObserver:class{observe(){}},setTimeout(){},setInterval(){return 1},clearInterval(){},requestAnimationFrame(fn){fn()},
+  MutationObserver:class{observe(){} disconnect(){}},setTimeout(){},setInterval(){return 1},clearInterval(){},clearTimeout(){},requestAnimationFrame(fn){fn()},
   fmtC:v=>`L ${Number(v).toFixed(2)}`,
   __ccContractIntegrity:{guaranteeIssues:g=>[...(!g.number?['Falta el número de garantía.']:[]),...(!g.document?['Falta la referencia documental.']:[])]}
 };
 context.window=context;
 vm.createContext(context);
-vm.runInContext(fs.readFileSync('integrity-diagnostics-v1.js','utf8'),context,{filename:'integrity-diagnostics-v1.js'});
+vm.runInContext(source,context,{filename:'integrity-diagnostics-v1.js'});
 
 const api=context.__ccIntegrityDiagnostics;
 const before=JSON.stringify(db);
@@ -30,4 +31,8 @@ assert(issues.some(x=>x.kind==='contract_dates'),'debe detectar plazo incompatib
 assert.equal(issues.filter(x=>x.kind==='guarantee').length,2,'debe informar documentación faltante de garantía');
 assert.equal(JSON.stringify(db),before,'el diagnóstico no debe alterar datos contractuales');
 
-console.log('integrity-diagnostics: 7 verificaciones no destructivas superadas');
+assert.doesNotMatch(source,/zordon-project-search-v1\.js/i,'integridad no debe cargar su propia versión del buscador ZORDON');
+assert.doesNotMatch(source,/zordon-unified-density-v1\.js/i,'integridad no debe cargar su propia versión de densidad ZORDON');
+assert.doesNotMatch(source,/data-zordon-project-search-loader|data-zordon-unified-density-loader/i,'integridad no debe crear cargadores secundarios');
+
+console.log('integrity-diagnostics: diagnóstico no destructivo y sin cargadores secundarios verificados');

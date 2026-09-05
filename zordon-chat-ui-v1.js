@@ -1,7 +1,8 @@
-/* ===== ZORDON · CHAT NATURAL Y CONTINUO V4 ===== */
+/* ===== ZORDON · CHAT NATURAL Y CONTINUO V5 · EVENTOS AISLADOS ===== */
 (()=>{
 'use strict';
-if(window.__CC_ZORDON_CHAT_UI_V4__)return;
+if(window.__CC_ZORDON_CHAT_UI_V5__)return;
+window.__CC_ZORDON_CHAT_UI_V5__=true;
 window.__CC_ZORDON_CHAT_UI_V4__=true;
 
 let busy=false;
@@ -33,7 +34,7 @@ function removeIntro(){
       if(node.matches?.('.cc-eng-msg.bot')&&/Qué tal\. Soy (?:Halu|ZORDON)|Aquí hablamos directo|Voy a seguir el hilo contigo/i.test(node.textContent||''))node.remove();
     });
   }
-  b.style.paddingTop='14px';
+  if(b.style.paddingTop!=='14px')b.style.paddingTop='14px';
 }
 
 function technicalMessage(text){
@@ -142,21 +143,22 @@ async function ask(text){
   }finally{finishControls(btn)}
 }
 
-function pointInside(el,x,y){
-  if(!el||!Number.isFinite(x)||!Number.isFinite(y))return false;
-  const r=el.getBoundingClientRect();return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;
-}
 function isSendEvent(event){
   const btn=sendButton();if(!btn)return false;
   const target=event.target;
-  if(target===btn||target?.closest?.('#ccEngineerChat .cc-eng-chat-form button[type="submit"],#ccEngineerChat .cc-eng-chat-form button[data-zordon-send]'))return true;
-  return pointInside(btn,event.clientX,event.clientY);
+  /* Un clic de ZORDON solo puede originarse en su botón real. La versión anterior
+     comparaba coordenadas globales contra el rectángulo del botón; un clic ajeno
+     con clientX/clientY coincidentes —incluidos clics sintéticos (0,0)— podía ser
+     secuestrado y cancelado con stopImmediatePropagation(). */
+  return target===btn||!!target?.closest?.('#ccEngineerChat .cc-eng-chat-form button[type="submit"],#ccEngineerChat .cc-eng-chat-form button[data-zordon-send]');
 }
 function bindUi(){
   const f=form(),inp=input(),btn=sendButton();if(!f||!inp||!btn)return;
   removeIntro();
-  btn.dataset.zordonSend='1';btn.type='button';btn.disabled=false;btn.setAttribute('aria-disabled','false');
-  btn.style.setProperty('pointer-events','auto','important');btn.style.setProperty('position','relative','important');btn.style.setProperty('z-index','2147483647','important');
+  btn.dataset.zordonSend='1';btn.type='button';
+  if(!busy&&btn.disabled)btn.disabled=false;
+  btn.setAttribute('aria-disabled',busy?'true':'false');
+  btn.style.setProperty('pointer-events',busy?'none':'auto','important');btn.style.setProperty('position','relative','important');btn.style.setProperty('z-index','2147483647','important');
   inp.style.setProperty('pointer-events','auto','important');inp.style.setProperty('position','relative','important');inp.style.setProperty('z-index','2147483646','important');
   f.onsubmit=e=>{e.preventDefault();e.stopPropagation();ask(inp.value)};
 }
@@ -171,8 +173,20 @@ window.addEventListener('keydown',event=>{
   event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();ask(inp.value||'');
 },true);
 
-const observer=new MutationObserver(()=>bindUi());observer.observe(document.documentElement,{childList:true,subtree:true});
+let queued=false;
+function scheduleBind(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;bindUi()})}
+const NativeObserver=window.__ccNativeMutationObserver||window.MutationObserver;
+const observer=NativeObserver?new NativeObserver(mutations=>{
+  for(const mutation of mutations){
+    for(const node of mutation.addedNodes||[]){
+      if(node.nodeType!==1)continue;
+      if(node.matches?.('#ccEngineerChat,#ccEngineerChatLaunch')||node.querySelector?.('#ccEngineerChat,#ccEngineerChatLaunch')||node.closest?.('#ccEngineerChat')){scheduleBind();return}
+    }
+  }
+}):null;
+observer?.observe(document.documentElement,{childList:true,subtree:true});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindUi,{once:true});else bindUi();
 setTimeout(bindUi,250);setTimeout(bindUi,1000);
-window.__ccZordonChatUI={send:ask,clean:removeIntro,status:()=>({busy,ready:!!sendButton(),version:4,mode:conversation()?.lastType||''})};
+window.addEventListener('pagehide',()=>observer?.disconnect?.(),{once:true});
+window.__ccZordonChatUI={send:ask,clean:removeIntro,status:()=>({busy,ready:!!sendButton(),version:5,mode:conversation()?.lastType||''})};
 })();

@@ -10,13 +10,22 @@ on:
       - 'tests/full-user-journey-responsive.spec.cjs'
       - 'tests/project-create-route-responsive.spec.cjs'
       - '.github/workflows/user-journey-audit.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - '*.js'
+      - '*.cjs'
+      - 'tests/full-user-journey-responsive.spec.cjs'
+      - 'tests/project-create-route-responsive.spec.cjs'
+      - '.github/workflows/user-journey-audit.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: user-journey-${{ github.ref }}
+  group: user-journey-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -36,18 +45,60 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          node --check authenticated-module-manifest-v1.cjs
           node --check ui-navigation-single-source-v1.js
+          node --check technical-control-permissions-v1.js
+          node --check system-ui-refinement-v3.js
+          node --check zordon-continuous-runtime-v1.js
+          node --check zordon-project-search-v1.js
+          node --check zordon-unified-density-v1.js
+          node --check zordon-chat-ui-v1.js
+          node --check ui-contrast-final-guard-v1.js
+          node --check ui-stability-v1.js
+          node --check performance-runtime-v1.js
+          node --check private-access-v1.js
+          node --check core-hardening-v1.js
           node --check stabilize-core-v1.cjs
           node --check tests/full-user-journey-responsive.spec.cjs
           node --check tests/project-create-route-responsive.spec.cjs
+          grep -q 'NAVEGACIÓN ÚNICA V6 · SIN DOBLE DESPLAZAMIENTO' ui-navigation-single-source-v1.js
+          grep -q 'PERMISOS E IDIOMA V6 · RESOLUCIÓN TARDÍA SEGURA' technical-control-permissions-v1.js
+          grep -q 'REFINAMIENTO GENERAL DE INTERFAZ V5 · OBSERVADOR ESTABLE' system-ui-refinement-v3.js
+          grep -q 'ZORDON · NÚCLEO DE APRENDIZAJE CONTINUO V4 · IDÉMPOTENTE' zordon-continuous-runtime-v1.js
+          grep -q 'BUSCADOR INTELIGENTE DE PROYECTOS V5 · LISTA ESTABLE' zordon-project-search-v1.js
+          grep -q 'ZORDON · DENSIDAD UNIFICADA DE INTERFAZ V1' zordon-unified-density-v1.js
+          grep -q 'ZORDON · CHAT NATURAL Y CONTINUO V5 · EVENTOS AISLADOS' zordon-chat-ui-v1.js
+          grep -q 'GUARDIA FINAL DE CONTRASTE V9' ui-contrast-final-guard-v1.js
+          if grep -q 'setInterval(' zordon-continuous-runtime-v1.js; then
+            echo 'ZORDON volvió a instalar un intervalo de reescritura permanente.' >&2
+            exit 1
+          fi
+          if grep -q 'pointInside(' zordon-chat-ui-v1.js; then
+            echo 'ZORDON volvió a capturar clics por coordenadas globales.' >&2
+            exit 1
+          fi
+          if grep -q 'industrial-home-v1.js' zordon-project-search-v1.js; then
+            echo 'El buscador ZORDON volvió a reactivar la portada industrial retirada.' >&2
+            exit 1
+          fi
           node build-pages.cjs
           node inject-portfolio.cjs
           node patch-session-security.cjs
           node stabilize-core-v1.cjs
-          grep -q 'ui-navigation-single-source-v1.js?v=20260903-singlenav2' index.html
+          grep -q 'ui-navigation-single-source-v1.js?v=20260905-singlenav6' index.html
+          grep -q 'technical-control-permissions-v1.js?v=20260905-controltecnicoperm6' index.html
+          grep -q 'system-ui-refinement-v3.js?v=20260905-system6' index.html
+          grep -q 'private-access-v1.js?v=20260904-private6' index.html
+          grep -q 'performance-runtime-v1.js?v=20260904-perf10' index.html
+          grep -q 'zordon-continuous-runtime-v1.js?v=20260905-zordon5' index.html
+          grep -q 'zordon-project-search-v1.js?v=20260905-zordonsearch5' index.html
+          grep -q 'zordon-unified-density-v1.js?v=20260905-density2' index.html
+          grep -q 'zordon-chat-ui-v1.js?v=20260905-cleanchat5' index.html
+          grep -q 'ui-contrast-final-guard-v1.js?v=20260905-contrast-final9' index.html
+          grep -q '__CC_AUTH_BOOT_FAILED__' index.html
           grep -q "view.screen='project';view.tab='summary'" index.html
           grep -q "const targetPct=Number(contract.recoveryTarget||0);" index.html
-          for retired in dashboard-executive-v1.js home-executive-fix-v2.js portfolio-redesign-v1.js project-portfolio-detail-v1.js portfolio-screen-fix-v1.js; do
+          for retired in system-ui-refinement-v2.js dashboard-executive-v1.js home-executive-fix-v2.js industrial-home-v1.js portfolio-redesign-v1.js project-portfolio-detail-v1.js portfolio-screen-fix-v1.js; do
             if grep -q "$retired" index.html; then
               echo "Sigue cargada navegación/dashboard heredado: $retired" >&2
               exit 1

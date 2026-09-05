@@ -25,8 +25,29 @@ if(!html.includes(newRefreshFetch)){
   html=html.replace(oldRefreshFetch,newRefreshFetch);
 }
 
+/* El núcleo histórico tenía un MutationObserver global que llama decorate() tras
+   cualquier inserción. Dentro de decorate se reasignaba textContent aunque el
+   valor ya fuera idéntico; esa reasignación vuelve a generar childList y el
+   observador se alimentaba a sí mismo. El problema se hacía crítico al abrir
+   Contrato porque varios módulos añaden tarjetas después del render inicial. */
+const oldProgressDecoration="if(label)label.textContent=a.physicalAvailable?'Avance físico observado · última visita':'Avance físico sin registrar';if(val)val.textContent=a.physicalAvailable?`${a.physical.toFixed(2)}%`:'—';if(fill)fill.style.width=`${a.physicalAvailable?a.physical:0}%`;";
+const newProgressDecoration="if(label){const nextLabel=a.physicalAvailable?'Avance físico observado · última visita':'Avance físico sin registrar';if(label.textContent!==nextLabel)label.textContent=nextLabel}if(val){const nextValue=a.physicalAvailable?`${a.physical.toFixed(2)}%`:'—';if(val.textContent!==nextValue)val.textContent=nextValue}if(fill){const nextWidth=`${a.physicalAvailable?a.physical:0}%`;if(fill.style.width!==nextWidth)fill.style.width=nextWidth}";
+if(!html.includes(newProgressDecoration)){
+  if(!html.includes(oldProgressDecoration))throw new Error('No se encontró la decoración histórica de avance para hacerla idempotente.');
+  html=html.replace(oldProgressDecoration,newProgressDecoration);
+}
+
+const oldDecorationObserver="new MutationObserver(()=>setTimeout(decorate,0)).observe(document.documentElement,{subtree:true,childList:true});";
+const newDecorationObserver="let ccDecorateQueued=false;new MutationObserver(()=>{if(ccDecorateQueued)return;ccDecorateQueued=true;const run=()=>{ccDecorateQueued=false;decorate()};if(typeof requestAnimationFrame==='function')requestAnimationFrame(run);else setTimeout(run,0)}).observe(document.documentElement,{subtree:true,childList:true});";
+if(!html.includes(newDecorationObserver)){
+  if(!html.includes(oldDecorationObserver))throw new Error('No se encontró el observador histórico de decoración para estabilizarlo.');
+  html=html.replace(oldDecorationObserver,newDecorationObserver);
+}
+
 if(!html.includes("securitySessionId:priorSession.securitySessionId||''"))throw new Error('La renovación todavía perdería el identificador de seguridad.');
 if(!html.includes("deviceLabel:priorSession.deviceLabel||''"))throw new Error('La renovación todavía perdería la identificación del dispositivo.');
+if(html.includes(oldProgressDecoration))throw new Error('La decoración de avance todavía reescribe el mismo texto y puede crear un bucle de MutationObserver.');
+if(html.includes(oldDecorationObserver))throw new Error('El observador de decoración todavía agenda trabajo ilimitado por cada mutación.');
 
 fs.writeFileSync(path,html,'utf8');
-console.log('Renovación de token endurecida: sesión de seguridad preservada y respuestas autenticadas sin caché.');
+console.log('Renovación de token endurecida y observador del núcleo estabilizado sin reescrituras recursivas.');

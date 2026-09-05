@@ -1,10 +1,10 @@
-/* ===== PERSISTENCIA ROBUSTA DE FOTOGRAFIAS DE VISITAS V2 ===== */
+/* ===== PERSISTENCIA ROBUSTA DE FOTOGRAFIAS DE VISITAS V3 · SIN CARGADOR PARALELO ===== */
 (()=>{
 'use strict';
-if(window.__CC_VISIT_PHOTO_PERSIST_V2__)return;
+if(window.__CC_VISIT_PHOTO_PERSIST_V3__)return;
+window.__CC_VISIT_PHOTO_PERSIST_V3__=true;
 window.__CC_VISIT_PHOTO_PERSIST_V2__=true;
 const A=v=>Array.isArray(v)?v:[];
-const BASE=new URL('.',document.currentScript?.src||location.href).href;
 let pending=null;
 function srcOf(p){if(typeof p==='string')return p;return String(p?.src||p?.url||p?.dataUrl||p?.data_url||p?.image||'')}
 function normalize(p,i=0){if(typeof p==='string')return{id:`legacy_${i}`,name:`Fotografía ${i+1}`,src:p};if(!p||typeof p!=='object')return null;return{...p,id:p.id||`legacy_${i}`,name:p.name||p.filename||`Fotografía ${i+1}`,src:srcOf(p)}}
@@ -24,21 +24,19 @@ function applyPending(){
  }catch(e){console.error('Error guardando fotografías de la visita',e);return false}
 }
 function hookSave(){
- if(typeof saveDB!=='function'||saveDB.__ccPhotoPersistV2)return;
+ if(typeof saveDB!=='function'||saveDB.__ccPhotoPersistV3)return;
  const base=saveDB;
  const wrapped=function(){applyPending();return base.apply(this,arguments)};
+ wrapped.__ccPhotoPersistV3=true;
  wrapped.__ccPhotoPersistV2=true;
  saveDB=wrapped;
 }
-function loadIndependentVisitReports(){
- if(window.__CC_VISIT_INDEPENDENT_REPORTS_V1__||document.querySelector('script[data-cc-visit-independent-reports]'))return;
- const s=document.createElement('script');
- s.src=BASE+'visit-independent-reports-v1.js?v=20260827-community1';
- s.async=false;
- s.dataset.ccVisitIndependentReports='1';
- s.onerror=()=>console.warn('No se pudo cargar el módulo de informes independientes de visitas.');
- (document.body||document.documentElement).appendChild(s);
-}
+/*
+  Este módulo NO carga visit-independent-reports-v1.js ni ninguna otra
+  dependencia. El plan autenticado central es la única autoridad de carga y
+  versión. La implementación V2 inyectaba una copia ?v=20260827-community1 y
+  podía competir con la versión canónica del arranque autenticado.
+*/
 document.addEventListener('submit',e=>{
  const form=e.target;if(!form||form.id!=='visitForm')return;
  const pid=typeof view!=='undefined'?view.projectId:'';
@@ -48,7 +46,9 @@ document.addEventListener('submit',e=>{
  pending={projectId:pid,visitId:existing?.id||'',number,photos:(formPhotos.length?formPhotos:photosOf(existing)).map((x,i)=>normalize(x,i)).filter(Boolean)};
  hookSave();
 },true);
-const mo=new MutationObserver(()=>hookSave());mo.observe(document.documentElement,{subtree:true,childList:true});
+/* saveDB se define antes de este módulo en el arranque autenticado normal. Si una
+   restauración histórica altera ese orden, un único reintento acotado evita
+   introducir otro MutationObserver global. */
 hookSave();
-setTimeout(loadIndependentVisitReports,0);
+if(typeof saveDB!=='function')setTimeout(hookSave,250);
 })();

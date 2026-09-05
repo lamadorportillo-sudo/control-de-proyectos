@@ -43,7 +43,7 @@ const fixture = {
     contractor: 'Contratista de prueba',
     originalAmount: 2307639.52,
     currentAmount: 2307639.52,
-    signatureDate: '2026-08-05',
+    signature: '2026-08-05',
     start: '2026-08-05',
     end: '2026-11-02',
     executionDays: 90,
@@ -127,14 +127,20 @@ async function assertNoGlobalOverflow(page, label) {
 
 async function openSidebarIfNeeded(page){
   const sidebar=page.locator('#ccSidebar');
-  if(await sidebar.isVisible().catch(()=>false))return;
   const toggle=page.locator('#ccMobileToggle');
-  if(await toggle.isVisible().catch(()=>false)){await toggle.click();await expect(sidebar).toBeVisible();}
+  if(await toggle.isVisible().catch(()=>false)){
+    const isOpen=await sidebar.evaluate(el=>el.classList.contains('open')).catch(()=>false);
+    if(!isOpen){await toggle.click();await expect(sidebar).toHaveClass(/open/);}
+    return;
+  }
+  await expect(sidebar).toBeVisible();
 }
 async function clickRoute(page,route){
   await openSidebarIfNeeded(page);
   const btn=page.locator(`#ccSidebar [data-route="${route}"]`);
   await expect(btn).toBeVisible();await btn.click();await page.waitForTimeout(260);
+  const toggle=page.locator('#ccMobileToggle');
+  if(await toggle.isVisible().catch(()=>false))await expect(page.locator('#ccSidebar')).not.toHaveClass(/open/);
 }
 
 for (const vp of viewports) {
@@ -154,9 +160,10 @@ for (const vp of viewports) {
       await expect(page.locator('#ccxNav')).toBeHidden();
       await expect(page.locator('#ccSidebar [data-route="transparencia"]')).toHaveCount(1);
       if (vp.width > 900) {
-        await expect(page.locator('.service-strip .service-tile')).toHaveCount(5);
-        const tileRows = await page.locator('.service-strip .service-tile').evaluateAll(tiles => [...new Set(tiles.map(tile => Math.round(tile.getBoundingClientRect().top)))]);
-        expect(tileRows, `${vp.name}: las cinco tarjetas de servicios deben permanecer en una sola línea`).toHaveLength(1);
+        await expect(page.locator('#ccSidebar')).toBeVisible();
+        await expect(page.locator('#ccCommandbar')).toBeVisible();
+        await expect(page.locator('#ccCommandbar [data-command]')).toHaveCount(4);
+        await expect(page.locator('#ccSidebar [data-route="inicio"]')).toHaveCount(1);
       }
       await assertNoGlobalOverflow(page, `${vp.name} inicio`);
 
@@ -242,6 +249,10 @@ test.describe('ZORDON autenticado', () => {
     await installAuthenticatedFixture(page, 'admin');
     await page.goto(appUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForSelector('#ccSidebar', { timeout: 20000 });
+    await page.waitForFunction(()=>window.__CC_AUTH_MODULES_READY__===true||window.__CC_AUTH_BOOT_FAILED__===true,null,{timeout:30000});
+    const boot=await page.evaluate(()=>({ready:window.__CC_AUTH_MODULES_READY__===true,failed:window.__CC_AUTH_BOOT_FAILED__===true,errors:window.__CC_AUTH_MODULE_ERRORS__||[]}));
+    expect(boot.failed,`ZORDON no puede probarse sobre un arranque fallido: ${JSON.stringify(boot.errors)}`).toBe(false);
+    expect(boot.ready,`ZORDON debe esperar al plan autenticado completo: ${JSON.stringify(boot.errors)}`).toBe(true);
 
     const result = await page.evaluate(projectId => {
       const core = window.__ccZordonLearning;

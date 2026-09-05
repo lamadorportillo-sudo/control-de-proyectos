@@ -1,7 +1,9 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const manual=fs.readFileSync('engineering-manual-reference-v1.js','utf8');
+const observerGuard=fs.readFileSync('engineering-manual-observer-guard-v1.js','utf8');
 const loader=fs.readFileSync('project-tabs-complete-v1.js','utf8');
+const manifest=require('../authenticated-module-manifest-v1.cjs');
 
 assert.match(manual,/REFERENCIA TECNICA DEL MANUAL DE INGENIERIA V2/,'debe estar activa la versión 2 del Manual');
 assert.match(manual,/pages:150/,'debe registrar las 150 páginas del Manual');
@@ -25,4 +27,12 @@ assert.match(manual,/Ley N\.º 32069 de Perú/,'debe diferenciar la referencia l
 assert.match(manual,/normativa hondureña/,'debe priorizar la normativa aplicable en Honduras');
 assert.match(loader,/engineering-manual-reference-v1\.js\?v=20260823-manual2/,'el cargador debe usar la versión nueva del Manual');
 
-console.log('manual-engineering-knowledge: índice de 150 páginas, referencia Halu y resumen visible verificados');
+assert.match(observerGuard,/__CC_ENGINEERING_MANUAL_OBSERVER_GUARD_V1__/,'debe existir la guardia contra el ciclo del observador global');
+assert.match(observerGuard,/__CC_ENGINEERING_MANUAL_OBSERVER_FILTERED__/,'la guardia debe dejar evidencia de que interceptó el observador');
+assert.match(observerGuard,/containsRelevantElement/,'la guardia debe filtrar mutaciones por contenedores relevantes');
+const names=manifest.supplementalModules.map(x=>x[0]);
+const manualIndex=names.indexOf('engineering-manual-reference-v1.js');
+assert.ok(manualIndex>0,'el Manual debe formar parte del plan autenticado');
+assert.equal(names[manualIndex-1],'engineering-manual-observer-guard-v1.js','la guardia debe cargarse inmediatamente antes del Manual');
+
+console.log('manual-engineering-knowledge: índice de 150 páginas, referencia Halu, resumen visible y observador estabilizado verificados');

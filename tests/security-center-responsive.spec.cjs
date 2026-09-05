@@ -64,6 +64,15 @@ async function noSeriousContrast(page,label){
   expect(bad,`${label}: el Centro de Seguridad no debe contener texto de contraste insuficiente`).toEqual([]);
 }
 
+async function openMobileSidebar(page){
+  const toggle=page.locator('#ccMobileToggle');
+  if(!(await toggle.isVisible().catch(()=>false)))return false;
+  const sidebar=page.locator('#ccSidebar');
+  const isOpen=await sidebar.evaluate(el=>el.classList.contains('open')).catch(()=>false);
+  if(!isOpen){await toggle.click();await expect(sidebar).toHaveClass(/open/);}
+  return true;
+}
+
 for(const vp of [{name:'seguridad-mobile',width:390,height:844,touch:true},{name:'seguridad-desktop',width:1366,height:768,touch:false}]){
   test.describe(vp.name,()=>{
     test.use({viewport:{width:vp.width,height:vp.height},hasTouch:vp.touch});
@@ -73,9 +82,11 @@ for(const vp of [{name:'seguridad-mobile',width:390,height:844,touch:true},{name
       await page.goto(appUrl,{waitUntil:'domcontentloaded',timeout:60000});
       await page.waitForTimeout(900);
       await page.evaluate(()=>{try{cloudRole='admin'}catch{};document.body.appendChild(document.createComment('qa-security-admin'))});
+      const mobileMenu=await openMobileSidebar(page);
       const securityButton=page.locator('#ccSidebar [data-route="seguridad"]');
       await expect(securityButton).toBeVisible({timeout:15000});
       await securityButton.click();
+      if(mobileMenu)await expect(page.locator('#ccSidebar')).not.toHaveClass(/open/);
       await page.waitForSelector('#ccSecurityCenter .cc-sec-kpis',{timeout:15000});
       await page.waitForTimeout(250);
 

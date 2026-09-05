@@ -68,23 +68,3 @@ if(typeof renderProjects==='function'&&!renderProjects.__cpAlertsCompact){const 
 document.addEventListener('click',e=>{if(!e.target.closest?.('[data-cp-alerts-open]'))return;state.expanded=!state.expanded;apply()},true);
 ensureStyle();setTimeout(apply,0);setTimeout(apply,250);setTimeout(apply,900);
 })();
-
-/* Cargador estable de extensiones corporativas. */
-(()=>{
-'use strict';
-if(window.__CC_STABLE_EXTENSIONS_LOADER_V1__)return;
-window.__CC_STABLE_EXTENSIONS_LOADER_V1__=true;
-const modules=[
-  {flag:'__CC_PROCUREMENT_THRESHOLDS_V1__',src:'procurement-thresholds-v1.js?v=20260820-gacetas3',key:'procurement'},
-  {flag:'__CC_CONTRACTS_CENTER_V1__',src:'contracts-center-v1.js?v=20260820-contracts1',key:'contracts'},
-  {flag:'__CC_CORPORATE_UI_V1__',src:'corporate-ui-v1.js?v=20260820-corporate2',key:'corporate'},
-  {flag:'__CC_CORPORATE_POLISH_V1__',src:'corporate-polish-v1.js?v=20260820-polish1',key:'polish'}
-];
-function loadAll(){
-  modules.forEach(m=>{
-    if(window[m.flag]||document.querySelector(`script[data-cc-extension="${m.key}"]`))return;
-    const s=document.createElement('script');s.src=m.src;s.async=false;s.dataset.ccExtension=m.key;s.onerror=()=>console.error(`No se pudo cargar ${m.src}`);document.head.appendChild(s);
-  });
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadAll,{once:true});else loadAll();
-})();

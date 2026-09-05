@@ -43,7 +43,7 @@ const fixture = {
     contractor: 'Contratista de prueba',
     originalAmount: 2307639.52,
     currentAmount: 2307639.52,
-    signatureDate: '2026-08-05',
+    signature: '2026-08-05',
     start: '2026-08-05',
     end: '2026-11-02',
     executionDays: 90,
@@ -242,6 +242,10 @@ test.describe('ZORDON autenticado', () => {
     await installAuthenticatedFixture(page, 'admin');
     await page.goto(appUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForSelector('#ccSidebar', { timeout: 20000 });
+    await page.waitForFunction(()=>window.__CC_AUTH_MODULES_READY__===true||window.__CC_AUTH_BOOT_FAILED__===true,null,{timeout:30000});
+    const boot=await page.evaluate(()=>({ready:window.__CC_AUTH_MODULES_READY__===true,failed:window.__CC_AUTH_BOOT_FAILED__===true,errors:window.__CC_AUTH_MODULE_ERRORS__||[]}));
+    expect(boot.failed,`ZORDON no puede probarse sobre un arranque fallido: ${JSON.stringify(boot.errors)}`).toBe(false);
+    expect(boot.ready,`ZORDON debe esperar al plan autenticado completo: ${JSON.stringify(boot.errors)}`).toBe(true);
 
     const result = await page.evaluate(projectId => {
       const core = window.__ccZordonLearning;

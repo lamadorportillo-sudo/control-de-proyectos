@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - audit-architecture-fixes
     paths:
       - 'index.html'
       - '*.js'
@@ -65,6 +66,13 @@ jobs:
           node --check playwright.config.cjs
           echo '=== PRUEBAS ESTRUCTURALES ==='
           node --test tests/*.test.cjs
+          grep -q 'NAVEGACIÓN ÚNICA V6 · SIN DOBLE DESPLAZAMIENTO' ui-navigation-single-source-v1.js
+          grep -q 'PERMISOS E IDIOMA V6 · RESOLUCIÓN TARDÍA SEGURA' technical-control-permissions-v1.js
+          grep -q 'ZORDON · NÚCLEO DE APRENDIZAJE CONTINUO V4 · IDÉMPOTENTE' zordon-continuous-runtime-v1.js
+          if grep -q 'setInterval(' zordon-continuous-runtime-v1.js; then
+            echo 'ZORDON volvió a instalar un intervalo permanente de reescritura.' >&2
+            exit 1
+          fi
 
       - name: Reconstruir la interfaz exacta que se auditará
         shell: bash
@@ -80,8 +88,9 @@ jobs:
           grep -q 'private-access-v1.js?v=20260904-private6' index.html
           grep -q 'performance-runtime-v1.js?v=20260904-perf10' index.html
           grep -q 'project-tabs-complete-v1.js?v=20260831-tabscomplete34' index.html
-          grep -q 'ui-navigation-single-source-v1.js?v=20260903-singlenav2' index.html
-          grep -q 'zordon-continuous-runtime-v1.js?v=20260824-zordon4' index.html
+          grep -q 'ui-navigation-single-source-v1.js?v=20260905-singlenav6' index.html
+          grep -q 'technical-control-permissions-v1.js?v=20260905-controltecnicoperm6' index.html
+          grep -q 'zordon-continuous-runtime-v1.js?v=20260905-zordon5' index.html
           grep -q 'zordon-chat-ui-v1.js?v=20260824-cleanchat4' index.html
           grep -q 'data-cc-auth-loader data-cc-auth-plan' index.html
           grep -q '__CC_AUTH_BOOT_FAILED__' index.html

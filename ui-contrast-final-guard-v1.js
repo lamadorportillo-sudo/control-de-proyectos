@@ -1,7 +1,8 @@
-/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V9 ===== */
+/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V10 ===== */
 (()=>{
 'use strict';
-if(window.__CC_CONTRAST_FINAL_GUARD_V9__)return;
+if(window.__CC_CONTRAST_FINAL_GUARD_V10__)return;
+window.__CC_CONTRAST_FINAL_GUARD_V10__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V9__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V8__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V7__=true;
@@ -172,6 +173,52 @@ function install(){
   html body.cc-portal-v2:not(.print-report) #content #cpExecutionOnly .cp-exec-open{
     background:#174a9c!important;background-image:none!important;color:#fff!important;
     border-color:#5b91df!important;
+  }
+
+  /* Informes estándar · el documento se representa deliberadamente como papel
+     blanco dentro de una aplicación oscura. Las capas globales de tema no pueden
+     recolorear sus descendientes con texto claro. Se limita la corrección a los
+     informes estándar para no alterar el formato municipal de adjudicación. */
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report){
+    background:#fff!important;background-image:none!important;color:#172033!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) h1,
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) h2,
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) h3,
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) h4{
+    color:#172033!important;opacity:1!important;text-shadow:none!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) p,
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) li,
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) td{
+    color:#26384d!important;opacity:1!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) small,
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) .generated,
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) .report-section-title .sub,
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) .report-kpi .subvalue{
+    color:#52657a!important;opacity:1!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) .report-brand-copy strong,
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) .report-docbox b,
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) .project-line,
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) .report-fact strong,
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) .report-kpi .value,
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) .report-money span{
+    color:#172033!important;opacity:1!important;text-shadow:none!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) .report-mark,
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) .report-section-title .num{
+    color:#fff!important;opacity:1!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) .report-status.attention{
+    background:#fff8e9!important;color:#754500!important;border-color:#c89235!important;opacity:1!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) .report-status.danger{
+    background:#fff2f2!important;color:#7f1d1d!important;border-color:#d98b8b!important;opacity:1!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content #tabBody .report-paper:not(.municipal-award-report) .report-status.good{
+    background:#f1faf4!important;color:#175334!important;border-color:#86ba99!important;opacity:1!important;
   }
 
   /* Ciclo de vida: la banda es oscura. Los conteos sin datos siguen siendo

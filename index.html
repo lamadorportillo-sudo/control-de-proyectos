@@ -719,10 +719,13 @@ const safeLocal=v=>{try{return typeof window.__ccSafeSlimState==='function'?wind
 let baseState=clone(window.__ccCloudBaseState||null);
 let stateVersion=Number(window.__ccCloudVersion||0)||null;
 let conflictOpen=false;
+let recoveryReadOnly=false;
+let canonicalHydrationPromise=null;
+let recoveredCloudRole='consulta';
 
 /* El arranque completo comparte un solo presupuesto de tiempo. Antes cada
-   petición podía consumir 12 s por separado, de modo que membresía + perfil +
-   estado podían inmovilizar la interfaz durante decenas de segundos. */
+   petición podía consumir 12 s por separado. Ahora el presupuesto protege la
+   recuperación ligera; el estado JSON grande se hidrata después de la primera pintura. */
 const STARTUP_TIMEOUT_MS=12000;
 let startupDeadline=0;
 function beginStartupBudget(){
@@ -749,7 +752,7 @@ async function hardenedEnsureCloudSession(){
 function showStartupState(){
   const app=document.getElementById('app');
   if(!app||app.children.length)return;
-  app.innerHTML='<div class="auth"><div class="auth-card"><div class="logo">CC</div><p class="eyebrow">CONTROL DE PROYECTOS</p><h1>Abriendo tu espacio de trabajo</h1><p class="muted">Verificando la sesión y sincronizando la información con Supabase…</p><p class="notice">Si la conexión no responde, el sistema mostrará una opción para reintentar en pocos segundos.</p></div></div>';
+  app.innerHTML='<div class="auth"><div class="auth-card"><div class="logo">CC</div><p class="eyebrow">CONTROL DE PROYECTOS</p><h1>Abriendo tu espacio de trabajo</h1><p class="muted">Verificando la sesión y sincronizando la información con Supabase…</p><p class="notice">Recuperando primero tus proyectos para no dejar la pantalla bloqueada.</p></div></div>';
 }
 try{ensureCloudSession=hardenedEnsureCloudSession}catch{}
 showStartupState();
@@ -760,9 +763,12 @@ function stripSecrets(source){
   return out;
 }
 function saveLocalSnapshot(source=db){
-  const key=scopedKey(),payload=safeLocal(source);
-  try{localStorage.setItem(key,JSON.stringify(payload))}catch(e){console.warn('Copia local por espacio no disponible',e)}
-  try{localStorage.setItem(STORE,JSON.stringify(payload))}catch{}
+  const key=scopedKey(),payload=safeLocal(source);let text='';
+  try{text=JSON.stringify(payload)}catch(e){console.warn('No se pudo serializar la copia local',e);return false}
+  /* Evita congelamientos y QuotaExceeded: el estado oficial grande permanece en Supabase.
+     La copia local solo se usa cuando cabe con margen y nunca se duplica en dos claves. */
+  if(text.length>1800000){console.warn('Copia local omitida por tamaño; Supabase conserva el estado oficial.',text.length);return false}
+  try{localStorage.setItem(key,text);return true}catch(e){console.warn('Copia local por espacio no disponible',e);return false}
 }
 function entityMap(list){const m=new Map();arr(list).forEach((x,i)=>m.set(x&&x.id!=null?String(x.id):`__idx_${i}`,x));return m}
 function mergeArray(base,local,server,path,conflicts){
@@ -804,10 +810,66 @@ function showConflict(serverData,serverVersion,conflicts){
       const list=conflicts.slice(0,10).map(x=>`<li>${typeof esc==='function'?esc(x):x}</li>`).join('');
       const m=openModal('Cambios simultáneos detectados',`<div class="alert danger"><b>No se sobrescribió información.</b> Otro usuario modificó el mismo expediente mientras trabajabas. Tu copia local quedó protegida.</div><p class="muted">Conflictos detectados: ${conflicts.length}.</p>${list?`<ul>${list}</ul>`:''}<div class="actions"><button class="btn" id="ccConflictBackup">Guardar respaldo local</button><button class="btn primary" id="ccConflictReload">Recargar versión de la nube</button></div>`);
       const b=m.querySelector('#ccConflictBackup');if(b)b.onclick=()=>{try{exportBackup()}catch{} };
-      const r=m.querySelector('#ccConflictReload');if(r)r.onclick=()=>{if(!confirm('Se reemplazará la copia de trabajo actual por la versión más reciente de la nube. ¿Continuar?'))return;db=Object.assign(defaultDB(),clone(serverData)||{});stateVersion=Number(serverVersion)||stateVersion;baseState=clone(serverData)||{};window.__ccCloudVersion=stateVersion;window.__ccCloudBaseState=clone(baseState);saveLocalSnapshot(db);window.__ccSyncConflict=null;m.remove();conflictOpen=false;try{renderApp()}catch{render()}};
+      const r=m.querySelector('#ccConflictReload');if(r)r.onclick=()=>{if(!confirm('Se reemplazará la copia de trabajo actual por la versión más reciente de la nube. ¿Continuar?'))return;db=Object.assign(defaultDB(),clone(serverData)||{});stateVersion=Number(serverVersion)||stateVersion;baseState=clone(serverData)||{};window.__ccCloudVersion=stateVersion;window.__ccCloudBaseState=clone(baseState);recoveryReadOnly=false;cloudRole=recoveredCloudRole;saveLocalSnapshot(db);window.__ccSyncConflict=null;m.remove();conflictOpen=false;try{renderApp()}catch{render()}};
       const close=m.querySelector('.close');if(close)close.addEventListener('click',()=>{conflictOpen=false},{once:true});
     }catch(e){console.warn(e);conflictOpen=false}
   },0);
+}
+
+const numOrNull=v=>v==null||v===''?null:n(v);
+function projectFromRow(r){return{id:r.id,code:r.code||'',name:r.name||'',description:r.description||'',location:r.location||'',type:r.project_type||'Obra',budget:n(r.budget_estimate),status:r.status||'Planificación',start:r.start_date||'',end:r.end_date||'',executionDays:n(r.execution_days),deletedAt:r.archived_at||null}}
+function contractFromRow(r){return{id:r.id,projectId:r.project_id,number:r.number||'',contractor:r.contractor||'',originalAmount:n(r.original_amount),currentAmount:n(r.legacy_current_amount||r.original_amount),signature:r.signature_date||'',start:r.start_date||'',end:r.end_date||'',executionDays:n(r.execution_days),status:r.status||'Vigente',advanceStatus:r.advance_status||'',advanceRequestedPct:n(r.advance_requested_pct),advanceApproved:n(r.advance_approved),advancePaid:n(r.advance_paid),advancePaymentDate:r.advance_payment_date||'',recoveryTarget:numOrNull(r.recovery_target_pct),recoveryBasis:r.advance_recovery_basis||'',notes:r.notes||''}}
+function estimateFromRow(r){return{id:r.id,projectId:r.project_id,contractId:r.contract_id,number:n(r.number),start:r.period_start||'',end:r.period_end||'',gross:n(r.gross),advanceCalculated:n(r.advance_calculated),advanceApplied:n(r.advance_applied),qualityPct:n(r.quality_pct),qualityCalculated:n(r.quality_calculated),qualityApplied:n(r.quality_applied),isrPct:n(r.isr_pct),isrCalculated:n(r.isr_calculated),isrApplied:n(r.isr_applied),other:n(r.other_deductions),totalDeductions:n(r.total_deductions),net:n(r.net),status:r.status||'',paymentDate:r.payment_date||'',paymentOrder:r.payment_order||'',invoice:r.invoice||'',receipt:r.receipt||'',manual:!!r.manual_adjustment,manualReason:r.manual_reason||'',notes:r.notes||'',paymentNotes:r.payment_notes||''}}
+function guaranteeFromRow(r){return{id:r.id,projectId:r.project_id,contractId:r.contract_id,type:r.guarantee_type||'',number:r.number||'',issuer:r.issuer||'',document:r.document_ref||'',base:n(r.calculation_base),percentage:n(r.percentage),calculated:n(r.calculated_amount),applied:n(r.applied_amount),start:r.start_date||'',end:r.end_date||'',notes:r.notes||'',extensions:[]}}
+function visitFromRow(r){return{id:r.id,projectId:r.project_id,number:n(r.visit_number),date:r.visit_date||'',inspector:r.inspector||'',notes:r.summary||''}}
+function paymentFromRow(r){return{id:r.id,projectId:r.project_id,contractId:r.contract_id,estimateId:r.estimate_id,type:r.movement_type||'',amount:n(r.amount),date:r.payment_date||'',paymentOrder:r.payment_order||'',receipt:r.receipt||'',status:r.status||'',notes:r.notes||''}}
+function changeFromRow(r){return{id:r.id,projectId:r.project_id,contractId:r.contract_id,number:r.number||'',type:r.change_type||'',date:r.change_date||'',amountDelta:n(r.amount_delta),daysDelta:n(r.days_delta),status:r.status||'',document:r.document_ref||'',reason:r.justification||'',notes:r.justification||''}}
+
+async function readNormalizedRecovery(deadline){
+  const wid=encodeURIComponent(cloudWorkspaceId);
+  const specs=[
+    ['projects','id,code,name,description,location,project_type,budget_estimate,status,start_date,end_date,execution_days,archived_at',projectFromRow],
+    ['contracts','id,project_id,number,contractor,original_amount,legacy_current_amount,signature_date,start_date,end_date,execution_days,status,advance_status,advance_requested_pct,advance_approved,advance_paid,advance_payment_date,recovery_target_pct,advance_recovery_basis,notes',contractFromRow],
+    ['estimates','id,project_id,contract_id,number,period_start,period_end,gross,advance_calculated,advance_applied,quality_pct,quality_calculated,quality_applied,isr_pct,isr_calculated,isr_applied,other_deductions,total_deductions,net,status,payment_date,payment_order,invoice,receipt,manual_adjustment,manual_reason,notes,payment_notes',estimateFromRow],
+    ['guarantees','id,project_id,contract_id,guarantee_type,number,issuer,document_ref,calculation_base,percentage,calculated_amount,applied_amount,start_date,end_date,notes',guaranteeFromRow],
+    ['visits','id,project_id,visit_number,visit_date,inspector,summary',visitFromRow],
+    ['payments','id,project_id,contract_id,estimate_id,movement_type,amount,payment_date,payment_order,receipt,status,notes',paymentFromRow],
+    ['contract_changes','id,project_id,contract_id,number,change_type,change_date,amount_delta,days_delta,status,document_ref,justification',changeFromRow]
+  ];
+  const settled=await Promise.allSettled(specs.map(([table,fields])=>startupSbFetch(`/rest/v1/${table}?select=${fields}&workspace_id=eq.${wid}&order=created_at.asc`,undefined,deadline)));
+  const recovered={projects:[],contracts:[],estimates:[],guarantees:[],visits:[],payments:[],changes:[]};
+  specs.forEach(([table,,map],i)=>{const result=settled[i],key=table==='contract_changes'?'changes':table;if(result.status==='fulfilled')recovered[key]=arr(result.value?.data).map(map);else console.warn(`Recuperación ligera ${table}:`,result.reason?.message||result.reason)});
+  return recovered;
+}
+function addSessionUser(role=cloudRole){
+  const u={id:session.userId,name:cloudProfile?.full_name||session.email||'Usuario',email:session.email,role:role||'consulta',active:true};
+  db.users=arr(db.users).filter(x=>x.id!==u.id);db.users.unshift(u);
+}
+async function hydrateCanonicalState(deadline=0){
+  try{
+    const row=deadline?await readCloudRow(deadline):await readCloudRow();
+    if(!row?.data||cloudStateEmpty(row.data))return false;
+    stateVersion=Number(row.version||1);window.__ccCloudVersion=stateVersion;
+    db=Object.assign(defaultDB(),clone(row.data));
+    baseState=clone(row.data);window.__ccCloudBaseState=clone(baseState);
+    recoveryReadOnly=false;cloudRole=recoveredCloudRole;cloudLoaded=true;addSessionUser(cloudRole);
+    saveLocalSnapshot(db);
+    try{ensureProjectLinks()}catch{}
+    try{syncAllProjectProgress()}catch{}
+    try{renderApp()}catch(e){console.warn('No se pudo refrescar el dashboard hidratado',e)}
+    cloudLastSaved=new Date(row.updated_at||Date.now());try{updateCloudBadge()}catch{}
+    window.__ccCloudRecovery={mode:'canonical',projects:arr(db.projects).length,at:new Date().toISOString()};
+    return true;
+  }catch(error){
+    window.__ccCloudRecovery={mode:'normalized-readonly',projects:arr(db.projects).length,error:String(error?.message||error),at:new Date().toISOString()};
+    console.warn('La copia completa de Supabase seguirá pendiente; se mantienen visibles los datos normalizados.',error);
+    return false;
+  }
+}
+function scheduleCanonicalHydration(){
+  if(canonicalHydrationPromise)return canonicalHydrationPromise;
+  canonicalHydrationPromise=new Promise(resolve=>setTimeout(resolve,350)).then(()=>hydrateCanonicalState()).finally(()=>{canonicalHydrationPromise=null});
+  return canonicalHydrationPromise;
 }
 
 async function hardenedLoadCloudData(){
@@ -815,29 +877,40 @@ async function hardenedLoadCloudData(){
   try{
     const mem=(await startupSbFetch(`/rest/v1/workspace_members?select=workspace_id,role,active&user_id=eq.${encodeURIComponent(session.userId)}&limit=1`,undefined,deadline)).data?.[0];
     if(!mem)throw new Error('No se encontró un espacio de trabajo para este usuario.');
-    cloudWorkspaceId=mem.workspace_id;cloudRole=mem.role||'consulta';
+    if(mem.active===false)throw new Error('La membresía de este espacio de trabajo está desactivada.');
+    cloudWorkspaceId=mem.workspace_id;recoveredCloudRole=mem.role||'consulta';cloudRole=recoveredCloudRole;
     const prof=(await startupSbFetch(`/rest/v1/profiles?select=full_name,active&user_id=eq.${encodeURIComponent(session.userId)}&limit=1`,undefined,deadline)).data?.[0];
     cloudProfile=prof||{full_name:session.email||'Usuario',active:true};
     if(cloudProfile.active===false)throw new Error('Este acceso está desactivado.');
+
+    /* La copia grande se consulta después de pintar. La ruta histórica se conserva
+       en hydrateCanonicalState: deadline ? readCloudRow(deadline) : readCloudRow(). */
+    const recovered=await readNormalizedRecovery(deadline);
+    if(arr(recovered.projects).length){
+      const localBase=Object.assign(defaultDB(),clone(db)||{});
+      db=Object.assign(localBase,recovered);
+      recoveryReadOnly=true;cloudRole='consulta';cloudLoaded=true;stateVersion=null;baseState=null;
+      window.__ccCloudVersion=null;window.__ccCloudBaseState=null;
+      addSessionUser('consulta');
+      window.__ccCloudRecovery={mode:'normalized-readonly',projects:arr(db.projects).length,at:new Date().toISOString()};
+      scheduleCanonicalHydration();
+      return{recovered:true};
+    }
+
+    /* Fallback: solo si las tablas normalizadas no devolvieron proyectos. */
     const row=await readCloudRow(deadline);
     stateVersion=Number(row?.version||1);window.__ccCloudVersion=stateVersion;
-    if(row?.data&&!cloudStateEmpty(row.data)){
-      db=Object.assign(defaultDB(),clone(row.data));
-    }else{
-      let scoped=null;try{scoped=JSON.parse(localStorage.getItem(scopedKey())||'null')}catch{}
-      db=scoped&&typeof scoped==='object'?Object.assign(defaultDB(),scoped):defaultDB();
-    }
-    baseState=clone(row?.data||db||{});window.__ccCloudBaseState=clone(baseState);
-    cloudLoaded=true;
-    const u={id:session.userId,name:cloudProfile.full_name||session.email,email:session.email,role:cloudRole,active:true};
-    db.users=arr(db.users).filter(x=>x.id!==u.id);db.users.unshift(u);
-    saveLocalSnapshot(db);
+    if(row?.data&&!cloudStateEmpty(row.data))db=Object.assign(defaultDB(),clone(row.data));
+    else{let scoped=null;try{scoped=JSON.parse(localStorage.getItem(scopedKey())||'null')}catch{};db=scoped&&typeof scoped==='object'?Object.assign(defaultDB(),scoped):defaultDB()}
+    baseState=clone(row?.data||db||{});window.__ccCloudBaseState=clone(baseState);cloudLoaded=true;recoveryReadOnly=false;cloudRole=recoveredCloudRole;addSessionUser(cloudRole);saveLocalSnapshot(db);
+    return{recovered:false};
   }finally{
     clearStartupBudget();
   }
 }
 
 async function hardenedSaveCloudNow(retryMerge=false){
+  if(recoveryReadOnly){console.warn('Guardado bloqueado mientras se hidrata la copia canónica.');return false}
   if(!cloudLoaded||!cloudWorkspaceId||!session?.accessToken||cloudSaving)return false;
   cloudSaving=true;
   try{
@@ -864,18 +937,18 @@ async function hardenedSaveCloudNow(retryMerge=false){
   }finally{cloudSaving=false}
 }
 function hardenedScheduleCloudSave(){
+  if(recoveryReadOnly)return false;
   clearTimeout(cloudSaveTimer);
   cloudSaveTimer=setTimeout(()=>hardenedSaveCloudNow().catch(e=>{console.error(e);if(!String(e?.message||e).includes('CONFLICTO_DE_VERSION'))say('No se pudo sincronizar con Supabase. Los cambios permanecen protegidos en este dispositivo.')}),450);
 }
 function hardenedSaveDB(){
   try{syncAllProjectProgress()}catch(e){console.warn('No se pudo recalcular el avance',e)}
-  saveLocalSnapshot(db);
-  if(cloudLoaded&&session?.accessToken)hardenedScheduleCloudSave();
+  if(!recoveryReadOnly)saveLocalSnapshot(db);
+  if(!recoveryReadOnly&&cloudLoaded&&session?.accessToken)hardenedScheduleCloudSave();
 }
 async function hardenedSignOut(){
   try{if(session?.accessToken)await sbFetch('/auth/v1/logout',{method:'POST',body:{},retry:false})}catch{}
-  try{localStorage.removeItem(STORE)}catch{}
-  session=null;cloudLoaded=false;cloudWorkspaceId=null;cloudProfile=null;stateVersion=null;baseState=null;window.__ccCloudVersion=null;window.__ccCloudBaseState=null;window.__ccSyncConflict=null;
+  session=null;cloudLoaded=false;cloudWorkspaceId=null;cloudProfile=null;stateVersion=null;baseState=null;recoveryReadOnly=false;canonicalHydrationPromise=null;window.__ccCloudVersion=null;window.__ccCloudBaseState=null;window.__ccSyncConflict=null;
   localStorage.removeItem(SESSION);render();
 }
 
@@ -925,6 +998,7 @@ let ccDecorateQueued=false;new MutationObserver(()=>{if(ccDecorateQueued)return;
 setTimeout(()=>{decorate();try{hardenedSyncProgress()}catch{}},0);
 window.ccProgressForProject=progressForProject;
 window.ccSaveCloudNow=hardenedSaveCloudNow;
+window.ccHydrateCanonicalState=hydrateCanonicalState;
 })();
 render();
 </script>

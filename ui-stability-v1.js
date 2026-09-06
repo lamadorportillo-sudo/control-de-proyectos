@@ -1,6 +1,6 @@
-/* CONTROL CONTRACTUAL · ESTABILIDAD VISUAL V3
-   Capa final no destructiva: corrige artefactos visuales, parpadeos y etiquetas
-   sin intervenir rutas ni simular clics. La navegación pertenece únicamente a
+/* CONTROL CONTRACTUAL · ESTABILIDAD VISUAL V2
+   Capa final no destructiva: corrige artefactos visuales y etiquetas sin
+   intervenir rutas ni simular clics. La navegación pertenece únicamente a
    ui-navigation-single-source-v1.js y portal-route-bridge-v1.js. */
 (()=>{
 'use strict';
@@ -23,40 +23,6 @@ function css(){
   /* El símbolo de lupa anterior dependía de una fuente que puede no contener el glifo. */
   body.cc-portal-v2 .cc-global-search:before{content:none!important;display:none!important}
   body.cc-portal-v2 .cc-global-search input{padding-left:13px!important}
-
-  /* Evita el destello de entrada cada vez que el núcleo vuelve a renderizar
-     #content. La animación ccPageIn era decorativa y podía reiniciarse durante
-     sincronizaciones, haciendo parecer que iconos y tarjetas parpadeaban. */
-  body.cc-portal-v2 #content{animation:none!important}
-
-  /* Los iconos operativos deben permanecer visualmente estables. Conservamos
-     cambios de color/estado, pero eliminamos animaciones, opacidad y transform
-     heredados que pueden reiniciarse por MutationObserver o re-render. */
-  body.cc-portal-v2 #ccSidebar .cc-side-icon,
-  body.cc-portal-v2 #ccSidebar .cc-sidebar-mark,
-  body.cc-portal-v2 #ccSidebar .cc-nav-badge,
-  body.cc-portal-v2 #ccSidebar .cc-sync-dot,
-  body.cc-portal-v2 #ccCommandbar .cc-command-btn,
-  body.cc-portal-v2 #ccMobileToggle{
-    animation:none!important;
-    opacity:1!important;
-    backface-visibility:hidden;
-    -webkit-backface-visibility:hidden;
-    will-change:auto!important;
-  }
-  body.cc-portal-v2 #ccSidebar .cc-side-icon{
-    transform:none!important;
-    transition:background-color .12s ease,color .12s ease,border-color .12s ease!important;
-  }
-
-  /* Evita que pseudo-elementos decorativos de los iconos hereden animaciones
-     de otras capas visuales. No toca loaders ni indicadores aria-busy. */
-  body.cc-portal-v2 #ccSidebar .cc-side-icon::before,
-  body.cc-portal-v2 #ccSidebar .cc-side-icon::after,
-  body.cc-portal-v2 #ccCommandbar button:not([aria-busy="true"])::before,
-  body.cc-portal-v2 #ccCommandbar button:not([aria-busy="true"])::after{
-    animation:none!important;
-  }
 
   /* Evita desbordamientos horizontales provocados por módulos/tablas extensas. */
   body.cc-portal-v2 .cc-app-column{min-width:0!important;overflow-x:clip!important}

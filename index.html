@@ -720,88 +720,36 @@ let baseState=clone(window.__ccCloudBaseState||null);
 let stateVersion=Number(window.__ccCloudVersion||0)||null;
 let conflictOpen=false;
 
-/* El límite de 12 s protege únicamente la sincronización inicial en segundo plano.
-   El dashboard se dibuja primero con la copia local y nunca espera este presupuesto. */
+/* El arranque completo comparte un solo presupuesto de tiempo. Antes cada
+   petición podía consumir 12 s por separado, de modo que membresía + perfil +
+   estado podían inmovilizar la interfaz durante decenas de segundos. */
 const STARTUP_TIMEOUT_MS=12000;
 let startupDeadline=0;
-let cloudSyncPromise=null;
-let cloudSyncGeneration=0;
-let cloudRetryTimer=null;
-let cloudRetryDelayMs=8000;
-let cloudLastError=null;
-
-function captureCloudError(error,context='',path=''){
-  const source=error instanceof Error?error:new Error(String(error||'Error desconocido de Supabase.'));
-  if(source.__ccCaptured){
-    if(context&&!source.context)source.context=context;
-    if(path&&!source.path)source.path=path;
-    return source;
-  }
-  const out=new Error(source.message||'Error desconocido de Supabase.');
-  out.name=source.name||'CloudError';out.code=source.code||'SUPABASE_ERROR';out.status=source.status||null;
-  out.context=context||source.context||'';out.path=path||source.path||'';out.cause=source;out.__ccCaptured=true;
-  window.__ccLastCloudError={at:new Date().toISOString(),context:out.context,path:out.path,status:out.status,code:out.code,message:out.message,cause:source.cause?.message||''};
-  console.error('Supabase'+(out.context?' · '+out.context:'')+':',{message:out.message,code:out.code,status:out.status,path:out.path,cause:source});
-  return out;
-}
-
-async function resilientSbFetch(path,{method='GET',body=null,auth=true,retry=true,signal=null}={}){
-  const headers={'apikey':SUPABASE_KEY,'Content-Type':'application/json','Accept':'application/json'};
-  if(auth&&session?.accessToken)headers.Authorization='Bearer '+session.accessToken;
-  let res;
-  try{
-    res=await fetch(SUPABASE_URL+path,{method,headers,body:body==null?undefined:JSON.stringify(body),cache:'no-store',signal:signal||undefined});
-  }catch(error){
-    const aborted=signal?.aborted||error?.name==='AbortError',networkError=new Error(aborted?'La solicitud a Supabase agotó el tiempo disponible.':'No se pudo conectar con Supabase: '+(error?.message||'error de red.'));
-    networkError.name=aborted?'TimeoutError':'NetworkError';networkError.code=aborted?'SUPABASE_TIMEOUT':'SUPABASE_NETWORK';networkError.path=path;networkError.cause=error;
-    throw captureCloudError(networkError,'sbFetch',path);
-  }
-  if(res.status===401&&retry&&session?.refreshToken){
-    const ok=await refreshCloudSession();
-    if(ok)return resilientSbFetch(path,{method,body,auth,retry:false,signal});
-  }
-  const text=await res.text();let data=null;
-  try{data=text?JSON.parse(text):null}catch{data=text}
-  if(!res.ok){
-    const detail=typeof data==='object'&&data?(data.details||data.hint||''):'';
-    const httpError=new Error((data?.message||data?.error_description||data?.error||('Supabase respondió '+res.status+' '+res.statusText))+(detail?' · '+detail:''));
-    httpError.name='SupabaseHttpError';httpError.code=data?.code||data?.error_code||('SUPABASE_HTTP_'+res.status);httpError.status=res.status;httpError.path=path;httpError.details=data;
-    throw captureCloudError(httpError,'sbFetch',path);
-  }
-  return{data,res};
-}
-try{sbFetch=resilientSbFetch}catch{}
-
 function beginStartupBudget(){
   if(!startupDeadline||Date.now()>=startupDeadline)startupDeadline=Date.now()+STARTUP_TIMEOUT_MS;
   return startupDeadline;
 }
 function clearStartupBudget(){startupDeadline=0}
 function withStartupTimeout(promise,label='La conexión con Supabase',deadline=beginStartupBudget()){
-  const remaining=Math.max(1,deadline-Date.now());let timer=null;
-  const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{const error=new Error(label+' superó el límite de '+Math.round(STARTUP_TIMEOUT_MS/1000)+' segundos para la sincronización en segundo plano.');error.name='TimeoutError';error.code='STARTUP_TIMEOUT';reject(captureCloudError(error,'arranque'))},remaining)});
+  const remaining=Math.max(1,deadline-Date.now());
+  let timer=null;
+  const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(`${label} agotó el tiempo total de arranque de ${Math.round(STARTUP_TIMEOUT_MS/1000)} segundos.`)),remaining)});
   return Promise.race([Promise.resolve(promise),timeout]).finally(()=>{if(timer)clearTimeout(timer)});
 }
-async function startupSbFetch(path,options={},deadline=beginStartupBudget()){
-  const remaining=Math.max(1,deadline-Date.now()),controller=new AbortController();let timer=null;
-  const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();const error=new Error('La consulta a Supabase superó el tiempo restante del arranque en segundo plano.');error.name='TimeoutError';error.code='STARTUP_TIMEOUT';error.path=path;reject(captureCloudError(error,'arranque',path))},remaining)});
-  try{return await Promise.race([sbFetch(path,{...(options||{}),signal:controller.signal}),timeout])}
-  catch(error){throw captureCloudError(error,'arranque',path)}
-  finally{if(timer)clearTimeout(timer)}
-}
+function startupSbFetch(path,options,deadline=beginStartupBudget()){return withStartupTimeout(sbFetch(path,options),'La conexión con Supabase',deadline)}
 async function hardenedEnsureCloudSession(){
   if(!session?.accessToken)return false;
   const deadline=beginStartupBudget();
   if(session.expiresAt&&Date.now()>session.expiresAt-60000){
-    const ok=await withStartupTimeout(refreshCloudSession(),'La renovación de la sesión',deadline);
-    if(!ok){const error=new Error('No se pudo renovar la sesión de Supabase.');error.code='SESSION_REFRESH_FAILED';throw captureCloudError(error,'sesión','/auth/v1/token')}
+    try{return await withStartupTimeout(refreshCloudSession(),'La renovación de la sesión',deadline)}
+    catch(error){console.warn('La renovación de sesión excedió el tiempo de arranque.',error?.message||error);return false}
   }
   return true;
 }
 function showStartupState(){
   const app=document.getElementById('app');
   if(!app||app.children.length)return;
-  app.innerHTML='<div class="auth"><div class="auth-card"><div class="logo">CC</div><p class="eyebrow">CONTROL DE PROYECTOS</p><h1>Abriendo tu espacio de trabajo</h1><p class="muted">Verificando la sesión y sincronizando la información con Supabase…</p><p class="notice">La copia local se abrirá de inmediato mientras la nube se sincroniza en segundo plano.</p></div></div>';
+  app.innerHTML='<div class="auth"><div class="auth-card"><div class="logo">CC</div><p class="eyebrow">CONTROL DE PROYECTOS</p><h1>Abriendo tu espacio de trabajo</h1><p class="muted">Verificando la sesión y sincronizando la información con Supabase…</p><p class="notice">Si la conexión no responde, el sistema mostrará una opción para reintentar en pocos segundos.</p></div></div>';
 }
 try{ensureCloudSession=hardenedEnsureCloudSession}catch{}
 showStartupState();
@@ -842,24 +790,9 @@ function threeWayMerge(base,local,server){
 }
 async function readCloudRow(deadline=0){
   if(!cloudWorkspaceId)return null;
-  const path='/rest/v1/app_state?select=data,version,updated_at&workspace_id=eq.'+encodeURIComponent(cloudWorkspaceId)+'&limit=1';
-  try{
-    const r=deadline?await startupSbFetch(path,undefined,deadline):await sbFetch(path);
-    return r.data?.[0]||null;
-  }catch(error){throw captureCloudError(error,'app_state',path)}
-}
-async function startupQuery(label,path,deadline){
-  try{return await startupSbFetch(path,undefined,deadline)}
-  catch(error){throw captureCloudError(error,label,path)}
-}
-function hasMeaningfulLocalData(source){
-  return ['projects','contracts','estimates','guarantees','changes','payments','visits','audit','durationLearning'].some(key=>arr(source?.[key]).length>0);
-}
-function mergeStartupState(base,local,server){
-  const b=clone(base)||{},l=clone(local)||{},s=clone(server)||{},users=new Map();
-  arr(l.users).forEach(u=>u?.id!=null&&users.set(String(u.id),u));arr(s.users).forEach(u=>u?.id!=null&&users.set(String(u.id),u));
-  b.users=[];l.users=[];s.users=[];
-  const merged=threeWayMerge(b,l,s);merged.data.users=[...users.values()];return merged;
+  const path=`/rest/v1/app_state?select=data,version,updated_at&workspace_id=eq.${encodeURIComponent(cloudWorkspaceId)}&limit=1`;
+  const r=deadline?await startupSbFetch(path,undefined,deadline):await sbFetch(path);
+  return r.data?.[0]||null;
 }
 function showConflict(serverData,serverVersion,conflicts){
   window.__ccSyncConflict={serverData:clone(serverData),serverVersion,conflicts:[...conflicts],localData:clone(db),at:new Date().toISOString()};
@@ -878,41 +811,30 @@ function showConflict(serverData,serverVersion,conflicts){
 }
 
 async function hardenedLoadCloudData(){
-  const deadline=beginStartupBudget(),localBefore=Object.assign(defaultDB(),clone(db)||{});
+  const deadline=beginStartupBudget();
   try{
-    const memberPath='/rest/v1/workspace_members?select=workspace_id,role,active&user_id=eq.'+encodeURIComponent(session.userId)+'&limit=1';
-    const mem=(await startupQuery('workspace_members',memberPath,deadline)).data?.[0];
+    const mem=(await startupSbFetch(`/rest/v1/workspace_members?select=workspace_id,role,active&user_id=eq.${encodeURIComponent(session.userId)}&limit=1`,undefined,deadline)).data?.[0];
     if(!mem)throw new Error('No se encontró un espacio de trabajo para este usuario.');
-    if(mem.active===false)throw new Error('La membresía de este espacio de trabajo está desactivada.');
     cloudWorkspaceId=mem.workspace_id;cloudRole=mem.role||'consulta';
-    const profilePath='/rest/v1/profiles?select=full_name,active&user_id=eq.'+encodeURIComponent(session.userId)+'&limit=1';
-    const prof=(await startupQuery('profiles',profilePath,deadline)).data?.[0];
+    const prof=(await startupSbFetch(`/rest/v1/profiles?select=full_name,active&user_id=eq.${encodeURIComponent(session.userId)}&limit=1`,undefined,deadline)).data?.[0];
     cloudProfile=prof||{full_name:session.email||'Usuario',active:true};
     if(cloudProfile.active===false)throw new Error('Este acceso está desactivado.');
-    const row=await readCloudRow(deadline),serverState=row?.data&&typeof row.data==='object'?clone(row.data):null;
+    const row=await readCloudRow(deadline);
     stateVersion=Number(row?.version||1);window.__ccCloudVersion=stateVersion;
-    let nextState=localBefore,needsPush=false;
-    if(!cloudStateEmpty(serverState)){
-      const merged=mergeStartupState(baseState||{},localBefore,serverState);
-      if(merged.conflicts.length){
-        baseState=clone(serverState);window.__ccCloudBaseState=clone(baseState);saveLocalSnapshot(localBefore);
-        showConflict(serverState,stateVersion,merged.conflicts);
-        const conflict=new Error('Se detectaron cambios locales y remotos simultáneos. La copia local se conservó sin sobrescribir.');
-        conflict.code='SYNC_CONFLICT';conflict.conflicts=merged.conflicts;throw conflict;
-      }
-      nextState=merged.data;needsPush=!eq(stripSecrets(nextState),stripSecrets(serverState));
+    if(row?.data&&!cloudStateEmpty(row.data)){
+      db=Object.assign(defaultDB(),clone(row.data));
     }else{
-      nextState=localBefore;needsPush=hasMeaningfulLocalData(localBefore);
+      let scoped=null;try{scoped=JSON.parse(localStorage.getItem(scopedKey())||'null')}catch{}
+      db=scoped&&typeof scoped==='object'?Object.assign(defaultDB(),scoped):defaultDB();
     }
-    db=Object.assign(defaultDB(),nextState||{});baseState=clone(serverState||{});window.__ccCloudBaseState=clone(baseState);
-    cloudLoaded=true;cloudLastError=null;
+    baseState=clone(row?.data||db||{});window.__ccCloudBaseState=clone(baseState);
+    cloudLoaded=true;
     const u={id:session.userId,name:cloudProfile.full_name||session.email,email:session.email,role:cloudRole,active:true};
-    db.users=arr(db.users).filter(x=>x.id!==u.id);db.users.unshift(u);saveLocalSnapshot(db);
-    return{needsPush,row};
-  }catch(error){
-    cloudLoaded=false;db=Object.assign(defaultDB(),localBefore);saveLocalSnapshot(db);
-    throw captureCloudError(error,'loadCloudData');
-  }finally{clearStartupBudget()}
+    db.users=arr(db.users).filter(x=>x.id!==u.id);db.users.unshift(u);
+    saveLocalSnapshot(db);
+  }finally{
+    clearStartupBudget();
+  }
 }
 
 async function hardenedSaveCloudNow(retryMerge=false){
@@ -951,68 +873,10 @@ function hardenedSaveDB(){
   if(cloudLoaded&&session?.accessToken)hardenedScheduleCloudSave();
 }
 async function hardenedSignOut(){
-  clearTimeout(cloudRetryTimer);cloudRetryTimer=null;cloudSyncGeneration++;cloudSyncPromise=null;
-  try{saveLocalSnapshot(db)}catch{}
   try{if(session?.accessToken)await sbFetch('/auth/v1/logout',{method:'POST',body:{},retry:false})}catch{}
-  session=null;cloudLoaded=false;cloudWorkspaceId=null;cloudProfile=null;cloudLastError=null;stateVersion=null;baseState=null;window.__ccCloudVersion=null;window.__ccCloudBaseState=null;window.__ccSyncConflict=null;window.__ccLastCloudError=null;
+  try{localStorage.removeItem(STORE)}catch{}
+  session=null;cloudLoaded=false;cloudWorkspaceId=null;cloudProfile=null;stateVersion=null;baseState=null;window.__ccCloudVersion=null;window.__ccCloudBaseState=null;window.__ccSyncConflict=null;
   localStorage.removeItem(SESSION);render();
-}
-
-function prepareLocalDashboard(){
-  const stored=arr(db.users).find(u=>u.id===session?.userId),name=stored?.name||session?.email||'Usuario';
-  cloudRole=stored?.role||cloudRole||'consulta';cloudProfile=cloudProfile||{full_name:name,active:true};
-  const user={id:session.userId,name:cloudProfile.full_name||name,email:session.email||stored?.email||'',role:cloudRole,active:true};
-  db.users=arr(db.users).filter(u=>u.id!==user.id);db.users.unshift(user);saveLocalSnapshot(db);
-}
-function resilientUpdateCloudBadge(){
-  const pill=document.querySelector('.cloud-pill'),label=pill?.querySelector('b'),actions=document.querySelector('.top-actions');
-  const text=cloudSaving?'Guardando…':cloudSyncPromise?'Sincronizando…':cloudLoaded?(cloudLastSaved?'Sincronizado':'Conectado'):(cloudLastError?'Datos locales':'Modo local');
-  if(label)label.textContent=text;
-  if(pill)pill.title=cloudLastError?'Último error: '+cloudLastError.message:(cloudLoaded?'Conectado con Supabase':'Trabajando con la copia local');
-  let retry=document.getElementById('retryCloud');
-  if(cloudLastError&&actions&&!retry){retry=document.createElement('button');retry.className='btn';retry.id='retryCloud';retry.textContent='Reintentar';const anchor=pill?.nextSibling||actions.firstChild;actions.insertBefore(retry,anchor)}
-  if(retry){retry.hidden=!cloudLastError;retry.disabled=!!cloudSyncPromise;retry.title=cloudLastError?.message||'';retry.onclick=()=>synchronizeCloudInBackground(true)}
-}
-function scheduleCloudRetry(){
-  if(cloudRetryTimer||!session?.accessToken||!navigator.onLine)return;
-  const delay=cloudRetryDelayMs;cloudRetryDelayMs=Math.min(60000,Math.round(cloudRetryDelayMs*1.8));
-  cloudRetryTimer=setTimeout(()=>{cloudRetryTimer=null;synchronizeCloudInBackground(false)},delay);
-}
-async function synchronizeCloudInBackground(manual=false){
-  if(!session?.accessToken)return false;
-  if(cloudSyncPromise)return cloudSyncPromise;
-  if(cloudRetryTimer){clearTimeout(cloudRetryTimer);cloudRetryTimer=null}
-  if(manual){cloudRetryDelayMs=8000;cloudLastError=null}
-  const generation=++cloudSyncGeneration;
-  cloudSyncPromise=(async()=>{
-    const ok=await hardenedEnsureCloudSession();
-    if(!ok){const error=new Error('No hay una sesión válida de Supabase.');error.code='SESSION_UNAVAILABLE';throw error}
-    const result=await hardenedLoadCloudData();
-    if(generation!==cloudSyncGeneration||!session?.accessToken)return false;
-    ensureProjectLinks();const migrated=migrateUnifiedFinancialModel();if(migrated)saveLocalSnapshot(db);
-    renderApp();
-    if(result?.needsPush||migrated)await hardenedSaveCloudNow();
-    cloudLastError=null;cloudRetryDelayMs=8000;resilientUpdateCloudBadge();return true;
-  })().catch(error=>{
-    if(generation!==cloudSyncGeneration)return false;
-    cloudLastError=captureCloudError(error,'sincronización en segundo plano');cloudLoaded=false;saveLocalSnapshot(db);resilientUpdateCloudBadge();scheduleCloudRetry();return false;
-  }).finally(()=>{
-    if(generation===cloudSyncGeneration){cloudSyncPromise=null;clearStartupBudget();resilientUpdateCloudBadge()}
-  });
-  resilientUpdateCloudBadge();return cloudSyncPromise;
-}
-const legacyRenderApp=renderApp;
-function hardenedRenderApp(){const out=legacyRenderApp();resilientUpdateCloudBadge();return out}
-async function hardenedRender(){
-  if(!session?.accessToken)return renderAuth();
-  try{
-    prepareLocalDashboard();ensureProjectLinks();if(migrateUnifiedFinancialModel())saveLocalSnapshot(db);renderApp();
-    const start=()=>synchronizeCloudInBackground(false);if(typeof queueMicrotask==='function')queueMicrotask(start);else setTimeout(start,0);
-  }catch(error){
-    console.error('No se pudo abrir la copia local:',error);
-    document.getElementById('app').innerHTML='<div class="auth"><div class="auth-card"><div class="logo">CC</div><h1>No se pudo abrir la copia local</h1><p class="muted">'+esc(error?.message||'Error al preparar el dashboard.')+'</p><button class="btn primary" id="retryCloud">Reintentar</button></div></div>';
-    const retry=document.getElementById('retryCloud');if(retry)retry.onclick=()=>hardenedRender();
-  }
 }
 
 try{loadCloudData=hardenedLoadCloudData}catch{}
@@ -1020,10 +884,6 @@ try{saveCloudNow=hardenedSaveCloudNow}catch{}
 try{scheduleCloudSave=hardenedScheduleCloudSave}catch{}
 try{saveDB=hardenedSaveDB}catch{}
 try{cloudSignOut=hardenedSignOut}catch{}
-try{updateCloudBadge=resilientUpdateCloudBadge}catch{}
-try{renderApp=hardenedRenderApp}catch{}
-try{render=hardenedRender}catch{}
-window.addEventListener('online',()=>synchronizeCloudInBackground(false));
 
 const certified=e=>!!e&&/^(aprobada|aprobado|pagada|pagado)$/i.test(String(e.status||''));
 function progressForProject(p,c=null){

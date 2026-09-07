@@ -206,6 +206,9 @@ if(!tail.includes('data-cc-auth-plan')){
     try{
       /* FASE A · PRIMERA PINTURA AUTENTICADA.
          El sidebar ya debe existir antes de activar centros secundarios. */
+      const governor=nodeByBare('mutation-observer-governor-v1.js');
+      if(!governor)throw new Error('Falta el gobernador de observadores.');
+      await requireRun('mutation-observer-governor-v1.js',()=>runNode(governor));
       styleOnce('portal-web-v2.css?v=20260903-web3','ccAuthPortalCss');
       styleOnce('project-detail-v2.css?v=20260901-detail2','ccAuthProjectCss');
       styleOnce('dashboard-simplified-v4.css?v=20260907-dashnav1','ccAuthDashboardCss');

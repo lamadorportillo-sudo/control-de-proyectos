@@ -119,7 +119,9 @@ Deno.serve(async (req: Request) => {
     const verifiedFactors = factorList.filter((f: any) => f?.status === "verified");
     const aalResult = await authClient.auth.mfa.getAuthenticatorAssuranceLevel(data.session.access_token);
     const currentAal = aalResult.data?.currentLevel || "aal1";
-    const adminMfaRequired = membership.role === "admin" && !!profile?.mfa_required_after;
+    // La verificación 2FA queda voluntaria; nunca se exige a una cuenta administradora.
+    const adminMfaDisabled = membership.role === "admin";
+    const adminMfaRequired = !adminMfaDisabled && membership.role === "admin" && !!profile?.mfa_required_after;
     const adminMfaPastDue = adminMfaRequired && Date.now() >= new Date(profile.mfa_required_after).getTime();
 
     if (adminMfaPastDue && verifiedFactors.length === 0) {
@@ -141,27 +143,30 @@ Deno.serve(async (req: Request) => {
     }
 
     if (verifiedFactors.length > 0 && currentAal !== "aal2") {
-      const now = new Date().toISOString();
-      await admin.from("profiles").update({ security_force_reauth: true, updated_at: now }).eq("user_id", userId);
-      const preferred = verifiedFactors.find((f: any) => f?.factor_type === "totp") || verifiedFactors[0];
-      await admin.from("security_events").insert({ workspace_id: workspaceId, user_id: userId, email, event_type: "mfa_challenge_required", success: true, severity: "info", device_label: device, user_agent: ua, network_fingerprint: network || null, metadata: { factor_type: preferred?.factor_type || "totp" } });
-      return json({
-        user: { id: data.user.id, email: data.user.email },
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
-        expires_in: data.session.expires_in,
-        expires_at: data.session.expires_at,
-        token_type: data.session.token_type,
-        mfa_required: true,
-        mfa_factor_id: preferred?.id || "",
-        mfa_factor_type: preferred?.factor_type || "totp",
-        mfa_required_after: adminMfaRequired ? profile.mfa_required_after : null,
-        device_label: device,
-      }, 200, origin);
+      if (!adminMfaDisabled) {
+        const now = new Date().toISOString();
+        await admin.from("profiles").update({ security_force_reauth: true, updated_at: now }).eq("user_id", userId);
+        const preferred = verifiedFactors.find((f: any) => f?.factor_type === "totp") || verifiedFactors[0];
+        await admin.from("security_events").insert({ workspace_id: workspaceId, user_id: userId, email, event_type: "mfa_challenge_required", success: true, severity: "info", device_label: device, user_agent: ua, network_fingerprint: network || null, metadata: { factor_type: preferred?.factor_type || "totp" } });
+        return json({
+          user: { id: data.user.id, email: data.user.email },
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+          expires_in: data.session.expires_in,
+          expires_at: data.session.expires_at,
+          token_type: data.session.token_type,
+          mfa_required: true,
+          mfa_factor_id: preferred?.id || "",
+          mfa_factor_type: preferred?.factor_type || "totp",
+          mfa_required_after: adminMfaRequired ? profile.mfa_required_after : null,
+          device_label: device,
+        }, 200, origin);
+
+      }
     }
 
     const now = new Date().toISOString();
-    await admin.from("profiles").update({ security_force_reauth: false, last_login_at: now, updated_at: now }).eq("user_id", userId);
+    await admin.from("profiles").update({ security_force_reauth: false, mfa_required_after: null, last_login_at: now, updated_at: now }).eq("user_id", userId);
     const { data: securitySession, error: sessionError } = await admin.from("security_sessions").insert({ workspace_id: workspaceId, user_id: userId, email, device_label: device, user_agent: ua, started_at: now, last_seen_at: now }).select("id").single();
     if (sessionError || !securitySession) throw sessionError || new Error("No se pudo registrar la sesión.");
     await admin.from("security_events").insert({ workspace_id: workspaceId, user_id: userId, email, event_type: "login_success", success: true, severity: "info", device_label: device, user_agent: ua, network_fingerprint: network || null, session_id: securitySession.id, metadata: { role: membership.role || "consulta", mfa: verifiedFactors.length > 0 } });

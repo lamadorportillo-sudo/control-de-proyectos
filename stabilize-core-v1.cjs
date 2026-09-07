@@ -4,6 +4,8 @@ const {retiredModules,preAuthModules,supplementalModules}=require('./authenticat
 const path='index.html';
 if(!fs.existsSync(path))throw new Error('No se encontró index.html para estabilizar.');
 let html=fs.readFileSync(path,'utf8');
+const DASHBOARD_VERSION_OLD='20260903-dash6',DASHBOARD_VERSION='20260907-dashnav1';
+html=html.split(DASHBOARD_VERSION_OLD).join(DASHBOARD_VERSION);
 
 function replaceRequired(label,oldText,newText){
   if(html.includes(newText))return;

@@ -117,7 +117,7 @@ html body.cc-portal-v2:not(.print-report) nav.tabs{
   scroll-snap-type:x proximity;
 }
 html body.cc-portal-v2:not(.print-report) nav.tabs>button{
-  flex:0 0 auto!important;
+  flex:0 0 auto!important;   width:auto!important;   min-width:max-content!important;   max-width:none!important;
   min-height:36px!important;
   padding:8px 12px!important;
   font-size:12.5px!important;

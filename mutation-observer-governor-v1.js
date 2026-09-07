@@ -1,7 +1,7 @@
-/* ===== GOBERNADOR GLOBAL DE MUTATIONOBSERVER V2 · ENTREGA POR FRAME + DOM IDÉMPOTENTE ===== */
+/* ===== GOBERNADOR GLOBAL DE MUTATIONOBSERVER V3 · ENTREGA POR FRAME + DOM IDÉMPOTENTE ===== */
 (()=>{
 'use strict';
-if(window.__CC_MUTATION_OBSERVER_GOVERNOR_V2__)return;
+if(window.__CC_MUTATION_OBSERVER_GOVERNOR_V3__)return;
 const Native=window.MutationObserver;
 if(typeof Native!=='function')return;
 window.__CC_MUTATION_OBSERVER_GOVERNOR_V2__=true;
@@ -61,6 +61,8 @@ class GovernedMutationObserver extends Native{
   }
   __ccDeliver(records){
     if(this.__ccDisconnected||!records?.length)return;
+    /* Un formulario modal debe conservar el foco y su geometría: los observadores globales no tocarán el fondo mientras esté abierto. */
+    if(this.__ccBroad&&document.querySelector('.modal-bg'))return;
     if(!this.__ccBroad){this.__ccCallback(records,this);return}
     this.__ccQueue.push(...records);
     if(this.__ccFrame)return;

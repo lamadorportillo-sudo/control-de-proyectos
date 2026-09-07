@@ -994,7 +994,7 @@ function decorate(){
     document.querySelectorAll('.field span').forEach(sp=>{if(sp.textContent.trim()==='Modalidad sugerida')sp.textContent='Modalidad de referencia'});
   }catch(e){console.warn('Decoración de integridad',e)}
 }
-let ccDecorateQueued=false;new MutationObserver(()=>{if(ccDecorateQueued)return;ccDecorateQueued=true;const run=()=>{ccDecorateQueued=false;decorate()};if(typeof requestAnimationFrame==='function')requestAnimationFrame(run);else setTimeout(run,0)}).observe(document.documentElement,{subtree:true,childList:true});
+let ccDecorateQueued=false;new MutationObserver(()=>{if(document.querySelector('.modal-bg'))return;if(ccDecorateQueued)return;ccDecorateQueued=true;const run=()=>{ccDecorateQueued=false;decorate()};if(typeof requestAnimationFrame==='function')requestAnimationFrame(run);else setTimeout(run,0)}).observe(document.documentElement,{subtree:true,childList:true});
 setTimeout(()=>{decorate();try{hardenedSyncProgress()}catch{}},0);
 window.ccProgressForProject=progressForProject;
 window.ccSaveCloudNow=hardenedSaveCloudNow;
@@ -1455,7 +1455,7 @@ function estForm(){let f=document.getElementById('estForm');if(!f||f.dataset.lea
 function visitForm(){let f=document.getElementById('visitForm');if(!f||f.dataset.learn)return;f.dataset.learn=1;store();let p=prof();if(!p.visits.gap)return;let n=document.getElementById('vNext')?.closest('.field');if(n)n.insertAdjacentHTML('beforeend',`<small>🧠 Tu historial sugiere seguimiento cada ${Math.round(p.visits.gap)} días.</small>`)}
 if(typeof saveDB==='function'&&!saveDB.__learn){let o=saveDB;saveDB=function(){try{store();prof()}catch(e){}return o.apply(this,arguments)};saveDB.__learn=1}
 document.addEventListener('click',e=>{let b=e.target.closest?.('[data-report-kind]');if(!b)return;let s=store();s.reportUsage[b.dataset.reportKind]=(s.reportUsage[b.dataset.reportKind]||0)+1},true);
-new MutationObserver(()=>{try{store();button();estForm();visitForm()}catch(e){console.warn(e)}}).observe(document.documentElement,{subtree:true,childList:true});
+new MutationObserver(()=>{try{if(document.querySelector('.modal-bg'))return;store();button();estForm();visitForm()}catch(e){console.warn(e)}}).observe(document.documentElement,{subtree:true,childList:true});
 setTimeout(()=>{store();prof();button();estForm();visitForm()},0);window.openAdaptiveLearning=modal;window.adaptiveLearningProfile=prof;
 })();
 
@@ -1497,7 +1497,7 @@ setTimeout(()=>{store();prof();button();estForm();visitForm()},0);window.openAda
 <script type="application/x-cc-auth" data-cc-auth-script data-src="functional-repair-v1.js?v=20260826-repair3"></script>
 <script type="application/x-cc-auth" data-cc-auth-script data-src="integrity-diagnostics-v1.js?v=20260826-integrity1"></script>
 <script type="application/x-cc-auth" data-cc-auth-script data-src="hero-typography-v1.js?v=20260830-hero1"></script>
-<script type="application/x-cc-auth" data-cc-auth-script data-src="mutation-observer-governor-v1.js?v=20260905-observergovernor2"></script>
+<script type="application/x-cc-auth" data-cc-auth-script data-src="mutation-observer-governor-v1.js?v=20260907-observergovernor3"></script>
 <script type="application/x-cc-auth" data-cc-auth-script data-src="project-tabs-complete-v1.js?v=20260831-tabscomplete34"></script>
 <script type="application/x-cc-auth" data-cc-auth-script data-src="ui-navigation-single-source-v1.js?v=20260905-singlenav6"></script>
 <script type="application/x-cc-auth" data-cc-auth-script data-src="security-runtime-v1.js?v=20260904-security4"></script>
@@ -1610,6 +1610,9 @@ setTimeout(()=>{store();prof();button();estForm();visitForm()},0);window.openAda
     try{
       /* FASE A · PRIMERA PINTURA AUTENTICADA.
          El sidebar ya debe existir antes de activar centros secundarios. */
+      const governor=nodeByBare('mutation-observer-governor-v1.js');
+      if(!governor)throw new Error('Falta el gobernador de observadores.');
+      await requireRun('mutation-observer-governor-v1.js',()=>runNode(governor));
       styleOnce('portal-web-v2.css?v=20260903-web3','ccAuthPortalCss');
       styleOnce('project-detail-v2.css?v=20260901-detail2','ccAuthProjectCss');
       styleOnce('dashboard-simplified-v4.css?v=20260907-dashnav1','ccAuthDashboardCss');

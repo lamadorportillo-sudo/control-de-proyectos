@@ -115,7 +115,7 @@ jobs:
           grep -q 'COORDINADOR DE RENDIMIENTO DEL DOM V7 · SIN CARGA FUNCIONAL' performance-runtime-v1.js
           grep -q 'service-worker-v1.js?v=20260903-sw2' performance-runtime-v1.js
           grep -q 'portal-web-v2.js?v=20260904-web4' index.html
-          grep -q 'dashboard-simplified-v4.js?v=20260903-dash6' index.html
+          grep -q 'dashboard-simplified-v4.js?v=20260907-dashnav1' index.html
           grep -q 'ui-stability-v1.js?v=20260904-stable2' index.html
           grep -q 'cc-static-v1-20260903-recovery-v2' service-worker-v1.js
           grep -q 'PORTAL WEB V4 · PRESENTACIÓN ESTABLE' portal-web-v2.js

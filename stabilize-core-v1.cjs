@@ -206,7 +206,7 @@ if(!tail.includes('data-cc-auth-plan')){
          El sidebar ya debe existir antes de activar centros secundarios. */
       styleOnce('portal-web-v2.css?v=20260903-web3','ccAuthPortalCss');
       styleOnce('project-detail-v2.css?v=20260901-detail2','ccAuthProjectCss');
-      styleOnce('dashboard-simplified-v4.css?v=20260903-dash6','ccAuthDashboardCss');
+      styleOnce('dashboard-simplified-v4.css?v=20260907-dashnav1','ccAuthDashboardCss');
 
       await requireRun('portal-web-v2.js',()=>runSrc('portal-web-v2.js?v=20260904-web4'));
       const tabs=nodeByBare('project-tabs-complete-v1.js');
@@ -222,7 +222,7 @@ if(!tail.includes('data-cc-auth-plan')){
       /* FASE B · CENTROS WEB PRINCIPALES, UNO A UNO. */
       const webModules=[
         'project-detail-v2.js?v=20260901-detail2',
-        'dashboard-simplified-v4.js?v=20260903-dash6',
+        'dashboard-simplified-v4.js?v=20260907-dashnav1',
         'payments-center-v1.js?v=20260901-payments1',
         'guarantees-center-v1.js?v=20260901-guarantees1',
         'visits-center-v1.js?v=20260901-visits1',

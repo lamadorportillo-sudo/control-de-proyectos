@@ -42,7 +42,7 @@ test('las versiones publicadas conservan una sola autoridad de carga',()=>{
   assert.match(runtime,/COORDINADOR DE RENDIMIENTO DEL DOM V7 · SIN CARGA FUNCIONAL/);
   assert.match(runtime,/service-worker-v1\.js\?v=20260903-sw2/);
   assert.match(stabilizer,/portal-web-v2\.js\?v=20260904-web4/);
-  assert.match(stabilizer,/dashboard-simplified-v4\.js\?v=20260903-dash6/);
+  assert.match(stabilizer,/dashboard-simplified-v4\.js\?v=20260907-dashnav1/);
   assert.match(portal,/PORTAL WEB V4 · PRESENTACIÓN ESTABLE/);
   assert.match(portal,/if\(el\.textContent!==next\)el\.textContent=next/);
   assert.match(dashboard,/DASHBOARD SIMPLIFICADO V6 · ESTABLE/);

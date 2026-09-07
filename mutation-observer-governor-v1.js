@@ -4,6 +4,7 @@
 if(window.__CC_MUTATION_OBSERVER_GOVERNOR_V3__)return;
 const Native=window.MutationObserver;
 if(typeof Native!=='function')return;
+window.__CC_MUTATION_OBSERVER_GOVERNOR_V3__=true;
 window.__CC_MUTATION_OBSERVER_GOVERNOR_V2__=true;
 window.__CC_MUTATION_OBSERVER_GOVERNOR_V1__=true;
 window.__CC_NATIVE_MUTATION_OBSERVER__=window.__CC_NATIVE_MUTATION_OBSERVER__||Native;

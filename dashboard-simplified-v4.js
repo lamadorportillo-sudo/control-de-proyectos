@@ -55,7 +55,7 @@ function welcome(){
   const first=(currentName().split(/\s+/)[0]||'Usuario').replace(/[^\p{L}\p{N}.'-]/gu,'');
   const execution=count(/ejecuci/i),alerts=Number(Q('.rail-attention-count')?.textContent||0),visits=(safeDB()?.visits||[]).length;
   const box=document.createElement('section');box.className='cc-dashboard-welcome-v4';
-  box.innerHTML=`<div><p class="cc-welcome-kicker">CONTROL CONTRACTUAL · SANTA MARÍA, LA PAZ</p><h2>¡Hola, ${first}!</h2><p class="cc-welcome-date">${spanishDate()}</p></div><div class="cc-welcome-summary"><span><b>${execution}</b> en ejecución</span><span class="${alerts?'attention':''}"><b>${alerts}</b> por revisar</span><span><b>${visits}</b> visitas registradas</span></div>`;
+  box.innerHTML=`<div><p class="cc-welcome-kicker">CONTROL CONTRACTUAL · SANTA MARÍA, LA PAZ</p><h2>¡Hola, ${first}!</h2><p class="cc-welcome-date">${spanishDate()}</p></div><div class="cc-welcome-summary"><span role="button" tabindex="0" class="cc-summary-action" data-cc-summary-action="execution" aria-label="Ver proyectos en ejecución"><b>${execution}</b> en ejecución</span><span role="button" tabindex="0" class="cc-summary-action ${alerts?'attention':''}" data-cc-summary-action="review" aria-label="Ver asuntos por revisar"><b>${alerts}</b> por revisar</span><span role="button" tabindex="0" class="cc-summary-action" data-cc-summary-action="visits" aria-label="Ver visitas registradas"><b>${visits}</b> visitas registradas</span></div>`;
   content.insertBefore(box,content.firstChild);
 }
 
@@ -116,7 +116,98 @@ function portfolioViews(){
   grid.classList.remove('cc-portfolio-table-mode');
 }
 
-function enhance(){if(working)return;working=true;try{regroupSidebar();welcome();lifecycle();portfolioViews()}finally{working=false}}
+function dashboardStatus(status,attempt=0){
+  const search=Q('#projectSearch');
+  try{if(typeof view!=='undefined')view.search=''}catch{}
+  if(search)search.value='';
+  const selector='[data-status-filter="'+String(status||'all').replace(/"/g,'')+'"]';
+  const button=QA(selector).find(el=>el.offsetParent!==null||el.getClientRects().length)||Q(selector);
+  if(button){
+    button.click();
+    setTimeout(()=>Q('.projects-board')?.scrollIntoView({behavior:'smooth',block:'start'}),80);
+    return true;
+  }
+  if(attempt<3){
+    const projects=Q('#ccSidebar [data-route="proyectos"]');
+    if(projects){projects.click();setTimeout(()=>dashboardStatus(status,attempt+1),140);return true}
+  }
+  return false;
+}
+function dashboardRoute(route){
+  const button=Q('#ccSidebar [data-route="'+String(route||'').replace(/"/g,'')+'"]');
+  if(button){button.click();return true}
+  return false;
+}
+function ensureDashboardNavigationStyle(){
+  if(Q('#cc-dashboard-navigation-style'))return;
+  const style=document.createElement('style');style.id='cc-dashboard-navigation-style';style.textContent='.cc-dashboard-nav-item{cursor:pointer!important}.cc-dashboard-nav-item:focus-visible{outline:2px solid #60a5fa;outline-offset:3px}';
+  document.head.appendChild(style);
+}
+function bindDashboardNavigationItem(element,action,label){
+  if(!element||element.dataset.ccNavBound==='1')return;
+  element.dataset.ccNavBound='1';
+  element.classList.add('cc-dashboard-nav-item');
+  element.setAttribute('role','button');
+  element.setAttribute('tabindex','0');
+  if(label)element.setAttribute('aria-label',label);
+  const go=()=>{
+    if(action==='review'){
+      const review=Q('#reviewIssuesBtn');
+      if(review)review.click();else dashboardRoute('alertas');
+    }else if(action.startsWith('status:'))dashboardStatus(action.slice(7));
+    else if(action.startsWith('route:'))dashboardRoute(action.slice(6));
+  };
+  element.addEventListener('click',go);
+  element.addEventListener('keydown',event=>{
+    if(event.key==='Enter'||event.key===' '){event.preventDefault();go()}
+  });
+}
+function bindDashboardNavigation(){
+  ensureDashboardNavigationStyle();
+  QA('.exec-chips .exec-chip:not(.review-issues-chip)').forEach(element=>{
+    const text=element.textContent.toLowerCase();
+    const action=/ejecuci/.test(text)?'status:execution':/contrat|adjudic/.test(text)?'status:procurement':/finaliz|cerrad/.test(text)?'status:closed':'';
+    if(action)bindDashboardNavigationItem(element,action,'Filtrar proyectos: '+element.textContent.trim());
+  });
+  QA('.cc-summary-action,.cc-welcome-summary > span').forEach(element=>{
+    const action=element.dataset.ccSummaryAction||(
+      /visita/.test(element.textContent.toLowerCase())?'visits':
+      /revisar/.test(element.textContent.toLowerCase())?'review':
+      /ejecuci/.test(element.textContent.toLowerCase())?'execution':''
+    );
+    if(action==='execution')bindDashboardNavigationItem(element,'status:execution','Ver proyectos en ejecución');
+    else if(action==='review')bindDashboardNavigationItem(element,'review','Ver asuntos por revisar');
+    else if(action==='visits')bindDashboardNavigationItem(element,'route:visitas','Ver visitas registradas');
+  });
+  QA('.exec-kpi').forEach(element=>{
+    const text=element.textContent.toLowerCase();
+    const action=/proyectos activos/.test(text)?'status:all':
+      /monto contractual/.test(text)?'route:contratos':
+      /total estimado|total pagado/.test(text)?'route:pagos':
+      /alertas garantías/.test(text)?'route:garantias':'';
+    if(action)bindDashboardNavigationItem(element,action,'Abrir '+text.split(/\s+/).slice(0,4).join(' '));
+  });
+  QA('.followup-mini').forEach(element=>{
+    const text=element.textContent.toLowerCase();
+    const action=/plazo/.test(text)?'route:alertas':
+      /garant/.test(text)?'route:garantias':
+      /observ/.test(text)?'route:visitas':
+      /anticipo/.test(text)?'route:pagos':'';
+    if(action)bindDashboardNavigationItem(element,action,'Abrir '+text.split(/\s+/).slice(0,3).join(' '));
+  });
+  QA('.rail-state-row').forEach(element=>{
+    const text=element.textContent.toLowerCase();
+    const action=/en ejecución/.test(text)?'status:execution':
+      /contratación|adjudicación/.test(text)?'status:procurement':
+      /finalizado|cerrado/.test(text)?'status:closed':
+      /garantías con alerta/.test(text)?'route:garantias':
+      /observaciones pendientes/.test(text)?'route:visitas':
+      /anticipos por amortizar|estimaciones pendientes/.test(text)?'route:pagos':
+      /otros estados/.test(text)?'status:all':'';
+    if(action)bindDashboardNavigationItem(element,action,'Abrir '+text.split(/\s+/).slice(0,4).join(' '));
+  });
+}
+function enhance(){if(working)return;working=true;try{regroupSidebar();welcome();lifecycle();portfolioViews();bindDashboardNavigation()}finally{working=false}}
 function queueEnhance(){
   if(observerQueued)return;observerQueued=true;
   const run=()=>{observerQueued=false;enhance()};

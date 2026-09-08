@@ -49,14 +49,15 @@ function closeEnough(token,text){
     return d<=1;
   });
 }
-function tokenMatches(token,text){return alternatives(token).some(a=>closeEnough(a,text))}
+function tokenMatches(token,text){return closeEnough(token,text)}
 function corpus(card){
   const code=card.querySelector('.project-v3-code')?.textContent||'';
   const title=card.querySelector('h3')?.textContent||'';
   const contractor=card.querySelector('.project-v3-contractor')?.textContent||'';
-  const location=card.querySelector('.project-v3-location')?.textContent||'';
+  const location=card.querySelector('.project-v3-location,.project-v3-sub')?.textContent||'';
   const status=card.querySelector('.status,.project-v3-status')?.textContent||'';
-  return norm(`${code} ${title} ${contractor} ${location} ${status} ${card.textContent||''}`);
+  const type=card.querySelector('[data-project-type],.project-v3-type')?.textContent||'';
+  return norm([code,title,contractor,location,status,type].join(' '));
 }
 function scoreCard(card,q){
   const text=corpus(card),tokens=coreTokens(q),phrase=norm(q);

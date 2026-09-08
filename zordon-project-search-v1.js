@@ -1,8 +1,9 @@
-/* ===== ZORDON · BUSCADOR INTELIGENTE DE PROYECTOS V5 · LISTA ESTABLE ===== */
+/* ===== ZORDON · BUSCADOR INTELIGENTE DE PROYECTOS V6 · CARGA SOLO BAJO BÚSQUEDA ===== */
 (()=>{
 'use strict';
 if(typeof window==='undefined'||typeof document==='undefined')return;
-if(window.__CC_ZORDON_PROJECT_SEARCH_V5__)return;
+if(window.__CC_ZORDON_PROJECT_SEARCH_V6__)return;
+window.__CC_ZORDON_PROJECT_SEARCH_V6__=true;
 window.__CC_ZORDON_PROJECT_SEARCH_V5__=true;
 window.__CC_ZORDON_PROJECT_SEARCH_V4__=true;
 window.__CC_ZORDON_PROJECT_SEARCH_V3__=true;
@@ -73,6 +74,8 @@ function scoreCard(card,q){
 function installCss(){
   if(document.getElementById(STYLE_ID)||typeof document.createElement!=='function')return;
   const s=document.createElement('style');s.id=STYLE_ID;s.textContent=`
+  body[data-cc-main-route="inicio"] .projects-board,body[data-cc-main-route="inicio"] .cc-lifecycle-v4{display:none!important}
+  .projects-board .project-grid-v3[data-zordon-awaiting-query="1"]{display:none!important}
   .projects-board .project-grid-v3 [data-zordon-hidden="1"]{display:none!important}
   .zordon-project-search{margin:0 0 10px;padding:10px 11px;border:1px solid #2c435b;border-radius:12px;background:linear-gradient(145deg,#0d1a28,#09131f);box-shadow:0 10px 24px rgba(0,0,0,.16)}
   .zordon-project-search-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:7px}.zordon-project-search-head small{display:block;color:#72a6ff;font-size:8.5px;font-weight:900;letter-spacing:.12em}.zordon-project-search-head b{display:block;color:#f1f6fb;font-size:12px;margin-top:1px}.zordon-project-search-head span{color:#91a6bb;font-size:8.5px;line-height:1.3;max-width:620px}
@@ -97,10 +100,12 @@ function apply(board,query){
   const grid=board.querySelector('.project-grid-v3');if(!grid)return;
   const cards=searchItems(grid),q=String(query||'').trim(),count=board.querySelector('[data-zordon-count]');
   if(!q){
-    cards.forEach(show);hideState(grid);
-    if(count)count.textContent=`${cards.length} proyecto${cards.length===1?'':'s'}`;
+    cards.forEach(hide);hideState(grid);
+    grid.dataset.zordonAwaitingQuery='1';
+    if(count)count.textContent='Escribe para buscar';
     return;
   }
+  if(grid.dataset.zordonAwaitingQuery==='1')delete grid.dataset.zordonAwaitingQuery;
   if(/^(todos|todas|mostrar todos|muestra todos|ver todos)$/i.test(norm(q))){cards.forEach(show);hideState(grid);if(count)count.textContent=`${cards.length} proyecto${cards.length===1?'':'s'}`;return}
   const ranked=cards.map(c=>({c,score:scoreCard(c,q)})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
   cards.forEach(hide);ranked.forEach(({c})=>show(c));
@@ -138,5 +143,5 @@ const observer=typeof NativeObserver==='function'?new NativeObserver(mutations=>
 observer?.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
 setTimeout(run,0);setTimeout(run,350);setTimeout(run,1100);
 window.addEventListener('pagehide',()=>observer?.disconnect(),{once:true});
-window.__ccZordonProjectSearch={run,apply,scoreCard,version:5};
+window.__ccZordonProjectSearch={run,apply,scoreCard,version:6};
 })();

@@ -59,6 +59,20 @@ function welcome(){
   content.insertBefore(box,content.firstChild);
 }
 
+function currentMainRoute(){return String(document.body?.dataset?.ccMainRoute||window.__ccMainRoute||'').toLowerCase()}
+function homeHero(){
+  const content=Q('#content');if(!content||currentMainRoute()!=='inicio'||Q('.cc-home-hero-v7',content))return;
+  const overview=Q('.exec-overview',content);if(!overview)return;
+  const total=Q('.exec-money strong',overview)?.textContent?.trim()||'L. 0.00',active=activeProjects().length;
+  const estimatedPct=Q('.portfolio-ring-content b',overview)?.textContent?.trim()||'0.00%',labels=QA('.exec-bar-label',overview);
+  const estimated=Q('b',labels[0])?.textContent?.trim()||'L. 0.00',paidPct=Q('b',labels[1])?.textContent?.trim()||'0.00%';
+  const paid=Q('.exec-kpis .exec-kpi:nth-child(4) strong',content)?.textContent?.trim()||'L. 0.00';
+  const guaranteeRow=QA('.rail-state-row',content).find(x=>/garant/i.test(x.textContent||'')),guarantees=Q('b',guaranteeRow)?.textContent?.trim()||'0';
+  const section=document.createElement('section');section.className='cc-home-hero-v7';
+  section.innerHTML=`<div class="cc-home-copy-v7"><span class="cc-home-chip-v7">●&nbsp; CENTRO DE CONTROL</span><h2>Una vista clara de cada proyecto, su dinero y sus compromisos.</h2><p>Consulta rápidamente el estado contractual, financiero y documental. Los expedientes permanecen vinculados y sincronizados en Supabase para trabajar desde PC, tablet o celular.</p></div><div class="cc-home-stats-v7"><article><small>Portafolio registrado</small><strong>${H(total)}</strong><span>${active} expedientes activos</span></article><article><small>Avance estimado global</small><strong>${H(estimatedPct)}</strong><span>${H(estimated)} certificado</span></article><article><small>Desembolso global</small><strong>${H(paidPct)}</strong><span>${H(paid)} pagado</span></article><article><small>Alertas de garantía</small><strong>${H(guarantees)}</strong><span>${Number(guarantees)?'Requieren seguimiento':'Sin alertas activas'}</span></article></div>`;
+  overview.insertAdjacentElement('beforebegin',section);
+}
+
 function lifecycle(){
   const v=safeView(),content=Q('#content');
   if(!v||v.screen!=='projects'||v.trash||!content||Q('.cc-lifecycle-v4',content))return;
@@ -207,7 +221,7 @@ function bindDashboardNavigation(){
     if(action)bindDashboardNavigationItem(element,action,'Abrir '+text.split(/\s+/).slice(0,4).join(' '));
   });
 }
-function enhance(){if(working)return;working=true;try{regroupSidebar();welcome();lifecycle();portfolioViews();bindDashboardNavigation()}finally{working=false}}
+function enhance(){if(working)return;working=true;try{regroupSidebar();welcome();homeHero();lifecycle();portfolioViews();bindDashboardNavigation()}finally{working=false}}
 function queueEnhance(){
   if(observerQueued)return;observerQueued=true;
   const run=()=>{observerQueued=false;enhance()};

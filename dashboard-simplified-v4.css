@@ -13,5 +13,4 @@ body.cc-portal-v2 .exec-kpis{gap:9px;margin-bottom:10px}.exec-kpi{min-height:103
 /* INICIO LIGERO: nunca montar visualmente el portafolio sin una búsqueda explícita. */
 body:not([data-cc-main-route]) .projects-board,
 body[data-cc-main-route="inicio"] .projects-board,
-body[data-cc-main-route="inicio"] .cc-lifecycle-v4,
 body[data-cc-main-route="proyectos"] .projects-board .project-grid-v3:not([data-zordon-search-active="1"]){display:none!important}

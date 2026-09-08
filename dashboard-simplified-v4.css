@@ -10,6 +10,14 @@ body.cc-portal-v2 .exec-kpis{gap:9px;margin-bottom:10px}.exec-kpi{min-height:103
 @media(max-width:430px){.cc-welcome-summary span{flex:1;justify-content:center}.cc-life-track{grid-template-columns:1fr 1fr}.cc-life-step{grid-template-columns:36px 1fr auto;justify-items:start;align-items:center;text-align:left}.cc-life-name{text-align:left;font-size:9px}.cc-life-node{box-shadow:none}.cc-pt-row{grid-template-columns:1fr}.cc-pt-project,.cc-pt-action{grid-column:1}.cc-portfolio-count-v4{display:none}}
 
 
+/* BLOQUEOS PERMANENTES: estos paneles no forman parte de Inicio ni de Proyectos. */
+.followup-center,
+.quick-panel,
+.dashboard-layout > .quick-panel,
+.dashboard-layout > .dashboard-aside,
+.dashboard-layout > .control-rail-v3,
+.control-rail-v3{display:none!important}
+
 /* SEPARACIÓN ESTRICTA DE INICIO Y PROYECTOS */
 body:not([data-cc-main-route]) .projects-board{display:none!important}
 body[data-cc-main-route="inicio"] .exec-overview,

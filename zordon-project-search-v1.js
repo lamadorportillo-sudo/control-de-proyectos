@@ -73,7 +73,7 @@ function scoreCard(card,q){
 function installCss(){
   if(document.getElementById(STYLE_ID)||typeof document.createElement!=='function')return;
   const s=document.createElement('style');s.id=STYLE_ID;s.textContent=`
-  .projects-board .project-grid-v3>.project-v3[data-zordon-hidden="1"]{display:none!important}
+  .projects-board .project-grid-v3 [data-zordon-hidden="1"]{display:none!important}
   .zordon-project-search{margin:0 0 10px;padding:10px 11px;border:1px solid #2c435b;border-radius:12px;background:linear-gradient(145deg,#0d1a28,#09131f);box-shadow:0 10px 24px rgba(0,0,0,.16)}
   .zordon-project-search-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:7px}.zordon-project-search-head small{display:block;color:#72a6ff;font-size:8.5px;font-weight:900;letter-spacing:.12em}.zordon-project-search-head b{display:block;color:#f1f6fb;font-size:12px;margin-top:1px}.zordon-project-search-head span{color:#91a6bb;font-size:8.5px;line-height:1.3;max-width:620px}
   .zordon-project-search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px}.zordon-project-search-input{min-height:38px!important;padding:7px 10px!important;border:1px solid #355270!important;border-radius:9px!important;background:#07111b!important;color:#f3f8fd!important;font-size:11.5px!important}.zordon-project-search-input:focus{border-color:#5794ff!important;box-shadow:0 0 0 3px rgba(79,140,255,.13)!important}.zordon-project-clear{min-width:82px!important}
@@ -86,11 +86,16 @@ function installCss(){
 function stateNode(grid){let node=grid.querySelector(':scope > .zordon-project-state');if(!node){node=document.createElement('div');node.className='zordon-project-state';grid.prepend(node)}return node}
 function showState(grid,title,detail){const n=stateNode(grid);n.innerHTML=`<b>${esc(title)}</b><span>${esc(detail)}</span>`;if(n.style.display==='none')n.style.removeProperty('display')}
 function hideState(grid){const n=grid.querySelector(':scope > .zordon-project-state');if(n&&n.style.display!=='none')n.style.display='none'}
-function hide(card){if(card.dataset.zordonHidden!=='1')card.dataset.zordonHidden='1'}
-function show(card){if(card.dataset.zordonHidden==='1')delete card.dataset.zordonHidden}
+function searchItems(grid){
+  const cards=[...grid.querySelectorAll(':scope > .project-v3')];
+  if(cards.length)return cards;
+  return [...grid.querySelectorAll('.cc-pt-row')];
+}
+function hide(card){if(card.dataset.zordonHidden!=='1')card.dataset.zordonHidden='1';card.hidden=true}
+function show(card){if(card.dataset.zordonHidden==='1')delete card.dataset.zordonHidden;if(card.hidden)card.hidden=false}
 function apply(board,query){
   const grid=board.querySelector('.project-grid-v3');if(!grid)return;
-  const cards=[...grid.querySelectorAll(':scope > .project-v3')],q=String(query||'').trim(),count=board.querySelector('[data-zordon-count]');
+  const cards=searchItems(grid),q=String(query||'').trim(),count=board.querySelector('[data-zordon-count]');
   if(!q){
     cards.forEach(show);hideState(grid);
     if(count)count.textContent=`${cards.length} proyecto${cards.length===1?'':'s'}`;

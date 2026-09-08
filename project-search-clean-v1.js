@@ -6,11 +6,18 @@ window.__CC_PROJECT_SEARCH_CLEAN_V3__=true;
 window.__CC_PROJECT_SEARCH_CLEAN_V2__=true;
 
 function normalize(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()}
+const SEARCH_STOP=new Set(['de','del','la','las','el','los','un','una','unos','unas','en','a','al','por','para','con','y','o','proyecto','proyectos']);
+function smartMatch(text,query){
+ const hay=normalize(text),phrase=normalize(query);if(!phrase)return true;
+ if(hay.includes(phrase))return true;
+ const tokens=phrase.split(/\s+/).filter(t=>t&&!SEARCH_STOP.has(t));
+ return tokens.length?tokens.every(t=>hay.includes(t)):hay.includes(phrase);
+}
 function findGrid(){return document.querySelector('.project-grid-v3,.dashboard-project-grid,.project-grid')}
-function projectCards(grid){return [...grid.querySelectorAll(':scope > .project-v3,:scope > .card')].filter(x=>!x.matches('[data-search-empty]'))}
+function projectCards(grid){return [...grid.querySelectorAll(':scope > .project-v3,:scope > .card,.cc-pt-row')].filter(x=>!x.matches('[data-search-empty]'))}
 function hideNonCardsWhileSearching(grid,active){
  [...grid.children].forEach(ch=>{
-   if(ch.matches('.project-v3,.card,[data-search-empty]'))return;
+   if(ch.matches('.project-v3,.card,.cc-portfolio-table-v4,[data-search-empty]'))return;
    ch.style.display=active?'none':'';
  });
 }
@@ -20,7 +27,7 @@ function applySearch(input){
  const cards=projectCards(grid);
  let visible=0;
  cards.forEach(card=>{
-   const show=!q||normalize(card.textContent).includes(q);
+   const show=!q||smartMatch(card.textContent,q);
    card.hidden=!show;
    card.style.display=show?'':'none';
    if(show)visible++;
@@ -114,7 +121,7 @@ function applyVisitPickerSearch(input,root){
  const q=normalize(input?.value),cards=visitPickerCards(root);
  let visible=0;
  cards.forEach(card=>{
-   const show=!q||normalize(card.textContent).includes(q);
+   const show=!q||smartMatch(card.textContent,q);
    card.hidden=!show;
    card.style.display=show?'':'none';
    if(show)visible++;

@@ -74,7 +74,7 @@ function scoreCard(card,q){
 function installCss(){
   if(document.getElementById(STYLE_ID)||typeof document.createElement!=='function')return;
   const s=document.createElement('style');s.id=STYLE_ID;s.textContent=`
-  body[data-cc-main-route="inicio"] .projects-board,body[data-cc-main-route="inicio"] .cc-lifecycle-v4{display:none!important}
+  body[data-cc-main-route="inicio"] .projects-board{display:none!important}
   .projects-board .project-grid-v3[data-zordon-awaiting-query="1"]{display:none!important}
   .projects-board .project-grid-v3 [data-zordon-hidden="1"]{display:none!important}
   .zordon-project-search{margin:0 0 10px;padding:10px 11px;border:1px solid #2c435b;border-radius:12px;background:linear-gradient(145deg,#0d1a28,#09131f);box-shadow:0 10px 24px rgba(0,0,0,.16)}

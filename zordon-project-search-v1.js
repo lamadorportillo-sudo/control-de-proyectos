@@ -102,10 +102,12 @@ function apply(board,query){
   if(!q){
     cards.forEach(hide);hideState(grid);
     grid.dataset.zordonAwaitingQuery='1';
+    delete grid.dataset.zordonSearchActive;
     if(count)count.textContent='Escribe para buscar';
     return;
   }
   if(grid.dataset.zordonAwaitingQuery==='1')delete grid.dataset.zordonAwaitingQuery;
+  grid.dataset.zordonSearchActive='1';
   if(/^(todos|todas|mostrar todos|muestra todos|ver todos)$/i.test(norm(q))){cards.forEach(show);hideState(grid);if(count)count.textContent=`${cards.length} proyecto${cards.length===1?'':'s'}`;return}
   const ranked=cards.map(c=>({c,score:scoreCard(c,q)})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
   cards.forEach(hide);ranked.forEach(({c})=>show(c));

@@ -28,6 +28,25 @@ function css(){
  `;document.head.appendChild(s);
 }
 function setActive(active){ST.active=!!active;document.body.classList.toggle('cc-payments-center-active',ST.active);window.dispatchEvent(new CustomEvent('cc:route-changed',{detail:{route:ST.active?'payments':''}}))}
+const FocusObserver=window.__ccNativeMutationObserver||window.MutationObserver;
+function restoreSearchFocus(){
+ if(!ST.active||Date.now()>Number(ST.focusUntil||0))return;
+ const input=document.getElementById('cpfSearch');if(!input)return;
+ const pos=Math.max(0,Math.min(Number(ST.focusCaret??input.value.length),input.value.length));
+ if(document.activeElement!==input){try{input.focus({preventScroll:true});input.setSelectionRange(pos,pos)}catch{}}
+}
+function armSearchFocus(input){
+ ST.focusUntil=Date.now()+1400;
+ ST.focusCaret=Number(input?.selectionStart??input?.value?.length??0);
+ Promise.resolve().then(restoreSearchFocus);
+ requestAnimationFrame(restoreSearchFocus);
+ setTimeout(restoreSearchFocus,0);
+}
+function installFocusGuard(){
+ if(window.__CC_PAYMENTS_FOCUS_GUARD__)return;window.__CC_PAYMENTS_FOCUS_GUARD__=true;
+ if(FocusObserver)new FocusObserver(()=>restoreSearchFocus()).observe(document.documentElement,{childList:true,subtree:true});
+}
+
 function localRows(){
  const d=DB()||{},projects=A(d.projects).filter(p=>!p.deletedAt),contracts=A(d.contracts).filter(c=>!c.voidedAt&&!c.voided_at),estimates=A(d.estimates),moves=A(d.payments).filter(x=>!x.estimateId);
  const rows=[];
@@ -60,6 +79,7 @@ function render(){
  const bindOpen=()=>document.querySelectorAll('[data-cpf-open]').forEach(b=>b.onclick=()=>openProject(b.dataset.cpfOpen));
  const updateSearch=()=>{
    const input=document.getElementById('cpfSearch');if(!input)return;
+   armSearchFocus(input);
    ST.search=input.value;
    const page=content.querySelector('.cpf-page');if(page)page.dataset.cpfAwaiting=ST.search.trim()?'0':'1';
    const target=document.getElementById('cpfRows');if(target)target.innerHTML=renderRows(filteredRows(all));
@@ -78,4 +98,5 @@ function closeCenter(){setActive(false)}
 window.__ccPaymentsCenter={open:openCenter,close:closeCenter,render,state:ST};
 window.addEventListener('cc:data-changed',()=>{if(ST.active)setTimeout(render,40)});
 css();
+installFocusGuard();
 })();

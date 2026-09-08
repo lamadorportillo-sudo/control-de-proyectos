@@ -46,3 +46,7 @@ body[data-cc-main-route="proyectos"] .projects-board .project-grid-v3[data-zordo
 body[data-cc-main-route="proyectos"] .cc-portfolio-count-v4{display:none!important}
 @media(max-width:1050px){.cc-home-hero-v7{grid-template-columns:1fr;padding:28px}.cc-home-copy-v7 h2{font-size:34px}.cc-home-stats-v7{grid-template-columns:repeat(4,1fr)}.cc-home-stats-v7 article{min-height:125px;padding:18px 15px}.cc-home-stats-v7 strong{font-size:20px}}
 @media(max-width:760px){.cc-home-hero-v7{padding:22px 18px;border-radius:20px}.cc-home-copy-v7 h2{font-size:29px}.cc-home-copy-v7 p{font-size:14px}.cc-home-stats-v7{grid-template-columns:1fr 1fr}}
+
+/* EVITA EL PARPADEO: las tarjetas nunca se pintan antes de escribir una búsqueda. */
+body:not(.cc-project-results-ready) .projects-board .project-grid-v3{visibility:hidden!important;opacity:0!important;max-height:0!important;overflow:hidden!important;pointer-events:none!important;margin-top:0!important;margin-bottom:0!important}
+body.cc-project-results-ready .projects-board .project-grid-v3[data-zordon-search-active="1"]{visibility:visible!important;opacity:1!important;max-height:none!important;overflow:visible!important;pointer-events:auto!important}

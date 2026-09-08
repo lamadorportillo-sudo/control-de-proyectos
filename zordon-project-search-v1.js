@@ -99,6 +99,7 @@ function show(card){if(card.dataset.zordonHidden==='1')delete card.dataset.zordo
 function apply(board,query){
   const grid=board.querySelector('.project-grid-v3');if(!grid)return;
   const cards=searchItems(grid),q=String(query||'').trim(),count=board.querySelector('[data-zordon-count]');
+  document.body?.classList.toggle('cc-project-results-ready',!!q);
   if(!q){
     cards.forEach(hide);hideState(grid);
     grid.dataset.zordonAwaitingQuery='1';

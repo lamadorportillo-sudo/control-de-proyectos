@@ -59,7 +59,13 @@ function welcome(){
   content.insertBefore(box,content.firstChild);
 }
 
-function currentMainRoute(){return String(document.body?.dataset?.ccMainRoute||window.__ccMainRoute||'').toLowerCase()}
+function currentMainRoute(){
+  let route='';
+  try{route=String(document.body?.dataset?.ccMainRoute||window.__ccMainRoute||localStorage.getItem('cc_main_route_v2')||'').toLowerCase()}catch{}
+  if(!route)route=String(Q('#ccSidebar .cc-side-btn.active[data-route]')?.dataset?.route||'').toLowerCase();
+  if(route&&document.body?.dataset?.ccMainRoute!==route)document.body.dataset.ccMainRoute=route;
+  return route;
+}
 function homeHero(){
   const content=Q('#content');if(!content||currentMainRoute()!=='inicio'||Q('.cc-home-hero-v7',content))return;
   const overview=Q('.exec-overview',content);if(!overview)return;

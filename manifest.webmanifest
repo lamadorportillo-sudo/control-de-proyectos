@@ -1,0 +1,11 @@
+{
+  "name": "Control Contractual – Control de Proyectos",
+  "short_name": "Control Proyectos",
+  "description": "Control contractual, financiero y supervisión de proyectos con modo de campo sin conexión.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#070a0f",
+  "theme_color": "#070a0f",
+  "lang": "es-HN"
+}

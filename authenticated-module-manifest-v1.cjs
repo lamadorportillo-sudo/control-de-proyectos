@@ -80,14 +80,16 @@ const supplementalModules=[
   ['contract-payment-documents-v1.js','20260904-advance-docs4'],
   ['contract-preview-v1.js','20260904-preview2'],
   /* ZORDON antes del cierre técnico: buscador y densidad se cargan únicamente
-     desde este plan para impedir versiones históricas o cargadores secundarios. */
-  ['zordon-continuous-runtime-v1.js','20260905-zordon5'],
-  ['zordon-project-search-v1.js','20260905-zordonsearch5'],
+     desde este plan para impedir versiones históricas o cargadores secundarios.
+     Los identificadores 20260908 fuerzan al navegador a abandonar las copias
+     antiguas que producían respuestas locales y tono incorrecto. */
+  ['zordon-continuous-runtime-v1.js','20260908-zordon5'],
+  ['zordon-project-search-v1.js','20260908-zordonsearch7'],
   /* Coordina Enter en la búsqueda superior con el motor normalizado de ZORDON,
      preserva la consulta visible tras el rerender y refresca decoraciones. */
   ['authenticated-ui-sync-v1.js','20260905-authuisync2'],
   ['zordon-unified-density-v1.js','20260905-density2'],
-  ['zordon-chat-ui-v1.js','20260905-cleanchat5'],
+  ['zordon-chat-ui-v1.js','20260908-cleanchat6'],
   /* El expediente documental usa superficies claras y necesita una corrección
      contextual antes de la guardia visual final. */
   ['contract-document-contrast-v1.js','20260905-contractdoccontrast3'],

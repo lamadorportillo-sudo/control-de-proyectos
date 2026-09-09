@@ -1,8 +1,8 @@
-/* ===== ZORDON · BUSCADOR INTELIGENTE DE PROYECTOS V6 · CARGA SOLO BAJO BÚSQUEDA ===== */
+/* ===== ZORDON · BUSCADOR PRECISO DE PROYECTOS V7 · CARGA SOLO BAJO BÚSQUEDA ===== */
 (()=>{
 'use strict';
 if(typeof window==='undefined'||typeof document==='undefined')return;
-if(window.__CC_ZORDON_PROJECT_SEARCH_V6__)return;
+if(window.__CC_ZORDON_PROJECT_SEARCH_V7__)return;
 window.__CC_ZORDON_PROJECT_SEARCH_V6__=true;
 window.__CC_ZORDON_PROJECT_SEARCH_V5__=true;
 window.__CC_ZORDON_PROJECT_SEARCH_V4__=true;
@@ -32,44 +32,37 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&
 const words=v=>norm(v).split(' ').filter(Boolean);
 const alternatives=t=>GROUPS.find(g=>g.includes(t))||[t];
 const coreTokens=q=>words(q).filter(t=>!STOP.has(t));
-function closeEnough(token,text){
-  if(!token)return true;
-  if(text.includes(token))return true;
-  if(token.length<5)return false;
-  const candidates=text.split(' ').filter(w=>Math.abs(w.length-token.length)<=1&&w.length>=4);
-  return candidates.some(w=>{
-    if(w[0]!==token[0])return false;
-    let i=0,j=0,d=0;
-    while(i<token.length&&j<w.length){
-      if(token[i]===w[j]){i++;j++;continue}
-      d++;if(d>1)return false;
-      if(token.length>w.length)i++;else if(w.length>token.length)j++;else{i++;j++}
-    }
-    d+=token.length-i+w.length-j;
-    return d<=1;
-  });
+function closeEnough(token,word){
+  const a=norm(token),b=norm(word);
+  if(!a||!b)return false;
+  if(a===b)return true;
+  if(a.length<5||b.length<5||Math.abs(a.length-b.length)>1||a[0]!==b[0])return false;
+  let i=0,j=0,edits=0;
+  while(i<a.length&&j<b.length){
+    if(a[i]===b[j]){i++;j++;continue}
+    if(++edits>1)return false;
+    if(a.length>b.length)i++;else if(b.length>a.length)j++;else{i++;j++}
+  }
+  edits+=(a.length-i)+(b.length-j);
+  return edits<=1;
 }
-function tokenMatches(token,text){return closeEnough(token,text)}
 function corpus(card){
-  const code=card.querySelector('.project-v3-code')?.textContent||'';
-  const title=card.querySelector('h3')?.textContent||'';
-  const contractor=card.querySelector('.project-v3-contractor')?.textContent||'';
-  const location=card.querySelector('.project-v3-location,.project-v3-sub')?.textContent||'';
-  const status=card.querySelector('.status,.project-v3-status')?.textContent||'';
-  const type=card.querySelector('[data-project-type],.project-v3-type')?.textContent||'';
-  return norm([code,title,contractor,location,status,type].join(' '));
+  const code=card.querySelector('.project-v3-code,.cc-pt-project>b')?.textContent||'';
+  const title=card.querySelector('h3,.cc-pt-project>strong')?.textContent||'';
+  const contractor=card.querySelector('.project-v3-contractor b,.cc-pt-contract>b')?.textContent||'';
+  const location=card.querySelector('.project-v3-location,.project-v3-sub,.cc-pt-project>small')?.textContent||'';
+  const status=card.querySelector('.status,.project-v3-status,.cc-pt-head+div .status')?.textContent||'';
+  return norm([code,title,contractor,location,status].join(' '));
 }
+function tokenMatches(token,text){return words(text).some(word=>closeEnough(token,word))}
 function scoreCard(card,q){
   const text=corpus(card),tokens=coreTokens(q),phrase=norm(q);
-  if(!tokens.length)return 0;
-  if(!tokens.every(t=>tokenMatches(t,text)))return 0;
-  let score=40;
-  if(phrase&&text.includes(phrase))score+=100;
-  tokens.forEach(t=>{
-    if(text.includes(t))score+=30;
-    else if(alternatives(t).some(a=>text.includes(a)))score+=18;
-    else score+=8;
-  });
+  if(!tokens.length||!text)return 0;
+  if(!tokens.every(token=>tokenMatches(token,text)))return 0;
+  const exactWords=new Set(words(text));
+  let score=50;
+  if(phrase&&text.includes(phrase))score+=150;
+  tokens.forEach(token=>{score+=exactWords.has(token)?40:15});
   return score;
 }
 function installCss(){
@@ -122,7 +115,7 @@ function mount(board){
   if(!box){
     const old=board.querySelector('#projectSearch');if(old&&!old.matches('[data-zordon-input]')){old.id='projectSearchLegacy';old.setAttribute('aria-hidden','true')}
     box=document.createElement('section');box.className='zordon-project-search';box.dataset.zordonProjectSearch='1';
-    box.innerHTML=`<div class="zordon-project-search-head"><div><small>ZORDON · BÚSQUEDA INTELIGENTE</small><b>¿Qué proyecto quieres ver?</b><span>Escribe como hablas: nombre, código, contratista, comunidad, tipo de obra o estado.</span></div><span class="zordon-project-count" data-zordon-count>Proyectos disponibles</span></div><div class="zordon-project-search-row"><input id="projectSearch" class="zordon-project-search-input search" data-zordon-input data-cc-search-clean="1" type="search" autocomplete="off" spellcheck="false" placeholder="Ej.: parque central · contratista Harold · pavimento colegio · proyectos en ejecución"><button type="button" class="btn zordon-project-clear" data-zordon-clear>Limpiar</button></div><div class="zordon-project-hints"><button type="button" data-zordon-q="parque">Parque</button><button type="button" data-zordon-q="pavimento">Pavimento</button><button type="button" data-zordon-q="iglesia">Iglesia</button><button type="button" data-zordon-q="en ejecución">En ejecución</button><button type="button" data-zordon-q="finalizados">Finalizados</button></div>`;
+    box.innerHTML=`<div class="zordon-project-search-head"><div><small>ZORDON · BÚSQUEDA INTELIGENTE</small><b>¿Qué proyecto quieres ver?</b><span>Escribe como hablas: nombre, código, contratista, comunidad, tipo de obra o estado.</span></div><span class="zordon-project-count" data-zordon-count>Proyectos disponibles</span></div><div class="zordon-project-search-row"><input id="zordonProjectSearch" class="zordon-project-search-input" data-zordon-input data-cc-search-clean="1" type="search" autocomplete="off" spellcheck="false" placeholder="Ej.: parque central · contratista Harold · pavimento colegio · proyectos en ejecución"><button type="button" class="btn zordon-project-clear" data-zordon-clear>Limpiar</button></div><div class="zordon-project-hints"><button type="button" data-zordon-q="parque">Parque</button><button type="button" data-zordon-q="pavimento">Pavimento</button><button type="button" data-zordon-q="iglesia">Iglesia</button><button type="button" data-zordon-q="en ejecución">En ejecución</button><button type="button" data-zordon-q="finalizados">Finalizados</button></div>`;
     const legacy=board.querySelector('.filter-row');if(legacy)legacy.insertAdjacentElement('beforebegin',box);else board.querySelector('.project-grid-v3').insertAdjacentElement('beforebegin',box);
     const input=box.querySelector('[data-zordon-input]');
     const enforce=()=>{apply(board,input.value);setTimeout(()=>apply(board,input.value),0)};
@@ -131,7 +124,7 @@ function mount(board){
     box.querySelector('[data-zordon-clear]').addEventListener('click',()=>{input.value='';enforce();input.focus()});
     box.querySelectorAll('[data-zordon-q]').forEach(btn=>btn.addEventListener('click',()=>{input.value=btn.dataset.zordonQ||'';enforce();input.focus()}));
   }
-  const input=box.querySelector('[data-zordon-input]');if(input&&input.id!=='projectSearch'){const duplicate=document.getElementById('projectSearch');if(duplicate&&duplicate!==input)duplicate.id='projectSearchLegacy';input.id='projectSearch'}
+  const input=box.querySelector('[data-zordon-input]');
   apply(board,input?.value||'');return true;
 }
 function run(){document.querySelectorAll('.projects-board').forEach(mount)}
@@ -147,5 +140,5 @@ const observer=typeof NativeObserver==='function'?new NativeObserver(mutations=>
 observer?.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
 setTimeout(run,0);setTimeout(run,350);setTimeout(run,1100);
 window.addEventListener('pagehide',()=>observer?.disconnect(),{once:true});
-window.__ccZordonProjectSearch={run,apply,scoreCard,version:6};
+window.__ccZordonProjectSearch={run,apply,scoreCard,version:7};
 })();

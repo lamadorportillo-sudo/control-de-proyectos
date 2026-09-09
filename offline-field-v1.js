@@ -1,2 +1,12 @@
-/* CONTROL CONTRACTUAL - UI MODO CAMPO OFFLINE V1 */
-(()=>{'use strict';window.__CC_OFFLINE_FIELD_UI_V1__=true;})();
+/* ===== CONTROL CONTRACTUAL · UI MODO CAMPO OFFLINE V1 ===== */
+(()=>{
+'use strict';
+if(window.__CC_OFFLINE_FIELD_UI_V1__)return;
+window.__CC_OFFLINE_FIELD_UI_V1__=true;
+const say=m=>{try{toast(m)}catch{console.log(m)}};
+function label(s){const n=Number(s?.pendingCount||0);if(s?.status==='offline')return n?`Sin conexión · ${n} pendiente${n===1?'':'s'}`:'Sin conexión · copia local';if(s?.status==='syncing')return'Sincronizando…';if(s?.status==='conflict')return'Revisar conflicto';if(s?.status==='pending')return n?`${n} cambio${n===1?'':'s'} pendiente${n===1?'':'s'}`:'Pendiente';return'Conectado'}
+function css(){if(document.getElementById('ccOfflineFieldStyle'))return;const s=document.createElement('style');s.id='ccOfflineFieldStyle';s.textContent='.cc-offline-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.cc-offline-btn{min-height:30px!important;padding:6px 9px!important;font-size:10px!important}.cc-sync-box[data-state="offline"] .cc-sync-dot,.cc-sync-box[data-state="pending"] .cc-sync-dot{background:#f59e0b!important}.cc-sync-box[data-state="syncing"] .cc-sync-dot{background:#38bdf8!important}.cc-sync-box[data-state="conflict"] .cc-sync-dot{background:#ef4444!important}';document.head.appendChild(s)}
+function controls(){css();const box=document.querySelector('.cc-sync-box');if(!box||document.getElementById('ccOfflineActions'))return;const row=document.createElement('div');row.id='ccOfflineActions';row.className='cc-offline-actions';row.innerHTML='<button type="button" class="btn cc-offline-btn">↻ Sincronizar ahora</button><small id="ccOfflineCount"></small>';box.appendChild(row);row.querySelector('button').onclick=async()=>{if(!navigator.onLine)return say('Sin conexión. Puedes seguir trabajando.');const ok=await window.ccOffline?.syncNow?.();say(ok?'Todo quedó sincronizado.':'Aún hay cambios pendientes.')}}
+function render(s=window.ccOffline?.getState?.()||{status:navigator.onLine?'synced':'offline',pendingCount:0}){controls();const t=label(s),box=document.querySelector('.cc-sync-box');if(box)box.dataset.state=s.status||'';document.querySelectorAll('[data-cc-sync],.topbar .cloud-pill b').forEach(n=>n.textContent=t);const c=document.getElementById('ccOfflineCount');if(c)c.textContent=s.pendingCount?`${s.pendingCount} cambio(s) en este dispositivo`:'Listo para trabajo de campo'}
+window.addEventListener('cc:offline-state',e=>render(e.detail));window.addEventListener('online',()=>{render();window.ccOffline?.scheduleSync?.(100)});window.addEventListener('offline',()=>{render();say('Sin conexión. Tus cambios se guardan en este dispositivo.')});render();setTimeout(render,900);
+})();

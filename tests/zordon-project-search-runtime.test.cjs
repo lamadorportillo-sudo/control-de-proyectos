@@ -17,7 +17,7 @@ assert.doesNotMatch(source,/attributeFilter:\[[^\]]*'style'/,'no debe observar s
 assert.match(source,/pagehide[\s\S]*observer\?\.disconnect\(\)/,'el observador debe desconectarse al abandonar la página');
 
 const matches=supplementalModules.filter(([name])=>name==='zordon-project-search-v1.js');
-assert.deepEqual(matches,[['zordon-project-search-v1.js','20260905-zordonsearch5']],'el buscador debe estar una sola vez en el manifiesto autenticado');
+assert.deepEqual(matches,[['zordon-project-search-v1.js','20260908-zordonsearch7']],'el buscador debe estar una sola vez en el manifiesto autenticado y forzar caché fresca');
 for(const retired of retiredModules)assert.doesNotMatch(source,new RegExp(retired.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')),
   `el buscador no debe referenciar el módulo retirado ${retired}`);
 

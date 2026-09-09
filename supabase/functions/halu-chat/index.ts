@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.0";
 
-const allowedOrigins=new Set(["https://lamadorportillo-sudo.github.io","http://localhost:8000","http://127.0.0.1:8000","http://localhost:4173","http://127.0.0.1:4173"]);
+const allowedOrigins=new Set(["https://lamadorportillo-sudo.github.io","https://halu-lm.netlify.app","http://localhost:8000","http://127.0.0.1:8000","http://localhost:4173","http://127.0.0.1:4173"]);
 const requestBuckets=new Map<string,{startedAt:number,count:number}>();
 function corsHeaders(req:Request){const origin=req.headers.get("origin")??"";return{"Access-Control-Allow-Origin":allowedOrigins.has(origin)?origin:"https://lamadorportillo-sudo.github.io","Vary":"Origin","Access-Control-Allow-Headers":"authorization, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"}}
 const securityHeaders={"Cache-Control":"no-store, max-age=0","Pragma":"no-cache","X-Content-Type-Options":"nosniff","Referrer-Policy":"no-referrer","X-Frame-Options":"DENY"};
@@ -42,15 +42,16 @@ CONVERSACIÓN Y CONTINUIDAD
 
 MODELO DE CONVERSACIÓN INFORMAL
 - Las respuestas informales deben sentirse como mensajes de chat, no como mini informes.
-- Normalmente usa entre 2 y 15 palabras. Solo supera eso si hace falta para que la respuesta tenga sentido.
+- Normalmente usa entre 2 y 25 palabras. Solo supera eso si hace falta para que la respuesta tenga sentido.
 - Si el usuario escribe muy poco, responde también muy poco.
 - Si expresa una preferencia como “no me des respuestas tan largas”, aplícala inmediatamente y mantenla en la conversación.
 - No des tres opciones para “sacar tema” salvo que te las pidan. Mejor propone una sola idea natural o reacciona a lo que ya dijo.
-- Usa humor ligero, expresiones naturales y algún emoji ocasional si encaja, pero no en todos los mensajes.
+- Usa humor ligero o emojis únicamente cuando encajen con el tono. Si el usuario está triste, molesto, confundido o hablando de un problema, no respondas con una sonrisa o risa automática.
 - No expliques de más una película, un hobby o una anécdota. Una reacción corta suele ser suficiente.
 - Evita frases robóticas como “La conversación va por buen camino”, “dime cómo están trabajando”, “¿qué tienen en marcha?”, “te sigo” o “¿qué quieres revisar?” en charla informal.
 - Nunca uses “¿Hablamos del control, del contrato o de la ejecución en campo?” como respuesta automática a un comentario personal o emocional.
-- Ejemplo de ritmo: usuario “bien y tú” → “Bien también 😄”. Usuario “como te decía, bien” → “Sí, ya me habías dicho 😄”. Usuario “no quiero hablar de trabajo” → “Va, cero trabajo 😄”. Usuario “quiero llorar” → una respuesta breve, cercana y centrada en lo que acaba de expresar, sin mencionar trabajo.
+- Si el usuario pregunta “¿por qué te ríes?” o algo equivalente, reconoce el error de tono si la respuesta previa tuvo un emoji de risa; no vuelvas a responder con otro emoji de risa.
+- Ejemplo de ritmo: usuario “bien y tú” → “Bien también 😄”. Usuario “como te decía, bien” → “Sí, ya me habías dicho”. Usuario “no quiero hablar de trabajo” → “Va, cero trabajo”. Usuario “quiero llorar” → una respuesta breve, cercana y centrada en lo que acaba de expresar, sin mencionar trabajo.
 - Si el usuario solo se ríe, puedes responder con una risa corta o una frase breve ligada al tema anterior.
 
 TRABAJO TÉCNICO
@@ -88,9 +89,9 @@ Deno.serve(async(req:Request)=>{
    const context=redactSecrets(cleanText(body?.context,4200));
    const history:Turn[]=(Array.isArray(body?.history)?body.history:[]).slice(-24).map((turn:any)=>({role:turn?.role==="assistant"?"assistant":"user",text:redactSecrets(cleanText(turn?.text,1000))})).filter((turn:Turn)=>turn.text);
    const casual=casualTurn(message,history);
-   const modeNote=casual?"MODO ACTUAL: conversación informal o personal. Responde de forma natural, normalmente en una sola frase breve. Sigue exactamente el tema de los últimos turnos. No lleves la charla al trabajo ni cambies el tema. Si el usuario expresa algo personal o emocional, responde a eso con tacto y continuidad.":"MODO ACTUAL: conversación normal o de trabajo. Ajusta el nivel de detalle a la consulta.";
+   const modeNote=casual?"MODO ACTUAL: conversación informal o personal. Responde de forma natural y breve, siguiendo exactamente el tema de los últimos turnos. No lleves la charla al trabajo ni cambies el tema. Si el usuario expresa algo personal o emocional, responde a eso con tacto y continuidad. No uses emojis de risa si el tono es triste, molesto o serio.":"MODO ACTUAL: conversación normal o de trabajo. Ajusta el nivel de detalle a la consulta.";
    const input=[...history.map(turn=>({role:turn.role,content:turn.text})),{role:"user",content:context?`Contexto autorizado del sistema y memoria relevante:\n${context}\n\n${modeNote}\n\nMensaje actual:\n${message}`:`${modeNote}\n\nMensaje actual:\n${message}`}];
-   const response=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:`Bearer ${apiKey}`,"Content-Type":"application/json"},body:JSON.stringify({model:Deno.env.get("OPENAI_MODEL")||"gpt-5.4",store:false,max_output_tokens:casual?160:1100,instructions:zordonInstructions,input})});
+   const response=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:`Bearer ${apiKey}`,"Content-Type":"application/json"},body:JSON.stringify({model:Deno.env.get("OPENAI_MODEL")||"gpt-5.4",store:false,max_output_tokens:casual?220:1100,instructions:zordonInstructions,input})});
    const data=await response.json();
    if(!response.ok){console.error("OpenAI response error",response.status,data?.error?.code||"unknown");return json(req,{error:"No pude consultar el modelo en este momento."},502)}
    const reply=extractOutputText(data);if(!reply)return json(req,{error:"El modelo no devolvió una respuesta."},502);

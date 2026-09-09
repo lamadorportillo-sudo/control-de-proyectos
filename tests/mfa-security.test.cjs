@@ -64,10 +64,17 @@ assert.match(users,/security_valid_after/,'operaciones privilegiadas deben respe
 assert.match(users,/action\s*===\s*"reset_mfa"/,'debe conservarse recuperación de 2FA para cuentas que lo usan');
 assert.match(users,/auth\.admin\.mfa\.deleteFactor/,'la recuperación debe usar la API administrativa oficial de MFA');
 
-assert.match(halu,/service_user_has_verified_mfa/,'ZORDON debe comprobar factores MFA verificados');
-assert.match(halu,/adminMfaPastDueMissing/,'ZORDON debe bloquear al administrador cuyo plazo MFA venció');
-assert.match(halu,/claims\?\.aal!=="aal2"/,'ZORDON debe negar AAL1 cuando el usuario activó MFA');
+/* ZORDON es una consulta conversacional, no una operación administrativa privilegiada.
+   Debe validar sesión, membresía, estado de cuenta y revocación, pero no exigir AAL2
+   en cada mensaje porque eso hacía caer el chat al motor local. */
+assert.match(halu,/admin\.auth\.getUser\(token\)/,'ZORDON debe validar el JWT con Supabase Auth');
+assert.match(halu,/workspace_members/,'ZORDON debe validar pertenencia al espacio de trabajo');
+assert.match(halu,/profiles/,'ZORDON debe validar el estado de la cuenta');
+assert.match(halu,/security_force_reauth/,'ZORDON debe respetar una reautenticación forzada');
 assert.match(halu,/security_valid_after/,'ZORDON debe rechazar tokens anteriores a una revocación');
+assert.doesNotMatch(halu,/service_user_has_verified_mfa/,'el chat no debe consultar la guardia MFA privilegiada en cada mensaje');
+assert.doesNotMatch(halu,/adminMfaPastDueMissing/,'el chat no debe duplicar la política de enrolamiento que ya protege el login');
+assert.doesNotMatch(halu,/claims\?\.aal!=="aal2"/,'el chat no debe bloquear una conversación por AAL1 después de iniciar sesión correctamente');
 
 for(const token of ['Activar 2FA','verify_enrollment','cancel_enrollment','cc-mfa-qr','Recuperación','Regla administrativa','past_due'])assert.match(mfaUi,new RegExp(token),`la interfaz 2FA debe incluir ${token}`);
 assert.match(mfaUi,/function safeQr/,'la interfaz debe validar el origen del QR');
@@ -76,4 +83,4 @@ assert.match(mfaUi,/d\.required&&factors\.length<=1/,'la interfaz no debe ofrece
 assert.match(mfaUi,/noticeCheckedAt<30000|now-noticeCheckedAt<30000/,'el estado 2FA debe limitar consultas repetidas');
 assert.match(loader,/mfa-security-v1\.js\?v=20260824-mfa4/,'el cargador debe conservar el módulo 2FA');
 
-console.log('mfa-security: 2FA voluntario para usuarios, obligatorio para administradores vencidos, recuperación, RLS, ZORDON e interfaz verificados');
+console.log('mfa-security: 2FA reforzado en acceso y operaciones privilegiadas; ZORDON conserva sesión segura sin bloqueo AAL2 por mensaje');

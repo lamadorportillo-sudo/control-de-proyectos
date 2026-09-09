@@ -19,19 +19,23 @@ test('ZORDON conserva un núcleo idempotente sin bucle global de reescritura',()
   assert.doesNotMatch(source,/setInterval\s*\(/,'no debe existir un barrido periódico permanente');
   assert.match(source,/if\(!busy&&send\.disabled\)send\.disabled=false/,'el refresco visual no debe reactivar Enviar durante una consulta');
   assert.match(source,/window\.addEventListener\('pagehide',\(\)=>observer\?\.disconnect\?\.\(\)/,'el observador debe liberarse al abandonar la página');
+  assert.match(source,/Conversación personal o informal/,'el contexto personal no debe mezclarse con memoria técnica');
+  assert.doesNotMatch(source,/Lo relaciono con lo que ya tengo en contexto:/,'el fallback robótico observado en producción debe permanecer retirado');
 });
 
-test('el chat ZORDON solo intercepta eventos originados en su botón real',()=>{
-  assert.match(chatSource,/ZORDON · CHAT NATURAL Y CONTINUO V5 · EVENTOS AISLADOS/);
+test('el chat ZORDON solo intercepta eventos originados en su botón real y corrige el tono',()=>{
+  assert.match(chatSource,/ZORDON · CHAT NATURAL Y CONTINUO V6 · TONO CONTEXTUAL/);
   assert.match(chatSource,/function isSendEvent\(event\)/);
   assert.match(chatSource,/target===btn\|\|!!target\?\.closest\?\./,'el envío debe depender del target DOM, no de coordenadas globales');
   assert.doesNotMatch(chatSource,/function pointInside\(/,'no debe existir detección de clic global por coordenadas');
   assert.doesNotMatch(chatSource,/event\.clientX|event\.clientY/,'un clic fuera del chat no puede convertirse en envío por posición');
   assert.match(chatSource,/new NativeObserver\(mutations=>/,'el observador del chat debe usar el observador nativo y filtrar altas relevantes');
   assert.match(chatSource,/window\.addEventListener\('pagehide',\(\)=>observer\?\.disconnect\?\.\(\)/,'el observador del chat debe desconectarse al abandonar la página');
+  assert.match(chatSource,/No me estoy riendo de ti/,'una risa fuera de contexto debe corregirse explícitamente');
+  assert.match(chatSource,/Aquí estoy\. Sigue contándome\./,'una respuesta genérica no debe reducirse a Sí con emoji');
 });
 
-test('el manifiesto publica las versiones estables de ZORDON una sola vez',()=>{
+test('el manifiesto publica las capas ZORDON una sola vez',()=>{
   const core=supplementalModules.filter(([file])=>file==='zordon-continuous-runtime-v1.js');
   const chat=supplementalModules.filter(([file])=>file==='zordon-chat-ui-v1.js');
   assert.equal(core.length,1,'el núcleo ZORDON no puede tener dos entradas de carga autenticada');

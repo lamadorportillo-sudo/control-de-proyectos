@@ -10,7 +10,7 @@ assert.match(source,/window\.__CC_VISIBILITY_AUDIT_V5__=true/,'la V5 debe tener 
 assert.match(source,/const CSS=`[\s\S]*?`;/,'el CSS de contraste debe existir como valor estable reutilizable');
 assert.match(source,/if\(s\.textContent!==CSS\)s\.textContent=CSS/,'la hoja de estilos solo debe escribirse cuando realmente cambia');
 assert.doesNotMatch(source,/if\(!s\)\{[^}]+\}\s*s\.textContent=`/,'injectCss no debe reescribir incondicionalmente el style en cada auditoría');
-assert.match(source,/const label='🧠 IA \/ Aprendizaje';if\(learn\.textContent!==label\)learn\.textContent=label/,'el botón de IA no debe provocar mutaciones de texto repetidas');
+assert.match(source,/const label='🧠 Memoria ZORDON';if\(learn\.textContent!==label\)learn\.textContent=label/,'el botón de memoria ZORDON no debe provocar mutaciones de texto repetidas');
 assert.match(source,/function queue\(\)\{if\(queued\)return;queued=true;requestAnimationFrame/,'las mutaciones reales deben seguir agrupándose por frame');
 assert.match(source,/attributeFilter:\['class','style','disabled'\]/,'el observador no debe reaccionar a data-cc-readable que él mismo modifica');
 
@@ -18,4 +18,4 @@ const entry=supplementalModules.find(([name])=>name==='ui-visibility-audit-v1.js
 assert.deepEqual(entry,['ui-visibility-audit-v1.js','20260904-visibility5'],'el manifiesto autenticado debe invalidar la caché de la V5');
 assert.match(tabs,/ui-visibility-audit-v1\.js\?v=20260904-visibility5/,'los metadatos de pestañas deben reflejar la misma versión canónica');
 
-console.log('ui-visibility-observer-stability: auditoría visual idempotente y sin bucle de MutationObserver');
+console.log('ui-visibility-observer-stability: auditoría visual idempotente y etiqueta Memoria ZORDON estable');

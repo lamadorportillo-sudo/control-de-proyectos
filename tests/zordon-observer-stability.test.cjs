@@ -35,11 +35,11 @@ test('el chat ZORDON solo intercepta eventos originados en su botón real y corr
   assert.match(chatSource,/Aquí estoy\. Sigue contándome\./,'una respuesta genérica no debe reducirse a Sí con emoji');
 });
 
-test('el manifiesto publica las capas ZORDON una sola vez',()=>{
+test('el manifiesto publica las capas ZORDON una sola vez y fuerza caché fresca',()=>{
   const core=supplementalModules.filter(([file])=>file==='zordon-continuous-runtime-v1.js');
   const chat=supplementalModules.filter(([file])=>file==='zordon-chat-ui-v1.js');
   assert.equal(core.length,1,'el núcleo ZORDON no puede tener dos entradas de carga autenticada');
   assert.equal(chat.length,1,'el chat ZORDON no puede tener dos entradas de carga autenticada');
-  assert.equal(core[0][1],'20260905-zordon5');
-  assert.equal(chat[0][1],'20260905-cleanchat5');
+  assert.equal(core[0][1],'20260908-zordon5');
+  assert.equal(chat[0][1],'20260908-cleanchat6');
 });

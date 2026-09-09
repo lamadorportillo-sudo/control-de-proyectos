@@ -1,11 +1,12 @@
-/* ===== ZORDON · NÚCLEO DE APRENDIZAJE CONTINUO V4 · IDÉMPOTENTE ===== */
+/* ===== ZORDON · NÚCLEO DE APRENDIZAJE CONTINUO V5 · CONTEXTO SEPARADO ===== */
 (()=>{
 'use strict';
-if(window.__CC_ZORDON_CONTINUOUS_V4__)return;
+if(window.__CC_ZORDON_CONTINUOUS_V5__)return;
+window.__CC_ZORDON_CONTINUOUS_V5__=true;
 window.__CC_ZORDON_CONTINUOUS_V4__=true;
 window.__CC_ZORDON_CONTINUOUS_V3__=true;
 
-const VERSION=4;
+const VERSION=5;
 const now=()=>new Date().toISOString();
 const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const normalize=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9ñ]+/g,' ').trim();
@@ -23,7 +24,7 @@ function learningStore(){
     store.enabled=true;
     store.mode='continuous';
     store.engine='ZORDON';
-    store.version=Math.max(Number(store.version)||0,4);
+    store.version=Math.max(Number(store.version)||0,5);
     if(!store.reportUsage||typeof store.reportUsage!=='object')store.reportUsage={};
     store.lastPolicyAppliedAt=store.lastPolicyAppliedAt||now();
     return store;
@@ -107,6 +108,18 @@ function nativeIntent(message){
   return /\b(ponte|coloca|avatar|camina|detente|visita|foto|recuerda|recordar|memoria|confirmo|actualiza el recuerdo|corrige el recuerdo|marca como temporal|no vuelvas a usar|deja de usar|que recuerdas|olvida|abre|abrir|ve a|llevame|pantalla actual|donde estoy|controlar pagina|programa de costos|nuevo proyecto|buscar proyecto|cerrar sesion)\b/.test(q)||/\b(ley|legal|norma|decreto|reglamento|articulo|licitacion|adjudicacion|garantia|multa|sancion)\b/.test(q);
 }
 
+function technicalConversation(message){
+  const q=normalize(message);
+  return /\b(proyecto|obra|contrato|contratista|estimacion|estimaciones|pago|pagos|presupuesto|avance|visita|garantia|plazo|multa|adenda|orden de cambio|licitacion|oferta|ingenieria|calculo|estructura|concreto|pavimento|supervision|informe|reporte|documento|ley|norma|articulo|costos?|supabase|base de datos|codigo|programar|programacion)\b/.test(q);
+}
+
+function personalConversation(message){
+  if(technicalConversation(message))return false;
+  const q=normalize(message),conversation=window.__ccEngineerChat?.conversation,words=q.split(/\s+/).filter(Boolean).length;
+  if(/\b(hola|buenas|como estas|y tu|y vos|platicar|hablar|pelicula|serie|miedo|dibujar|jaja|jeje|gracias|amigo|fin de semana|triste|tristeza|llorar|problema|problemas|preocupado|preocupada|estresado|estresada|angustiado|angustiada|ansioso|ansiosa|me siento mal|dia pesado|dia dificil|por que te ries|porque te ries|por que te estas riendo|porque te estas riendo)\b/.test(q))return true;
+  return conversation?.lastType==='social'&&words<=30;
+}
+
 function scope(message=''){
   try{return{projectId:typeof view!=='undefined'&&view?.screen==='project'?view.projectId||null:null,screen:typeof view!=='undefined'?view?.screen||'':'',tab:typeof view!=='undefined'?view?.tab||'':'',interactionId:`zordon-${Date.now()}`,source:'zordon-continuous'}}catch{return{interactionId:`zordon-${Date.now()}`}}
 }
@@ -122,10 +135,22 @@ function learn(message,reply){try{window.__ccZordonLearning?.captureInteraction?
 
 function cloudContext(message){
   const parts=[];
-  try{const base=window.__ccEngineerChat?.haluCloudContext?.(message);if(base)parts.push(base)}catch{}
-  try{const learned=window.__ccZordonLearning?.contextFor?.(message,scope(message));if(learned&&!parts.join('\n').includes(learned))parts.push(learned)}catch{}
+  if(personalConversation(message)){
+    parts.push('Conversación personal o informal. No mezcles recuerdos de proyectos, contratos, pagos, obras ni memoria técnica salvo que el usuario los mencione expresamente en este turno.');
+  }else{
+    try{const base=window.__ccEngineerChat?.haluCloudContext?.(message);if(base)parts.push(base)}catch{}
+    try{const learned=window.__ccZordonLearning?.contextFor?.(message,scope(message));if(learned&&!parts.join('\n').includes(learned))parts.push(learned)}catch{}
+  }
   parts.push('Identidad activa: ZORDON. Mantén continuidad real de conversación, usa la corrección más reciente disponible y evita respuestas genéricas si el contexto permite responder mejor.');
   return parts.join('\n\n').slice(0,4200);
+}
+
+function personalFallback(message){
+  const q=normalize(message);
+  if(/\b(por que te ries|porque te ries|por que te estas riendo|porque te estas riendo)\b/.test(q))return'No me estoy riendo de ti. Ese emoji no venía al caso.';
+  if(/\b(triste|tristeza|llorar|me siento mal|dia pesado|dia dificil|angustiado|angustiada|ansioso|ansiosa)\b/.test(q))return'Aquí estoy. Cuéntame qué pasó o qué te tiene así.';
+  if(/\b(problema|problemas|preocupado|preocupada|estresado|estresada)\b/.test(q))return'Puede ser. Cuéntame qué problema crees que está detrás de esto.';
+  return'No pude conectar bien con la IA en este momento. Intenta una vez más.';
 }
 
 async function askZordon(message){
@@ -139,15 +164,18 @@ async function askZordon(message){
     const {data}=await sbFetch('/functions/v1/halu-chat',{method:'POST',body:{message:q,context:cloudContext(q),history}});
     const reply=replaceVisibleBrand(String(data?.reply||'').trim());if(!reply)throw new Error('Respuesta vacía');
     rememberDirectTurn('user',q);rememberDirectTurn('assistant',reply);learn(q,reply);
-    try{conversation.lastTopic=q;conversation.lastType='ai'}catch{}
+    try{conversation.lastTopic=q;conversation.lastType=personalConversation(q)?'social':'ai'}catch{}
     return reply;
   }catch(error){
-    console.warn('ZORDON IA no disponible; usando motor local.',error?.message||error);
+    console.warn('ZORDON IA no disponible; usando respaldo local.',error?.message||error);
+    const personal=personalConversation(q);
     const fallback=replaceVisibleBrand(await Promise.resolve(window.__ccEngineerChat?.answerWithAI?.(q)||window.__ccEngineerChat?.answer?.(q)||''));
-    if(fallback&&!/^(te sigo|con gusto|no pude)/i.test(fallback))return fallback;
+    const robotic=/^(te sigo|con gusto|no pude)|lo relaciono con lo que ya tengo en contexto|mantengo el hilo y el contexto/i.test(fallback);
+    if(fallback&&!robotic&&!(personal&&/\b(proyecto|contrato|obra|pago|estimacion|contexto del proyecto)\b/i.test(fallback)))return fallback;
+    if(personal)return personalFallback(q);
     const remembered=window.__ccZordonLearning?.recall?.(q,2,scope(q))||[];
-    if(remembered.length)return`Lo relaciono con lo que ya tengo en contexto: ${remembered.map(item=>item.text).join(' También: ')}. Sobre lo que acabas de decir, puedo seguir desde ahí sin reiniciar el tema.`;
-    return fallback||'Entiendo lo que planteas. Mantengo el hilo y el contexto actual; continúa con el detalle que falta y lo integro en el mismo análisis.';
+    if(remembered.length)return`Tengo este antecedente relacionado: ${remembered.map(item=>item.text).join(' También: ')}.`;
+    return fallback||'No pude conectar con el motor de IA en este momento. Intenta nuevamente.';
   }
 }
 
@@ -165,8 +193,8 @@ async function runQuery(text){
   const q=String(text||'').trim();if(!q||busy)return;
   const chat=document.getElementById('ccEngineerChat'),body=chat?.querySelector('.cc-eng-chat-body'),input=chat?.querySelector('textarea'),send=chat?.querySelector('button[type="submit"]');if(!chat||!body)return;
   busy=true;if(send){send.disabled=true;send.setAttribute('aria-busy','true');send.setAttribute('aria-disabled','true')}addMessage('user',q);
-  const typing=document.createElement('div');typing.className='cc-eng-msg bot';typing.dataset.zordonTyping='1';typing.textContent='ZORDON está revisando el contexto…';body.appendChild(typing);body.scrollTop=body.scrollHeight;
-  try{const reply=await askZordon(q);typing.remove();addMessage('bot',reply||'No encontré una respuesta clara todavía. Dame el dato que falta y sigo desde el contexto actual.',q)}catch(error){typing.remove();addMessage('bot','No pude completar esa consulta en este momento. El contexto de la conversación sigue intacto; inténtalo nuevamente.',q)}finally{busy=false;if(send){send.disabled=false;send.removeAttribute('aria-busy');send.setAttribute('aria-disabled','false');send.style.setProperty('pointer-events','auto','important')}if(input)input.focus();fixChatBranding(document)}
+  const typing=document.createElement('div');typing.className='cc-eng-msg bot';typing.dataset.zordonTyping='1';typing.textContent=personalConversation(q)?'…':'ZORDON está revisando el contexto…';body.appendChild(typing);body.scrollTop=body.scrollHeight;
+  try{const reply=await askZordon(q);typing.remove();addMessage('bot',reply||'No encontré una respuesta clara todavía. Dame el dato que falta y sigo desde el contexto actual.',q)}catch(error){typing.remove();addMessage('bot',personalConversation(q)?'Se cortó la respuesta. Intenta nuevamente.':'No pude completar esa consulta en este momento. El contexto de la conversación sigue intacto; inténtalo nuevamente.',q)}finally{busy=false;if(send){send.disabled=false;send.removeAttribute('aria-busy');send.setAttribute('aria-disabled','false');send.style.setProperty('pointer-events','auto','important')}if(input)input.focus();fixChatBranding(document)}
 }
 
 function consumeInput(form){
@@ -177,8 +205,8 @@ function consumeInput(form){
 }
 
 function installConversationOverride(){
-  if(document.documentElement.dataset.zordonConversation==='4')return;
-  document.documentElement.dataset.zordonConversation='4';
+  if(document.documentElement.dataset.zordonConversation==='5')return;
+  document.documentElement.dataset.zordonConversation='5';
 
   document.addEventListener('submit',event=>{
     const form=event.target;

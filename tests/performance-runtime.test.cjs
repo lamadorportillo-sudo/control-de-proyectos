@@ -9,7 +9,7 @@ const firstFeatureIndex=html.indexOf('budget-portfolio-tab-v1.js');
 
 assert.ok(performanceIndex>=0,'falta el coordinador de rendimiento');
 assert.ok(performanceIndex<firstFeatureIndex,'el coordinador debe declararse antes de los módulos funcionales');
-assert.match(src,/COORDINADOR DE RENDIMIENTO DEL DOM V7 · SIN CARGA FUNCIONAL/,'debe mantenerse la versión sin segundo cargador');
+assert.match(src,/COORDINADOR DE RENDIMIENTO DEL DOM V8\.1 · INTERFAZ ORDENADA/,'debe mantenerse el coordinador actual sin segundo cargador funcional');
 assert.match(src,/window\.__ccNativeMutationObserver=window\.MutationObserver/,'conserva una referencia al observador nativo');
 assert.doesNotMatch(src,/window\.MutationObserver\s*=/,'no debe reemplazar globalmente MutationObserver');
 assert.doesNotMatch(src,/MAX_PASSES/,'no debe imponer límites artificiales a mutaciones legítimas');
@@ -33,4 +33,4 @@ assert.match(worker,/url\.origin!==self\.location\.origin/,'la caché debe limit
 assert.match(src,/updateViaCache:'none'/,'la actualización del service worker no puede depender de caché');
 assert.match(builder,/html\.replace\(firstFeature/,'el generador debe posicionar el coordinador antes del primer módulo funcional');
 
-console.log('performance-runtime aislado: rendimiento y caché sin segundo cargador funcional');
+console.log('performance-runtime V8.1 aislado: rendimiento e interfaz sin segundo cargador funcional');

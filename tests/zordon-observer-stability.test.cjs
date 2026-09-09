@@ -7,7 +7,7 @@ const source=fs.readFileSync('zordon-continuous-runtime-v1.js','utf8');
 const chatSource=fs.readFileSync('zordon-chat-ui-v1.js','utf8');
 
 test('ZORDON conserva un núcleo idempotente sin bucle global de reescritura',()=>{
-  assert.match(source,/ZORDON · NÚCLEO DE APRENDIZAJE CONTINUO V4 · IDÉMPOTENTE/);
+  assert.match(source,/ZORDON · NÚCLEO DE APRENDIZAJE CONTINUO V5 · CONTEXTO SEPARADO/);
   assert.match(source,/function setText\(el,value\)/,'las escrituras de texto deben comparar antes de modificar el DOM');
   assert.match(source,/if\(el\.textContent===next\)return false/,'setText debe evitar mutaciones redundantes');
   assert.match(source,/function setAttr\(el,name,value\)/,'los atributos deben ser idempotentes');

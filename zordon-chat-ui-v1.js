@@ -1,7 +1,8 @@
-/* ===== ZORDON · CHAT NATURAL Y CONTINUO V5 · EVENTOS AISLADOS ===== */
+/* ===== ZORDON · CHAT NATURAL Y CONTINUO V6 · TONO CONTEXTUAL ===== */
 (()=>{
 'use strict';
-if(window.__CC_ZORDON_CHAT_UI_V5__)return;
+if(window.__CC_ZORDON_CHAT_UI_V6__)return;
+window.__CC_ZORDON_CHAT_UI_V6__=true;
 window.__CC_ZORDON_CHAT_UI_V5__=true;
 window.__CC_ZORDON_CHAT_UI_V4__=true;
 
@@ -57,7 +58,7 @@ function wantsCasual(text){
 
 function socialSignal(text){
   const q=norm(text);
-  return /\b(hola|buenas|que tal|como estas|y tu|y vos|bien|cansado|cansada|tranquilo|tranquila|aburrido|aburrida|platicar|hablar|pelicula|peliculas|serie|series|terror|miedo|dibujar|dibujo|carbon|rostros|jaja|jeje|gracias|cuentame de ti|me gusta|me gustan|amigo|fin de semana)\b/.test(q);
+  return /\b(hola|buenas|que tal|como estas|y tu|y vos|bien|cansado|cansada|tranquilo|tranquila|aburrido|aburrida|platicar|hablar|pelicula|peliculas|serie|series|terror|miedo|dibujar|dibujo|carbon|rostros|jaja|jeje|gracias|cuentame de ti|me gusta|me gustan|amigo|fin de semana|triste|tristeza|llorar|problema|problemas|preocupado|preocupada|estresado|estresada|angustiado|angustiada|ansioso|ansiosa|me siento mal|dia pesado|dia dificil|por que te ries|porque te ries|por que te estas riendo|porque te estas riendo)\b/.test(q);
 }
 
 function modeFor(text){
@@ -65,16 +66,16 @@ function modeFor(text){
   if(wantsCasual(text))return'casual';
   const q=norm(text),words=q.split(/\s+/).filter(Boolean),c=conversation();
   if(socialSignal(q))return'casual';
-  if(c?.lastType==='social'&&words.length<=26)return'casual';
+  if(c?.lastType==='social'&&words.length<=30)return'casual';
   return'normal';
 }
 
 function casualReply(text){
   const q=norm(text);if(!q)return'';
   if(/^(hola+|buenas|buenos dias|buenas tardes|buenas noches|hey|que tal)$/.test(q))return'¡Hola! ¿Cómo estás?';
-  if(/^(gracias|muchas gracias|gracias zordon)$/.test(q))return'¡De nada! 😄';
+  if(/^(gracias|muchas gracias|gracias zordon)$/.test(q))return'¡De nada!';
   if(/^(jaja+|jeje+|jajaja+|jiji+)$/.test(q))return'Jajaja 😄';
-  if(/\b(no quiero hablar de trabajo|cero trabajo|nada de trabajo)\b/.test(q))return'Va, cero trabajo 😄';
+  if(/\b(no quiero hablar de trabajo|cero trabajo|nada de trabajo)\b/.test(q))return'Va, cero trabajo.';
   if(/\b(bien|muy bien|todo bien)\b.*\b(y tu|y vos|tu que tal)\b/.test(q)||/^(y tu|y vos)$/.test(q))return'Bien también 😄';
   return'';
 }
@@ -82,16 +83,17 @@ function casualReply(text){
 function compactCasual(reply,query){
   let text=String(reply||'').replace(/\bHalu\b/gi,'ZORDON').trim();
   if(!text||modeFor(query)!=='casual')return text;
-  text=text.replace(/^(te entiendo totalmente|entiendo perfectamente|claro que sí|por supuesto)[,.! ]*/i,'');
-  const sentences=text.split(/(?<=[.!?])\s+/).filter(Boolean);
-  let short=(sentences[0]||text).trim();
-  if(sentences.length>1){
-    const candidate=`${short} ${sentences[1]}`.trim();
-    if(candidate.split(/\s+/).length<=18)short=candidate;
+  const q=norm(query);
+  if(/\b(por que te ries|porque te ries|por que te estas riendo|porque te estas riendo)\b/.test(q)){
+    return'No me estoy riendo de ti. Ese emoji no encajó con lo que estabas diciendo.';
   }
+  text=text.replace(/^(te entiendo totalmente|entiendo perfectamente|claro que sí|por supuesto)[,.! ]*/i,'');
+  if(/^te sigo[.,]?$/i.test(text))return'Aquí estoy. Sigue contándome.';
+  if(/^si\s*[😄😁😂🤣]?[.!]?$/i.test(text))return'Entiendo. Cuéntame un poco más.';
+  const sentences=text.split(/(?<=[.!?])\s+/).filter(Boolean);
+  let short=(sentences.slice(0,2).join(' ')||text).trim();
   const words=short.split(/\s+/).filter(Boolean);
-  if(words.length>18)short=words.slice(0,18).join(' ')+'…';
-  if(/^te sigo[.,]?$/i.test(short))return'Sí 😄';
+  if(words.length>40)short=words.slice(0,40).join(' ')+'…';
   return short;
 }
 
@@ -137,7 +139,7 @@ async function ask(text){
     add('bot',clean);remember('assistant',clean,mode==='casual'?'social':mode);
   }catch(error){
     typing?.remove();
-    const fallback=mode==='casual'?'Aquí sigo 😄':'No pude completar la consulta en este momento. Intenta nuevamente.';
+    const fallback=mode==='casual'?'Se cortó la respuesta. Intenta nuevamente.':'No pude completar la consulta en este momento. Intenta nuevamente.';
     add('bot',fallback);remember('assistant',fallback,mode==='casual'?'social':mode);
     console.warn('ZORDON: fallo de envío directo.',error?.message||error);
   }finally{finishControls(btn)}
@@ -146,10 +148,6 @@ async function ask(text){
 function isSendEvent(event){
   const btn=sendButton();if(!btn)return false;
   const target=event.target;
-  /* Un clic de ZORDON solo puede originarse en su botón real. La versión anterior
-     comparaba coordenadas globales contra el rectángulo del botón; un clic ajeno
-     con clientX/clientY coincidentes —incluidos clics sintéticos (0,0)— podía ser
-     secuestrado y cancelado con stopImmediatePropagation(). */
   return target===btn||!!target?.closest?.('#ccEngineerChat .cc-eng-chat-form button[type="submit"],#ccEngineerChat .cc-eng-chat-form button[data-zordon-send]');
 }
 function bindUi(){
@@ -188,5 +186,5 @@ observer?.observe(document.documentElement,{childList:true,subtree:true});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindUi,{once:true});else bindUi();
 setTimeout(bindUi,250);setTimeout(bindUi,1000);
 window.addEventListener('pagehide',()=>observer?.disconnect?.(),{once:true});
-window.__ccZordonChatUI={send:ask,clean:removeIntro,status:()=>({busy,ready:!!sendButton(),version:5,mode:conversation()?.lastType||''})};
+window.__ccZordonChatUI={send:ask,clean:removeIntro,status:()=>({busy,ready:!!sendButton(),version:6,mode:conversation()?.lastType||''})};
 })();

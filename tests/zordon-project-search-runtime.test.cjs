@@ -4,10 +4,10 @@ const {supplementalModules,retiredModules}=require('../authenticated-module-mani
 
 const source=fs.readFileSync('zordon-project-search-v1.js','utf8');
 
-assert.match(source,/BUSCADOR INTELIGENTE DE PROYECTOS V5 · LISTA ESTABLE/,'el buscador debe conservar la versión V5 con lista estable');
-assert.match(source,/window\.__CC_ZORDON_PROJECT_SEARCH_V5__=true/,'debe existir la guardia de carga única V5');
-assert.match(source,/if\(!q\)\{\s*cards\.forEach\(show\);\s*hideState\(grid\)/,'sin consulta debe mantener visibles las tarjetas del portafolio');
-assert.doesNotMatch(source,/if\(!q\)[\s\S]{0,260}cards\.forEach\(hide\)/,'el estado vacío no puede volver a ocultar todo el portafolio');
+assert.match(source,/ZORDON · BUSCADOR PRECISO DE PROYECTOS V7 · CARGA SOLO BAJO BÚSQUEDA/,'el buscador debe usar la versión V7 de carga bajo consulta');
+assert.match(source,/window\.__CC_ZORDON_PROJECT_SEARCH_V7__/,'debe existir la guardia de carga única V7');
+assert.match(source,/if\(!q\)\{\s*cards\.forEach\(hide\);hideState\(grid\);\s*grid\.dataset\.zordonAwaitingQuery='1'/,'sin consulta debe esperar la búsqueda sin llenar la pantalla de proyectos');
+assert.match(source,/mostrar todos|muestra todos|ver todos/,'debe conservar una acción explícita para mostrar todos los proyectos');
 assert.doesNotMatch(source,/industrial-home-v1\.js/,'el buscador no puede volver a cargar la portada industrial retirada');
 assert.doesNotMatch(source,/__CC_INDUSTRIAL_HOME_LOADER__/,'el buscador no puede conservar el loader industrial histórico');
 assert.doesNotMatch(source,/data-industrial-home-loader/,'el buscador no puede inyectar scripts industriales en runtime');
@@ -17,8 +17,8 @@ assert.doesNotMatch(source,/attributeFilter:\[[^\]]*'style'/,'no debe observar s
 assert.match(source,/pagehide[\s\S]*observer\?\.disconnect\(\)/,'el observador debe desconectarse al abandonar la página');
 
 const matches=supplementalModules.filter(([name])=>name==='zordon-project-search-v1.js');
-assert.deepEqual(matches,[['zordon-project-search-v1.js','20260905-zordonsearch5']],'el buscador estable debe estar una sola vez y con versión canónica V5');
+assert.deepEqual(matches,[['zordon-project-search-v1.js','20260905-zordonsearch5']],'el buscador debe estar una sola vez en el manifiesto autenticado');
 for(const retired of retiredModules)assert.doesNotMatch(source,new RegExp(retired.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')),
   `el buscador no debe referenciar el módulo retirado ${retired}`);
 
-console.log('zordon-project-search-runtime: V5 estable, lista visible, sin loaders retirados ni bucles sobre style');
+console.log('zordon-project-search-runtime: V7 precisa, carga bajo búsqueda y sin loaders retirados');

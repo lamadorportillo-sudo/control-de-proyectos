@@ -6,7 +6,7 @@
 if(window.__CC_SINGLE_NAV_V6__)return;
 window.__CC_SINGLE_NAV_V6__=true;
 window.__CC_SINGLE_NAV_V5__=true;
-window.__CC_SINGLE_NAV_V4__=true;
+window.__CC_SINGLE_NAV_V5__=true;
 window.__CC_SINGLE_NAV_V3__=true;
 window.__CC_SINGLE_NAV_V2__=true;
 window.__CC_SINGLE_NAV_V1__=true;
@@ -168,6 +168,14 @@ function goTransparency(){
  try{view.screen='transparency';view.projectId=null;view.tab='summary';renderApp();queue();setTimeout(queue,0)}catch(e){console.warn(e)}
 }
 
+function openOperationalCenter(route){
+ const api=route==='alertas'?window.__ccAlertsCenter:window.__ccAuditCenter;
+ const open=()=>{const target=route==='alertas'?window.__ccAlertsCenter:window.__ccAuditCenter;if(target?.open){target.open();rememberRoute(route);syncActive(Q('#ccSidebar'));return true}return false};
+ if(open())return true;
+ setTimeout(open,120);setTimeout(open,450);
+ return false;
+}
+
 function ensure(){
  if(cleaning)return;cleaning=true;
  try{
@@ -190,11 +198,12 @@ document.addEventListener('click',event=>{
   syncActive(Q('#ccSidebar'));
  }
 
- if(r==='inicio'||r==='proyectos'||r==='presupuesto'||r==='transparencia'||r==='usuarios'||r==='solicitudes'||r==='seguridad'){
+ if(r==='inicio'||r==='proyectos'||r==='presupuesto'||r==='transparencia'||r==='alertas'||r==='auditoria'||r==='usuarios'||r==='solicitudes'||r==='seguridad'){
   event.preventDefault();event.stopImmediatePropagation();
   if(r==='inicio'||r==='proyectos')goPortfolio(r);
   else if(r==='presupuesto')goBudget();
   else if(r==='transparencia')goTransparency();
+  else if(r==='alertas'||r==='auditoria')openOperationalCenter(r);
   else if(r==='usuarios'){
    if(typeof window.adminUsersModal==='function')window.adminUsersModal();else Q('#ccTeamBtn')?.click();
   }else if(r==='solicitudes'){

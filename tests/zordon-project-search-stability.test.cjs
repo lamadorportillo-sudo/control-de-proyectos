@@ -28,7 +28,7 @@ test('buscador y densidad tienen una única entrada canónica en el manifiesto',
   const searchEntries=[...manifest.matchAll(/\['zordon-project-search-v1\.js','([^']+)'\]/g)];
   const densityEntries=[...manifest.matchAll(/\['zordon-unified-density-v1\.js','([^']+)'\]/g)];
   assert.equal(searchEntries.length,1);
-  assert.equal(searchEntries[0][1],'20260905-zordonsearch5');
+  assert.equal(searchEntries[0][1],'20260908-zordonsearch7');
   assert.equal(densityEntries.length,1);
   assert.equal(densityEntries[0][1],'20260905-density2');
   assert.doesNotMatch(integrity,/zordon-project-search-v1\.js|zordon-unified-density-v1\.js/,

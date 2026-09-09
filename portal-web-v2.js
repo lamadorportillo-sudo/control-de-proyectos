@@ -86,7 +86,7 @@ function createSidebar(shell){
     </nav>
     <div class="cc-nav-label">Control</div>
     <nav class="cc-side-nav">
-      <button class="cc-side-btn" data-route="alertas"><span class="cc-side-icon">!</span><span>Alertas y seguimiento</span><span class="cc-nav-badge" data-alert-badge style="display:none">0</span></button>
+      <button class="cc-side-btn" data-route="alertas"><span class="cc-side-icon">!</span><span>Deficiencias y seguimiento</span><span class="cc-nav-badge" data-alert-badge style="display:none">0</span></button>
       <button class="cc-side-btn" data-route="auditoria"><span class="cc-side-icon">✓</span><span>Auditoría</span></button>
       <button class="cc-side-btn" data-route="campo"><span class="cc-side-icon">⚒</span><span>Modo campo</span></button>
       <button class="cc-side-btn" data-route="arquitectura"><span class="cc-side-icon">⌘</span><span>Arquitectura</span></button>

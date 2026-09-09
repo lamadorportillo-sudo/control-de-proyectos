@@ -1,0 +1,47 @@
+name: Validación modo campo offline
+
+on:
+  pull_request:
+    paths:
+      - 'offline-core-v1.js'
+      - 'offline-field-v1.js'
+      - 'service-worker-v1.js'
+      - 'manifest.webmanifest'
+      - 'patch-offline-field.cjs'
+      - 'netlify.toml'
+      - 'tests/offline-field-mode.test.cjs'
+      - '.github/workflows/offline-field-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Validar fuentes offline
+        run: |
+          set -euo pipefail
+          node --check offline-core-v1.js
+          node --check offline-field-v1.js
+          node --check service-worker-v1.js
+          node --check patch-offline-field.cjs
+          node --test tests/offline-field-mode.test.cjs
+      - name: Reconstruir artefacto real
+        run: |
+          set -euo pipefail
+          node build-pages.cjs
+          node inject-portfolio.cjs
+          node patch-session-security.cjs
+          node stabilize-core-v1.cjs
+          node patch-offline-field.cjs
+          grep -q 'CONTROL CONTRACTUAL · MODO CAMPO OFFLINE V1' index.html
+          grep -q 'offline-field-v1.js?v=20260908-offline1' index.html
+          grep -q 'manifest.webmanifest' index.html
+          grep -q 'indexedDB.open(IDB_NAME' index.html

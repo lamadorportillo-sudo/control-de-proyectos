@@ -1,5 +1,5 @@
 [build]
-  command = "node build-pages.cjs && node inject-portfolio.cjs && node patch-session-security.cjs && node stabilize-core-v1.cjs"
+  command = "node build-pages.cjs && node inject-portfolio.cjs && node patch-session-security.cjs && node stabilize-core-v1.cjs && node patch-offline-field.cjs"
   publish = "."
 
 [build.environment]
@@ -22,3 +22,9 @@
   for = "/*.cjs"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Content-Type = "application/manifest+json; charset=utf-8"

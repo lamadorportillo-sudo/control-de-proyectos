@@ -60,13 +60,15 @@ assert.match(manage,/action\s*===\s*\"reset_mfa\"/,'falta recuperación asistida
 assert.match(manage,/auth\.admin\.mfa\.deleteFactor/,'la recuperación 2FA debe usar la API oficial de administración');
 
 const halu=read('supabase/functions/halu-chat/index.ts');
+assert.match(halu,/admin\.auth\.getUser\(token\)/,'ZORDON no valida la sesión con Supabase Auth');
 assert.match(halu,/workspace_members/,'ZORDON no valida pertenencia al espacio de trabajo');
 assert.match(halu,/profiles/,'ZORDON no valida estado de la cuenta');
 assert.match(halu,/redactSecrets/,'ZORDON no filtra credenciales antes de enviar contexto');
 assert.match(halu,/store:\s*false/,'las consultas IA no deben solicitar almacenamiento');
 assert.match(halu,/Origen no autorizado/,'ZORDON no rechaza orígenes externos');
-assert.match(halu,/service_user_has_verified_mfa/,'ZORDON debe comprobar 2FA');
-assert.match(halu,/adminMfaPastDueMissing/,'ZORDON debe bloquear administradores cuyo plazo 2FA venció');
+assert.match(halu,/security_force_reauth/,'ZORDON debe respetar una reautenticación forzada');
 assert.match(halu,/security_valid_after/,'ZORDON debe respetar la revocación de tokens');
+assert.doesNotMatch(halu,/service_user_has_verified_mfa/,'ZORDON no debe invocar una guardia privilegiada de MFA en cada mensaje');
+assert.doesNotMatch(halu,/adminMfaPastDueMissing/,'la política MFA administrativa debe resolverse en el acceso, no bloquear cada conversación');
 
-console.log('security-guards: controles de usuarios, sesiones, MFA administrativo obligatorio, recuperación, archivos y ZORDON verificados');
+console.log('security-guards: controles de usuarios, sesiones, MFA privilegiado, archivos y ZORDON conversacional seguro verificados');

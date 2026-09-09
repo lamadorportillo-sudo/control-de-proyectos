@@ -42,6 +42,8 @@ self.addEventListener('fetch',event=>{
   const navigation=request.mode==='navigate'||request.destination==='document';
   if(!navigation&&!STATIC_EXT.test(url.pathname+url.search))return;
 
+  // Network-first: mientras hay conexión usa siempre la versión publicada.
+  // Si la red falla, la navegación y los módulos se recuperan desde la caché.
   event.respondWith((async()=>{
     const cache=await caches.open(CACHE);
     try{

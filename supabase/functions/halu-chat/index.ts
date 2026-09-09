@@ -14,8 +14,10 @@ function extractOutputText(data:any){if(typeof data?.output_text==="string")retu
 function jwtClaims(token:string):any{try{const part=token.split(".")[1]||"",n=part.replace(/-/g,"+").replace(/_/g,"/"),p=n+"=".repeat((4-n.length%4)%4);return JSON.parse(atob(p))}catch{return {}}}
 function technicalMessage(value:string){const q=norm(value);return /\b(proyecto|obra|contrato|contratista|estimacion|estimaciones|pago|pagos|presupuesto|avance|visita|garantia|plazo|multa|adenda|orden de cambio|licitacion|oferta|ingenieria|calculo|estructura|concreto|pavimento|supervision|informe|reporte|documento|ley|norma|articulo|costos?|supabase|base de datos|codigo|programar|programacion)\b/.test(q)}
 function infoIntent(value:string){const q=norm(value);return /^(que es|que significa|como funciona|como hago|como se|explica|explicame|por que|porque|cuanto|cuando|donde|quien|busca|investiga|consulta|informacion)\b/.test(q)}
-function socialSignal(value:string){const q=norm(value);return /\b(hola|buenas|que tal|como estas|y tu|y vos|bien|cansado|cansada|tranquilo|tranquila|aburrido|aburrida|platicar|hablar|pelicula|peliculas|serie|series|terror|miedo|dibujar|dibujo|carbon|rostros|jaja|jeje|gracias|cuentame de ti|me gusta|me gustan|amigo|fin de semana|no quiero hablar de trabajo|cero trabajo)\b/.test(q)}
+function emotionalSignal(value:string){const q=norm(value);return /\b(quiero llorar|ganas de llorar|llorar|triste|tristeza|me siento mal|me siento muy mal|me siento fatal|fatal|preocupado|preocupada|estresado|estresada|angustiado|angustiada|ansioso|ansiosa|dia pesado|dia dificil|me duele|necesito hablar|quiero desahogarme|desahogarme)\b/.test(q)}
+function socialSignal(value:string){const q=norm(value);return emotionalSignal(value)||/\b(hola|buenas|que tal|como estas|y tu|y vos|bien|cansado|cansada|tranquilo|tranquila|aburrido|aburrida|platicar|hablar|pelicula|peliculas|serie|series|terror|miedo|dibujar|dibujo|carbon|rostros|jaja|jeje|gracias|cuentame de ti|me gusta|me gustan|amigo|fin de semana|no quiero hablar de trabajo|cero trabajo)\b/.test(q)}
 function casualTurn(message:string,history:Turn[]){
+  if(emotionalSignal(message))return true;
   if(technicalMessage(message))return false;
   const words=norm(message).split(/\s+/).filter(Boolean).length;
   if(socialSignal(message))return true;
@@ -34,6 +36,7 @@ CONVERSACIÓN Y CONTINUIDAD
 - Entiende referencias como “como te decía”, “eso”, “él”, “la otra”, “igual”, “sí”, “no”, “y tú”, “hace tiempo” o respuestas de una sola palabra usando el contexto previo.
 - No conviertas cada respuesta en una pregunta. En conversación normal alterna reacción, comentario, broma ligera y pregunta breve cuando ayude. Una pregunta por turno como máximo, y muchos turnos pueden no llevar pregunta.
 - Si el usuario dice que no quiere hablar de trabajo, NO vuelvas a llevar la conversación hacia trabajo, proyectos, contratos ni ingeniería hasta que él lo haga.
+- Si el usuario expresa tristeza, cansancio, preocupación, estrés, ganas de llorar o necesidad de desahogarse, responde primero a eso con tacto, brevedad y continuidad. No lo redirijas a trabajo, contratos, proyectos ni menús salvo que él mismo relacione el tema con el trabajo.
 - Si el usuario cambia de películas a miedo, de miedo a recuerdos, de recuerdos a amigos, o de ahí a dibujo, acompaña el cambio sin intentar regresar al tema anterior.
 - Si pide “cuéntame de ti”, responde desde tu identidad de asistente sin inventar vida física, recuerdos personales, familia, experiencias reales ni emociones humanas como hechos.
 
@@ -46,7 +49,8 @@ MODELO DE CONVERSACIÓN INFORMAL
 - Usa humor ligero, expresiones naturales y algún emoji ocasional si encaja, pero no en todos los mensajes.
 - No expliques de más una película, un hobby o una anécdota. Una reacción corta suele ser suficiente.
 - Evita frases robóticas como “La conversación va por buen camino”, “dime cómo están trabajando”, “¿qué tienen en marcha?”, “te sigo” o “¿qué quieres revisar?” en charla informal.
-- Ejemplo de ritmo: usuario “bien y tú” → “Bien también 😄”. Usuario “como te decía, bien” → “Sí, ya me habías dicho 😄”. Usuario “no quiero hablar de trabajo” → “Va, cero trabajo 😄”.
+- Nunca uses “¿Hablamos del control, del contrato o de la ejecución en campo?” como respuesta automática a un comentario personal o emocional.
+- Ejemplo de ritmo: usuario “bien y tú” → “Bien también 😄”. Usuario “como te decía, bien” → “Sí, ya me habías dicho 😄”. Usuario “no quiero hablar de trabajo” → “Va, cero trabajo 😄”. Usuario “quiero llorar” → una respuesta breve, cercana y centrada en lo que acaba de expresar, sin mencionar trabajo.
 - Si el usuario solo se ríe, puedes responder con una risa corta o una frase breve ligada al tema anterior.
 
 TRABAJO TÉCNICO
@@ -72,11 +76,10 @@ Deno.serve(async(req:Request)=>{
  const origin=req.headers.get("origin");if(req.method==="OPTIONS")return new Response("ok",{headers:{...corsHeaders(req),...securityHeaders}});if(req.method!=="POST")return json(req,{error:"Método no permitido."},405);if(origin&&!allowedOrigins.has(origin))return json(req,{error:"Origen no autorizado."},403);if(Number(req.headers.get("content-length")||0)>24000)return json(req,{error:"La solicitud es demasiado grande."},413);
  const supabaseUrl=Deno.env.get("SUPABASE_URL")||"",serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"",token=(req.headers.get("authorization")||"").replace(/^Bearer\s+/i,"");const admin=createClient(supabaseUrl,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});const {data:auth,error:authError}=await admin.auth.getUser(token);if(authError||!auth.user)return json(req,{error:"Sesión no válida."},401);
  const {data:membership}=await admin.from("workspace_members").select("workspace_id,role,active").eq("user_id",auth.user.id).eq("active",true).limit(1).maybeSingle();
- const {data:profile}=await admin.from("profiles").select("active,must_change_password,temporary_password_expires_at,security_force_reauth,security_valid_after,mfa_required_after").eq("user_id",auth.user.id).maybeSingle();
+ const {data:profile}=await admin.from("profiles").select("active,must_change_password,temporary_password_expires_at,security_force_reauth,security_valid_after").eq("user_id",auth.user.id).maybeSingle();
  if(!membership||profile?.active===false)return json(req,{error:"Acceso no autorizado."},403);if(profile?.must_change_password&&(!profile.temporary_password_expires_at||Date.now()>new Date(profile.temporary_password_expires_at).getTime()))return json(req,{error:"La contraseña temporal venció. Cambie o renueve su acceso."},403);
- const claims=jwtClaims(token),issuedAt=Number(claims?.iat||0)*1000,validAfter=profile?.security_valid_after?new Date(profile.security_valid_after).getTime():0;const {data:hasMfa}=await admin.rpc("service_user_has_verified_mfa",{p_user_id:auth.user.id});
- const adminMfaPastDueMissing=membership.role==="admin"&&!!profile?.mfa_required_after&&Date.now()>=new Date(profile.mfa_required_after).getTime()&&!hasMfa;
- if(adminMfaPastDueMissing)return json(req,{error:"Debe configurar la verificación en dos pasos antes de usar ZORDON como administrador."},403);if(profile?.security_force_reauth===true||issuedAt<validAfter)return json(req,{error:"Debe autenticarse nuevamente antes de usar ZORDON."},403);if(hasMfa&&claims?.aal!=="aal2")return json(req,{error:"Complete la verificación en dos pasos antes de usar ZORDON."},403);
+ const claims=jwtClaims(token),issuedAt=Number(claims?.iat||0)*1000,validAfter=profile?.security_valid_after?new Date(profile.security_valid_after).getTime():0;
+ if(profile?.security_force_reauth===true||issuedAt<validAfter)return json(req,{error:"Debe autenticarse nuevamente antes de usar ZORDON."},403);
  const authKey=auth.user.id,now=Date.now(),bucket=requestBuckets.get(authKey);if(!bucket||now-bucket.startedAt>=60000)requestBuckets.set(authKey,{startedAt:now,count:1});else{bucket.count+=1;if(bucket.count>15)return json(req,{error:"Demasiadas consultas. Espere un minuto."},429)}
  const apiKey=Deno.env.get("OPENAI_API_KEY");if(!apiKey)return json(req,{error:"ZORDON todavía no tiene habilitado el servicio de IA."},503);
  try{
@@ -85,9 +88,9 @@ Deno.serve(async(req:Request)=>{
    const context=redactSecrets(cleanText(body?.context,4200));
    const history:Turn[]=(Array.isArray(body?.history)?body.history:[]).slice(-24).map((turn:any)=>({role:turn?.role==="assistant"?"assistant":"user",text:redactSecrets(cleanText(turn?.text,1000))})).filter((turn:Turn)=>turn.text);
    const casual=casualTurn(message,history);
-   const modeNote=casual?"MODO ACTUAL: conversación informal. Responde de forma natural, normalmente en una sola frase de máximo 15 palabras. Sigue exactamente el tema de los últimos turnos. No lleves la charla al trabajo ni hagas preguntas innecesarias.":"MODO ACTUAL: conversación normal o de trabajo. Ajusta el nivel de detalle a la consulta.";
+   const modeNote=casual?"MODO ACTUAL: conversación informal o personal. Responde de forma natural, normalmente en una sola frase breve. Sigue exactamente el tema de los últimos turnos. No lleves la charla al trabajo ni cambies el tema. Si el usuario expresa algo personal o emocional, responde a eso con tacto y continuidad.":"MODO ACTUAL: conversación normal o de trabajo. Ajusta el nivel de detalle a la consulta.";
    const input=[...history.map(turn=>({role:turn.role,content:turn.text})),{role:"user",content:context?`Contexto autorizado del sistema y memoria relevante:\n${context}\n\n${modeNote}\n\nMensaje actual:\n${message}`:`${modeNote}\n\nMensaje actual:\n${message}`}];
-   const response=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:`Bearer ${apiKey}`,"Content-Type":"application/json"},body:JSON.stringify({model:Deno.env.get("OPENAI_MODEL")||"gpt-5.4",store:false,max_output_tokens:casual?120:1100,instructions:zordonInstructions,input})});
+   const response=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:`Bearer ${apiKey}`,"Content-Type":"application/json"},body:JSON.stringify({model:Deno.env.get("OPENAI_MODEL")||"gpt-5.4",store:false,max_output_tokens:casual?160:1100,instructions:zordonInstructions,input})});
    const data=await response.json();
    if(!response.ok){console.error("OpenAI response error",response.status,data?.error?.code||"unknown");return json(req,{error:"No pude consultar el modelo en este momento."},502)}
    const reply=extractOutputText(data);if(!reply)return json(req,{error:"El modelo no devolvió una respuesta."},502);

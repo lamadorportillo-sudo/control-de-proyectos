@@ -65,7 +65,7 @@ jobs:
           grep -q 'PERMISOS E IDIOMA V6 · RESOLUCIÓN TARDÍA SEGURA' technical-control-permissions-v1.js
           grep -q 'REFINAMIENTO GENERAL DE INTERFAZ V5 · OBSERVADOR ESTABLE' system-ui-refinement-v3.js
           grep -q 'CORRECCIÓN DE ÓRDENES DE CAMBIO / ADENDAS V2 · GUARDADO ÚNICO' change-order-fix-v1.js
-          grep -q 'ZORDON · NÚCLEO DE APRENDIZAJE CONTINUO V4 · IDÉMPOTENTE' zordon-continuous-runtime-v1.js
+          grep -q 'ZORDON · NÚCLEO DE APRENDIZAJE CONTINUO V5 · CONTEXTO SEPARADO' zordon-continuous-runtime-v1.js
           grep -q 'BUSCADOR INTELIGENTE DE PROYECTOS V5 · LISTA ESTABLE' zordon-project-search-v1.js
           grep -q 'ZORDON · DENSIDAD UNIFICADA DE INTERFAZ V1' zordon-unified-density-v1.js
           grep -q 'ZORDON · CHAT NATURAL Y CONTINUO V5 · EVENTOS AISLADOS' zordon-chat-ui-v1.js

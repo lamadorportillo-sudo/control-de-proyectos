@@ -36,11 +36,11 @@ test('las versiones publicadas conservan una sola autoridad de carga',()=>{
   assert.match(index,/project-tabs-complete-v1\.js\?v=20260831-tabscomplete34/);
   assert.match(index,/portfolio-gallery-v1\.js\?v=20260828-gallery3/);
   assert.match(read('project-tabs-complete-v1.js'),/immersive-engineering-experience-v1\.js\?v=20260828-immersive2/);
-  assert.match(serviceWorker,/const CACHE='cc-static-v1-20260903-recovery-v2'/);
+  assert.match(serviceWorker,/const CACHE='cc-static-v1-20260911-stable-v3'/);
   assert.match(serviceWorker,/Network-first/i);
   assert.match(serviceWorker,/fetch\(request,\{cache:'no-store'\}\)/);
   assert.match(runtime,/COORDINADOR DE RENDIMIENTO DEL DOM V8\.1 · INTERFAZ ORDENADA/);
-  assert.match(runtime,/service-worker-v1\.js\?v=20260903-sw2/);
+  assert.match(runtime,/service-worker-v1\.js\?v=20260911-sw3/);
   assert.match(stabilizer,/portal-web-v2\.js\?v=20260904-web4/);
   assert.match(stabilizer,/dashboard-simplified-v4\.js\?v=20260907-dashnav1/);
   assert.match(portal,/PORTAL WEB V4 · PRESENTACIÓN ESTABLE/);

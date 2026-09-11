@@ -25,6 +25,24 @@ function stripScriptFrom(source,moduleFile){
 }
 
 function escapeAttr(v){return String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+function reconcileExistingAuthPlan(source){
+  let out=source;
+  const loaderMarker='<script data-cc-auth-loader data-cc-auth-plan>';
+  for(const [moduleFile,version] of supplementalModules){
+    const escaped=moduleFile.replace(/[.*+?^${}()|[\]\\]/g,'\\function escapeAttr(v){return String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+');
+    const attrRe=new RegExp('data-src=(["\\\'])[^"\\\']*'+escaped+'(?:\\?[^"\\\']*)?\\1','gi');
+    if(attrRe.test(out)){
+      attrRe.lastIndex=0;
+      out=out.replace(attrRe,'data-src="'+moduleFile+'?v='+version+'"');
+      continue;
+    }
+    const pos=out.indexOf(loaderMarker);
+    if(pos<0)throw new Error('No se encontró el cargador autenticado para reconciliar el manifiesto.');
+    out=out.slice(0,pos)+'<script type="application/x-cc-auth" data-cc-auth-script data-src="'+moduleFile+'?v='+version+'"></script>\n'+out.slice(pos);
+  }
+  return out;
+}
 
 /* El constructor histórico puede dejar dos etiquetas del mismo archivo cuando
    una copia usa atributos como defer/data-* y otra es la versión final añadida
@@ -118,6 +136,7 @@ const bootPos=html.indexOf(bootEnd);
 if(bootPos<0)throw new Error('No se encontró el cierre del núcleo para aislar módulos autenticados.');
 const cut=bootPos+bootEnd.length;
 let head=html.slice(0,cut),tail=html.slice(cut);
+if(tail.includes('data-cc-auth-plan')){tail=reconcileExistingAuthPlan(tail);html=head+tail}
 if(!tail.includes('data-cc-auth-plan')){
   /* El antiguo project-tabs-complete cargaba estas dependencias de forma
      dinámica. Ahora se garantiza una sola copia aquí, con versiones y orden

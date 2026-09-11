@@ -18,7 +18,7 @@ test('cambios en campos distintos del mismo contrato se combinan sin conflicto',
   const local={contracts:[{id:'c1',contractor:'B',end:'2026-09-01',amount:100}]};
   const server={contracts:[{id:'c1',contractor:'A',end:'2026-10-01',amount:100}]};
   const out=merge(base,local,server);
-  assert.deepEqual(out.conflicts,[]);
+  assert.equal(out.conflicts.length,0);
   assert.equal(out.data.contracts[0].contractor,'B');
   assert.equal(out.data.contracts[0].end,'2026-10-01');
 });

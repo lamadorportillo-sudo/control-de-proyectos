@@ -141,9 +141,7 @@ html=html.replace(firstFeature,`<script src="${performanceModule}?v=${performanc
 
 // Arquitectura ejecutiva, normativa histórica, documentos de adjudicación y diseño corporativo.
 // Los módulos funcionales se cargan de forma directa para no depender de cachés o cargadores secundarios.
-const lateModules=[
-  ['workspace-access-v1.js','20260820-master4'],
-  ['private-access-v1.js',const activeLateModules=buildLateModules;
+const activeLateModules=buildLateModules;
 for(const [module,version] of activeLateModules){
   if(!fs.existsSync(module)) throw new Error(`No se encontró ${module}.`);
   try{new vm.Script(fs.readFileSync(module,'utf8'),{filename:module})}catch(err){throw new Error(`JavaScript inválido en ${module}: ${err.message}`)}

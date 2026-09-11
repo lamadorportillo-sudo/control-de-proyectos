@@ -125,7 +125,7 @@ const buildOnlyModules=[
   ['procurement-invitations-v2.js','20260820-invitations2'],
   ['procurement-offers-invitees-v1.js','20260822-offersinvitees2'],
   ['summary-budget-law-v1.js','20260820-summarybudgetlaw1'],
-  ['project-search-clean-v1.js','20260820-searchclean1'],
+  ['project-search-clean-v1.js','20260911-searchclean4'],
   ['storage-quota-fix-v1.js','20260820-storagequota2'],
   ['feature-lazy-loader-v1.js','20260824-lazy3'],
   ['procurement-process-save-v4.js','20260820-procsave4'],

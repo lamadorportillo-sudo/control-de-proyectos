@@ -90,7 +90,7 @@ const supplementalModules=[
   ['zordon-project-search-v1.js','20260908-zordonsearch7'],
   /* Coordina Enter en la búsqueda superior con el motor normalizado de ZORDON,
      preserva la consulta visible tras el rerender y refresca decoraciones. */
-  ['authenticated-ui-sync-v1.js','20260905-authuisync2'],
+  ['authenticated-ui-sync-v1.js','20260911-authuisync3'],
   ['zordon-unified-density-v1.js','20260905-density2'],
   ['zordon-chat-ui-v1.js','20260908-cleanchat6'],
   /* El expediente documental usa superficies claras y necesita una corrección

@@ -57,7 +57,7 @@ test('simulación manual integral de un proyecto municipal inventado',async({pag
   await expect(page.locator('#ccSidebar')).toBeVisible({timeout:20000});await shot(page,ti,'01-inicio-sin-proyectos');m.pages.push('Inicio vacío');
 
   // CREACIÓN DEL PROYECTO
-  await click(page,'[data-command="project"],#newProjectBtn',m);m.stage='Nuevo proyecto';await modal(page,'Nuevo proyecto',m);
+  await click(page,'#ccCommandbar [data-command="project"],#newProjectBtn:visible',m);m.stage='Nuevo proyecto';await modal(page,'Nuevo proyecto',m);
   await fill(page,'#pCode',P.code,m);await fill(page,'#pName',P.name,m);await fill(page,'#pLocation',P.location,m);await sel(page,'#pType','Obra',m);await fill(page,'#pBudget',P.budget,m);await fill(page,'#pStart','2026-09-01',m);await fill(page,'#pDays','100',m);await sel(page,'#pStatus','Proceso de contratación',m);await fill(page,'#pDescription',P.description,m);await click(page,'#projectForm button.btn.primary',m);
   await expect(page.locator('body')).toContainText(P.code);await shot(page,ti,'02-proyecto-guardado-pero-en-inicio');
   const stillHome=await page.locator('#ccSidebar [data-route="inicio"].active').count();

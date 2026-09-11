@@ -7,11 +7,15 @@ window.__CC_CONTRACT_DOWNLOAD_ACTIONS_V2__=true;
 const notice=m=>typeof window.toast==='function'?window.toast(m):alert(m);
 const clean=v=>String(v||'documento').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9_-]+/gi,'-').replace(/^-+|-+$/g,'').slice(0,80)||'documento';
 
+function repositorySrc(){
+  const planned=[...document.querySelectorAll('script[data-cc-auth-script][data-src]')].find(node=>String(node.dataset.src||'').split(/[?#]/)[0].split('/').pop()==='contract-file-repository-v2.js');
+  return planned?.dataset?.src||'contract-file-repository-v2.js?v=20260910-intake1';
+}
 function loadContractArchive(){
   if(window.__CC_CONTRACT_FILE_REPOSITORY_V2__||document.getElementById('ccContractFileRepositoryV2Script'))return;
   const s=document.createElement('script');
   s.id='ccContractFileRepositoryV2Script';
-  s.src='contract-file-repository-v2.js?v=20260831-intelligence2';
+  s.src=repositorySrc();
   s.async=false;
   s.onerror=()=>console.warn('No se pudo cargar el archivo documental inteligente del contrato.');
   document.head.appendChild(s);

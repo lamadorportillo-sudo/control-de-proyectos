@@ -30,11 +30,22 @@ function protectContractForm(form){
   },true);
 }
 function protectVisitForm(form){
-  if(!form||form.dataset.integrityV2==='1')return;form.dataset.integrityV2='1';
+  if(!form)return;
+  const status=form.querySelector('#vStatus');
+  /* El modal puede insertar primero el <form> y después sus controles. No se
+     marca como protegido hasta que #vStatus exista; de lo contrario una primera
+     mutación parcial dejaba el selector editable para siempre. */
+  if(!status)return;
+  if(form.dataset.integrityV2==='1'){
+    status.disabled=true;
+    status.title='El estado se determina por las observaciones pendientes o atendidas.';
+    return;
+  }
+  form.dataset.integrityV2='1';
   const p=currentProject(),number=Number(form.querySelector('#vNumber')?.value||0),visit=A(db?.visits).find(v=>v.projectId===p?.id&&Number(v.number)===number);
-  if(visit&&syncVisitStatus(visit)){const status=form.querySelector('#vStatus');if(status)status.value=visit.status}
-  const status=form.querySelector('#vStatus');if(status){status.disabled=true;status.title='El estado se determina por las observaciones pendientes o atendidas.'}
-  form.addEventListener('submit',()=>{if(status)status.disabled=false},true);
+  if(visit&&syncVisitStatus(visit))status.value=visit.status;
+  status.disabled=true;status.title='El estado se determina por las observaciones pendientes o atendidas.';
+  form.addEventListener('submit',()=>{status.disabled=false},true);
 }
 function decorateLifecycle(root){
   if(!root||root.dataset.integrityV2==='1')return;root.dataset.integrityV2='1';

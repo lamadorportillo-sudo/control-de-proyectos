@@ -24,7 +24,8 @@ const CONTRACT_NUMERIC_FIELDS=[
 const baseDefaults=typeof contractControlDefaults==='function'?contractControlDefaults:null;
 window.contractControlDefaults=function(existing={}){
   const raw=existing&&typeof existing==='object'?existing:{};
-  const out=baseDefaults?baseDefaults(raw):Object.assign({},raw);
+  /* No materializar la plantilla histórica. Solo persisten datos realmente registrados. */
+  const out=Object.assign({},raw);
   for(const key of CONTRACT_NUMERIC_FIELDS){if(!hasNumber(raw,key))out[key]=null}
   return out;
 };

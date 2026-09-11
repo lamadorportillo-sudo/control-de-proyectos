@@ -28,7 +28,7 @@ const supplementalModules=[
      Sus versiones viven aquí para que arquitectura y publicación prueben
      exactamente el mismo artefacto. */
   ['project-tabs-complete-v1.js','20260831-tabscomplete34'],
-  ['ui-navigation-single-source-v1.js','20260905-singlenav6'],
+  ['ui-navigation-single-source-v1.js','20260911-alertaudit10'],
   ['security-runtime-v1.js','20260904-security4'],
   ['mfa-security-v1.js','20260824-mfa4'],
   ['security-center-v1.js','20260823-securitycenter4'],
@@ -45,7 +45,7 @@ const supplementalModules=[
   ['report-export-css-fix-v1.js','20260821-reportcss1'],
   ['document-qr-v1.js','20260831-docqr1'],
   ['transparency-exec-bridge-v1.js','20260821-trbridge1'],
-  ['transparency-portal-v1.js','20260822-transparency1'],
+  ['transparency-portal-v1.js','20260911-transparency4'],
   ['transparency-storage-v1.js','20260821-trstorage1'],
   ['budget-search-fix-v1.js','20260821-budgetsearch1'],
   /* El dashboard evaluativo histórico observa documentElement completo. La
@@ -80,7 +80,7 @@ const supplementalModules=[
   ['contract-payment-documents-v1.js','20260904-advance-docs4'],
   /* Permite adjuntar el contrato real y completar/corregir la ficha sin rehacer el expediente. */
   ['contract-file-repository-v2.js','20260910-intake1'],
-  ['contract-intake-v1.js','20260910-intake1'],
+  ['contract-intake-v1.js','20260911-intake2'],
   ['contract-preview-v1.js','20260904-preview2'],
   /* ZORDON antes del cierre técnico: buscador y densidad se cargan únicamente
      desde este plan para impedir versiones históricas o cargadores secundarios.
@@ -90,7 +90,7 @@ const supplementalModules=[
   ['zordon-project-search-v1.js','20260908-zordonsearch7'],
   /* Coordina Enter en la búsqueda superior con el motor normalizado de ZORDON,
      preserva la consulta visible tras el rerender y refresca decoraciones. */
-  ['authenticated-ui-sync-v1.js','20260905-authuisync2'],
+  ['authenticated-ui-sync-v1.js','20260911-authuisync3'],
   ['zordon-unified-density-v1.js','20260905-density2'],
   ['zordon-chat-ui-v1.js','20260908-cleanchat6'],
   /* El expediente documental usa superficies claras y necesita una corrección
@@ -105,4 +105,94 @@ const supplementalModules=[
   ['technical-control-v1.js','20260830-controltecnico1'],
 ];
 
-module.exports={retiredModules,preAuthModules,supplementalModules};
+/* Módulos que el constructor histórico necesita añadir al artefacto y que no
+   forman parte del plan suplementario. Sus versiones también viven aquí para
+   que build, estabilización y pruebas no mantengan catálogos divergentes. */
+const buildOnlyModules=[
+  ['workspace-access-v1.js','20260820-master4'],
+  ['admin-users-v1.js','20260823-admin-users4'],
+  ['alerts-compact-v1.js','20260820-master4'],
+  ['engineering-ux-v1.js','20260820-master4'],
+  ['procurement-thresholds-v1.js','20260820-gacetas4'],
+  ['contracts-center-v1.js','20260820-contracts2'],
+  ['corporate-ui-v1.js','20260820-corporate3'],
+  ['corporate-polish-v1.js','20260820-polish6'],
+  ['procurement-award-fix-v1.js','20260820-award3'],
+  ['visit-photos-v1.js','20260820-visits1'],
+  ['award-notices-v1.js','20260820-notes1'],
+  ['visit-photo-persistence-v2.js','20260820-photopersist2'],
+  ['visit-print-v3.js','20260820-visitprint3'],
+  ['procurement-invitations-v2.js','20260820-invitations2'],
+  ['procurement-offers-invitees-v1.js','20260822-offersinvitees2'],
+  ['summary-budget-law-v1.js','20260820-summarybudgetlaw1'],
+  ['project-search-clean-v1.js','20260911-searchclean4'],
+  ['storage-quota-fix-v1.js','20260820-storagequota2'],
+  ['feature-lazy-loader-v1.js','20260824-lazy3'],
+  ['procurement-process-save-v4.js','20260820-procsave4'],
+  ['contract-integrity-fix-v1.js','20260822-integrity1'],
+  ['integrity-hardening-v2.js','20260911-integrity3'],
+  ['cross-module-sync-v1.js','20260822-relations1'],
+  ['web-knowledge-v2.js','20260822-short1'],
+  ['adaptive-chat-learning-v1.js','20260822-global1'],
+  ['halu-page-controller-v1.js','20260824-control1'],
+  ['engineer-chatbot-v3.js','20260824-ai5'],
+  ['halu-avatar-motion-v1.js','20260822-place13'],
+];
+
+/* Orden exacto de inyección del constructor. Los módulos retirados no aparecen
+   aquí; cambiar una versión se hace únicamente en preAuth/supplemental/buildOnly. */
+const buildLateOrder=[
+  'workspace-access-v1.js',
+  'private-access-v1.js',
+  'password-recovery-v1.js',
+  'admin-users-v1.js',
+  'security-runtime-v1.js',
+  'security-center-v1.js',
+  'mfa-security-v1.js',
+  'alerts-compact-v1.js',
+  'engineering-ux-v1.js',
+  'procurement-thresholds-v1.js',
+  'contracts-center-v1.js',
+  'corporate-ui-v1.js',
+  'corporate-polish-v1.js',
+  'procurement-award-fix-v1.js',
+  'visit-photos-v1.js',
+  'award-notices-v1.js',
+  'visit-photo-persistence-v2.js',
+  'visit-print-v3.js',
+  'procurement-invitations-v2.js',
+  'procurement-offers-invitees-v1.js',
+  'summary-budget-law-v1.js',
+  'project-search-clean-v1.js',
+  'storage-quota-fix-v1.js',
+  'project-tabs-complete-v1.js',
+  'feature-lazy-loader-v1.js',
+  'procurement-process-save-v4.js',
+  'contract-integrity-fix-v1.js',
+  'integrity-hardening-v2.js',
+  'cross-module-sync-v1.js',
+  'programacion-control-v1.js',
+  'web-knowledge-v2.js',
+  'engineering-manual-reference-v1.js',
+  'adaptive-chat-learning-v1.js',
+  'halu-page-controller-v1.js',
+  'engineer-chatbot-v3.js',
+  'halu-avatar-motion-v1.js',
+  'transparency-portal-v1.js',
+  'photo-gallery-polish-v2.js',
+  'ui-theme-unifier-v1.js',
+  'engineering-visibility-fix-v1.js',
+  'ui-operational-polish-v1.js',
+  'ui-visibility-audit-v1.js',
+  'portfolio-gallery-v1.js',
+  'project-photo-story-v1.js',
+];
+
+const canonicalModuleVersions=new Map([...preAuthModules,...supplementalModules,...buildOnlyModules]);
+const buildLateModules=buildLateOrder.map(moduleFile=>{
+  const version=canonicalModuleVersions.get(moduleFile);
+  if(!version)throw new Error(`Falta versión canónica para ${moduleFile}`);
+  return[moduleFile,version];
+});
+
+module.exports={retiredModules,preAuthModules,supplementalModules,buildOnlyModules,buildLateModules};

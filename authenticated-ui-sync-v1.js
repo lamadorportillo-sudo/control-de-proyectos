@@ -13,7 +13,7 @@ function syncProjectQuery(query){
   const q=String(query||'').trim();
   const run=()=>{
     const board=[...document.querySelectorAll('.projects-board')].find(el=>el.offsetParent!==null||el.getClientRects().length)||document.querySelector('.projects-board');
-    const local=board?.querySelector('#projectSearch');
+    const local=board?.querySelector('#zordonProjectSearch,[data-zordon-input],#projectSearch');
     try{
       if(window.__ccProjectSearchBridge?.syncGlobalProjectSearch){
         window.__ccProjectSearchBridge.syncGlobalProjectSearch(q);

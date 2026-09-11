@@ -25,6 +25,23 @@ function stripScriptFrom(source,moduleFile){
 }
 
 function escapeAttr(v){return String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+function reconcileExistingAuthPlan(source){
+  let out=source;
+  const loaderMarker='<script data-cc-auth-loader data-cc-auth-plan>';
+  for(const [moduleFile,version] of supplementalModules){
+    const escaped=moduleFile.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const attrRe=new RegExp(`data-src=(["'])[^"']*${escaped}(?:\\?[^"']*)?\\1`,'gi');
+    if(attrRe.test(out)){
+      attrRe.lastIndex=0;
+      out=out.replace(attrRe,`data-src="${moduleFile}?v=${version}"`);
+      continue;
+    }
+    const pos=out.indexOf(loaderMarker);
+    if(pos<0)throw new Error('No se encontró el cargador autenticado para reconciliar el manifiesto.');
+    out=out.slice(0,pos)+`<script type="application/x-cc-auth" data-cc-auth-script data-src="${moduleFile}?v=${version}"></script>\n`+out.slice(pos);
+  }
+  return out;
+}
 
 /* El constructor histórico puede dejar dos etiquetas del mismo archivo cuando
    una copia usa atributos como defer/data-* y otra es la versión final añadida
@@ -85,6 +102,17 @@ html=html.replace(
   '<small>Meta recuperación</small><strong>${pct(c.recoveryTarget)}</strong>',
   '<small>Meta recuperación</small><strong>${c.recoveryTarget?pct(c.recoveryTarget):\'Definir según contrato\'}</strong>'
 );
+/* 2B. ALTA CONTRACTUAL: presupuesto, fechas, plazo y estado del proyecto son
+      referencias, no hechos contractuales. Un contrato nuevo inicia vacío. */
+replaceRequired('nuevo contrato sin datos heredados del proyecto',"function contractData(p,c){const pDays=p.executionDays||(p.start&&p.end?daysBetween(p.start,p.end):0);return c||{id:null,projectId:p.id,number:'',contractor:'',originalAmount:p.budget,currentAmount:p.budget,signature:'',start:p.start||'',executionDays:pDays||baseExecutionDays(p.budget,p.type),end:p.end||addExecutionDays(p.start,pDays||baseExecutionDays(p.budget,p.type)),durationManual:false,status:'Vigente',advanceStatus:'No solicitado',advanceRequestedPct:0,advanceApproved:0,advancePaid:0,advancePaymentDate:'',recoveryTarget:null,controls:contractControlDefaults(),notes:''}}","function contractData(p,c){return c||{id:null,projectId:p.id,number:'',contractor:'',originalAmount:'',currentAmount:'',signature:'',start:'',executionDays:null,end:'',durationManual:false,status:'Borrador',advanceStatus:'No solicitado',advanceRequestedPct:null,advanceApproved:null,advancePaid:null,advancePaymentDate:'',recoveryTarget:null,controls:{},notes:''}}");
+html=html.replace('value="${x.originalAmount}"','value="${x.originalAmount??\'\'}"');
+html=html.replace('value="${x.currentAmount}"','value="${x.currentAmount??\'\'}"');
+html=html.replace('value="${currentDays||initialSuggestion.days}"','value="${currentDays||\'\'}"');
+replaceRequired('plazo contractual solo como sugerencia visual',"const refreshDuration=(force=false)=>{const sg=learnedExecutionDays($('#cOriginal').value,p.type,p.id);if(force||!daysManual||!$('#cDays').value){$('#cDays').value=sg.days;daysManual=false}$('#cDaysHint').textContent=`Sugerido: ${sg.days} días · Base por monto: ${sg.base} días`;$('#cLearnInfo').innerHTML=`<b>${esc(sg.label)}</b><br>Al guardar este contrato, el monto y el plazo confirmado se incorporan como referencia para próximas sugerencias.`;if($('#cStart').value&&$('#cDays').value&&!daysManual)$('#cEnd').value=addExecutionDays($('#cStart').value,$('#cDays').value)};","const refreshDuration=()=>{const sg=learnedExecutionDays($('#cOriginal').value,p.type,p.id);$('#cDaysHint').textContent=`Sugerencia: ${sg.days} días · no se guardará hasta que la confirmes`;$('#cLearnInfo').innerHTML=`<b>${esc(sg.label)}</b><br>La sugerencia es solo una referencia. El plazo contractual queda vacío hasta que lo confirmes.`;if($('#cStart').value&&$('#cDays').value&&!daysManual)$('#cEnd').value=addExecutionDays($('#cStart').value,$('#cDays').value)};");
+html=html.replace("days=Math.max(1,Math.trunc(Number($('#cDays').value)||sg.days));const data={","rawDays=$('#cDays').value,days=rawDays===''?null:Math.max(1,Math.trunc(Number(rawDays)||0));const data={");
+html=html.replace("executionDays:days,end:$('#cEnd').value||addExecutionDays($('#cStart').value,days)","executionDays:days,end:$('#cEnd').value||($('#cStart').value&&days?addExecutionDays($('#cStart').value,days):'')");
+html=html.replace("p.executionDays=data.executionDays;rememberExecutionDuration(p.id,data.originalAmount,p.type,data.executionDays,'contrato');","if(data.executionDays)p.executionDays=data.executionDays;if(Number(data.originalAmount)>0&&Number(data.executionDays)>0)rememberExecutionDuration(p.id,data.originalAmount,p.type,data.executionDays,'contrato');");
+html=html.replace("toast(`Contrato guardado · plazo ${data.executionDays} días.`)","toast(data.executionDays?`Contrato guardado · plazo ${data.executionDays} días.`:'Contrato guardado. Plazo pendiente de confirmar.')");
 
 const advanceGuaranteeAlert="if(c.advanceStatus==='Pagado'&&!db.guarantees.some(g=>g.contractId===c.id&&g.type==='Anticipo'))out.push({level:'danger',text:'Existe anticipo pagado y no se ha registrado la Garantía de Anticipo.'});";
 const recoveryAlert=advanceGuaranteeAlert+"if(c.advanceStatus==='Pagado'&&!Number(c.recoveryTarget||0))out.push({level:'danger',text:'Existe anticipo pagado, pero no se ha definido la meta contractual de amortización/recuperación del anticipo.'});";
@@ -118,6 +146,7 @@ const bootPos=html.indexOf(bootEnd);
 if(bootPos<0)throw new Error('No se encontró el cierre del núcleo para aislar módulos autenticados.');
 const cut=bootPos+bootEnd.length;
 let head=html.slice(0,cut),tail=html.slice(cut);
+if(tail.includes('data-cc-auth-plan')){tail=reconcileExistingAuthPlan(tail);html=head+tail}
 if(!tail.includes('data-cc-auth-plan')){
   /* El antiguo project-tabs-complete cargaba estas dependencias de forma
      dinámica. Ahora se garantiza una sola copia aquí, con versiones y orden

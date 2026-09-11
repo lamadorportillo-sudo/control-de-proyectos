@@ -79,6 +79,7 @@ function createSidebar(shell){
       <button class="cc-side-btn" data-route="inicio"><span class="cc-side-icon">⌂</span><span>Inicio</span></button>
       <button class="cc-side-btn" data-route="proyectos"><span class="cc-side-icon">▦</span><span>Proyectos</span></button>
       <button class="cc-side-btn" data-route="contratos"><span class="cc-side-icon">▤</span><span>Contratos</span></button>
+      <button class="cc-side-btn" data-route="presupuesto"><span class="cc-side-icon">▧</span><span>Presupuesto</span></button>
       <button class="cc-side-btn" data-route="pagos"><span class="cc-side-icon">$</span><span>Pagos / Estimaciones</span></button>
       <button class="cc-side-btn" data-route="visitas"><span class="cc-side-icon">⌖</span><span>Visitas de obra</span></button>
       <button class="cc-side-btn" data-route="garantias"><span class="cc-side-icon">◇</span><span>Garantías</span></button>

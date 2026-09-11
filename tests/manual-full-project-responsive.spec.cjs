@@ -57,13 +57,14 @@ test('simulación manual integral de un proyecto municipal inventado',async({pag
   await expect(page.locator('#ccSidebar')).toBeVisible({timeout:20000});await shot(page,ti,'01-inicio-sin-proyectos');m.pages.push('Inicio vacío');
 
   // CREACIÓN DEL PROYECTO
-  await click(page,'[data-command="project"],#newProjectBtn',m);m.stage='Nuevo proyecto';await modal(page,'Nuevo proyecto',m);
+  await click(page,'#ccCommandbar [data-command="project"],#newProjectBtn:visible',m);m.stage='Nuevo proyecto';await modal(page,'Nuevo proyecto',m);
   await fill(page,'#pCode',P.code,m);await fill(page,'#pName',P.name,m);await fill(page,'#pLocation',P.location,m);await sel(page,'#pType','Obra',m);await fill(page,'#pBudget',P.budget,m);await fill(page,'#pStart','2026-09-01',m);await fill(page,'#pDays','100',m);await sel(page,'#pStatus','Proceso de contratación',m);await fill(page,'#pDescription',P.description,m);await click(page,'#projectForm button.btn.primary',m);
-  await expect(page.locator('body')).toContainText(P.code);await shot(page,ti,'02-proyecto-guardado-pero-en-inicio');
-  const stillHome=await page.locator('#ccSidebar [data-route="inicio"].active').count();
-  if(stillHome){m.findings.push('Al guardar un proyecto nuevo, el sistema permanece en Inicio. Para continuar el expediente hay que entrar otra vez a Proyectos: paso extra innecesario.');}
-  await click(page,'#ccSidebar [data-route="proyectos"]',m);await expect(page.locator('#content')).toContainText(P.code);
-  await click(page,'#content [data-open],#content [data-ccx-open]',m);await expect(page.locator('#tabBody')).toBeVisible();await shot(page,ti,'03-expediente-nuevo');
+  await expect(page.locator('body')).toContainText(P.code);
+  await expect(page.locator('#tabBody'),'Guardar un proyecto nuevo debe abrir su expediente directamente').toBeVisible({timeout:12000});
+  await expect(page.locator('#content')).toContainText(P.name);
+  await shot(page,ti,'02-proyecto-guardado-expediente-directo');
+  m.findings.push('Alta directa verificada: al guardar el proyecto, el sistema abre inmediatamente su expediente sin volver al listado ni exigir una segunda búsqueda.');
+  await shot(page,ti,'03-expediente-nuevo');
 
   // PROCESO Y OFERTAS
   await tab(page,'procurement',m);await click(page,'#editProcurement',m);await modal(page,'Datos del proceso',m);

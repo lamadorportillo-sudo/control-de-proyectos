@@ -132,6 +132,23 @@ async function restoreSnapshot(reason='offline'){
   return true;
 }
 function entityMap(list){const m=new Map();arr(list).forEach((x,i)=>m.set(x&&x.id!=null?String(x.id):`__idx_${i}`,x));return m}
+function plainRecord(v){return !!v&&typeof v==='object'&&!Array.isArray(v)}
+function mergeRecordFields(base,local,server,path,conflicts){
+  const b=plainRecord(base)?base:{},l=plainRecord(local)?local:{},s=plainRecord(server)?server:{},out={};
+  const keys=new Set([...Object.keys(b),...Object.keys(l),...Object.keys(s)]);
+  for(const key of keys){
+    const bv=b[key],lv=l[key],sv=s[key],lc=!eq(lv,bv),sc=!eq(sv,bv),field=`${path}:${key}`;
+    if(!lc){if(sv!==undefined)out[key]=sv;continue}
+    if(!sc){if(lv!==undefined)out[key]=lv;continue}
+    if(eq(lv,sv)){if(lv!==undefined)out[key]=lv;continue}
+    if(plainRecord(lv)&&plainRecord(sv)&&(bv===undefined||plainRecord(bv))){
+      out[key]=mergeRecordFields(bv,lv,sv,field,conflicts);continue
+    }
+    conflicts.push(field);
+    if(lv!==undefined)out[key]=lv;
+  }
+  return out
+}
 function mergeArray(base,local,server,path,conflicts){
   const bm=entityMap(base),lm=entityMap(local),sm=entityMap(server),keys=new Set([...bm.keys(),...lm.keys(),...sm.keys()]),out=[];
   for(const k of keys){
@@ -139,6 +156,9 @@ function mergeArray(base,local,server,path,conflicts){
     if(!lc){if(s!==undefined)out.push(s);continue}
     if(!sc){if(l!==undefined)out.push(l);continue}
     if(eq(l,s)){if(l!==undefined)out.push(l);continue}
+    if(l!==undefined&&s!==undefined&&plainRecord(l)&&plainRecord(s)&&(b===undefined||plainRecord(b))){
+      out.push(mergeRecordFields(b,l,s,`${path}:${k}`,conflicts));continue
+    }
     conflicts.push(`${path}:${k}`);
     if(l!==undefined)out.push(l);
   }
@@ -296,7 +316,8 @@ window.ccOffline={
   markPending,
   syncNow,
   scheduleSync,
-  restore:restoreSnapshot
+  restore:restoreSnapshot,
+  mergePreview:(base,local,server)=>threeWayMerge(clone(base),clone(local),clone(server))
 };
 
 window.addEventListener('offline',()=>{emit('offline',{message:'Sin conexión. Puedes seguir trabajando; los cambios se guardan en este dispositivo.'});persistSnapshot({pending:runtimeState.pendingCount>0,pendingCount:runtimeState.pendingCount||0})});

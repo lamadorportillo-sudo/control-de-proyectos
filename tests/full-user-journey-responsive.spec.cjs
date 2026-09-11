@@ -80,12 +80,13 @@ for(const vp of [{name:'desktop',width:1366,height:768},{name:'tablet',width:102
    await expect(page.locator('#ccSidebar [data-route="proyectos"]')).toHaveClass(/active/);
    await noOverflow(page,`${vp.name} proyectos`);
 
-   // 4. Búsqueda como la haría el usuario y apertura del expediente.
-   const search=page.locator('#ccGlobalSearch');await expect(search).toBeVisible();
-   await search.fill('QA-RECORRIDO-001');await search.press('Enter');
+   // 4. La UX vigente es search-first: buscar dentro de Proyectos y abrir únicamente el resultado visible.
+   const search=page.locator('#zordonProjectSearch,[data-zordon-input]').first();
+   await expect(search).toBeVisible({timeout:8000});
+   await search.fill('QA-RECORRIDO-001');
    await expect(page.locator('#content')).toContainText('QA-RECORRIDO-001',{timeout:8000});
-   const open=page.locator(`[data-open="${PROJECT_ID}"], [data-ccx-open="${PROJECT_ID}"]`).first();
-   await expect(open).toBeVisible();await open.click();
+   const open=page.locator(`[data-open="${PROJECT_ID}"]:visible, [data-ccx-open="${PROJECT_ID}"]:visible`).first();
+   await expect(open).toBeVisible({timeout:8000});await open.click();
    await expect(page.locator('#tabBody')).toBeVisible({timeout:12000});
    await expect(page.locator('#content')).toContainText('Proyecto de prueba recorrido completo');
    await noOverflow(page,`${vp.name} expediente`);

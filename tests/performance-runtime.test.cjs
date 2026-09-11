@@ -30,6 +30,7 @@ assert(fs.existsSync('service-worker-v1.js'),'debe publicar el trabajador de cac
 const worker=fs.readFileSync('service-worker-v1.js','utf8');
 assert.match(worker,/request\.method!==['"]GET['"]/,'la caché no debe interceptar escrituras');
 assert.match(worker,/url\.origin!==self\.location\.origin/,'la caché debe limitarse al mismo origen');
+assert.doesNotMatch(worker,/cache\.match\(request,\{ignoreSearch:true\}\)/,'los assets versionados deben recuperarse por URL exacta para no servir JS anterior');
 assert.match(src,/updateViaCache:'none'/,'la actualización del service worker no puede depender de caché');
 assert.match(builder,/html\.replace\(firstFeature/,'el generador debe posicionar el coordinador antes del primer módulo funcional');
 

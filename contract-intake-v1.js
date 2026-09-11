@@ -43,9 +43,9 @@ function blankContract(p){
   return{
     id:makeId(),projectId:p.id,
     number:'',contractor:'',originalAmount:null,currentAmount:null,
-    signature:'',start:'',executionDays:0,end:'',durationManual:false,
-    status:'Borrador',advanceStatus:'No solicitado',advanceRequestedPct:0,
-    advanceApproved:0,advancePaid:0,advancePaymentDate:'',recoveryTarget:null,
+    signature:'',start:'',executionDays:null,end:'',durationManual:false,
+    status:'Borrador',advanceStatus:'No solicitado',advanceRequestedPct:null,
+    advanceApproved:null,advancePaid:null,advancePaymentDate:'',recoveryTarget:null,
     controls:controls(),notes:'',storedDocuments:[],
     intakeStatus:'pending_review',createdAt:now(),updatedAt:now()
   };

@@ -83,6 +83,7 @@ if(!html.includes('projects-list-fix-v1')) html=html.replace('</head>',listCss+'
 html=html.replace(/<!-- cc-critical-hints:start -->[\s\S]*?<!-- cc-critical-hints:end -->\s*/gi,'');
 const preAuthVersions=new Map(preAuthModules);
 const canonicalVersions=new Map([...preAuthModules,...supplementalModules]);
+const canonicalVersions=new Map([...preAuthModules,...supplementalModules]);
 const privateAccessVersion=preAuthVersions.get('private-access-v1.js');
 if(!privateAccessVersion)throw new Error('El manifiesto no define la versión de private-access-v1.js.');
 const criticalHints=`<!-- cc-critical-hints:start --><link rel="preconnect" href="https://flethujkrharehjikwgj.supabase.co" crossorigin><link rel="preload" href="performance-runtime-v1.js?v=${PERFORMANCE_VERSION}" as="script"><link rel="preload" href="private-access-v1.js?v=${privateAccessVersion}" as="script"><link rel="preload" href="workspace-access-v1.js?v=20260820-master4" as="script"><link rel="preload" href="engineer-chatbot-v3.js?v=20260824-ai5" as="script"><link rel="preload" href="halu-engineer-cutout-v4.webp" as="image" type="image/webp"><!-- cc-critical-hints:end -->`;

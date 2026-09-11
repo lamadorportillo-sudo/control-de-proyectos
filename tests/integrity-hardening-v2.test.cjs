@@ -21,6 +21,10 @@ assert.equal(context.db.visits[1].status,'Con observaciones','reabre el seguimie
 assert.equal(context.db.visits[2].status,'Abierta','conserva el estado cuando no hay observaciones');
 assert.equal(saved.length,1,'persiste una sola sincronizacion del lote');
 
+const integritySource=fs.readFileSync('integrity-hardening-v2.js','utf8');
+assert.match(integritySource,/const status=form\.querySelector\('#vStatus'\);[\s\S]*if\(!status\)return;[\s\S]*form\.dataset\.integrityV2='1'/,'la visita no debe marcarse protegida antes de que exista el selector de estado');
+assert.match(integritySource,/status\.disabled=true;status\.title='El estado se determina por las observaciones pendientes o atendidas\.'/,'el estado de visita debe quedar automático y no editable');
+
 const report=fs.readFileSync('report-professional-v1.js','utf8');
 assert.match(report,/aprobada\|aprobado\|pagada\|pagado/,'los informes filtran estados certificados');
 assert.match(report,/!e\.voidedAt/,'los informes excluyen estimaciones anuladas');

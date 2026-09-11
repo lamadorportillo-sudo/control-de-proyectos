@@ -71,6 +71,7 @@ for(let cycle=1;cycle<=100;cycle++){
   check(!forbiddenRuntimeModules.some(name=>runtime.includes(name)),`${p}: performance-runtime volvió a cargar centros funcionales`);
   check(/Network-first/i.test(sw),`${p}: service worker dejó de ser network-first`);
   check(/cache:'no-store'/.test(sw),`${p}: service worker no fuerza recurso fresco`);
+  check(!/cache\.match\(request,\{ignoreSearch:true\}\)/.test(sw),`${p}: assets versionados pueden ignorar su versión y recuperar JS anterior`);
   check(stable.includes('body.cc-portal-v2 #ccxNav{display:none!important}'),`${p}: navegación duplicada puede reaparecer`);
   check(stable.includes('.cc-global-search:before{content:none!important'),`${p}: puede reaparecer glifo defectuoso de búsqueda`);
   check(startup.includes("page.locator('#ccSidebar')"),`${p}: prueba autenticada no verifica sidebar actual`);
@@ -130,13 +131,13 @@ check(stable.includes('overflow-x:clip!important'), 'Falta protección contra de
 check(stable.includes('.exec-visual{padding-right:76px!important'), 'Falta reserva visual para el asistente');
 
 /* Arquitectura del runtime de rendimiento: solo rendimiento + caché. */
-check(runtime.includes('COORDINADOR DE RENDIMIENTO DEL DOM V7 · SIN CARGA FUNCIONAL'),'Versión inesperada del coordinador de rendimiento');
+check(runtime.includes('COORDINADOR DE RENDIMIENTO DEL DOM V8.1 · INTERFAZ ORDENADA'),'Versión inesperada del coordinador de rendimiento');
 check(!/function\s+scriptOnce\b/.test(runtime),'performance-runtime volvió a declarar scriptOnce');
 check(!/document\.createElement\(["']script["']\)/.test(runtime),'performance-runtime volvió a crear scripts');
 for(const name of forbiddenRuntimeModules)check(!runtime.includes(name),`performance-runtime no debe referenciar módulo funcional: ${name}`);
 
 /* Sintaxis mínima de versiones críticas y prevención de caché regresiva. */
-check(/cc-static-v1-20260903-recovery-v2/.test(sw),'Nombre de caché crítico inesperado');
+check(/cc-static-v1-20260911-stable-v3/.test(sw),'Nombre de caché crítico inesperado');
 check(/updateViaCache:'none'/.test(runtime),'Registro de service worker permite caché de actualización');
 check(/serviceWorker\.register/.test(runtime),'El coordinador dejó de registrar el service worker');
 

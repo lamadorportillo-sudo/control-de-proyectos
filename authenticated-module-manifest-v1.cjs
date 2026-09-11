@@ -28,7 +28,7 @@ const supplementalModules=[
      Sus versiones viven aquí para que arquitectura y publicación prueben
      exactamente el mismo artefacto. */
   ['project-tabs-complete-v1.js','20260831-tabscomplete34'],
-  ['ui-navigation-single-source-v1.js','20260905-singlenav6'],
+  ['ui-navigation-single-source-v1.js','20260911-alertaudit10'],
   ['security-runtime-v1.js','20260904-security4'],
   ['mfa-security-v1.js','20260824-mfa4'],
   ['security-center-v1.js','20260823-securitycenter4'],
@@ -45,7 +45,7 @@ const supplementalModules=[
   ['report-export-css-fix-v1.js','20260821-reportcss1'],
   ['document-qr-v1.js','20260831-docqr1'],
   ['transparency-exec-bridge-v1.js','20260821-trbridge1'],
-  ['transparency-portal-v1.js','20260822-transparency1'],
+  ['transparency-portal-v1.js','20260911-transparency4'],
   ['transparency-storage-v1.js','20260821-trstorage1'],
   ['budget-search-fix-v1.js','20260821-budgetsearch1'],
   /* El dashboard evaluativo histórico observa documentElement completo. La
@@ -80,7 +80,7 @@ const supplementalModules=[
   ['contract-payment-documents-v1.js','20260904-advance-docs4'],
   /* Permite adjuntar el contrato real y completar/corregir la ficha sin rehacer el expediente. */
   ['contract-file-repository-v2.js','20260910-intake1'],
-  ['contract-intake-v1.js','20260910-intake1'],
+  ['contract-intake-v1.js','20260911-intake2'],
   ['contract-preview-v1.js','20260904-preview2'],
   /* ZORDON antes del cierre técnico: buscador y densidad se cargan únicamente
      desde este plan para impedir versiones históricas o cargadores secundarios.

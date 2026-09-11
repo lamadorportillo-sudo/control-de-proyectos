@@ -1,7 +1,7 @@
 const fs=require('fs');
 const zlib=require('zlib');
 const vm=require('vm');
-const {retiredModules,preAuthModules,supplementalModules}=require('./authenticated-module-manifest-v1.cjs');
+const {preAuthModules,buildLateModules}=require('./authenticated-module-manifest-v1.cjs');
 const PERFORMANCE_VERSION='20260904-perf10';
 
 const files=Array.from({length:12},(_,i)=>`bundle-${String(i+1).padStart(2,'0')}.js`);
@@ -82,7 +82,6 @@ if(!html.includes('projects-list-fix-v1')) html=html.replace('</head>',listCss+'
 // Descubre antes los recursos críticos mientras termina de analizar el HTML histórico.
 html=html.replace(/<!-- cc-critical-hints:start -->[\s\S]*?<!-- cc-critical-hints:end -->\s*/gi,'');
 const preAuthVersions=new Map(preAuthModules);
-const canonicalVersions=new Map([...preAuthModules,...supplementalModules]);
 const privateAccessVersion=preAuthVersions.get('private-access-v1.js');
 if(!privateAccessVersion)throw new Error('El manifiesto no define la versión de private-access-v1.js.');
 const criticalHints=`<!-- cc-critical-hints:start --><link rel="preconnect" href="https://flethujkrharehjikwgj.supabase.co" crossorigin><link rel="preload" href="performance-runtime-v1.js?v=${PERFORMANCE_VERSION}" as="script"><link rel="preload" href="private-access-v1.js?v=${privateAccessVersion}" as="script"><link rel="preload" href="workspace-access-v1.js?v=20260820-master4" as="script"><link rel="preload" href="engineer-chatbot-v3.js?v=20260824-ai5" as="script"><link rel="preload" href="halu-engineer-cutout-v4.webp" as="image" type="image/webp"><!-- cc-critical-hints:end -->`;
@@ -144,60 +143,7 @@ html=html.replace(firstFeature,`<script src="${performanceModule}?v=${performanc
 // Los módulos funcionales se cargan de forma directa para no depender de cachés o cargadores secundarios.
 const lateModules=[
   ['workspace-access-v1.js','20260820-master4'],
-  ['private-access-v1.js','20260823-private5'],
-  ['password-recovery-v1.js','20260822-password1'],
-  ['admin-users-v1.js','20260823-admin-users4'],
-  ['security-runtime-v1.js','20260823-security1'],
-  ['security-center-v1.js','20260823-security-center1'],
-  ['mfa-security-v1.js','20260824-mfa4'],
-  ['alerts-compact-v1.js','20260820-master4'],
-  ['dashboard-executive-v1.js','20260820-master4'],
-  ['engineering-ux-v1.js','20260820-master4'],
-  ['procurement-thresholds-v1.js','20260820-gacetas4'],
-  ['contracts-center-v1.js','20260820-contracts2'],
-  ['corporate-ui-v1.js','20260820-corporate3'],
-  ['corporate-polish-v1.js','20260820-polish6'],
-  ['procurement-award-fix-v1.js','20260820-award3'],
-  ['visit-photos-v1.js','20260820-visits1'],
-  ['award-notices-v1.js','20260820-notes1'],
-  ['visit-photo-persistence-v2.js','20260820-photopersist2'],
-  ['visit-print-v3.js','20260820-visitprint3'],
-  ['procurement-invitations-v2.js','20260820-invitations2'],
-  ['procurement-offers-invitees-v1.js','20260822-offersinvitees2'],
-  ['summary-budget-law-v1.js','20260820-summarybudgetlaw1'],
-  ['project-search-clean-v1.js','20260820-searchclean1'],
-  ['storage-quota-fix-v1.js','20260820-storagequota2'],
-  ['project-tabs-complete-v1.js','20260828-tabscomplete32'],
-  ['feature-lazy-loader-v1.js','20260824-lazy3'],
-  ['procurement-process-save-v4.js','20260820-procsave4'],
-  ['contract-integrity-fix-v1.js','20260822-integrity1'],
-  ['integrity-hardening-v2.js','20260822-integrity2'],
-  ['cross-module-sync-v1.js','20260822-relations1'],
-  ['programacion-control-v1.js','20260823-programacion4'],
-  ['web-knowledge-v2.js','20260822-short1'],
-  ['engineering-manual-reference-v1.js','20260823-manual1'],
-  ['adaptive-chat-learning-v1.js','20260822-global1'],
-  ['halu-page-controller-v1.js','20260824-control1'],
-  ['engineer-chatbot-v3.js','20260824-ai5'],
-  ['halu-avatar-motion-v1.js','20260822-place13'],
-  ['transparency-portal-v1.js','20260822-transparency1'],
-  ['photo-gallery-polish-v2.js','20260822-photopolish2'],
-  ['ui-theme-unifier-v1.js','20260822-theme1'],
-  ['engineering-visibility-fix-v1.js','20260822-visibility1'],
-  ['ui-operational-polish-v1.js','20260822-operational1'],
-  ['home-executive-fix-v2.js','20260822-home2'],
-  ['ui-visibility-audit-v1.js','20260822-uiaudit1'],
-  ['portfolio-redesign-v1.js','20260821-portfolio3'],
-  ['project-portfolio-detail-v1.js','20260821-projectdetail2'],
-  ['portfolio-gallery-v1.js','20260828-gallery3'],
-  ['portfolio-screen-fix-v1.js','20260821-screenfix1'],
-  ['project-photo-story-v1.js','20260821-photostory1'],
-];
-const activeLateModules=lateModules
-  .filter(([module])=>!retiredModules.includes(module))
-  .map(([module,version])=>[module,canonicalVersions.get(module)||version]);
-const skippedRetired=lateModules.filter(([module])=>retiredModules.includes(module)).map(([module])=>module);
-if(skippedRetired.length)console.log(`Módulos retirados omitidos por el constructor: ${skippedRetired.join(', ')}`);
+  ['private-access-v1.js',const activeLateModules=buildLateModules;
 for(const [module,version] of activeLateModules){
   if(!fs.existsSync(module)) throw new Error(`No se encontró ${module}.`);
   try{new vm.Script(fs.readFileSync(module,'utf8'),{filename:module})}catch(err){throw new Error(`JavaScript inválido en ${module}: ${err.message}`)}

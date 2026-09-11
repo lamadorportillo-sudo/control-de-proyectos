@@ -9,7 +9,7 @@ assert(builder.includes('securitySessionId:priorSession.securitySessionId'),'El 
 assert(builder.includes('deviceLabel:priorSession.deviceLabel'),'El generador debe conservar la identificación del dispositivo al renovar tokens.');
 assert.deepEqual(preAuthModules.map(([file])=>file),['private-access-v1.js','password-recovery-v1.js'],'solo login y recuperación pueden ejecutarse antes de autenticar');
 assert.equal(preAuthModules.find(([file])=>file==='private-access-v1.js')?.[1],'20260904-private6','la versión del login seguro debe venir del manifiesto');
-assert(builder.includes('preAuthVersions.get(module)||version'),'el generador debe aplicar las versiones previas desde el manifiesto y no desde un literal duplicado');
+assert(builder.includes('canonicalVersions.get(module)||version'),'el generador debe aplicar toda versión centralizada desde el manifiesto canónico');
 assert(builder.includes("PERFORMANCE_VERSION='20260904-perf10'"),'el generador debe publicar el coordinador de rendimiento vigente');
 assert(builder.includes("['admin-users-v1.js','20260823-admin-users4']"),'el generador debe publicar la versión vigente de administración de usuarios.');
 assert(builder.includes("['project-tabs-complete-v1.js','20260828-tabscomplete32']"),'la base histórica puede conservar la referencia de pestañas, que el pipeline crítico actualiza y valida después');

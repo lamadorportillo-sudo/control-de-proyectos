@@ -1,7 +1,7 @@
 const fs=require('fs');
 const zlib=require('zlib');
 const vm=require('vm');
-const {retiredModules,preAuthModules}=require('./authenticated-module-manifest-v1.cjs');
+const {retiredModules,preAuthModules,supplementalModules}=require('./authenticated-module-manifest-v1.cjs');
 const PERFORMANCE_VERSION='20260904-perf10';
 
 const files=Array.from({length:12},(_,i)=>`bundle-${String(i+1).padStart(2,'0')}.js`);
@@ -82,6 +82,7 @@ if(!html.includes('projects-list-fix-v1')) html=html.replace('</head>',listCss+'
 // Descubre antes los recursos críticos mientras termina de analizar el HTML histórico.
 html=html.replace(/<!-- cc-critical-hints:start -->[\s\S]*?<!-- cc-critical-hints:end -->\s*/gi,'');
 const preAuthVersions=new Map(preAuthModules);
+const canonicalVersions=new Map([...preAuthModules,...supplementalModules]);
 const privateAccessVersion=preAuthVersions.get('private-access-v1.js');
 if(!privateAccessVersion)throw new Error('El manifiesto no define la versión de private-access-v1.js.');
 const criticalHints=`<!-- cc-critical-hints:start --><link rel="preconnect" href="https://flethujkrharehjikwgj.supabase.co" crossorigin><link rel="preload" href="performance-runtime-v1.js?v=${PERFORMANCE_VERSION}" as="script"><link rel="preload" href="private-access-v1.js?v=${privateAccessVersion}" as="script"><link rel="preload" href="workspace-access-v1.js?v=20260820-master4" as="script"><link rel="preload" href="engineer-chatbot-v3.js?v=20260824-ai5" as="script"><link rel="preload" href="halu-engineer-cutout-v4.webp" as="image" type="image/webp"><!-- cc-critical-hints:end -->`;
@@ -194,7 +195,7 @@ const lateModules=[
 ];
 const activeLateModules=lateModules
   .filter(([module])=>!retiredModules.includes(module))
-  .map(([module,version])=>[module,preAuthVersions.get(module)||version]);
+  .map(([module,version])=>[module,canonicalVersions.get(module)||version]);
 const skippedRetired=lateModules.filter(([module])=>retiredModules.includes(module)).map(([module])=>module);
 if(skippedRetired.length)console.log(`Módulos retirados omitidos por el constructor: ${skippedRetired.join(', ')}`);
 for(const [module,version] of activeLateModules){

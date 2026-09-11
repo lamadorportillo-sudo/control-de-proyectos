@@ -78,6 +78,9 @@ const supplementalModules=[
   ['contract-official-format-v1.js','20260831-phone3'],
   ['contract-document-safety-v1.js','20260904-docsafety3'],
   ['contract-payment-documents-v1.js','20260904-advance-docs4'],
+  /* Permite adjuntar el contrato real y completar/corregir la ficha sin rehacer el expediente. */
+  ['contract-file-repository-v2.js','20260910-intake1'],
+  ['contract-intake-v1.js','20260910-intake1'],
   ['contract-preview-v1.js','20260904-preview2'],
   /* ZORDON antes del cierre técnico: buscador y densidad se cargan únicamente
      desde este plan para impedir versiones históricas o cargadores secundarios.

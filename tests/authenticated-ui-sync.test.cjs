@@ -10,6 +10,7 @@ assert.match(src,/event\.stopImmediatePropagation\(\)/,'Enter debe impedir que e
 assert.match(src,/view\.search=['"]['"]/,'el filtro literal del núcleo debe quedar vacío antes de renderizar Proyectos');
 assert.match(src,/view\.screen=['"]projects['"]/,'la búsqueda superior debe abrir la vista canónica de Proyectos');
 assert.match(src,/__ccProjectSearchBridge\?\.syncGlobalProjectSearch/,'la consulta debe delegarse al puente normalizado de ZORDON');
+assert.match(src,/#zordonProjectSearch,\[data-zordon-input\],#projectSearch/,'el fallback también debe priorizar el campo real de ZORDON');
 assert.match(src,/function restoreGlobalQuery\(query\)/,'la consulta visible debe restaurarse después de que renderApp reemplace la barra superior');
 assert.match(src,/document\.getElementById\(['"]ccGlobalSearch['"]\)/,'la restauración debe actuar sobre la barra global recién renderizada');
 assert.match(src,/restoreGlobalQuery\(query\);[\s\S]*syncProjectQuery\(query\)/,'la consulta visible y el motor ZORDON deben recibir el mismo valor');
@@ -22,6 +23,6 @@ assert.match(src,/pagehide/,'el observador debe desconectarse al abandonar la p�
 const idx=supplementalModules.findIndex(([name])=>name==='authenticated-ui-sync-v1.js');
 const zordon=supplementalModules.findIndex(([name])=>name==='zordon-project-search-v1.js');
 assert.ok(idx>zordon,'la sincronización debe cargarse después del buscador ZORDON');
-assert.equal(supplementalModules[idx][1],'20260905-authuisync2','la versión canónica debe invalidar la barra que perdía la consulta tras el rerender');
+assert.equal(supplementalModules[idx][1],'20260911-authuisync3','la versión canónica debe invalidar la barra que perdía la consulta tras el rerender');
 
 console.log('authenticated-ui-sync: Enter usa ZORDON, conserva la consulta visible y refresca decoraciones tardías sin bucles');

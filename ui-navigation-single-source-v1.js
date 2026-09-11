@@ -170,8 +170,8 @@ function goTransparency(){
 
 function openOperationalCenter(route){
  const leavingTransparency=screen()==='transparency';
+ try{view.screen='projects';view.projectId=null;view.tab='summary'}catch{}
  if(leavingTransparency){
-  try{view.screen='projects';view.projectId=null;view.tab='summary'}catch{}
   document.body.classList.remove('cc-transparency-active');
   /* Transparencia adapta la barra superior a su flujo mensual. Al abrir un
      centro operativo se recrea la barra general para no dejar acciones del

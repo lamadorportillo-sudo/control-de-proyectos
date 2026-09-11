@@ -208,7 +208,7 @@ for(const vp of [{name:'mobile',width:390,height:844,touch:true},{name:'desktop'
       }
       await clickRoute(page,vp,'proyectos');
       const search=page.locator('#ccGlobalSearch');await expect(search).toBeVisible();await search.fill('QA CONTRASTE');await search.press('Enter');await page.waitForTimeout(250);
-      const open=page.locator(`[data-ccx-open="${PROJECT_ID}"], [data-open="${PROJECT_ID}"]`).first();
+      const open=page.locator(`[data-ccx-open="${PROJECT_ID}"]:visible, [data-open="${PROJECT_ID}"]:visible`).first();
       await expect(open).toBeVisible();await open.click();await page.waitForSelector('#tabBody',{timeout:15000});await page.waitForTimeout(500);
       await assertContrast(page,`${vp.name} expediente`);
       const tabs=page.locator('nav.tabs button[data-tab], .tabs button[data-tab]');const count=await tabs.count();

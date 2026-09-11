@@ -448,7 +448,7 @@ function observeInterface(){
 function registerOffline(){
   if(!('serviceWorker' in navigator)||location.protocol!=='https:')return;
   const scope=new URL('.',location.href).pathname;
-  navigator.serviceWorker.register(`${scope}service-worker-v1.js?v=20260903-sw2`,{scope,updateViaCache:'none'})
+  navigator.serviceWorker.register(`${scope}service-worker-v1.js?v=20260911-sw3`,{scope,updateViaCache:'none'})
     .catch(error=>console.warn('Caché sin conexión no disponible.',error?.message||error));
 }
 

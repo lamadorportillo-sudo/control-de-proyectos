@@ -1,4 +1,4 @@
-const CACHE='cc-static-v1-20260903-recovery-v2';
+const CACHE='cc-static-v1-20260911-stable-v3';
 const STATIC_EXT=/\.(?:js|css|webp|png|jpg|jpeg|svg|woff2?|webmanifest)(?:\?|$)/i;
 const SHELL=['./','./index.html','./manifest.webmanifest','./performance-runtime-v1.js','./private-access-v1.js','./password-recovery-v1.js'];
 
@@ -51,7 +51,7 @@ self.addEventListener('fetch',event=>{
       if(response&&response.ok)event.waitUntil(cache.put(request,response.clone()));
       return response;
     }catch(error){
-      const cached=await cache.match(request)||await cache.match(request,{ignoreSearch:true});
+      const cached=await cache.match(request);
       if(cached)return cached;
       if(navigation){
         const shell=await cache.match(scoped('./index.html'),{ignoreSearch:true})||await cache.match(scoped('./'),{ignoreSearch:true});

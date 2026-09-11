@@ -23,9 +23,10 @@ assert.match(manual.jurisdictionNote,/Perú/i,'identifica correctamente la norma
 assert.match(manual.jurisdictionNote,/Honduras/i,'da prioridad a la normativa aplicable en Honduras');
 
 const builder=fs.readFileSync('build-pages.cjs','utf8');
-assert(builder.includes("['programacion-control-v1.js','20260823-programacion4']"),'el generador activa Programación y Control');
+const {supplementalModules,buildLateModules}=require('../authenticated-module-manifest-v1.cjs');
+assert(buildLateModules.some(([file,version])=>file==='programacion-control-v1.js'&&version==='20260823-programacion4'),'el manifiesto activa Programación y Control');
 assert(builder.includes('window.ccCurrentProjectId'),'el generador expone de forma controlada el expediente activo');
-assert(builder.includes("['engineering-manual-reference-v1.js','20260823-manual1']"),'el generador activa el manual técnico');
+assert(supplementalModules.some(([file,version])=>file==='engineering-manual-reference-v1.js'&&version==='20260823-manual2'),'el manifiesto activa el manual técnico vigente');
 const programacion=fs.readFileSync('programacion-control-v1.js','utf8');
 assert.match(programacion,/button\[data-tab\].*closest\('nav'\)/,'Programación y Control reconoce la navegación actual del expediente');
 assert.match(programacion,/codes\.includes\(String\(p\.code/,'Programación y Control identifica el expediente por su código visible');

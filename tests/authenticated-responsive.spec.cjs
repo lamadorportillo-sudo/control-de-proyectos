@@ -180,7 +180,7 @@ for (const vp of viewports) {
       await search.press('Enter');
       await expect(search).toHaveValue('QA RESP');
 
-      const open = page.locator(`[data-ccx-open="${PROJECT_ID}"], [data-open="${PROJECT_ID}"]`).first();
+      const open = page.locator(`[data-ccx-open="${PROJECT_ID}"]:visible, [data-open="${PROJECT_ID}"]:visible`).first();
       await expect(open).toBeVisible();
       await open.click();
       await page.waitForSelector('#tabBody', { timeout: 15000 });

@@ -57,7 +57,7 @@ function syncGlobalProjectSearch(query){
  let tries=0;
  const sync=()=>{
    const board=projectBoard();
-   const local=board?.querySelector('#projectSearch');
+   const local=board?.querySelector('#zordonProjectSearch,[data-zordon-input],#projectSearch');
    if(!board||!local){
      if(tries++<12)setTimeout(sync,60);
      return;

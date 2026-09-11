@@ -29,17 +29,16 @@ function reconcileExistingAuthPlan(source){
   let out=source;
   const loaderMarker='<script data-cc-auth-loader data-cc-auth-plan>';
   for(const [moduleFile,version] of supplementalModules){
-    const escaped=moduleFile.replace(/[.*+?^${}()|[\]\\]/g,'\\function escapeAttr(v){return String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
-');
-    const attrRe=new RegExp('data-src=(["\\\'])[^"\\\']*'+escaped+'(?:\\?[^"\\\']*)?\\1','gi');
+    const escaped=moduleFile.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const attrRe=new RegExp(`data-src=(["'])[^"']*${escaped}(?:\\?[^"']*)?\\1`,'gi');
     if(attrRe.test(out)){
       attrRe.lastIndex=0;
-      out=out.replace(attrRe,'data-src="'+moduleFile+'?v='+version+'"');
+      out=out.replace(attrRe,`data-src="${moduleFile}?v=${version}"`);
       continue;
     }
     const pos=out.indexOf(loaderMarker);
     if(pos<0)throw new Error('No se encontró el cargador autenticado para reconciliar el manifiesto.');
-    out=out.slice(0,pos)+'<script type="application/x-cc-auth" data-cc-auth-script data-src="'+moduleFile+'?v='+version+'"></script>\n'+out.slice(pos);
+    out=out.slice(0,pos)+`<script type="application/x-cc-auth" data-cc-auth-script data-src="${moduleFile}?v=${version}"></script>\n`+out.slice(pos);
   }
   return out;
 }

@@ -169,6 +169,15 @@ function goTransparency(){
 }
 
 function openOperationalCenter(route){
+ const leavingTransparency=screen()==='transparency';
+ if(leavingTransparency){
+  try{view.screen='projects';view.projectId=null;view.tab='summary'}catch{}
+  document.body.classList.remove('cc-transparency-active');
+  /* Transparencia adapta la barra superior a su flujo mensual. Al abrir un
+     centro operativo se recrea la barra general para no dejar acciones del
+     portal visibles en Deficiencias o Auditoría. */
+  Q('#ccCommandbar')?.remove();
+ }
  const api=route==='alertas'?window.__ccAlertsCenter:window.__ccAuditCenter;
  const open=()=>{const target=route==='alertas'?window.__ccAlertsCenter:window.__ccAuditCenter;if(target?.open){target.open();rememberRoute(route);syncActive(Q('#ccSidebar'));return true}return false};
  if(open())return true;

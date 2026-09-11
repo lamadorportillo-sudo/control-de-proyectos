@@ -15,7 +15,7 @@ const Q=(s,r=document)=>r.querySelector(s);
 const QA=(s,r=document)=>[...r.querySelectorAll(s)];
 const NativeObserver=window.__ccNativeMutationObserver||window.MutationObserver;
 const ROUTE_KEY='cc_main_route_v2';
-let queued=false,cleaning=false,sideObserver=null,observedSidebar=null;
+let queued=false,cleaning=false,sideObserver=null,observedSidebar=null,initialRouteRestored=false;
 
 function role(){try{return String(cloudRole||'')}catch{return''}}
 function screen(){try{return String(view?.screen||'')}catch{return''}}
@@ -184,6 +184,10 @@ function ensure(){
   side.dataset.groupedV4='1';
   side.dataset.navStable='1';
   ensureTransparency(side);ensureAdmin(side);watchSidebar(side);syncActive(side);
+  if(!initialRouteRestored){
+   initialRouteRestored=true;
+   if(storedRoute()==='transparencia'&&screen()==='projects')setTimeout(goTransparency,0);
+  }
  }finally{cleaning=false}
 }
 function queue(){if(queued)return;queued=true;const run=()=>{queued=false;ensure()};(window.requestAnimationFrame||setTimeout)(run)}

@@ -130,7 +130,7 @@ const buildOnlyModules=[
   ['feature-lazy-loader-v1.js','20260824-lazy3'],
   ['procurement-process-save-v4.js','20260820-procsave4'],
   ['contract-integrity-fix-v1.js','20260822-integrity1'],
-  ['integrity-hardening-v2.js','20260822-integrity2'],
+  ['integrity-hardening-v2.js','20260911-integrity3'],
   ['cross-module-sync-v1.js','20260822-relations1'],
   ['web-knowledge-v2.js','20260822-short1'],
   ['adaptive-chat-learning-v1.js','20260822-global1'],

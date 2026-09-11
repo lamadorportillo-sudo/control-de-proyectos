@@ -37,7 +37,9 @@ test('crear proyecto abre el expediente y la navegación no usa dashboard hereda
   await expect(page.locator('#ccxNav')).toBeHidden();
   await expect(page.locator('.hero-control-contractual')).toHaveCount(0);
 
-  await page.locator('[data-command="project"],#newProjectBtn').first().click();
+  const createProject=page.locator('[data-command="project"]:visible,#newProjectBtn:visible').first();
+  await expect(createProject,'Debe existir una acción visible para crear proyecto').toBeVisible();
+  await createProject.click();
   await expect(page.locator('#projectForm')).toBeVisible();
   await page.locator('#pCode').fill(CODE);
   await page.locator('#pName').fill('Proyecto QA de alta directa');

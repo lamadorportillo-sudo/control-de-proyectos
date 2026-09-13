@@ -55,7 +55,7 @@ test('Transparencia conserva identidad contractual y evita cruces entre proyecto
   assert.match(src,/sourceProjectId:p\.id/,'los proyectos importados deben conservar su id de origen');
   assert.match(src,/sourceContractId:x\.id/,'los contratos importados deben conservar su id de origen');
   assert.match(src,/String\(q\.projectId\|\|''\)===String\(p\.id\)/,'la búsqueda por número debe quedar limitada al proyecto correcto');
-  assert.doesNotMatch(src,/db\.contracts\.find\(q=>String\(q\.number\|\|'?'?\)===String\(x\.contractNumber\)/,'no debe buscar contratos globalmente solo por número');
+  assert.doesNotMatch(src,/db\.contracts\.find\(q=>String\(q\.number/,'no debe buscar contratos globalmente solo por número');
 });
 
 test('sincronizar hacia la base general no borra datos contractuales confirmados',()=>{

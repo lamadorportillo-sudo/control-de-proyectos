@@ -5,6 +5,7 @@ if(window.__CC_PROJECT_DETAIL_V2__)return;window.__CC_PROJECT_DETAIL_V2__=true;
 const NativeObserver=window.__ccNativeMutationObserver||window.MutationObserver;
 const esc2=v=>typeof esc==='function'?esc(String(v??'')):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const pct2=v=>Math.max(0,Math.min(100,Number(v)||0));
+const activeContract=(list,projectId)=>Array.isArray(list)?list.filter(x=>String(x.projectId||'')===String(projectId||'')&&!x.voidedAt&&!x.voided_at).slice(-1)[0]||null:null;
 function moneyC(v){try{return typeof fmtC==='function'?fmtC(Number(v)||0):`L ${(Number(v)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`}catch{return'L 0.00'}}
 function dateText(v){try{return typeof dmy==='function'?dmy(v):(v||'—')}catch{return v||'—'}}
 function dayDiff(end){if(!end)return null;const a=new Date(),b=new Date(end+'T12:00:00');a.setHours(12,0,0,0);return Math.ceil((b-a)/86400000)}
@@ -14,7 +15,7 @@ function enhanceProject(){
     const content=document.getElementById('content');if(!content)return;
     if(content.querySelector('.cc-project-hero'))return;
     const p=(db.projects||[]).find(x=>x.id===view.projectId&&!x.deletedAt);if(!p)return;
-    const c=(db.contracts||[]).find(x=>x.projectId===p.id)||null;
+    const c=activeContract(db.contracts||[],p.id);
     const fin=typeof projectFinancials==='function'?projectFinancials(p,c):{};
     const prog=typeof projectAutomaticProgress==='function'?projectAutomaticProgress(p,c):{physical:0,financial:0};
     const end=c?.end||p.end||'',left=dayDiff(end),days=c?.executionDays||p.executionDays||0;

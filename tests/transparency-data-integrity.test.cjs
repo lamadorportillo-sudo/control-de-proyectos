@@ -49,3 +49,40 @@ test('solo existe un renderPortal activo y los archivos fuente siguen en Supabas
   assert.match(storage,/storage\/v1\/object/);
   assert.match(storage,/cloud:true/);
 });
+
+
+test('Transparencia conserva identidad contractual y evita cruces entre proyectos',()=>{
+  assert.match(src,/sourceProjectId:p\.id/,'los proyectos importados deben conservar su id de origen');
+  assert.match(src,/sourceContractId:x\.id/,'los contratos importados deben conservar su id de origen');
+  assert.match(src,/String\(q\.projectId\|\|''\)===String\(p\.id\)/,'la búsqueda por número debe quedar limitada al proyecto correcto');
+  assert.doesNotMatch(src,/db\.contracts\.find\(q=>String\(q\.number\|\|'?'?\)===String\(x\.contractNumber\)/,'no debe buscar contratos globalmente solo por número');
+});
+
+test('sincronizar hacia la base general no borra datos contractuales confirmados',()=>{
+  assert.match(src,/function trFillText\(/);
+  assert.match(src,/function trFillPositive\(/);
+  assert.match(src,/Sincronización completada sin sobrescribir datos confirmados/);
+  assert.doesNotMatch(src,/currentAmount:N\(x\.amount\),originalAmount:N\(x\.amount\),executionDays:N\(x\.days\)/);
+});
+
+test('Compras participa en la sincronización y el estado listo no depende del orden',()=>{
+  assert.match(src,/\['bids','quotations','purchases'\]/);
+  assert.match(src,/function selectionKey\(/);
+  assert.match(src,/selectionKey\(r\.readyCategories\)===selectionKey\(selected\)/);
+  assert.match(src,/readyCategories=\[\.\.\.state\.selected\]\.sort\(\)/);
+});
+
+test('Transparencia usa la zona horaria de Honduras y corrige el correo institucional heredado',()=>{
+  assert.match(src,/America\/Tegucigalpa/);
+  assert.match(storage,/America\/Tegucigalpa/);
+  assert.match(src,/lapazsantamaria@municipalidadhn\.info/);
+  assert.match(src,/lapazsantamaria@municipalidad\.info/,'debe reconocer únicamente el valor legado para migrarlo');
+  assert.doesNotMatch(src,/state=\{period:localStorage\.getItem\(STORE\)\|\|new Date\(\)\.toISOString\(\)\.slice\(0,7\)/);
+});
+
+test('la firma del Excel sale de la configuración institucional',()=>{
+  assert.match(src,/institution=db\?\.transparencySettings\|\|\{\}/);
+  assert.match(src,/institution\.signer/);
+  assert.match(src,/institution\.unit/);
+  assert.match(src,/institution\.municipality/);
+});

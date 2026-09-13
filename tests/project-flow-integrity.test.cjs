@@ -15,6 +15,9 @@ const alerts=read('alerts-center-v1.js');
 const stable=read('stabilize-core-v1.cjs');
 const progress=read('progress-separation-fix-v1.js');
 const changes=read('change-order-fix-v1.js');
+const chatbot=read('engineer-chatbot-v3.js');
+const technical=read('technical-control-v1.js');
+const build=read('build-pages.cjs');
 const manifest=read('authenticated-module-manifest-v1.cjs');
 
 test('las acciones del expediente y el resumen ignoran contratos anulados',()=>{
@@ -112,4 +115,17 @@ test('garantías nuevas requieren un contrato activo y los movimientos financier
 test('garantías históricas no deben disparar deficiencias del contrato vigente',()=>{
   assert.match(alerts,/!x\.contractId\|\|!c\|\|x\.contractId===c\.id/);
   assert.match(reports,/!g\.contractId\|\|!contract\|\|g\.contractId===contract\.id/);
+});
+
+
+test('ZORDON y control técnico conservan el contrato activo del expediente',()=>{
+  assert.match(chatbot,/activeContractForProject=projectId/);
+  assert.match(chatbot,/c=activeContractForProject\(p\.id\)/);
+  assert.match(chatbot,/Contrato activo:/);
+  assert.match(chatbot,/Expediente actual:/);
+  assert.match(technical,/!c\.voidedAt&&!c\.voided_at&&uuid\(c\.id\)/);
+  assert.match(technical,/rows\.slice\(-1\)\[0\]\?\.id/);
+  assert.ok(manifest.includes("['engineer-chatbot-v3.js','20260913-ai6']"));
+  assert.ok(manifest.includes("['technical-control-v1.js','20260913-controltecnico2']"));
+  assert.ok(build.includes('engineer-chatbot-v3.js?v=20260913-ai6'));
 });

@@ -33,9 +33,9 @@ const supplementalModules=[
   ['mfa-security-v1.js','20260824-mfa4'],
   ['security-center-v1.js','20260823-securitycenter4'],
   ['mobile-popup-fallback-v1.js','20260821-mobilepopup1'],
-  ['progress-separation-fix-v1.js','20260821-progresssep1'],
+  ['progress-separation-fix-v1.js','20260913-progresssep2'],
   ['programacion-control-v1.js','20260823-programacion4'],
-  ['change-order-fix-v1.js','20260905-changefix2'],
+  ['change-order-fix-v1.js','20260913-changefix3'],
   ['contract-penalty-card-v1.js','20260831-penalty2'],
   ['contract-explicit-rules-v1.js','20260904-explicit1'],
   /* El monto vigente no es un dato libre: se deriva del monto original más

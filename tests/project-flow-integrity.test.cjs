@@ -4,6 +4,7 @@ const fs=require('node:fs');
 
 const read=file=>fs.readFileSync(file,'utf8');
 const actions=read('project-functional-actions-v1.js');
+const contractsCenter=read('contracts-center-v1.js');
 const detail=read('project-detail-v2.js');
 const payments=read('payments-center-v1.js');
 const guarantees=read('guarantees-center-v1.js');
@@ -70,4 +71,12 @@ test('avance físico y órdenes de cambio usan únicamente el contrato activo',(
   assert.match(changes,/const c=p\?activeContract\(p\.id\):null/);
   assert.ok(manifest.includes("['progress-separation-fix-v1.js','20260913-progresssep2']"));
   assert.ok(manifest.includes("['change-order-fix-v1.js','20260913-changefix3']"));
+});
+
+
+test('el centro de contratos abre directamente la pestaña contractual',()=>{
+  assert.match(contractsCenter,/view\\.tab=['\"]contract['\"]/);
+  assert.doesNotMatch(contractsCenter,/view\\.tab=['\"]summary['\"]/);
+  assert.match(contractsCenter,/Abrir contrato/);
+  assert.ok(manifest.includes("['contracts-center-v1.js','20260913-contracts3']"));
 });

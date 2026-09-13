@@ -94,9 +94,9 @@ test('el núcleo del expediente usa contrato activo en dashboard, acciones y ren
 
 test('paneles e informes centrales excluyen registros anulados',()=>{
   assert.match(index,/db\.estimates\.filter\(e=>e\.contractId===c\.id&&!e\.voidedAt&&!e\.voided_at\)/);
-  assert.match(index,/db\.guarantees\.filter\(g=>g\.projectId===p\.id&&!g\.voidedAt&&!g\.voided_at\)/);
+  assert.ok(index.includes("db.guarantees.filter(g=>g.projectId===p.id&&!g.voidedAt&&!g.voided_at"));
   assert.match(index,/\(db\.visits\|\|\[\]\)\.filter\(v=>v\.projectId===p\.id&&!v\.voidedAt&&!v\.voided_at\)/);
-  assert.match(index,/db\.payments\.filter\(x=>x\.projectId===p\.id&&!x\.voidedAt&&!x\.voided_at\)/);
+  assert.ok(index.includes("db.payments.filter(x=>x.projectId===p.id&&!x.voidedAt&&!x.voided_at"));
 });
 
 

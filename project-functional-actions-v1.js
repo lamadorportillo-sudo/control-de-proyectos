@@ -13,11 +13,14 @@ const LABELS={
   reports:'Informes'
 };
 
+function activeContract(projectId){
+  try{return (db?.contracts||[]).filter(x=>String(x.projectId||'')===String(projectId||'')&&!x.voidedAt&&!x.voided_at).slice(-1)[0]||null}catch{return null}
+}
 function current(){
   try{
     const pid=view?.projectId;
     const p=(db?.projects||[]).find(x=>x.id===pid&&!x.deletedAt)||null;
-    const c=p?(db?.contracts||[]).find(x=>x.projectId===p.id)||null:null;
+    const c=p?activeContract(p.id):null;
     return{p,c};
   }catch{return{p:null,c:null}}
 }

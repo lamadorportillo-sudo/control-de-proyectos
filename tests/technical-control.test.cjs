@@ -17,7 +17,7 @@ test('control técnico visible conserva cinco módulos operativos',()=>{
 });
 
 test('el expediente carga alcance técnico y QR documental',()=>{
-  assert.match(tabsText,/technical-control-v1\.js\?v=20260830-controltecnico1/);
+  assert.match(tabsText,/technical-control-v1\.js\?v=20260913-controltecnico2/);
   assert.match(tabsText,/technical-control-scope-v2\.js\?v=20260831-controlscope2/);
   assert.match(tabsText,/document-qr-v1\.js\?v=20260831-docqr1/);
   assert.match(moduleText,/data-cc-technical-control/);

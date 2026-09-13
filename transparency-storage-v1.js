@@ -11,8 +11,17 @@ const safe=v=>String(v||'archivo').normalize('NFD').replace(/[\u0300-\u036f]/g,'
 const encPath=p=>String(p).split('/').map(encodeURIComponent).join('/');
 const id=()=>typeof uid==='function'?uid():(crypto.randomUUID?crypto.randomUUID():'f_'+Date.now()+Math.random().toString(36).slice(2));
 const now=()=>typeof iso==='function'?iso():new Date().toISOString();
+const hnPeriod=()=>{
+  try{
+    const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Tegucigalpa',year:'numeric',month:'2-digit'}).formatToParts(new Date()),out={};
+    for(const part of parts)if(part.type!=='literal')out[part.type]=part.value;
+    return `${out.year}-${out.month}`;
+  }catch{
+    const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  }
+};
 const say=m=>{try{if(typeof toast==='function')toast(m);else console.log(m)}catch{}};
-const period=()=>localStorage.getItem(PERIOD_KEY)||new Date().toISOString().slice(0,7);
+const period=()=>localStorage.getItem(PERIOD_KEY)||hnPeriod();
 
 function record(){
   try{

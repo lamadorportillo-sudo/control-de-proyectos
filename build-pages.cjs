@@ -84,7 +84,7 @@ html=html.replace(/<!-- cc-critical-hints:start -->[\s\S]*?<!-- cc-critical-hint
 const preAuthVersions=new Map(preAuthModules);
 const privateAccessVersion=preAuthVersions.get('private-access-v1.js');
 if(!privateAccessVersion)throw new Error('El manifiesto no define la versión de private-access-v1.js.');
-const criticalHints=`<!-- cc-critical-hints:start --><link rel="preconnect" href="https://flethujkrharehjikwgj.supabase.co" crossorigin><link rel="preload" href="performance-runtime-v1.js?v=${PERFORMANCE_VERSION}" as="script"><link rel="preload" href="private-access-v1.js?v=${privateAccessVersion}" as="script"><link rel="preload" href="workspace-access-v1.js?v=20260820-master4" as="script"><link rel="preload" href="engineer-chatbot-v3.js?v=20260824-ai5" as="script"><link rel="preload" href="halu-engineer-cutout-v4.webp" as="image" type="image/webp"><!-- cc-critical-hints:end -->`;
+const criticalHints=`<!-- cc-critical-hints:start --><link rel="preconnect" href="https://flethujkrharehjikwgj.supabase.co" crossorigin><link rel="preload" href="performance-runtime-v1.js?v=${PERFORMANCE_VERSION}" as="script"><link rel="preload" href="private-access-v1.js?v=${privateAccessVersion}" as="script"><link rel="preload" href="workspace-access-v1.js?v=20260820-master4" as="script"><link rel="preload" href="engineer-chatbot-v3.js?v=20260913-ai6" as="script"><link rel="preload" href="halu-engineer-cutout-v4.webp" as="image" type="image/webp"><!-- cc-critical-hints:end -->`;
 html=html.replace('</head>',criticalHints+'\n</head>');
 
 // El avance nunca cambia por sí solo el estado contractual del proyecto.

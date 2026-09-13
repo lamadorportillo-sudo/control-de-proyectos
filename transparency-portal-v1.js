@@ -9,12 +9,23 @@ const N=v=>Number.isFinite(Number(v))?Number(v):0;
 const H=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const UID=()=>typeof uid==='function'?uid():'tr_'+Date.now().toString(36)+Math.random().toString(36).slice(2);
 const ISO=()=>typeof iso==='function'?iso():new Date().toISOString();
+const HN_PARTS=(date=new Date())=>{
+  try{
+    const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Tegucigalpa',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);
+    const out={};for(const part of parts)if(part.type!=='literal')out[part.type]=part.value;
+    return{year:out.year,month:out.month,day:out.day};
+  }catch{
+    return{year:String(date.getFullYear()),month:String(date.getMonth()+1).padStart(2,'0'),day:String(date.getDate()).padStart(2,'0')};
+  }
+};
+const HN_YM=()=>{const p=HN_PARTS();return `${p.year}-${p.month}`};
+const HN_YMD=()=>{const p=HN_PARTS();return `${p.year}-${p.month}-${p.day}`};
 const CAN=()=>{try{return typeof roleCanEdit==='function'?roleCanEdit():true}catch{return true}};
 const SAVE=()=>{try{if(typeof saveDB==='function')saveDB()}catch(e){console.warn(e)}};
 const TOAST=m=>{try{if(typeof toast==='function')toast(m);else console.log(m)}catch{}};
 const MONTHS=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
 const STORE='cc_transparency_period_v1';
-const state={period:localStorage.getItem(STORE)||new Date().toISOString().slice(0,7),selected:new Set(),generated:false,activeTab:'',selectorOpen:false};
+const state={period:localStorage.getItem(STORE)||HN_YM(),selected:new Set(),generated:false,activeTab:'',selectorOpen:false};
 
 const schemas={
   projects:{label:'Proyectos en ejecución',fields:[
@@ -58,10 +69,13 @@ const constancias={
 function ensureRoot(){
   if(typeof db==='undefined'||!db)return false;
   if(!Array.isArray(db.transparencyMonths))db.transparencyMonths=[];
-  if(!db.transparencySettings)db.transparencySettings={institution:'Municipalidad de Santa María, La Paz',email1:'munisantamaria@Yahoo.com',email2:'lapazsantamaria@municipalidad.info',phone:'9864-2006',signer:'ING. LUIS FERNANDO AMADOR PORTILLO',unit:'UNIDAD DE PROYECTOS',municipality:'MUNICIPALIDAD SANTA MARÍA'};
+  let changed=false;
+  if(!db.transparencySettings){db.transparencySettings={institution:'Municipalidad de Santa María, La Paz',email1:'munisantamaria@Yahoo.com',email2:'lapazsantamaria@municipalidadhn.info',phone:'9864-2006',signer:'ING. LUIS FERNANDO AMADOR PORTILLO',unit:'UNIDAD DE PROYECTOS',municipality:'MUNICIPALIDAD SANTA MARÍA'};changed=true}
+  else if(String(db.transparencySettings.email2||'').trim().toLowerCase()==='lapazsantamaria@municipalidad.info'){db.transparencySettings.email2='lapazsantamaria@municipalidadhn.info';changed=true}
+  if(changed)SAVE();
   return true;
 }
-function normalizePeriod(p){return /^\d{4}-\d{2}$/.test(String(p||''))?String(p):new Date().toISOString().slice(0,7)}
+function normalizePeriod(p){return /^\d{4}-\d{2}$/.test(String(p||''))?String(p):HN_YM()}
 function periodParts(p=state.period){const [y,m]=normalizePeriod(p).split('-').map(Number);return{year:y,month:m,name:MONTHS[m-1]}}
 function monthRecord(create=true){
   if(!ensureRoot())return null;state.period=normalizePeriod(state.period);
@@ -149,12 +163,12 @@ function trProjectFlags(p){
 }
 function trProjectRecord(p){
   const c=trContractForProject(p.id),flags=trProjectFlags(p);
-  return{id:UID(),code:p.code||'',name:p.name||'',responsible:c?.contractor||p.contractor||'',sector:p.sector||'',location:p.location||'',purpose:p.purpose||'',description:p.description||'',scope:p.scope||p.name||'',environmentalImpact:p.environmentalImpact||'',landImpact:p.landImpact||'',financing:p.financing||'',budgetApprovalDate:p.budgetApprovalDate||'',status:String(p.status||'').toUpperCase(),projectedCost:N(p.budget??0),completionDate:p.actualEnd||p.completionDate||p.end||'',orderChange:flags.orderChange,timeExtension:flags.timeExtension,source:'Base general',createdAt:ISO()}
+  return{id:UID(),sourceProjectId:p.id,code:p.code||'',name:p.name||'',responsible:c?.contractor||p.contractor||'',sector:p.sector||'',location:p.location||'',purpose:p.purpose||'',description:p.description||'',scope:p.scope||p.name||'',environmentalImpact:p.environmentalImpact||'',landImpact:p.landImpact||'',financing:p.financing||'',budgetApprovalDate:p.budgetApprovalDate||'',status:String(p.status||'').toUpperCase(),projectedCost:N(p.budget??0),completionDate:p.actualEnd||p.completionDate||p.end||'',orderChange:flags.orderChange,timeExtension:flags.timeExtension,source:'Base general',createdAt:ISO()}
 }
 function loadFromBase(r){
   let added=0;
   for(const p of A(db?.projects).filter(x=>trProjectInPeriod(x,r.period))){
-    if(r.projects.some(x=>x.code&&x.code===p.code))continue;
+    if(r.projects.some(x=>String(x.sourceProjectId||'')===String(p.id)||(x.code&&x.code===p.code)))continue;
     r.projects.push(trProjectRecord(p));added++;
   }
   const projects=A(db?.projects),contracts=A(db?.contracts);
@@ -163,7 +177,7 @@ function loadFromBase(r){
     const p=projects.find(z=>z.id===x.projectId),key=trContractKind(x,p);
     if(!key)continue;
     if(r[key].some(z=>z.contractNumber&&z.contractNumber===x.number))continue;
-    r[key].push({id:UID(),contractor:x.contractor||'',contractNumber:x.number||'',description:x.description||p?.name||'',projectCode:p?.code||'',amount:N(x.currentAmount??x.originalAmount??0),days:x.executionDays??null,start:x.start||'',end:x.end||'',attachment:'REGISTRADO',source:'Base general',createdAt:ISO()});
+    r[key].push({id:UID(),sourceProjectId:p?.id||'',sourceContractId:x.id,contractor:x.contractor||'',contractNumber:x.number||'',description:x.description||p?.name||'',projectCode:p?.code||'',amount:N(x.currentAmount??x.originalAmount??0),days:x.executionDays??null,start:x.start||'',end:x.end||'',attachment:'REGISTRADO',source:'Base general',createdAt:ISO()});
   }
   for(const e of A(db?.estimates)){
     const d=e.paymentDate||e.end||e.start||'';if(!trInPeriod(d,r.period))continue;
@@ -173,20 +187,59 @@ function loadFromBase(r){
   }
   r.updatedAt=ISO();SAVE();document.getElementById('content').dataset.trSig='';renderPortal();TOAST(`Periodo actualizado desde la base general${added?`: ${added} proyecto(s) añadido(s)`:''}.`)
 }
-function syncToBase(r){let pUp=0,cUp=0,payUp=0;if(!Array.isArray(db.projects))db.projects=[];if(!Array.isArray(db.contracts))db.contracts=[];if(!Array.isArray(db.estimates))db.estimates=[];if(!Array.isArray(db.agreements))db.agreements=[];if(!Array.isArray(db.transparencyProcurement))db.transparencyProcurement=[];for(const x of r.projects){let p=db.projects.find(q=>!q.deletedAt&&String(q.code||'').trim()===String(x.code||'').trim());if(!p){p={id:UID(),code:x.code||'',name:x.name||'',status:x.status||'En ejecución',budget:N(x.projectedCost),location:x.location||'',createdAt:ISO(),deletedAt:null};db.projects.push(p)}Object.assign(p,{name:x.name||p.name,location:x.location||p.location,status:x.status||p.status,budget:N(x.projectedCost)||p.budget,sector:x.sector||p.sector,purpose:x.purpose||p.purpose,description:x.description||p.description,scope:x.scope||p.scope,environmentalImpact:x.environmentalImpact||p.environmentalImpact,landImpact:x.landImpact||p.landImpact,financing:x.financing||p.financing,budgetApprovalDate:x.budgetApprovalDate||p.budgetApprovalDate,end:x.completionDate||p.end,transparencyUpdatedAt:ISO()});pUp++}for(const type of ['infrastructureContracts','consultingContracts'])for(const x of r[type]){const p=db.projects.find(q=>String(q.code||'').trim()===String(x.projectCode||'').trim()),tk=`${r.period}:${type}:${x.id}`;let c=db.contracts.find(q=>q.transparencyKey===tk)||(x.contractNumber?db.contracts.find(q=>String(q.number||'')===String(x.contractNumber)):null);if(!c){c={id:UID(),projectId:p?.id||'',number:x.contractNumber||'',createdAt:ISO(),transparencyKey:tk};db.contracts.push(c)}Object.assign(c,{projectId:p?.id||c.projectId,number:x.contractNumber||c.number,contractor:x.contractor||'',description:x.description||'',currentAmount:N(x.amount),originalAmount:N(x.amount),executionDays:N(x.days),start:x.start||'',end:x.end||'',contractType:type==='consultingContracts'?'Consultoría':'Infraestructura',transparencyKey:tk});cUp++}for(const x of r.agreements){const tk=`${r.period}:agreement:${x.id}`;let a=db.agreements.find(q=>q.transparencyKey===tk);if(!a){a={id:UID(),transparencyKey:tk,createdAt:ISO()};db.agreements.push(a)}Object.assign(a,x,{transparencyKey:tk,period:r.period})}for(const type of ['bids','quotations'])for(const x of r[type]){const tk=`${r.period}:${type}:${x.id}`;let q=db.transparencyProcurement.find(z=>z.transparencyKey===tk);if(!q){q={id:UID(),transparencyKey:tk};db.transparencyProcurement.push(q)}Object.assign(q,x,{category:type,period:r.period,transparencyKey:tk})}for(const x of r.payments){if(x.sourceEstimateId)continue;const p=db.projects.find(q=>String(q.code||'').trim()===String(x.projectCode||'').trim()),c=db.contracts.find(q=>q.projectId===p?.id);if(!c)continue;const tk=`${r.period}:payment:${x.id}`;let e=db.estimates.find(q=>q.transparencyKey===tk);if(!e){e={id:UID(),contractId:c.id,createdAt:ISO(),transparencyKey:tk};db.estimates.push(e)}Object.assign(e,{contractId:c.id,number:N(x.estimateNumber),gross:N(x.amount),net:N(x.amount),paymentDate:x.date||'',status:x.status||'Pagada',transparencyKey:tk});payUp++}r.updatedAt=ISO();SAVE();TOAST(`Sincronización completada: ${pUp} proyecto(s), ${cUp} contrato(s) y ${payUp} pago(s) vinculados.`)}
+function trPresent(v){return v!==null&&v!==undefined&&String(v).trim()!==''}
+function trFillText(obj,key,value){if(trPresent(value)&&!trPresent(obj?.[key]))obj[key]=value}
+function trFillPositive(obj,key,value){if(trPresent(value)&&Number(value)>0&&!(Number(obj?.[key])>0))obj[key]=Number(value)}
+function syncToBase(r){
+  let pUp=0,cUp=0,payUp=0;
+  if(!Array.isArray(db.projects))db.projects=[];
+  if(!Array.isArray(db.contracts))db.contracts=[];
+  if(!Array.isArray(db.estimates))db.estimates=[];
+  if(!Array.isArray(db.agreements))db.agreements=[];
+  if(!Array.isArray(db.transparencyProcurement))db.transparencyProcurement=[];
+  for(const x of r.projects){
+    let p=x.sourceProjectId?db.projects.find(q=>String(q.id)===String(x.sourceProjectId)&&!q.deletedAt):null;
+    if(!p&&x.code)p=db.projects.find(q=>!q.deletedAt&&String(q.code||'').trim()===String(x.code||'').trim());
+    if(!p){p={id:UID(),code:x.code||'',name:x.name||'',status:x.status||'En ejecución',budget:N(x.projectedCost),location:x.location||'',createdAt:ISO(),deletedAt:null};db.projects.push(p)}
+    trFillText(p,'name',x.name);trFillText(p,'location',x.location);trFillText(p,'status',x.status);trFillText(p,'sector',x.sector);trFillText(p,'purpose',x.purpose);trFillText(p,'description',x.description);trFillText(p,'scope',x.scope);trFillText(p,'environmentalImpact',x.environmentalImpact);trFillText(p,'landImpact',x.landImpact);trFillText(p,'financing',x.financing);trFillText(p,'budgetApprovalDate',x.budgetApprovalDate);trFillText(p,'end',x.completionDate);trFillPositive(p,'budget',x.projectedCost);
+    x.sourceProjectId=p.id;p.transparencyUpdatedAt=ISO();pUp++;
+  }
+  for(const type of ['infrastructureContracts','consultingContracts'])for(const x of r[type]){
+    const p=(x.sourceProjectId?db.projects.find(q=>String(q.id)===String(x.sourceProjectId)&&!q.deletedAt):null)||db.projects.find(q=>String(q.code||'').trim()===String(x.projectCode||'').trim());
+    const tk=`${r.period}:${type}:${x.id}`;
+    let c=x.sourceContractId?db.contracts.find(q=>String(q.id)===String(x.sourceContractId)&&(!p||String(q.projectId||'')===String(p.id))):null;
+    if(!c)c=db.contracts.find(q=>q.transparencyKey===tk&&(!p||String(q.projectId||'')===String(p.id)))||null;
+    if(!c&&p&&x.contractNumber)c=db.contracts.find(q=>String(q.projectId||'')===String(p.id)&&String(q.number||'').trim()===String(x.contractNumber||'').trim())||null;
+    if(!c){c={id:UID(),projectId:p?.id||'',number:'',createdAt:ISO(),transparencyKey:tk};db.contracts.push(c)}
+    if(p&&!c.projectId)c.projectId=p.id;
+    trFillText(c,'number',x.contractNumber);trFillText(c,'contractor',x.contractor);trFillText(c,'description',x.description);trFillText(c,'start',x.start);trFillText(c,'end',x.end);trFillPositive(c,'currentAmount',x.amount);trFillPositive(c,'originalAmount',x.amount);trFillPositive(c,'executionDays',x.days);
+    c.contractType=type==='consultingContracts'?'Consultoría':'Infraestructura';c.transparencyKey=c.transparencyKey||tk;c.transparencyUpdatedAt=ISO();x.sourceProjectId=p?.id||x.sourceProjectId||'';x.sourceContractId=c.id;cUp++;
+  }
+  for(const x of r.agreements){const tk=`${r.period}:agreement:${x.id}`;let a=db.agreements.find(q=>q.transparencyKey===tk);if(!a){a={id:UID(),transparencyKey:tk,createdAt:ISO()};db.agreements.push(a)}Object.assign(a,x,{transparencyKey:tk,period:r.period})}
+  for(const type of ['bids','quotations','purchases'])for(const x of r[type]){const tk=`${r.period}:${type}:${x.id}`;let q=db.transparencyProcurement.find(z=>z.transparencyKey===tk);if(!q){q={id:UID(),transparencyKey:tk};db.transparencyProcurement.push(q)}Object.assign(q,x,{category:type,period:r.period,transparencyKey:tk})}
+  for(const x of r.payments){
+    if(x.sourceEstimateId)continue;
+    const p=db.projects.find(q=>String(q.code||'').trim()===String(x.projectCode||'').trim()),ct=db.contracts.filter(q=>String(q.projectId||'')===String(p?.id||'')&&!q.voidedAt&&!q.voided_at).slice(-1)[0];
+    if(!ct)continue;
+    const tk=`${r.period}:payment:${x.id}`;let e=db.estimates.find(q=>q.transparencyKey===tk);
+    if(!e){e={id:UID(),contractId:ct.id,createdAt:ISO(),transparencyKey:tk};db.estimates.push(e)}
+    if(trPresent(x.estimateNumber))e.number=N(x.estimateNumber);if(Number(x.amount)>0){if(!(Number(e.gross)>0))e.gross=N(x.amount);if(!(Number(e.net)>0))e.net=N(x.amount)}trFillText(e,'paymentDate',x.date);trFillText(e,'status',x.status||'Pagada');e.transparencyKey=tk;payUp++;
+  }
+  r.updatedAt=ISO();SAVE();TOAST(`Sincronización completada sin sobrescribir datos confirmados: ${pUp} proyecto(s), ${cUp} contrato(s) y ${payUp} pago(s) vinculados.`)
+}
 function institutionLogo(){try{return db?.settings?.logo_data_url||db?.institution?.logo_data_url||db?.institutionalBranding?.logo_data_url||''}catch{return''}}
-function openConstancia(type){const r=monthRecord(),cfg=constancias[type];if(!cfg)return;if(r[type].length)return TOAST('Esta constancia no corresponde porque el periodo sí tiene registros en esa categoría.');const s=db.transparencySettings||{},p=periodParts(r.period),issue=r.issueDate||new Date().toISOString().slice(0,10),logo=institutionLogo();const w=window.open('','_blank','width=900,height=1000');if(!w)return TOAST('El navegador bloqueó la ventana de la constancia.');const html=`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${H(cfg.title)} · ${p.name} ${p.year}</title><style>@page{size:letter;margin:18mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0}.sheet{min-height:240mm;display:flex;flex-direction:column}.head{text-align:center}.head img{max-height:28mm;max-width:38mm;object-fit:contain;margin-bottom:3mm}.head h2{font-family:Georgia,serif;font-size:16pt;margin:0 0 2mm}.head p{font-family:Georgia,serif;font-size:13pt;font-weight:700;margin:1mm}.head a{color:#2d7b94}.title{text-align:center;font-size:15pt;margin:18mm 0 14mm}.body{font-size:12.3pt;line-height:1.7}.body p{margin:0 0 8mm}.sign{margin-top:auto;text-align:center;font-size:11pt;padding-bottom:5mm}.sign b{font-size:11.5pt}.actions{display:flex;gap:8px;margin-bottom:8mm}.actions button{border:1px solid #355f4a;background:#587747;color:#fff;border-radius:8px;padding:9px 13px;font-weight:700}@media print{.actions{display:none}}</style></head><body><div class="actions"><button onclick="window.print()">Imprimir / Guardar PDF</button></div><article class="sheet"><header class="head">${logo?`<img src="${H(logo)}" alt="Logo municipal">`:''}<h2>${H(s.institution||'Municipalidad de Santa María, La Paz')}</h2><p>Email: <a>${H(s.email1||'')}</a></p><p><a>${H(s.email2||'')}</a></p><p>Tel. ${H(s.phone||'')}</p></header><h1 class="title">${H(cfg.title)}</h1><section class="body"><p>Por medio de la presente se <b>HACE CONSTAR QUE:</b> en el mes de <b>${p.name}</b> del año ${p.year},</p><p><b>${H(cfg.body)}</b>, en la Municipalidad.</p><p>Para fines que se estime conveniente se extiende la presente en el Municipio de Santa María, Departamento de La Paz, ${H(new Date(issue+'T12:00:00').toLocaleDateString('es-HN',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}))}.</p></section><footer class="sign"><b>${H(s.signer||'ING. LUIS FERNANDO AMADOR PORTILLO')}</b><br>${H(s.unit||'UNIDAD DE PROYECTOS')}<br>${H(s.municipality||'MUNICIPALIDAD SANTA MARÍA')}</footer></article></body></html>`;w.document.open();w.document.write(html);w.document.close()}
+function openConstancia(type){const r=monthRecord(),cfg=constancias[type];if(!cfg)return;if(r[type].length)return TOAST('Esta constancia no corresponde porque el periodo sí tiene registros en esa categoría.');const s=db.transparencySettings||{},p=periodParts(r.period),issue=r.issueDate||HN_YMD(),logo=institutionLogo();const w=window.open('','_blank','width=900,height=1000');if(!w)return TOAST('El navegador bloqueó la ventana de la constancia.');const html=`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${H(cfg.title)} · ${p.name} ${p.year}</title><style>@page{size:letter;margin:18mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0}.sheet{min-height:240mm;display:flex;flex-direction:column}.head{text-align:center}.head img{max-height:28mm;max-width:38mm;object-fit:contain;margin-bottom:3mm}.head h2{font-family:Georgia,serif;font-size:16pt;margin:0 0 2mm}.head p{font-family:Georgia,serif;font-size:13pt;font-weight:700;margin:1mm}.head a{color:#2d7b94}.title{text-align:center;font-size:15pt;margin:18mm 0 14mm}.body{font-size:12.3pt;line-height:1.7}.body p{margin:0 0 8mm}.sign{margin-top:auto;text-align:center;font-size:11pt;padding-bottom:5mm}.sign b{font-size:11.5pt}.actions{display:flex;gap:8px;margin-bottom:8mm}.actions button{border:1px solid #355f4a;background:#587747;color:#fff;border-radius:8px;padding:9px 13px;font-weight:700}@media print{.actions{display:none}}</style></head><body><div class="actions"><button onclick="window.print()">Imprimir / Guardar PDF</button></div><article class="sheet"><header class="head">${logo?`<img src="${H(logo)}" alt="Logo municipal">`:''}<h2>${H(s.institution||'Municipalidad de Santa María, La Paz')}</h2><p>Email: <a>${H(s.email1||'')}</a></p><p><a>${H(s.email2||'')}</a></p><p>Tel. ${H(s.phone||'')}</p></header><h1 class="title">${H(cfg.title)}</h1><section class="body"><p>Por medio de la presente se <b>HACE CONSTAR QUE:</b> en el mes de <b>${p.name}</b> del año ${p.year},</p><p><b>${H(cfg.body)}</b>, en la Municipalidad.</p><p>Para fines que se estime conveniente se extiende la presente en el Municipio de Santa María, Departamento de La Paz, ${H(new Date(issue+'T12:00:00').toLocaleDateString('es-HN',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}))}.</p></section><footer class="sign"><b>${H(s.signer||'ING. LUIS FERNANDO AMADOR PORTILLO')}</b><br>${H(s.unit||'UNIDAD DE PROYECTOS')}<br>${H(s.municipality||'MUNICIPALIDAD SANTA MARÍA')}</footer></article></body></html>`;w.document.open();w.document.write(html);w.document.close()}
 function loadScript(src,test){return new Promise((resolve,reject)=>{if(test())return resolve();const old=[...document.scripts].find(s=>s.src===src);if(old){old.addEventListener('load',resolve,{once:true});old.addEventListener('error',reject,{once:true});return}const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=reject;document.head.appendChild(s)})}
 async function exportExcel(r){
   try{await loadScript('https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js',()=>!!window.ExcelJS)}
   catch{return TOAST('No se pudo cargar el generador de Excel. Revisa tu conexión.')}
   const chosen=new Set([...state.selected].filter(id=>id!=='excel'));
   if(!chosen.size)return TOAST('Selecciona al menos una categoría de información antes de generar el Excel.');
-  const pp=periodParts(r.period),book=new ExcelJS.Workbook();
-  book.creator='Control Contractual';book.created=new Date();
+  const pp=periodParts(r.period),book=new ExcelJS.Workbook(),institution=db?.transparencySettings||{};
+  book.creator=institution.institution||'Control Contractual';book.created=new Date();
   const blue='BDD7EE',border={top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}},center={vertical:'middle',horizontal:'center',wrapText:true};
   const header=(ws,row,cols)=>{const rg=ws.getRow(row);rg.height=38;for(let i=1;i<=cols;i++){const c=rg.getCell(i);c.fill={type:'pattern',pattern:'solid',fgColor:{argb:blue}};c.font={bold:true,size:10};c.alignment=center;c.border=border}};
-  const sign=ws=>{const r0=ws.lastRow.number+4,cols=Math.max(1,ws.columnCount);ws.mergeCells(r0,1,r0,cols);ws.getCell(r0,1).value='Ing. Luis Fernando Amador Portillo';ws.getCell(r0,1).font={bold:true,size:12};ws.getCell(r0,1).alignment={horizontal:'center'};ws.mergeCells(r0+1,1,r0+1,cols);ws.getCell(r0+1,1).value='Unidad De Proyectos';ws.getCell(r0+1,1).alignment={horizontal:'center'};ws.mergeCells(r0+2,1,r0+2,cols);ws.getCell(r0+2,1).value='Municipalidad Santa María';ws.getCell(r0+2,1).alignment={horizontal:'center'}};
+  const sign=ws=>{const r0=ws.lastRow.number+4,cols=Math.max(1,ws.columnCount);ws.mergeCells(r0,1,r0,cols);ws.getCell(r0,1).value=institution.signer||'ING. LUIS FERNANDO AMADOR PORTILLO';ws.getCell(r0,1).font={bold:true,size:12};ws.getCell(r0,1).alignment={horizontal:'center'};ws.mergeCells(r0+1,1,r0+1,cols);ws.getCell(r0+1,1).value=institution.unit||'UNIDAD DE PROYECTOS';ws.getCell(r0+1,1).alignment={horizontal:'center'};ws.mergeCells(r0+2,1,r0+2,cols);ws.getCell(r0+2,1).value=institution.municipality||'MUNICIPALIDAD SANTA MARÍA';ws.getCell(r0+2,1).alignment={horizontal:'center'}};
   const simple=(name,headers,arr,mapper)=>{const sh=book.addWorksheet(name);sh.mergeCells(1,1,1,headers.length);sh.getCell(1,1).value=`${name.toUpperCase()} ${pp.name} ${pp.year}`;sh.getCell(1,1).font={bold:true,size:15};sh.getCell(1,1).alignment={horizontal:'center'};sh.addRow(headers);header(sh,2,headers.length);arr.forEach((x,i)=>sh.addRow(mapper(x,i)));sh.columns.forEach(col=>col.width=24);sh.eachRow((row,idx)=>{if(idx>2)row.eachCell(cell=>{cell.alignment={vertical:'middle',wrapText:true};cell.border=border})});sign(sh);return sh};
   const contractSheet=(name,arr)=>{const sh=simple(name,['N.','Contrato / Contratista','N.º Contrato','Descripción','Monto','Periodo Días','Fecha De Inicio','Fecha Final Proyectada','Contrato adjunto'],arr,(x,i)=>[i+1,x.contractor||'',x.contractNumber||'',x.description||'',x.amount??'',x.days??'',x.start||'',x.end||'',x.attachment||'']);sh.getColumn(5).numFmt='L #,##0.00';return sh};
 
@@ -233,6 +286,7 @@ function categoryPanel(id,r){
   if(id==='purchases')return purchasesPanel(r);
   return section(id,r);
 }
+function selectionKey(values){return [...new Set(A(values).map(String))].sort().join('|')}
 function needsPeriod(){return[...state.selected].some(id=>category(id)?.period)}
 function selectionChips(){return[...state.selected].map(id=>`<span class="tr-chip">${H(category(id)?.label||id)}<button type="button" data-tr-remove="${H(id)}" aria-label="Quitar ${H(category(id)?.label||id)}">×</button></span>`).join('')}
 function periodControls(){const p=periodParts(),years=[];for(let y=p.year-3;y<=p.year+2;y++)years.push(y);return`<div class="tr-period-generator"><label><span>Mes</span><select id="trMonth">${MONTHS.map((m,i)=>`<option value="${i+1}" ${p.month===i+1?'selected':''}>${m}</option>`).join('')}</select></label><label><span>Año</span><select id="trYear">${years.map(y=>`<option value="${y}" ${p.year===y?'selected':''}>${y}</option>`).join('')}</select></label></div>`}
@@ -248,7 +302,7 @@ function hydrateSelected(r){
       if(!trInPeriod(trContractDate(x),r.period))continue;
       const p=projects.find(z=>z.id===x.projectId),kind=trContractKind(x,p);
       if(kind!==key)continue;
-      r[key].push({id:UID(),contractor:x.contractor||'',contractNumber:x.number||'',description:x.description||p?.name||'',projectCode:p?.code||'',amount:N(x.currentAmount??x.originalAmount??0),days:x.executionDays??null,start:x.start||'',end:x.end||'',attachment:'REGISTRADO',source:'Base general',createdAt:ISO()});
+      r[key].push({id:UID(),sourceProjectId:p?.id||'',sourceContractId:x.id,contractor:x.contractor||'',contractNumber:x.number||'',description:x.description||p?.name||'',projectCode:p?.code||'',amount:N(x.currentAmount??x.originalAmount??0),days:x.executionDays??null,start:x.start||'',end:x.end||'',attachment:'REGISTRADO',source:'Base general',createdAt:ISO()});
     }
   }
   if(chosen.has('payments')&&!r.payments.length){
@@ -286,12 +340,12 @@ function bindRecordActions(c,r){
 function renderPreview(c){
   const selected=[...state.selected];if(!selected.length){state.generated=false;return renderSelection(c)}
   if(!state.activeTab||!state.selected.has(state.activeTab))state.activeTab=selected[0];
-  const r=monthRecord(true),p=periodParts(r.period),ready=r.readyAt&&A(r.readyCategories).join('|')===selected.join('|');
+  const r=monthRecord(true),p=periodParts(r.period),ready=!!r.readyAt&&selectionKey(r.readyCategories)===selectionKey(selected);
   c.innerHTML=`<div class="tr-page"><header class="tr-generator-head"><p class="eyebrow">PORTAL DE TRANSPARENCIA</p><h2>Vista previa</h2><p>${needsPeriod()?`Periodo ${p.name} ${p.year}. `:''}Se muestran solamente las categorías seleccionadas.</p></header><section class="tr-preview-shell"><div class="tr-preview-top"><div><h3>Portal preparado</h3><div class="tr-chips">${selectionChips()}</div></div><div class="tr-flow-actions"><button class="btn" id="trEditSelection">Editar selección</button><button class="btn primary" id="trPublish">${ready?'Actualizar preparación':'Marcar listo para publicar'}</button></div></div><div class="tr-publish-state ${ready?'tr-published':''}">${ready?`Preparación guardada el ${dateText(r.readyAt)}`:'Revisa cada pestaña. Esta acción guarda el estado de preparación; no crea por sí sola una URL pública.'}</div><nav class="tr-tabs" role="tablist">${selected.map(id=>`<button role="tab" aria-selected="${state.activeTab===id}" class="${state.activeTab===id?'active':''}" data-tr-tab="${id}">${H(category(id)?.label||id)}</button>`).join('')}</nav><div class="tr-tab-panel" role="tabpanel">${categoryPanel(state.activeTab,r)}</div></section></div>`;
   c.querySelectorAll('[data-tr-tab]').forEach(b=>b.onclick=()=>{state.activeTab=b.dataset.trTab;renderPortal()});
   c.querySelectorAll('[data-tr-remove]').forEach(b=>b.onclick=()=>{state.selected.delete(b.dataset.trRemove);if(!state.selected.size)state.generated=false;renderPortal()});
   c.querySelector('#trEditSelection').onclick=()=>{state.generated=false;renderPortal()};
-  c.querySelector('#trPublish').onclick=()=>{r.readyAt=ISO();r.readyCategories=[...state.selected];r.updatedAt=ISO();SAVE();TOAST('Preparación del Portal guardada en Supabase. No se creó una URL pública.');renderPortal()};
+  c.querySelector('#trPublish').onclick=()=>{r.readyAt=ISO();r.readyCategories=[...state.selected].sort();r.updatedAt=ISO();SAVE();TOAST('Preparación del Portal guardada en Supabase. No se creó una URL pública.');renderPortal()};
   bindRecordActions(c,r);
 }
 function renderPortal(){generatorCss();addTile();addMainNav();let screen='';try{screen=view?.screen||''}catch{}if(screen!=='transparency'){document.body.classList.remove('cc-transparency-active');return}document.body.classList.add('cc-transparency-active');document.getElementById('newProjectBtn')?.setAttribute('hidden','');adaptCommandbar();const c=document.getElementById('content');if(!c||!ensureRoot())return;const r=state.generated?monthRecord(true):null,sig=[state.generated,[...state.selected].join('|'),state.activeTab,state.period,r?.updatedAt||''].join('::');if(c.dataset.trGeneratorSig===sig&&c.querySelector('.tr-page'))return;c.dataset.trGeneratorSig=sig;delete c.dataset.trSig;state.generated?renderPreview(c):renderSelection(c)}

@@ -8,13 +8,14 @@ const A=v=>Array.isArray(v)?v:[];
 const N=v=>Number.isFinite(Number(v))?Number(v):0;
 const clamp=v=>Math.max(0,Math.min(100,Math.round(N(v)*100)/100));
 const dateText=v=>{try{return v&&typeof dmy==='function'?dmy(v):v||'—'}catch{return v||'—'}};
+const activeContract=projectId=>A(db?.contracts).filter(x=>String(x.projectId||'')===String(projectId||'')&&!x.voidedAt&&!x.voided_at).slice(-1)[0]||null;
 
 window.projectAutomaticProgress=function(p,c=null){
-  const contract=c||A(db?.contracts).find(x=>x.projectId===p?.id)||null;
+  const contract=c||activeContract(p?.id);
   const fin=typeof projectFinancials==='function'?projectFinancials(p,contract):null;
   const baseC=fin?.currentC||((contract?.currentAmount??p?.budget??0)*100);
   const financial=baseC>0?clamp((N(fin?.grossC)/N(baseC))*100):0;
-  const visits=A(db?.visits).filter(v=>v.projectId===p?.id).slice().sort((a,b)=>String(a.date||a.createdAt||'').localeCompare(String(b.date||b.createdAt||''))||N(a.number)-N(b.number));
+  const visits=A(db?.visits).filter(v=>v.projectId===p?.id&&!v.voidedAt&&!v.voided_at).slice().sort((a,b)=>String(a.date||a.createdAt||'').localeCompare(String(b.date||b.createdAt||''))||N(a.number)-N(b.number));
   const last=visits.at(-1)||null;
   const physical=last?clamp(last.physical):0;
   return{
@@ -27,7 +28,7 @@ window.projectAutomaticProgress=function(p,c=null){
 
 window.syncAllProjectProgress=function(){
   A(db?.projects).forEach(p=>{
-    const c=A(db?.contracts).find(x=>x.projectId===p.id)||null;
+    const c=activeContract(p.id);
     const a=window.projectAutomaticProgress(p,c);
     p.physicalProgress=a.physical;
     p.financialProgress=a.financial;
@@ -52,7 +53,7 @@ function decorate(){
       const notes=box.querySelectorAll('small');
       if(notes[1]){
         const p=A(db?.projects).find(x=>x.id===view?.projectId);
-        const c=p?A(db?.contracts).find(x=>x.projectId===p.id):null;
+        const c=p?activeContract(p.id):null;
         const a=p?window.projectAutomaticProgress(p,c):null;
         notes[1].textContent=a?`Último registro de campo: ${a.source}`:'Sin registro de campo';
       }
@@ -62,7 +63,7 @@ function decorate(){
   if(screen==='project'&&tab==='summary'){
     const grid=document.querySelector('#tabBody .summary-grid');
     const p=A(db?.projects).find(x=>x.id===view?.projectId);
-    const c=p?A(db?.contracts).find(x=>x.projectId===p.id):null;
+    const c=p?activeContract(p.id):null;
     if(grid&&p){
       const a=window.projectAutomaticProgress(p,c);
       let box=grid.querySelector('[data-cc-financial-progress]');

@@ -260,8 +260,8 @@ if(!tail.includes('data-cc-auth-plan')){
         'payments-center-v1.js?v=20260913-payments3',
         'guarantees-center-v1.js?v=20260913-guarantees2',
         'visits-center-v1.js?v=20260913-visits2',
-        'reports-center-v1.js?v=20260913-reports2',
-        'alerts-center-v1.js?v=20260913-alerts2',
+        'reports-center-v1.js?v=20260913-reports3',
+        'alerts-center-v1.js?v=20260913-alerts3',
         'audit-center-v1.js?v=20260901-audit1',
         'portal-route-bridge-v1.js?v=20260901-route5',
         'ui-stability-v1.js?v=20260904-stable2'

@@ -38,7 +38,7 @@ function buildAlerts(){
      if(left<0)items.push({projectId:p.id,entityId:c?.id||p.id,project:p,tab:'contract',kind:'Plazo',level:'expired',title:'Proyecto con plazo vencido',detail:`Venció ${dateHN(end)} · avance ${progress.toFixed(1)}%`,fix:c?'Verificar la fecha final del contrato o registrar una ampliación aprobada.':'Completar o corregir la fecha final del proyecto.',date:end});
      else if(left<=30){const level=left<=7?'urgent':left<=15?'attention':'warning';items.push({projectId:p.id,entityId:c?.id||p.id,project:p,tab:'contract',kind:'Plazo',level,title:`Finalización en ${left} día${left===1?'':'s'}`,detail:`Fecha contractual ${dateHN(end)} · avance ${progress.toFixed(1)}%`,fix:'Revisar el plazo y registrar únicamente una ampliación debidamente aprobada.',date:end})}
    }
-   for(const g of guarantees.filter(x=>x.projectId===p.id&&!x.voidedAt&&!x.voided_at)){
+   for(const g of guarantees.filter(x=>x.projectId===p.id&&!x.voidedAt&&!x.voided_at&&(!x.contractId||!c||x.contractId===c.id))){
      const a=guaranteeAlert(g.end);if(a.level==='good')continue;
      items.push({projectId:p.id,entityId:g.id,project:p,tab:'guarantees',kind:'Garantía',level:a.level,title:`${g.type||'Garantía'} · ${a.label}`,detail:`${g.number||'Sin número'} · vence ${dateHN(g.end)}`,fix:'Actualizar la vigencia o registrar el endoso de ampliación de la garantía.',date:g.end});
    }

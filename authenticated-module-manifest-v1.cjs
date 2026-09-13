@@ -102,7 +102,7 @@ const supplementalModules=[
   /* El guard se ejecuta inmediatamente antes del módulo técnico histórico y
      filtra su MutationObserver global sin afectar los observadores del resto. */
   ['technical-control-observer-guard-v1.js','20260904-controlobserver1'],
-  ['technical-control-v1.js','20260830-controltecnico1'],
+  ['technical-control-v1.js','20260913-controltecnico2'],
 ];
 
 /* Módulos que el constructor histórico necesita añadir al artefacto y que no
@@ -135,7 +135,7 @@ const buildOnlyModules=[
   ['web-knowledge-v2.js','20260822-short1'],
   ['adaptive-chat-learning-v1.js','20260822-global1'],
   ['halu-page-controller-v1.js','20260824-control1'],
-  ['engineer-chatbot-v3.js','20260824-ai5'],
+  ['engineer-chatbot-v3.js','20260913-ai6'],
   ['halu-avatar-motion-v1.js','20260822-place13'],
 ];
 

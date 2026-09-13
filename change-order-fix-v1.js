@@ -8,6 +8,7 @@ window.__CC_CHANGE_ORDER_FIX_V1__=true;
 const A=v=>Array.isArray(v)?v:[];
 const N=v=>Number.isFinite(Number(v))?Number(v):0;
 const money2=v=>Math.round(N(v)*100)/100;
+const activeContract=projectId=>A(db?.contracts).filter(x=>String(x.projectId||'')===String(projectId||'')&&!x.voidedAt&&!x.voided_at).slice(-1)[0]||null;
 
 window.recalcContract=function(c){
   if(!c)return;
@@ -46,7 +47,7 @@ function decorate(){
   let screen='',tab='';try{screen=view?.screen||'';tab=view?.tab||''}catch{}
   if(screen!=='project'||tab!=='changes')return;
   const p=A(db?.projects).find(x=>x.id===view?.projectId&&!x.deletedAt);
-  const c=p?A(db?.contracts).find(x=>x.projectId===p.id):null;
+  const c=p?activeContract(p.id):null;
   const body=document.getElementById('tabBody');
   if(!p||!c||!body)return;
   const approved=A(db?.changes).filter(x=>x.contractId===c.id&&x.status==='Aprobado');

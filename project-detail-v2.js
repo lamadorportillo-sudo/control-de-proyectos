@@ -19,8 +19,8 @@ function enhanceProject(){
     const fin=typeof projectFinancials==='function'?projectFinancials(p,c):{};
     const prog=typeof projectAutomaticProgress==='function'?projectAutomaticProgress(p,c):{physical:0,financial:0};
     const end=c?.end||p.end||'',left=dayDiff(end),days=c?.executionDays||p.executionDays||0;
-    const visits=(db.visits||[]).filter(v=>v.projectId===p.id).length;
-    const guarantees=(db.guarantees||[]).filter(g=>g.projectId===p.id);
+    const visits=(db.visits||[]).filter(v=>v.projectId===p.id&&!v.voidedAt&&!v.voided_at).length;
+    const guarantees=(db.guarantees||[]).filter(g=>g.projectId===p.id&&!g.voidedAt&&!g.voided_at);
     const alertCount=typeof guaranteeAlert==='function'?guarantees.filter(g=>['warning','attention','critical','urgent','expired'].includes(guaranteeAlert(g.end).level)).length:0;
     const amountC=fin.currentC!=null?fin.currentC:(typeof cents==='function'?cents(c?.currentAmount??p.budget):Number(c?.currentAmount??p.budget)*100);
     const estimatedC=fin.grossC||0,paidC=fin.totalPaidC||0,saldoC=fin.saldoEstimarC||0;

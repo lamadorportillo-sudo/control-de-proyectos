@@ -9,7 +9,18 @@ const arr=v=>Array.isArray(v)?v:[];
 const num=v=>Number(v)||0;
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const getDB=()=>{try{return db||null}catch{return null}};
-const todayISO=()=>new Date().toISOString().slice(0,10);
+const todayISO=()=>{
+  try{
+    const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Tegucigalpa',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()),out={};
+    for(const part of parts)if(part.type!=='literal')out[part.type]=part.value;
+    return `${out.year}-${out.month}-${out.day}`;
+  }catch{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+};
+const contractFor=(list,projectId,preferredId='')=>{
+  const all=arr(list).filter(x=>String(x.projectId||'')===String(projectId||''));
+  if(preferredId){const exact=all.find(x=>String(x.id||'')===String(preferredId));if(exact)return exact}
+  return all.filter(x=>!x.voidedAt&&!x.voided_at).slice(-1)[0]||null;
+};
 const dateHN=v=>{if(!v)return'—';const a=String(v).slice(0,10).split('-');return a.length===3?`${a[2]}/${a[1]}/${a[0]}`:String(v)};
 const money=v=>`L ${num(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
 const canEdit=()=>{try{return typeof roleCanEdit==='function'&&roleCanEdit()}catch{return false}};
@@ -22,7 +33,7 @@ function actionLabel(tab){return tab==='guarantees'?'Revisar garantía':tab==='e
 function buildAlerts(){
  const d=getDB()||{},projects=arr(d.projects).filter(p=>!p.deletedAt),contracts=arr(d.contracts),estimates=arr(d.estimates),guarantees=arr(d.guarantees),visits=arr(d.visits),items=[];
  for(const p of projects){
-   const c=contracts.find(x=>x.projectId===p.id),est=c?estimates.filter(e=>e.contractId===c.id):[],progress=projectProgress(p,c,est),finished=/finaliz|cerrad/i.test(String(p.status||'')),end=c?.end||p.end||'',left=end?Math.ceil((new Date(end+'T12:00:00')-new Date(todayISO()+'T12:00:00'))/86400000):null;
+   const c=contractFor(contracts,p.id),est=c?estimates.filter(e=>e.contractId===c.id&&!e.voidedAt&&!e.voided_at):[],progress=projectProgress(p,c,est),finished=/finaliz|cerrad/i.test(String(p.status||'')),end=c?.end||p.end||'',left=end?Math.ceil((new Date(end+'T12:00:00')-new Date(todayISO()+'T12:00:00'))/86400000):null;
    if(!finished&&end&&progress<100){
      if(left<0)items.push({projectId:p.id,entityId:c?.id||p.id,project:p,tab:'contract',kind:'Plazo',level:'expired',title:'Proyecto con plazo vencido',detail:`Venció ${dateHN(end)} · avance ${progress.toFixed(1)}%`,fix:c?'Verificar la fecha final del contrato o registrar una ampliación aprobada.':'Completar o corregir la fecha final del proyecto.',date:end});
      else if(left<=30){const level=left<=7?'urgent':left<=15?'attention':'warning';items.push({projectId:p.id,entityId:c?.id||p.id,project:p,tab:'contract',kind:'Plazo',level,title:`Finalización en ${left} día${left===1?'':'s'}`,detail:`Fecha contractual ${dateHN(end)} · avance ${progress.toFixed(1)}%`,fix:'Revisar el plazo y registrar únicamente una ampliación debidamente aprobada.',date:end})}
@@ -52,13 +63,14 @@ function filtered(rows){const q=ST.search.trim().toLowerCase();return rows.filte
 function correctionContext(item,selector){setTimeout(()=>{const modal=[...document.querySelectorAll('.modal-bg')].at(-1),form=modal?.querySelector('form');if(form&&!modal.querySelector('[data-cca-correction]'))form.insertAdjacentHTML('beforebegin',`<div class="alert warning" data-cca-correction><b>Problema detectado:</b> ${esc(item.title)} · ${esc(item.detail)}<br><b>Para corregir:</b> ${esc(item.fix||actionLabel(item.tab))}</div>`);const field=modal?.querySelector(selector);field?.focus();field?.scrollIntoView({behavior:'smooth',block:'center'})},30)}
 function openItem(item){
  setActive(false);try{
-  const p=arr(getDB()?.projects).find(x=>x.id===item.projectId),c=arr(getDB()?.contracts).find(x=>x.projectId===item.projectId);if(!p)return;
+  const d=getDB()||{},p=arr(d.projects).find(x=>x.id===item.projectId);if(!p)return;
+  const c=contractFor(d.contracts,p.id);
   view.projectId=p.id;view.screen='project';view.tab=item.tab||'summary';renderApp();
   if(!canEdit()){setTimeout(()=>{try{toast('Tu acceso es de consulta. Puedes ver el problema; para modificarlo necesitas permiso de edición.')}catch{}},40);return}
   if(item.kind==='Plazo'){if(c&&typeof contractModal==='function'){contractModal(p,c);correctionContext(item,'#cEnd')}else if(typeof projectModal==='function'){projectModal(p);correctionContext(item,'#pEnd')}return}
-  if(item.kind==='Garantía'){const g=arr(getDB()?.guarantees).find(x=>x.id===item.entityId);if(g&&typeof guaranteeModal==='function'){guaranteeModal(p,c,g);correctionContext(item,'#gEnd')}return}
-  if(item.kind==='Estimación'){const e=arr(getDB()?.estimates).find(x=>x.id===item.entityId);if(c&&e&&typeof estimateModal==='function'){estimateModal(p,c,e);correctionContext(item,'#eStatus')}return}
-  if(item.kind==='Deficiencia de obra'){const v=arr(getDB()?.visits).find(x=>x.id===item.entityId);if(v&&typeof visitObservationsModal==='function')visitObservationsModal(p,c,v)}
+  if(item.kind==='Garantía'){const g=arr(d.guarantees).find(x=>x.id===item.entityId),gc=g?contractFor(d.contracts,p.id,g.contractId):c;if(g&&typeof guaranteeModal==='function'){guaranteeModal(p,gc||c,g);correctionContext(item,'#gEnd')}return}
+  if(item.kind==='Estimación'){const e=arr(d.estimates).find(x=>x.id===item.entityId),ec=e?contractFor(d.contracts,p.id,e.contractId):c;if(ec&&e&&typeof estimateModal==='function'){estimateModal(p,ec,e);correctionContext(item,'#eStatus')}return}
+  if(item.kind==='Deficiencia de obra'){const v=arr(d.visits).find(x=>x.id===item.entityId),vc=v?contractFor(d.contracts,p.id,v.contractId):c;if(v&&typeof visitObservationsModal==='function')visitObservationsModal(p,vc||c,v)}
  }catch(error){console.warn(error)}}
 function render(){if(!ST.active)return;ensureCss();const content=document.getElementById('content');if(!content)return;const all=buildAlerts(),list=filtered(all),projects=[...new Map(all.map(x=>[x.projectId,x.project])).values()].sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''))),kinds=[...new Set(all.map(x=>x.kind))].sort(),critical=all.filter(x=>['expired','urgent','critical'].includes(x.level)).length,deadlines=all.filter(x=>x.kind==='Plazo').length,guarantees=all.filter(x=>x.kind==='Garantía').length,obs=all.filter(x=>/observ|deficiencia/i.test(x.kind)).length;content.innerHTML=`<section class="cca-page"><div class="cca-head"><span class="cca-eye">DEFICIENCIAS Y SEGUIMIENTO DE OBRA</span><h2>Deficiencias y seguimiento</h2><p>Cada asunto indica el problema, la corrección necesaria y abre directamente el dato que debes revisar.</p></div><div class="cca-kpis"><article class="cca-kpi"><small>Asuntos activos</small><strong>${all.length}</strong></article><article class="cca-kpi"><small>Críticos / urgentes</small><strong>${critical}</strong></article><article class="cca-kpi"><small>Plazos</small><strong>${deadlines}</strong></article><article class="cca-kpi"><small>Garantías</small><strong>${guarantees}</strong></article><article class="cca-kpi"><small>Observaciones</small><strong>${obs}</strong></article></div><div class="cca-tools"><input id="ccaSearch" placeholder="Buscar proyecto o asunto…" value="${esc(ST.search)}"><select id="ccaLevel"><option value="all">Todas las prioridades</option>${['expired','urgent','critical','attention','warning','info'].map(l=>`<option value="${l}" ${ST.level===l?'selected':''}>${levelLabel(l)}</option>`).join('')}</select><select id="ccaKind"><option value="all">Todos los controles</option>${kinds.map(k=>`<option value="${esc(k)}" ${ST.kind===k?'selected':''}>${esc(k)}</option>`).join('')}</select><select id="ccaProject"><option value="all">Todos los proyectos</option>${projects.map(p=>`<option value="${esc(p.id)}" ${ST.project===p.id?'selected':''}>${esc(p.code||'')} · ${esc(p.name||'Proyecto')}</option>`).join('')}</select><span class="cca-count">${list.length} de ${all.length}</span></div><div class="cca-list">${list.length?list.map((x,i)=>`<div class="cca-item"><div><span class="cca-priority ${esc(x.level)}">${levelLabel(x.level)}</span><small style="display:block;color:#71879e;margin-top:4px">${esc(x.kind)}</small></div><div class="cca-project"><b>${esc(x.project.code||'')}</b><strong>${esc(x.project.name||'Proyecto')}</strong></div><div class="cca-detail"><b>${esc(x.title)}</b><small>${esc(x.detail)}</small><em>Para corregir: ${esc(x.fix||actionLabel(x.tab))}</em></div><div><b>${dateHN(x.date)}</b><small style="display:block;color:#71879e">${actionLabel(x.tab)}</small></div><button class="btn primary" data-cca-open="${i}">${canEdit()?'Corregir ahora':'Ver problema'} →</button></div>`).join(''):'<div class="cca-empty">✓ No se detectan asuntos pendientes con los datos registrados.</div>'}</div></section>`;document.getElementById('ccaSearch').oninput=e=>{ST.search=e.target.value;clearTimeout(e.target._t);e.target._t=setTimeout(render,140)};document.getElementById('ccaLevel').onchange=e=>{ST.level=e.target.value;render()};document.getElementById('ccaKind').onchange=e=>{ST.kind=e.target.value;render()};document.getElementById('ccaProject').onchange=e=>{ST.project=e.target.value;render()};document.querySelectorAll('[data-cca-open]').forEach(b=>b.onclick=()=>openItem(list[num(b.dataset.ccaOpen)]))}
 function openCenter(){closeOthers();setActive(true);render()}

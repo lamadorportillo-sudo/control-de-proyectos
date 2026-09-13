@@ -55,6 +55,7 @@ function runAction(kind){
     return tab('visits');
   }
   if(kind==='guarantees'){
+    if(!c)return needContract(p);
     if(editable()&&typeof guaranteeModal==='function')return guaranteeModal(p,c,null);
     return tab('guarantees');
   }

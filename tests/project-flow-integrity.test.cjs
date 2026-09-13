@@ -57,8 +57,8 @@ test('el cargador autenticado invalida caché de los módulos corregidos',()=>{
     'payments-center-v1.js?v=20260913-payments3',
     'guarantees-center-v1.js?v=20260913-guarantees2',
     'visits-center-v1.js?v=20260913-visits2',
-    'reports-center-v1.js?v=20260913-reports2',
-    'alerts-center-v1.js?v=20260913-alerts2'
+    'reports-center-v1.js?v=20260913-reports3',
+    'alerts-center-v1.js?v=20260913-alerts3'
   ]) assert.ok(stable.includes(version),'Falta versión nueva: '+version);
 });
 
@@ -106,4 +106,10 @@ test('garantías nuevas requieren un contrato activo y los movimientos financier
   assert.match(index,/function financialMovements\(p,c=null\)/);
   assert.match(index,/!x\.contractId\|\|!contract\|\|x\.contractId===contract\.id/);
   assert.match(index,/Registrar garantía['"],p=>!!activeProjectContract\(p\.id\)/);
+});
+
+
+test('garantías históricas no deben disparar deficiencias del contrato vigente',()=>{
+  assert.match(alerts,/!x\.contractId\|\|!c\|\|x\.contractId===c\.id/);
+  assert.match(reports,/!g\.contractId\|\|!contract\|\|g\.contractId===contract\.id/);
 });

@@ -76,8 +76,8 @@ test('avance físico y órdenes de cambio usan únicamente el contrato activo',(
 
 
 test('el centro de contratos abre directamente la pestaña contractual',()=>{
-  assert.match(contractsCenter,/view\\.tab=['\"]contract['\"]/);
-  assert.doesNotMatch(contractsCenter,/view\\.tab=['\"]summary['\"]/);
+  assert.match(contractsCenter,/view\.tab=['\"]contract['\"]/);
+  assert.doesNotMatch(contractsCenter,/view\.tab=['\"]summary['\"]/);
   assert.match(contractsCenter,/Abrir contrato/);
   assert.ok(manifest.includes("['contracts-center-v1.js','20260913-contracts3']"));
 });
@@ -97,4 +97,13 @@ test('paneles e informes centrales excluyen registros anulados',()=>{
   assert.match(index,/db\.guarantees\.filter\(g=>g\.projectId===p\.id&&!g\.voidedAt&&!g\.voided_at\)/);
   assert.match(index,/\(db\.visits\|\|\[\]\)\.filter\(v=>v\.projectId===p\.id&&!v\.voidedAt&&!v\.voided_at\)/);
   assert.match(index,/db\.payments\.filter\(x=>x\.projectId===p\.id&&!x\.voidedAt&&!x\.voided_at\)/);
+});
+
+
+test('garantías nuevas requieren un contrato activo y los movimientos financieros respetan contrato',()=>{
+  assert.match(actions,/if\(!c\)return needContract\(p\)/);
+  assert.ok(manifest.includes("['project-functional-actions-v1.js','20260913-actions4']"));
+  assert.match(index,/function financialMovements\(p,c=null\)/);
+  assert.match(index,/!x\.contractId\|\|!contract\|\|x\.contractId===contract\.id/);
+  assert.match(index,/Registrar garantía['"],p=>!!activeProjectContract\(p\.id\)/);
 });

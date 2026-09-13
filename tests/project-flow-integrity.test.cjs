@@ -11,6 +11,9 @@ const visits=read('visits-center-v1.js');
 const reports=read('reports-center-v1.js');
 const alerts=read('alerts-center-v1.js');
 const stable=read('stabilize-core-v1.cjs');
+const progress=read('progress-separation-fix-v1.js');
+const changes=read('change-order-fix-v1.js');
+const manifest=read('authenticated-module-manifest-v1.cjs');
 
 test('las acciones del expediente y el resumen ignoran contratos anulados',()=>{
   assert.match(actions,/!x\.voidedAt&&!x\.voided_at/);
@@ -55,4 +58,16 @@ test('el cargador autenticado invalida caché de los módulos corregidos',()=>{
     'reports-center-v1.js?v=20260913-reports2',
     'alerts-center-v1.js?v=20260913-alerts2'
   ]) assert.ok(stable.includes(version),'Falta versión nueva: '+version);
+});
+
+
+test('avance físico y órdenes de cambio usan únicamente el contrato activo',()=>{
+  assert.match(progress,/const activeContract=projectId/);
+  assert.match(progress,/!x\.voidedAt&&!x\.voided_at/);
+  assert.match(progress,/!v\.voidedAt&&!v\.voided_at/);
+  assert.doesNotMatch(progress,/A\(db\?\.contracts\)\.find\(x=>x\.projectId===p\.id\)/);
+  assert.match(changes,/const activeContract=projectId/);
+  assert.match(changes,/const c=p\?activeContract\(p\.id\):null/);
+  assert.ok(manifest.includes("['progress-separation-fix-v1.js','20260913-progresssep2']"));
+  assert.ok(manifest.includes("['change-order-fix-v1.js','20260913-changefix3']"));
 });

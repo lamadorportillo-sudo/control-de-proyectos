@@ -5,6 +5,7 @@ const fs=require('node:fs');
 const read=file=>fs.readFileSync(file,'utf8');
 const actions=read('project-functional-actions-v1.js');
 const contractsCenter=read('contracts-center-v1.js');
+const index=read('index.html');
 const detail=read('project-detail-v2.js');
 const payments=read('payments-center-v1.js');
 const guarantees=read('guarantees-center-v1.js');
@@ -79,4 +80,21 @@ test('el centro de contratos abre directamente la pestaña contractual',()=>{
   assert.doesNotMatch(contractsCenter,/view\\.tab=['\"]summary['\"]/);
   assert.match(contractsCenter,/Abrir contrato/);
   assert.ok(manifest.includes("['contracts-center-v1.js','20260913-contracts3']"));
+});
+
+
+test('el núcleo del expediente usa contrato activo en dashboard, acciones y render principal',()=>{
+  assert.match(index,/function activeProjectContract\(projectId\)/);
+  assert.match(index,/!x\.voidedAt&&!x\.voided_at/);
+  assert.match(index,/const c=activeProjectContract\(p\.id\)/);
+  assert.match(index,/onPick\(p,activeProjectContract\(p\.id\)\)/);
+  assert.match(index,/p=>!!activeProjectContract\(p\.id\)/);
+  assert.doesNotMatch(index,/db\.contracts\.find\([xc]=>[xc]\.projectId===p\.id\)/);
+});
+
+test('paneles e informes centrales excluyen registros anulados',()=>{
+  assert.match(index,/db\.estimates\.filter\(e=>e\.contractId===c\.id&&!e\.voidedAt&&!e\.voided_at\)/);
+  assert.match(index,/db\.guarantees\.filter\(g=>g\.projectId===p\.id&&!g\.voidedAt&&!g\.voided_at\)/);
+  assert.match(index,/\(db\.visits\|\|\[\]\)\.filter\(v=>v\.projectId===p\.id&&!v\.voidedAt&&!v\.voided_at\)/);
+  assert.match(index,/db\.payments\.filter\(x=>x\.projectId===p\.id&&!x\.voidedAt&&!x\.voided_at\)/);
 });

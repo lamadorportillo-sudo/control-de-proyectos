@@ -48,8 +48,8 @@ test('deficiencias abre el registro sobre el contrato vinculado y usa fecha Hond
 
 test('el cargador autenticado invalida caché de los módulos corregidos',()=>{
   for(const version of [
-    'project-detail-v2.js?v=20260913-detail3',
-    'payments-center-v1.js?v=20260913-payments2',
+    'project-detail-v2.js?v=20260913-detail4',
+    'payments-center-v1.js?v=20260913-payments3',
     'guarantees-center-v1.js?v=20260913-guarantees2',
     'visits-center-v1.js?v=20260913-visits2',
     'reports-center-v1.js?v=20260913-reports2',

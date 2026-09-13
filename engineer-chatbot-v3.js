@@ -6,6 +6,7 @@ window.__CC_ENGINEER_CHATBOT_V1__=true;
 
 const E=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const A=v=>Array.isArray(v)?v:[];
+const activeContractForProject=projectId=>A(db?.contracts).filter(x=>String(x.projectId||'')===String(projectId||'')&&!x.voidedAt&&!x.voided_at).slice(-1)[0]||null;
 const tabLabels={summary:'Resumen',procurement:'Ofertas y adjudicación',contract:'Contrato',controls:'Cláusulas y controles',estimates:'Pagos / Estimaciones',visits:'Visitas',guarantees:'Garantías',changes:'Modificaciones',reports:'Informes',lifecycle:'Proceso contractual',gallery:'Galería'};
 const tabWords=[
   [/\b(resumen|inicio del expediente)\b/i,'summary'],[/\b(oferta|ofertas|adjudicaci[oó]n)\b/i,'procurement'],[/\bcontrato\b/i,'contract'],
@@ -49,7 +50,7 @@ function fieldPhotoCrossCheck(){const p=fieldProject();if(!p)return'Foto guardad
 function finishFieldVisit(){
   const p=fieldProject();if(!fieldVisit||!p)return'No hay una visita abierta para guardar.';
   try{
-    db.visits=db.visits||[];const visits=db.visits.filter(v=>v.projectId===p.id),number=visits.length?Math.max(...visits.map(v=>Number(v.number)||0))+1:1,c=A(db.contracts).find(x=>x.projectId===p.id),now=new Date().toISOString();
+    db.visits=db.visits||[];const visits=db.visits.filter(v=>v.projectId===p.id),number=visits.length?Math.max(...visits.map(v=>Number(v.number)||0))+1:1,c=activeContractForProject(p.id),now=new Date().toISOString();
     const observations=fieldVisit.notes.map((n,i)=>({id:typeof uid==='function'?uid():`${Date.now()}-${i}`,date:fieldVisit.date,category:n.category||'Técnica',priority:/urgente|critico|crítico|riesgo|peligro/i.test(n.text)?'Alta':'Normal',responsible:'',dueDate:'',status:'Pendiente',text:n.text,createdBy:typeof currentUser==='function'?(currentUser()?.name||''):'',createdAt:n.createdAt||now,updatedAt:now}));
     const visit={id:typeof uid==='function'?uid():String(Date.now()),projectId:p.id,contractId:c?.id||null,number,date:fieldVisit.date,type:fieldVisit.type||'Supervisión',status:observations.length?'Con observaciones':'Abierta',objective:fieldVisit.objective||'Seguimiento técnico de campo',physical:Number(fieldVisit.physical)||0,personnel:Number(fieldVisit.personnel)||0,weather:fieldVisit.weather||'',contractorRepresentative:'',supervisor:typeof currentUser==='function'?(currentUser()?.name||''):'',activities:fieldVisit.notes.filter(n=>/ejecut|trabaj|fund|coloc|instal|excav|compact|acarreo/i.test(n.text)).map(n=>n.text).join(' '),generalObservations:fieldVisit.notes.map(n=>n.text).join('\n'),instructions:'',commitments:'',nextVisit:'',observations,photos:A(fieldVisit.photos),createdAt:now,updatedAt:now};
     db.visits.push(visit);if(typeof audit==='function')audit('CREAR','Visita',visit.id,{projectId:p.id,number,source:'Halu campo'});if(typeof saveDB==='function')saveDB();fieldVisit=null;saveFieldDraft();conversation.lastType='work';try{view.projectId=p.id;view.screen='project';view.tab='visits';renderApp()}catch{}
@@ -135,7 +136,13 @@ function haluCloudContext(message=''){
   try{
     if(view?.screen==='project'){
       const p=A(db?.projects).find(x=>x.id===view.projectId);
-      if(p)parts.push(`Proyecto: ${p.code||'sin código'} · ${p.name||p.title||'sin nombre'} · estado ${p.status||'sin estado'}.`);
+      if(p){
+        const c=activeContractForProject(p.id),est=c?A(db?.estimates).filter(e=>String(e.contractId||'')===String(c.id)&&!e.voidedAt&&!e.voided_at):[],gs=A(db?.guarantees).filter(g=>String(g.projectId||'')===String(p.id)&&!g.voidedAt&&!g.voided_at&&(!g.contractId||!c||String(g.contractId)===String(c.id))),vs=A(db?.visits).filter(v=>String(v.projectId||'')===String(p.id)&&!v.voidedAt&&!v.voided_at);
+        let fin=null;try{if(typeof projectFinancials==='function')fin=projectFinancials(p,c,est)}catch{}
+        parts.push(`Proyecto: ${p.code||'sin código'} · ${p.name||p.title||'sin nombre'} · estado ${p.status||'sin estado'}.`);
+        parts.push(c?`Contrato activo: ${c.number||'sin número'} · contratista ${c.contractor||'no registrado'} · monto vigente L ${Number(c.currentAmount??c.originalAmount??0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} · inicio ${c.start||'no registrado'} · final ${c.end||'no registrado'}.`:'Contrato activo: no registrado.');
+        parts.push(`Expediente actual: ${est.length} estimación(es), ${gs.length} garantía(s), ${vs.length} visita(s)${fin?` · estimado acumulado L ${Number((fin.grossC||0)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} · pagado L ${Number((fin.totalPaidC||0)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`:''}.`);
+      }
     }
   }catch{}
   const learned=window.__ccZordonLearning?.contextFor?.(message,learningScope(message))||'';if(learned)parts.push(learned);

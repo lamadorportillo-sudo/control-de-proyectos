@@ -255,13 +255,13 @@ if(!tail.includes('data-cc-auth-plan')){
 
       /* FASE B · CENTROS WEB PRINCIPALES, UNO A UNO. */
       const webModules=[
-        'project-detail-v2.js?v=20260901-detail2',
+        'project-detail-v2.js?v=20260913-detail3',
         'dashboard-simplified-v4.js?v=20260907-dashnav1',
-        'payments-center-v1.js?v=20260901-payments1',
-        'guarantees-center-v1.js?v=20260901-guarantees1',
-        'visits-center-v1.js?v=20260901-visits1',
-        'reports-center-v1.js?v=20260901-reports1',
-        'alerts-center-v1.js?v=20260901-alerts1',
+        'payments-center-v1.js?v=20260913-payments2',
+        'guarantees-center-v1.js?v=20260913-guarantees2',
+        'visits-center-v1.js?v=20260913-visits2',
+        'reports-center-v1.js?v=20260913-reports2',
+        'alerts-center-v1.js?v=20260913-alerts2',
         'audit-center-v1.js?v=20260901-audit1',
         'portal-route-bridge-v1.js?v=20260901-route5',
         'ui-stability-v1.js?v=20260904-stable2'

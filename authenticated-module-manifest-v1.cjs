@@ -114,7 +114,7 @@ const buildOnlyModules=[
   ['alerts-compact-v1.js','20260820-master4'],
   ['engineering-ux-v1.js','20260820-master4'],
   ['procurement-thresholds-v1.js','20260820-gacetas4'],
-  ['contracts-center-v1.js','20260820-contracts2'],
+  ['contracts-center-v1.js','20260913-contracts3'],
   ['corporate-ui-v1.js','20260820-corporate3'],
   ['corporate-polish-v1.js','20260820-polish6'],
   ['procurement-award-fix-v1.js','20260820-award3'],

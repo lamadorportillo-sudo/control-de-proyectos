@@ -250,7 +250,7 @@ function statusHTML(v){return `<span class="cct-status ${statusClass(v)}">${E(la
 function actionHTML(id){return `<button type="button" class="btn" data-cct-edit="${E(id)}">Editar</button>`}
 function projectId(){try{return typeof view!=='undefined'&&view?.screen==='project'?String(view.projectId||''):''}catch{return''}}
 function workspaceId(){try{return typeof cloudWorkspaceId!=='undefined'?String(cloudWorkspaceId||''):''}catch{return''}}
-function contractId(pid){try{return A(db?.contracts).find(c=>c.projectId===pid&&uuid(c.id))?.id||null}catch{return null}}
+function contractId(pid){try{const rows=A(db?.contracts).filter(c=>String(c.projectId||'')===String(pid||'')&&!c.voidedAt&&!c.voided_at&&uuid(c.id));return rows.slice(-1)[0]?.id||null}catch{return null}}
 function projectInfo(pid){try{return A(db?.projects).find(p=>p.id===pid)||null}catch{return null}}
 function apiHeaders(extra={}){return {apikey:SUPABASE_KEY,Authorization:`Bearer ${session?.accessToken||''}`,'Content-Type':'application/json',...extra}}
 async function rest(table,{method='GET',query='',body=null}={}){

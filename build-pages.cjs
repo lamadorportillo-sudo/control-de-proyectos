@@ -192,6 +192,10 @@ function preserveCanonicalFunction(name){
 // pages before they can be preserved into the next publication.
 html=html.replace("$('[data-tab]').forEach(b=>b.onclick=()=>{view.tab=b.dataset.tab;renderProject()})",()=>"$$('[data-tab]').forEach(b=>b.onclick=()=>{view.tab=b.dataset.tab;renderProject()})");
 
+// El estado de una visita pertenece al seguimiento de sus observaciones. Debe
+// mostrarse en el formulario, pero nunca capturarse manualmente.
+html=html.replace('<select id="vStatus">','<select id="vStatus" disabled title="El estado se determina por las observaciones pendientes o atendidas.">');
+
 // La portada V3 histórica redefinía la tarjeta después del núcleo y volvía a
 // seleccionar el primer contrato, incluso si estaba anulado. Mantener la misma
 // autoridad de contrato activo también dentro de esa capa incrustada.

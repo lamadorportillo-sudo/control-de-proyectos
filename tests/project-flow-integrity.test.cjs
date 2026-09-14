@@ -18,6 +18,8 @@ const changes=read('change-order-fix-v1.js');
 const chatbot=read('engineer-chatbot-v3.js');
 const technical=read('technical-control-v1.js');
 const build=read('build-pages.cjs');
+assert.match(build,/\$\$\('\[data-tab\]'\)\.forEach/,'el constructor debe enlazar todas las pestañas del expediente');
+assert.doesNotMatch(read('index.html'),/(?<!\$)\$\('\[data-tab\]'\)\.forEach/,'la página publicada no debe tratar un solo elemento como colección');
 const manifest=read('authenticated-module-manifest-v1.cjs');
 
 test('las acciones del expediente y el resumen ignoran contratos anulados',()=>{

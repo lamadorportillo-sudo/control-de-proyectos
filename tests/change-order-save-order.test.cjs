@@ -13,6 +13,6 @@ assert.match(source,/db\.changes=A\(db\.changes\)\.filter[\s\S]*window\.recalcCo
 assert.match(source,/data-cc-change-summary/,'el resumen acumulado de modificaciones debe conservarse');
 
 const item=supplementalModules.find(([name])=>name==='change-order-fix-v1.js');
-assert.deepEqual(item,['change-order-fix-v1.js','20260905-changefix2'],'la caché autenticada debe cargar la revisión de guardado único');
+assert.deepEqual(item,['change-order-fix-v1.js','20260913-changefix3'],'la caché autenticada debe cargar la revisión de guardado único');
 
 console.log('change-order-save-order: crear/editar/eliminar recalculan antes de una única persistencia');

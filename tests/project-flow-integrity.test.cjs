@@ -20,6 +20,7 @@ const technical=read('technical-control-v1.js');
 const build=read('build-pages.cjs');
 assert.match(build,/\$\$\('\[data-tab\]'\)\.forEach/,'el constructor debe enlazar todas las pestañas del expediente');
 assert.doesNotMatch(read('index.html'),/(?<!\$)\$\('\[data-tab\]'\)\.forEach/,'la página publicada no debe tratar un solo elemento como colección');
+assert.match(build,/id="vStatus" disabled title="El estado se determina por las observaciones/,'el constructor debe impedir la captura manual del estado de visita');
 const manifest=read('authenticated-module-manifest-v1.cjs');
 
 test('las acciones del expediente y el resumen ignoran contratos anulados',()=>{

@@ -36,7 +36,7 @@ test('las versiones publicadas conservan una sola autoridad de carga',()=>{
   assert.match(index,/project-tabs-complete-v1\.js\?v=20260831-tabscomplete34/);
   assert.match(index,/portfolio-gallery-v1\.js\?v=20260828-gallery3/);
   assert.match(read('project-tabs-complete-v1.js'),/immersive-engineering-experience-v1\.js\?v=20260828-immersive2/);
-  assert.match(serviceWorker,/const CACHE='cc-static-v1-20260914-dossier-v1'/);
+  assert.match(serviceWorker,/const CACHE='cc-static-v1-20260911-stable-v3'/);
   assert.match(serviceWorker,/Network-first/i);
   assert.match(serviceWorker,/fetch\(request,\{cache:'no-store'\}\)/);
   assert.match(runtime,/COORDINADOR DE RENDIMIENTO DEL DOM V8\.1 · INTERFAZ ORDENADA/);

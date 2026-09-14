@@ -3,6 +3,7 @@ const zlib=require('zlib');
 const vm=require('vm');
 const {preAuthModules,buildLateModules}=require('./authenticated-module-manifest-v1.cjs');
 const PERFORMANCE_VERSION='20260904-perf10';
+const canonicalIndex=fs.existsSync('index.html')?fs.readFileSync('index.html','utf8'):'';
 
 const files=Array.from({length:12},(_,i)=>`bundle-${String(i+1).padStart(2,'0')}.js`);
 let b64='';
@@ -154,6 +155,45 @@ for(const [module,version] of activeLateModules){
 for(const [module,version] of preAuthModules){
   if(!html.includes(`${module}?v=${version}`))throw new Error(`La versión canónica previa no quedó aplicada: ${module}?v=${version}`);
 }
+
+// Varias correcciones del núcleo contractual viven en el index canónico más
+// reciente mientras el paquete comprimido conserva una base histórica. Al
+// reconstruir, se preservan estas funciones completas para no reactivar
+// contratos anulados ni mezclar pagos, garantías o estimaciones de contratos
+// anteriores del mismo proyecto.
+function functionBlock(source,name){
+  const start=source.indexOf(`function ${name}(`);
+  if(start<0)return'';
+  const next=source.indexOf('\nfunction ',start+10);
+  return source.slice(start,next<0?source.length:next);
+}
+function preserveCanonicalFunction(name){
+  const current=functionBlock(canonicalIndex,name);
+  const generated=functionBlock(html,name);
+  if(!current)throw new Error(`No se encontró la función contractual canónica ${name}.`);
+  if(!generated&&name==='activeProjectContract'){
+    const anchor=html.indexOf('function financialMovements(');
+    if(anchor<0)throw new Error('No se encontró dónde instalar activeProjectContract.');
+    html=html.slice(0,anchor)+current+'\n'+html.slice(anchor);
+    return;
+  }
+  if(!generated)throw new Error(`No se pudo preservar la función contractual ${name}.`);
+  html=html.replace(generated,current);
+}
+[
+  'activeProjectContract','financialMovements','projectFinancials',
+  'projectAutomaticProgress','syncAllProjectProgress','renderApp',
+  'projectCardHTML','dashboardProjectPicker','dashboardQuickAction',
+  'dashboardFollowups','renderProject','renderSummary','buildProjectReport'
+].forEach(preserveCanonicalFunction);
+
+// La portada V3 histórica redefinía la tarjeta después del núcleo y volvía a
+// seleccionar el primer contrato, incluso si estaba anulado. Mantener la misma
+// autoridad de contrato activo también dentro de esa capa incrustada.
+html=html.replaceAll(
+  'const c=db.contracts.find(x=>x.projectId===p.id),fin=projectFinancials(p,c)',
+  'const c=activeProjectContract(p.id),fin=projectFinancials(p,c)'
+);
 
 const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)].map(m=>m[1]);
 if(!scripts.length) throw new Error('No se encontraron scripts en el HTML final.');

@@ -488,7 +488,7 @@ setTimeout(run,300);setTimeout(run,1000);setTimeout(run,2200);
 window.ccRunThemeUnifier=run;
 
 /* Capa visual opcional inspirada en expediente técnico municipal. */
-if(!document.querySelector('script[data-cc-dossier-theme]')){
+if(!window.__CC_MUNICIPAL_DOSSIER_V1__&&!document.querySelector('script[data-cc-dossier-theme]')){
   const dossier=document.createElement('script');
   dossier.src='municipal-dossier-theme-v1.js?v=20260914-nocturna1';
   dossier.defer=true;

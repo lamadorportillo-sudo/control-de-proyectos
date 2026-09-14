@@ -187,6 +187,11 @@ function preserveCanonicalFunction(name){
   'dashboardFollowups','renderProject','renderSummary','buildProjectReport'
 ].forEach(preserveCanonicalFunction);
 
+// The canonical project renderer binds every tab. `$` returns one element,
+// whereas `$$` returns the collection required by forEach. Repair older built
+// pages before they can be preserved into the next publication.
+html=html.replace("$('[data-tab]').forEach(b=>b.onclick=()=>{view.tab=b.dataset.tab;renderProject()})",()=>"$$('[data-tab]').forEach(b=>b.onclick=()=>{view.tab=b.dataset.tab;renderProject()})");
+
 // La portada V3 histórica redefinía la tarjeta después del núcleo y volvía a
 // seleccionar el primer contrato, incluso si estaba anulado. Mantener la misma
 // autoridad de contrato activo también dentro de esa capa incrustada.

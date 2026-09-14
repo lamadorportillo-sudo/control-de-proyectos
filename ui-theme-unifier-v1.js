@@ -486,4 +486,13 @@ new MutationObserver(()=>{
 }).observe(document.documentElement,{subtree:true,childList:true});
 setTimeout(run,300);setTimeout(run,1000);setTimeout(run,2200);
 window.ccRunThemeUnifier=run;
+
+/* Capa visual opcional inspirada en expediente técnico municipal. */
+if(!document.querySelector('script[data-cc-dossier-theme]')){
+  const dossier=document.createElement('script');
+  dossier.src='municipal-dossier-theme-v1.js?v=20260914-dossier2';
+  dossier.defer=true;
+  dossier.dataset.ccDossierTheme='true';
+  document.head.appendChild(dossier);
+}
 })();

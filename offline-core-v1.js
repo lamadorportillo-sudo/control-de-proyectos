@@ -175,21 +175,57 @@ function threeWayMerge(base,local,server){
   }
   return{data:out,conflicts};
 }
-function conflictModal(serverData,serverVersion,conflicts){
-  window.__ccOfflineSyncConflict={serverData:clone(serverData),serverVersion,localData:clone(db),conflicts:[...conflicts],at:now()};
-  emit('conflict',{message:'Hay cambios del mismo expediente en la nube y en este dispositivo.'});
-  if(typeof openModal!=='function'){say('Hay un conflicto de sincronización. Tus cambios locales siguen guardados.');return}
-  const items=conflicts.slice(0,8).map(x=>`<li>${String(x).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}</li>`).join('');
-  const m=openModal('Cambios pendientes por revisar',`<div class="alert danger"><b>No se sobrescribió información.</b> El mismo registro cambió en la nube mientras este dispositivo trabajaba sin conexión.</div><p class="muted">Tus cambios permanecen guardados en este dispositivo.</p>${items?`<ul>${items}</ul>`:''}<div class="actions"><button class="btn" id="ccOfflineBackup">Guardar respaldo</button><button class="btn" id="ccOfflineKeep">Revisar después</button><button class="btn danger" id="ccOfflineUseCloud">Usar versión de la nube</button></div>`);
+function activeConflict(){
+  return window.__ccOfflineSyncConflict||window.__ccSyncConflict||null;
+}
+function conflictIndicator(){
+  let host=document.querySelector('#ccSidebar .cc-sync-box');
+  if(!host)return null;
+  let button=document.getElementById('ccOfflineConflictReview');
+  if(!button){
+    button=document.createElement('button');button.id='ccOfflineConflictReview';button.type='button';
+    button.style.cssText='display:none;width:100%;margin-top:8px;padding:8px 9px;border:1px solid rgba(245,158,11,.35);border-radius:8px;background:rgba(245,158,11,.08);color:#fde3a7;text-align:left;font:800 9px/1.35 inherit;cursor:pointer';
+    button.addEventListener('click',openConflictReview);
+    host.appendChild(button);
+  }
+  return button;
+}
+function updateConflictIndicator(){
+  const item=activeConflict(),button=conflictIndicator();
+  if(!button)return;
+  const count=arr(item?.conflicts).length;
+  button.style.display=count?'block':'none';
+  button.textContent=count?`⚠ ${count} cambio${count===1?'':'s'} pendiente${count===1?'':'s'} · Revisar`:'';
+}
+function openConflictReview(){
+  const item=activeConflict();if(!item)return say('No hay cambios pendientes por revisar.');
+  const conflicts=arr(item.conflicts),serverData=item.serverData,serverVersion=item.serverVersion;
+  if(typeof openModal!=='function')return say('Hay cambios pendientes. Tus datos locales siguen protegidos.');
+  const items=conflicts.slice(0,12).map(x=>`<li>${String(x).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}</li>`).join('');
+  const m=openModal('Revisar cambios pendientes',`<div class="alert info"><b>Tus datos locales siguen protegidos.</b> Revisa las diferencias cuando te convenga; esta ventana ya no se abre automáticamente al iniciar.</div>${items?`<ul>${items}</ul>`:''}<div class="actions"><button class="btn" id="ccOfflineBackup">Guardar respaldo</button><button class="btn" id="ccOfflineKeep">Cerrar</button><button class="btn danger" id="ccOfflineUseCloud">Usar versión de la nube</button></div>`);
   m.querySelector('#ccOfflineBackup')?.addEventListener('click',()=>{try{exportBackup()}catch{say('No se pudo generar el respaldo desde esta pantalla.')}});
   m.querySelector('#ccOfflineKeep')?.addEventListener('click',()=>m.remove());
   m.querySelector('#ccOfflineUseCloud')?.addEventListener('click',async()=>{
+    if(!serverData)return say('La versión de la nube ya no está disponible en esta revisión.');
     if(!confirm('Se reemplazará la copia de trabajo local por la versión actual de la nube. ¿Continuar?'))return;
     db=Object.assign(defaultDB(),clone(serverData)||{});
-    window.__ccCloudVersion=serverVersion;window.__ccCloudBaseState=clone(serverData)||{};window.__ccOfflineSyncConflict=null;
+    window.__ccCloudVersion=serverVersion;window.__ccCloudBaseState=clone(serverData)||{};window.__ccOfflineSyncConflict=null;window.__ccSyncConflict=null;
     await persistSnapshot({pending:false,lastCloudAt:now(),baseState:serverData,stateVersion:serverVersion});
-    m.remove();try{renderApp()}catch{try{render()}catch{}}
+    updateConflictIndicator();m.remove();try{renderApp()}catch{try{render()}catch{}}
   });
+}
+function conflictModal(serverData,serverVersion,conflicts){
+  window.__ccOfflineSyncConflict={serverData:clone(serverData),serverVersion,localData:clone(db),conflicts:[...conflicts],at:now()};
+  emit('conflict',{message:'Hay cambios pendientes entre la nube y este dispositivo.'});
+  updateConflictIndicator();
+  try{window.dispatchEvent(new CustomEvent('cc:sync-conflict',{detail:{count:conflicts.length,source:'offline'}}))}catch{}
+  const signature=conflicts.slice().sort().join('|');
+  try{
+    if(sessionStorage.getItem('cc_conflict_notice_v2')!==signature){
+      sessionStorage.setItem('cc_conflict_notice_v2',signature);
+      say(`Hay ${conflicts.length} cambio${conflicts.length===1?'':'s'} pendiente${conflicts.length===1?'':'s'} de revisar. Puedes continuar trabajando.`);
+    }
+  }catch{}
 }
 async function readServerRow(){
   const wid=workspaceId();if(!wid)throw new Error('No hay espacio de trabajo asociado a esta copia offline.');
@@ -225,7 +261,7 @@ async function syncNow(retry=0){
       }
       if(!result?.saved)throw new Error('La nube cambió durante la sincronización. Se intentará nuevamente.');
       const newVersion=Number(result.new_version||serverVersion+1),savedState=safeState(merged.data),syncedAt=now();
-      window.__ccCloudVersion=newVersion;window.__ccCloudBaseState=clone(savedState);window.__ccOfflineSyncConflict=null;window.__CC_LOCAL_CLOUD_FALLBACK__=false;
+      window.__ccCloudVersion=newVersion;window.__ccCloudBaseState=clone(savedState);window.__ccOfflineSyncConflict=null;window.__ccSyncConflict=null;window.__CC_LOCAL_CLOUD_FALLBACK__=false;updateConflictIndicator();
       try{cloudLastSaved=new Date(syncedAt)}catch{}
       if(editSeq===capturedSeq){db=Object.assign(defaultDB(),clone(savedState));await persistSnapshot({pending:false,lastCloudAt:syncedAt,baseState:savedState,stateVersion:newVersion})}
       else{
@@ -317,11 +353,16 @@ window.ccOffline={
   syncNow,
   scheduleSync,
   restore:restoreSnapshot,
+  reviewConflict:openConflictReview,
+  updateConflictIndicator,
   mergePreview:(base,local,server)=>threeWayMerge(clone(base),clone(local),clone(server))
 };
 
 window.addEventListener('offline',()=>{emit('offline',{message:'Sin conexión. Puedes seguir trabajando; los cambios se guardan en este dispositivo.'});persistSnapshot({pending:runtimeState.pendingCount>0,pendingCount:runtimeState.pendingCount||0})});
 window.addEventListener('online',()=>{emit(runtimeState.pendingCount?'pending':'local',{message:'Conexión disponible.'});scheduleSync(120)});
+window.addEventListener('cc:sync-conflict',()=>setTimeout(updateConflictIndicator,0));
+document.addEventListener('cc:authenticated-modules-ready',()=>setTimeout(updateConflictIndicator,0));
+document.addEventListener('cc:authenticated-modules-partial',()=>setTimeout(updateConflictIndicator,0));
 window.addEventListener('pagehide',()=>{if(runtimeState.pendingCount>0)persistSnapshot({pending:true,pendingCount:runtimeState.pendingCount})});
 
 (async()=>{

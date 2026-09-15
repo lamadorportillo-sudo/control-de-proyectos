@@ -122,7 +122,9 @@ jobs:
         env:
           APP_URL: http://127.0.0.1:4173/
         shell: bash
-        run: timeout 90s npx playwright test tests/project-create-route-responsive.spec.cjs --workers=1 --retries=0
+        run: |
+          timeout 90s npx playwright test tests/project-create-route-responsive.spec.cjs --workers=1 --retries=0
+          timeout 120s npx playwright test tests/navigation-centers-responsive.spec.cjs --workers=1 --retries=0
 
       - name: Publicar después de las comprobaciones básicas
         shell: bash

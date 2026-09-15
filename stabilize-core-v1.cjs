@@ -242,7 +242,7 @@ if(!tail.includes('data-cc-auth-plan')){
       styleOnce('project-detail-v2.css?v=20260901-detail2','ccAuthProjectCss');
       styleOnce('dashboard-simplified-v4.css?v=20260907-dashnav1','ccAuthDashboardCss');
 
-      await requireRun('portal-web-v2.js',()=>runSrc('portal-web-v2.js?v=20260904-web4'));
+      await requireRun('portal-web-v2.js',()=>runSrc('portal-web-v2.js?v=20260914-master1'));
       const tabs=nodeByBare('project-tabs-complete-v1.js');
       if(!tabs)throw new Error('Falta project-tabs-complete-v1.js en el plan autenticado.');
       await requireRun('project-tabs-complete-v1.js',()=>runNode(tabs));

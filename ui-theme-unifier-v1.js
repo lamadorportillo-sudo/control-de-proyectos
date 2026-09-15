@@ -1,7 +1,8 @@
-/* ===== CONTROL CONTRACTUAL · IMMERSIVE 3D UI V2 ===== */
+/* ===== CONTROL CONTRACTUAL · IDENTIDAD INDUSTRIAL PROFESIONAL V3 ===== */
 (()=>{
 'use strict';
-if(window.__CC_THEME_UNIFIER_V2__)return;
+if(window.__CC_THEME_UNIFIER_V3__)return;
+window.__CC_THEME_UNIFIER_V3__=true;
 window.__CC_THEME_UNIFIER_V2__=true;
 
 const STYLE_ID='cc-theme-unifier-v1-style';
@@ -14,11 +15,11 @@ function inject(){
     s.textContent=`
       :root{
         color-scheme:dark!important;
-        --cc-bg:#050814;
-        --cc-bg2:#08111f;
-        --cc-panel:rgba(9,18,34,.82);
-        --cc-panel-strong:rgba(8,16,30,.96);
-        --cc-glass:rgba(15,31,55,.62);
+        --cc-bg:#0B1220;
+        --cc-bg2:#101b2d;
+        --cc-panel:rgba(19,34,56,.92);
+        --cc-panel-strong:rgba(14,28,47,.98);
+        --cc-glass:rgba(23,45,72,.72);
         --cc-line:rgba(120,161,230,.18);
         --cc-line-strong:rgba(107,155,255,.34);
         --cc-text:#f7fbff;
@@ -51,14 +52,14 @@ function inject(){
         background-image:
           linear-gradient(rgba(116,160,230,.055) 1px,transparent 1px),
           linear-gradient(90deg,rgba(116,160,230,.045) 1px,transparent 1px);
-        background-size:42px 42px;
+        background-size:56px 56px;
         mask-image:linear-gradient(to bottom,rgba(0,0,0,.78),transparent 88%);
       }
       body:not(.print-report)::after{
         content:"";position:fixed;width:520px;height:520px;right:-210px;top:18vh;z-index:-1;pointer-events:none;
         border-radius:50%;filter:blur(20px);opacity:.30;
         background:radial-gradient(circle,rgba(49,116,255,.34),rgba(35,94,215,.08) 44%,transparent 70%);
-        animation:ccAmbientDrift 13s ease-in-out infinite alternate;
+        animation:none;
       }
 
       body:not(.print-report) .shell{position:relative;z-index:1}
@@ -130,13 +131,13 @@ function inject(){
         border-radius:50%;border:34px solid rgba(71,127,255,.10);
         box-shadow:inset 0 0 38px rgba(110,178,255,.20),0 0 62px rgba(56,115,255,.18);
         transform:rotateX(67deg) rotateZ(-17deg);filter:drop-shadow(0 25px 28px rgba(0,0,0,.28));
-        animation:ccRingFloat 8s ease-in-out infinite;
+        animation:none;display:none;
       }
       body:not(.print-report) .exec-overview::after{
         content:"";position:absolute;width:82px;height:82px;right:29%;top:26px;z-index:-1;pointer-events:none;border-radius:50%;
         background:radial-gradient(circle at 31% 28%,rgba(255,255,255,.92) 0 2%,rgba(128,196,255,.52) 8%,rgba(45,99,196,.22) 42%,rgba(13,29,54,.06) 66%,transparent 72%);
         box-shadow:0 22px 40px rgba(0,0,0,.24),inset -12px -16px 26px rgba(9,24,51,.40);
-        backdrop-filter:blur(4px);animation:ccOrbFloat 6.5s ease-in-out infinite alternate;
+        backdrop-filter:blur(4px);animation:none;display:none;
       }
       body:not(.print-report) .exec-intro,
       body:not(.print-report) .exec-visual{
@@ -154,7 +155,7 @@ function inject(){
       body:not(.print-report) .exec-visual::after{
         content:"";position:absolute;inset:0;pointer-events:none;
         background:linear-gradient(115deg,transparent 18%,rgba(255,255,255,.035) 42%,transparent 60%);
-        transform:translateX(-115%);animation:ccSheen 9s ease-in-out infinite;
+        transform:none;animation:none;opacity:.45;
       }
       body:not(.print-report) .exec-title-row h2,
       body:not(.print-report) .exec-money strong,
@@ -458,7 +459,8 @@ function inject(){
   const themeMeta=document.querySelector('meta[name="theme-color"]');
   if(themeMeta)themeMeta.setAttribute('content','#050814');
   document.documentElement.style.colorScheme='dark';
-  document.body?.classList.add('cc-immersive-3d');
+  document.body?.classList.remove('cc-immersive-3d');
+  document.body?.classList.add('cc-industrial-professional');
 }
 
 function correctLegacyLanguage(){
@@ -487,12 +489,5 @@ new MutationObserver(()=>{
 setTimeout(run,300);setTimeout(run,1000);setTimeout(run,2200);
 window.ccRunThemeUnifier=run;
 
-/* Capa visual opcional inspirada en expediente técnico municipal. */
-if(!window.__CC_MUNICIPAL_DOSSIER_V1__&&!document.querySelector('script[data-cc-dossier-theme]')){
-  const dossier=document.createElement('script');
-  dossier.src='municipal-dossier-theme-v1.js?v=20260914-nocturna1';
-  dossier.defer=true;
-  dossier.dataset.ccDossierTheme='true';
-  document.head.appendChild(dossier);
-}
+/* La capa 'expediente municipal' queda desactivada: imponía beige/serif y anulaba la identidad industrial azul. */
 })();

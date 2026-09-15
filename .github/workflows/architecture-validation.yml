@@ -92,7 +92,8 @@ jobs:
           test -s index.html
           node scripts/validate-auth-manifest.cjs
           grep -q 'performance-runtime-v1.js?v=20260904-perf10' index.html
-          grep -q 'portal-web-v2.js?v=20260904-web4' index.html
+          grep -q 'portal-web-v2.js?v=20260915-aux2' index.html
+          grep -q 'portal-web-v2.css?v=20260915-auxcss2' index.html
           grep -q 'ui-stability-v1.js?v=20260904-stable2' index.html
           grep -q '__CC_AUTH_BOOT_FAILED__' index.html
           grep -q '__CC_AUTH_MODULE_ERRORS__' index.html

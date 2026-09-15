@@ -86,6 +86,16 @@ body.cc-transparency-active:not(.print-report) #ccCommandbar{
   body.cc-portal-v2[data-cc-main-route="presupuesto"]:not(.print-report) #ccCommandbar .cc-command-actions{
     display:none!important;
   }
+  body.cc-contracts-center-active:not(.print-report) #ccCommandbar,
+  body.cc-payments-center-active:not(.print-report) #ccCommandbar,
+  body.cc-guarantees-center-active:not(.print-report) #ccCommandbar,
+  body.cc-visits-center-active:not(.print-report) #ccCommandbar,
+  body.cc-reports-center-active:not(.print-report) #ccCommandbar,
+  body.cc-alerts-center-active:not(.print-report) #ccCommandbar,
+  body.cc-audit-center-active:not(.print-report) #ccCommandbar,
+  body.cc-portal-v2[data-cc-main-route="presupuesto"]:not(.print-report) #ccCommandbar{
+    position:relative!important;z-index:40!important;pointer-events:auto!important;
+  }
   body.cc-contracts-center-active:not(.print-report) #ccCommandbar .cc-mobile-toggle,
   body.cc-payments-center-active:not(.print-report) #ccCommandbar .cc-mobile-toggle,
   body.cc-guarantees-center-active:not(.print-report) #ccCommandbar .cc-mobile-toggle,
@@ -94,7 +104,8 @@ body.cc-transparency-active:not(.print-report) #ccCommandbar{
   body.cc-alerts-center-active:not(.print-report) #ccCommandbar .cc-mobile-toggle,
   body.cc-audit-center-active:not(.print-report) #ccCommandbar .cc-mobile-toggle,
   body.cc-portal-v2[data-cc-main-route="presupuesto"]:not(.print-report) #ccCommandbar .cc-mobile-toggle{
-    display:grid!important;
+    display:grid!important;position:relative!important;z-index:41!important;
+    pointer-events:auto!important;flex:0 0 40px!important;
   }
 }
 

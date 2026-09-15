@@ -122,11 +122,11 @@ jobs:
           grep -q 'save_app_state' index.html
           grep -q 'performance-runtime-v1.js?v=20260904-perf10' index.html
           grep -q 'COORDINADOR DE RENDIMIENTO DEL DOM V8.1 · INTERFAZ ORDENADA' performance-runtime-v1.js
-          grep -q 'service-worker-v1.js?v=20260911-sw3' performance-runtime-v1.js
-          grep -q 'portal-web-v2.js?v=20260904-web4' index.html
+          grep -q 'service-worker-v1.js?v=20260914-sw-master1' performance-runtime-v1.js
+          grep -q 'portal-web-v2.js?v=20260914-master1' index.html
           grep -q 'dashboard-simplified-v4.js?v=20260914-step3' index.html
           grep -q 'ui-stability-v1.js?v=20260904-stable2' index.html
-          grep -q 'cc-static-v1-20260911-stable-v3' service-worker-v1.js
+          grep -q 'cc-static-v1-20260914-master1' service-worker-v1.js
           grep -q 'CONTROL CONTRACTUAL · MODO CAMPO OFFLINE V1' index.html
           grep -q 'offline-field-v1.js?v=20260908-offline1' index.html
           grep -q 'manifest.webmanifest' index.html

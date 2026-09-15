@@ -54,7 +54,7 @@ function generateExecutionReport(){
 function render(options={}){
   if(!ST.active)return;ensureCss();
   const content=document.getElementById('content');if(!content)return;
-  const restoreSearch=!!options.restoreSearch&&document.activeElement?.id==='ccrSearch';
+  const restoreSearch=document.activeElement?.id==='ccrSearch';
   const oldSearch=document.getElementById('ccrSearch'),caret=restoreSearch?oldSearch?.selectionStart:0;
   const all=buildRows(),list=filterRows(all),type=selectedType(),hasSearch=!!ST.search.trim();
   const executionCount=all.filter(x=>/ejecuci/i.test(String(x.project.status||''))).length;

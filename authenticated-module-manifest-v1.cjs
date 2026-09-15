@@ -35,6 +35,9 @@ const supplementalModules=[
   ['mobile-popup-fallback-v1.js','20260821-mobilepopup1'],
   ['progress-separation-fix-v1.js','20260913-progresssep2'],
   ['programacion-control-v1.js','20260823-programacion4'],
+  /* Consolida alcance, cronograma, costo, calidad, riesgos y cierre en una sola
+     vista de gestión sin duplicar los módulos técnicos existentes. */
+  ['project-management-v1.js','20260914-projectmanagement1'],
   ['change-order-fix-v1.js','20260913-changefix3'],
   ['contract-penalty-card-v1.js','20260831-penalty2'],
   ['contract-explicit-rules-v1.js','20260904-explicit1'],

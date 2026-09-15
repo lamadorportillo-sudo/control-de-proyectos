@@ -85,7 +85,7 @@ test('el centro de contratos abre directamente la pestaña contractual',()=>{
   assert.match(contractsCenter,/view\.tab=['\"]contract['\"]/);
   assert.doesNotMatch(contractsCenter,/view\.tab=['\"]summary['\"]/);
   assert.match(contractsCenter,/Abrir contrato/);
-  assert.ok(manifest.includes("['contracts-center-v1.js','20260913-contracts3']"));
+  assert.ok(manifest.includes("['contracts-center-v1.js','20260914-step5']"));
 });
 
 

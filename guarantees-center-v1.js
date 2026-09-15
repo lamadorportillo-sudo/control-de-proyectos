@@ -28,7 +28,7 @@ function openProject(id){setActive(false);try{view.projectId=id;view.screen='pro
 function render(options={}){
   if(!ST.active)return;css();
   const c=document.getElementById('content');if(!c)return;
-  const restoreSearch=!!options.restoreSearch&&document.activeElement?.id==='ccgSearch';
+  const restoreSearch=document.activeElement?.id==='ccgSearch';
   const oldSearch=document.getElementById('ccgSearch'),caret=restoreSearch?oldSearch?.selectionStart:0;
   const all=rows(),projects=A(DB()?.projects).filter(p=>!p.deletedAt).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
   const hasFilter=!!(ST.search.trim()||ST.project!=='all'),list=filtered(all);

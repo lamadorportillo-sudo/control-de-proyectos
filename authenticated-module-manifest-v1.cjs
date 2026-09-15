@@ -117,7 +117,7 @@ const buildOnlyModules=[
   ['workspace-access-v1.js','20260820-master4'],
   ['admin-users-v1.js','20260823-admin-users4'],
   ['alerts-compact-v1.js','20260820-master4'],
-  ['engineering-ux-v1.js','20260820-master4'],
+  ['engineering-ux-v1.js','20260915-project-button1'],
   ['procurement-thresholds-v1.js','20260820-gacetas4'],
   ['contracts-center-v1.js','20260914-step5'],
   ['corporate-ui-v1.js','20260820-corporate3'],

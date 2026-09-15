@@ -36,7 +36,8 @@ async function loadSharedConversation(admin:any,workspaceId:string,userId:string
 }
 function mergeSharedHistory(shared:SharedTurn[],local:Turn[]){
   const out:Turn[]=[];
-  const push=(turn:Turn)=>{const text=cleanText(turn?.text,1000);if(!text)return;const last=out.at(-1);if(last?.role===turn.role&&last?.text===text)return;out.push({role:turn.role,text})};
+  const seen=new Set<string>();
+  const push=(turn:Turn)=>{const text=cleanText(turn?.text,1000);if(!text)return;const key=turn.role+"\u0000"+text;if(seen.has(key))return;seen.add(key);out.push({role:turn.role,text})};
   for(const turn of shared.slice(-24))push({role:turn.role,text:turn.text});
   for(const turn of local.slice(-24))push(turn);
   return out.slice(-30);

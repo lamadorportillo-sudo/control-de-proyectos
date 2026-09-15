@@ -97,7 +97,7 @@ assert.match(stabilizer,/preAuthModules/,'la construcción debe validar los mód
 // Arranque autenticado por fases: la primera pintura no debe esperar decenas de módulos.
 assert.match(stabilizer,/__CC_STAGED_AUTH_BOOT__/,'debe declarar el modo de arranque autenticado escalonado');
 assert.match(stabilizer,/FASE A · PRIMERA PINTURA AUTENTICADA/,'debe existir una fase crítica de primera pintura');
-assert.match(stabilizer,/portal-web-v2\.js\?v=20260914-master1/,'debe cargar la versión del portal que ya no compite por rutas');
+assert.match(stabilizer,/portal-web-v2\.js\?v=20260915-aux2/,'debe cargar la versión del portal que ya no compite por rutas');
 assert.match(stabilizer,/requireRun\('portal-web-v2\.js'/,'el portal es obligatorio para declarar lista la fase crítica');
 assert.match(stabilizer,/Falta project-tabs-complete-v1\.js en el plan autenticado/,'las pestañas críticas ausentes deben fallar explícitamente');
 assert.match(stabilizer,/Falta ui-navigation-single-source-v1\.js en el plan autenticado/,'la navegación crítica ausente debe fallar explícitamente');

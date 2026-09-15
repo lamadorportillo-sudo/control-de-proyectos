@@ -34,6 +34,18 @@ assert.match(nav,/document\.body\.dataset\.ccMainRoute=r/,'cada ruta elegida deb
 assert.match(nav,/syncActive\(Q\('#ccSidebar'\)\)/,'la barra lateral debe sincronizar su estado activo durante la interacción, sin esperar otro render');
 assert.match(nav,/aria-current','page'/,'la ruta activa debe quedar expuesta semánticamente');
 assert.doesNotMatch(nav,/route==='proyectos'[^\n]*scrollIntoView/,'Proyectos no debe mover las tarjetas mientras se intenta abrir un expediente');
+assert.match(nav,/const CENTER_GETTERS=\{/,'la navegación debe tener una sola tabla canónica de centros operativos');
+for(const route of ['contratos','pagos','garantias','visitas','reportes','alertas','auditoria'])assert.match(nav,new RegExp(route+':\\(\\)=>window\\.__cc'),'cada centro operativo debe estar gobernado por la navegación única');
+assert.match(nav,/function closeOperationalCenters\(except=''\)/,'debe cerrar centros anteriores al cambiar de sección');
+assert.match(nav,/function leaveTransparencyShell\(\)/,'debe restaurar la barra general al salir de Transparencia');
+assert.match(nav,/function goPortfolio\(route\)\{\s*closeOperationalCenters\(\);\s*leaveTransparencyShell\(\);/,'Inicio y Proyectos no deben dejar un centro anterior activo');
+assert.match(nav,/function goBudget\(\)\{\s*closeOperationalCenters\(\);\s*leaveTransparencyShell\(\);/,'Presupuesto no debe heredar clases ni barra de otra pantalla');
+assert.match(nav,/function openOperationalCenter\(route\)/,'los centros globales deben abrirse por una sola función');
+const bridge=fs.readFileSync('portal-route-bridge-v1.js','utf8');
+assert.match(bridge,/window\.__ccSingleNav\?\.openOperationalCenter/,'el puente debe delegar en la navegación canónica y no competir con ella');
+const tabletFix=fs.readFileSync('tablet-layout-fix-v1.js','utf8');
+assert.match(tabletFix,/En móvil nunca se pierde el botón de menú/,'los centros globales deben conservar la hamburguesa en móvil');
+assert.match(tabletFix,/cc-audit-center-active[\s\S]*#ccCommandbar[\s\S]*display:flex!important/,'Auditoría y los centros compactos deben conservar acceso al menú móvil');
 
 // Estabilidad visual: nunca debe volver a convertirse en un segundo router.
 assert.match(uiStability,/ESTABILIDAD VISUAL V2/,'la capa de estabilidad debe declararse solo visual');

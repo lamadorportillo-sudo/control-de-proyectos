@@ -24,7 +24,7 @@ test('ZORDON conserva un núcleo idempotente sin bucle global de reescritura',()
 });
 
 test('el chat ZORDON solo intercepta eventos originados en su botón real y corrige el tono',()=>{
-  assert.match(chatSource,/ZORDON · CHAT NATURAL Y CONTINUO V6 · TONO CONTEXTUAL/);
+  assert.match(chatSource,/ZORDON · CHAT NATURAL Y CONTINUO V7 · SIN RESPUESTAS ENLATADAS/);
   assert.match(chatSource,/function isSendEvent\(event\)/);
   assert.match(chatSource,/target===btn\|\|!!target\?\.closest\?\./,'el envío debe depender del target DOM, no de coordenadas globales');
   assert.doesNotMatch(chatSource,/function pointInside\(/,'no debe existir detección de clic global por coordenadas');
@@ -40,6 +40,6 @@ test('el manifiesto publica las capas ZORDON una sola vez y fuerza caché fresca
   const chat=supplementalModules.filter(([file])=>file==='zordon-chat-ui-v1.js');
   assert.equal(core.length,1,'el núcleo ZORDON no puede tener dos entradas de carga autenticada');
   assert.equal(chat.length,1,'el chat ZORDON no puede tener dos entradas de carga autenticada');
-  assert.equal(core[0][1],'20260908-zordon5');
-  assert.equal(chat[0][1],'20260908-cleanchat6');
+  assert.equal(core[0][1],'20260914-zordon6human');
+  assert.equal(chat[0][1],'20260914-cleanchat7human');
 });

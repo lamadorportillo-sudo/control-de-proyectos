@@ -28,7 +28,7 @@ const supplementalModules=[
      Sus versiones viven aquí para que arquitectura y publicación prueben
      exactamente el mismo artefacto. */
   ['project-tabs-complete-v1.js','20260831-tabscomplete34'],
-  ['ui-navigation-single-source-v1.js','20260915-navfix11'],
+  ['ui-navigation-single-source-v1.js','20260915-navfix12'],
   ['security-runtime-v1.js','20260904-security4'],
   ['mfa-security-v1.js','20260824-mfa4'],
   ['security-center-v1.js','20260823-securitycenter4'],
@@ -48,7 +48,7 @@ const supplementalModules=[
   ['report-export-css-fix-v1.js','20260821-reportcss1'],
   ['document-qr-v1.js','20260831-docqr1'],
   ['transparency-exec-bridge-v1.js','20260821-trbridge1'],
-  ['transparency-portal-v1.js','20260915-transparency7'],
+  ['transparency-portal-v1.js','20260915-transparency8'],
   ['transparency-storage-v1.js','20260913-trstorage2'],
   ['budget-search-fix-v1.js','20260821-budgetsearch1'],
   /* El dashboard evaluativo histórico observa documentElement completo. La
@@ -104,7 +104,7 @@ const supplementalModules=[
   /* Última corrección visual general, antes del par técnico que debe seguir
      siendo el cierre funcional del plan autenticado. */
   ['ui-contrast-final-guard-v1.js','20260915-nocturnal-ledger12'],
-  ['tablet-layout-fix-v1.js','20260915-tablet6'],
+  ['tablet-layout-fix-v1.js','20260915-tablet7'],
   /* El guard se ejecuta inmediatamente antes del módulo técnico histórico y
      filtra su MutationObserver global sin afectar los observadores del resto. */
   ['technical-control-observer-guard-v1.js','20260904-controlobserver1'],

@@ -1,0 +1,71 @@
+name: Desplegar ZORDON y Telegram en Supabase
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/functions/halu-chat/**'
+      - 'supabase/functions/telegram-gateway/**'
+      - 'supabase/functions/telegram-router/**'
+      - 'supabase/functions/telegram-webhook/**'
+      - '.github/workflows/deploy-zordon-supabase.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-zordon-supabase-main
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: flethujkrharehjikwgj
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v6
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Verificar configuración
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          test -s supabase/functions/halu-chat/index.ts
+          test -s supabase/functions/telegram-gateway/index.ts
+          test -s supabase/functions/telegram-router/index.ts
+          test -s supabase/functions/telegram-webhook/index.ts
+          test -s supabase/functions/telegram-webhook/report.ts
+
+      - name: Desplegar ZORDON web
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes supabase@latest functions deploy halu-chat --project-ref "$PROJECT_REF"
+
+      - name: Desplegar Telegram gateway
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes supabase@latest functions deploy telegram-gateway --project-ref "$PROJECT_REF" --no-verify-jwt
+
+      - name: Desplegar Telegram router
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes supabase@latest functions deploy telegram-router --project-ref "$PROJECT_REF" --no-verify-jwt
+
+      - name: Desplegar Telegram webhook
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes supabase@latest functions deploy telegram-webhook --project-ref "$PROJECT_REF" --no-verify-jwt

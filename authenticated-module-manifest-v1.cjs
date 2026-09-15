@@ -48,7 +48,7 @@ const supplementalModules=[
   ['report-export-css-fix-v1.js','20260821-reportcss1'],
   ['document-qr-v1.js','20260831-docqr1'],
   ['transparency-exec-bridge-v1.js','20260821-trbridge1'],
-  ['transparency-portal-v1.js','20260913-transparency5'],
+  ['transparency-portal-v1.js','20260915-transparency6'],
   ['transparency-storage-v1.js','20260913-trstorage2'],
   ['budget-search-fix-v1.js','20260821-budgetsearch1'],
   /* El dashboard evaluativo histórico observa documentElement completo. La

@@ -55,6 +55,47 @@ body.cc-transparency-active:not(.print-report) #ccCommandbar{
   body.cc-portal-v2:not(.print-report) #ccEngineerChatLaunch.cc-eng-chat-launch{
     width:44px!important;height:90px!important;
   }
+  /* En móvil nunca se pierde el botón de menú aunque un centro oculte la barra global. */
+  body.cc-contracts-center-active:not(.print-report) #ccCommandbar,
+  body.cc-payments-center-active:not(.print-report) #ccCommandbar,
+  body.cc-guarantees-center-active:not(.print-report) #ccCommandbar,
+  body.cc-visits-center-active:not(.print-report) #ccCommandbar,
+  body.cc-reports-center-active:not(.print-report) #ccCommandbar,
+  body.cc-alerts-center-active:not(.print-report) #ccCommandbar,
+  body.cc-audit-center-active:not(.print-report) #ccCommandbar,
+  body.cc-portal-v2[data-cc-main-route="presupuesto"]:not(.print-report) #ccCommandbar{
+    display:flex!important;width:max-content!important;max-width:100%!important;
+    grid-template-columns:none!important;align-items:center!important;
+    padding:7px!important;margin:0 0 10px!important;
+  }
+  body.cc-contracts-center-active:not(.print-report) #ccCommandbar .cc-global-search,
+  body.cc-contracts-center-active:not(.print-report) #ccCommandbar .cc-command-actions,
+  body.cc-payments-center-active:not(.print-report) #ccCommandbar .cc-global-search,
+  body.cc-payments-center-active:not(.print-report) #ccCommandbar .cc-command-actions,
+  body.cc-guarantees-center-active:not(.print-report) #ccCommandbar .cc-global-search,
+  body.cc-guarantees-center-active:not(.print-report) #ccCommandbar .cc-command-actions,
+  body.cc-visits-center-active:not(.print-report) #ccCommandbar .cc-global-search,
+  body.cc-visits-center-active:not(.print-report) #ccCommandbar .cc-command-actions,
+  body.cc-reports-center-active:not(.print-report) #ccCommandbar .cc-global-search,
+  body.cc-reports-center-active:not(.print-report) #ccCommandbar .cc-command-actions,
+  body.cc-alerts-center-active:not(.print-report) #ccCommandbar .cc-global-search,
+  body.cc-alerts-center-active:not(.print-report) #ccCommandbar .cc-command-actions,
+  body.cc-audit-center-active:not(.print-report) #ccCommandbar .cc-global-search,
+  body.cc-audit-center-active:not(.print-report) #ccCommandbar .cc-command-actions,
+  body.cc-portal-v2[data-cc-main-route="presupuesto"]:not(.print-report) #ccCommandbar .cc-global-search,
+  body.cc-portal-v2[data-cc-main-route="presupuesto"]:not(.print-report) #ccCommandbar .cc-command-actions{
+    display:none!important;
+  }
+  body.cc-contracts-center-active:not(.print-report) #ccCommandbar .cc-mobile-toggle,
+  body.cc-payments-center-active:not(.print-report) #ccCommandbar .cc-mobile-toggle,
+  body.cc-guarantees-center-active:not(.print-report) #ccCommandbar .cc-mobile-toggle,
+  body.cc-visits-center-active:not(.print-report) #ccCommandbar .cc-mobile-toggle,
+  body.cc-reports-center-active:not(.print-report) #ccCommandbar .cc-mobile-toggle,
+  body.cc-alerts-center-active:not(.print-report) #ccCommandbar .cc-mobile-toggle,
+  body.cc-audit-center-active:not(.print-report) #ccCommandbar .cc-mobile-toggle,
+  body.cc-portal-v2[data-cc-main-route="presupuesto"]:not(.print-report) #ccCommandbar .cc-mobile-toggle{
+    display:grid!important;
+  }
 }
 
 /* Escritorio: la columna reservada y el ancho visible del menú deben coincidir. */

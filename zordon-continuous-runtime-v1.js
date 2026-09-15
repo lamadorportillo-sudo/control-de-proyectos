@@ -1,12 +1,13 @@
-/* ===== ZORDON · NÚCLEO DE APRENDIZAJE CONTINUO V5 · CONTEXTO SEPARADO ===== */
+/* ===== ZORDON · NÚCLEO DE APRENDIZAJE CONTINUO V6 · IDENTIDAD HUMANA Y CONTINUIDAD ===== */
 (()=>{
 'use strict';
-if(window.__CC_ZORDON_CONTINUOUS_V5__)return;
+if(window.__CC_ZORDON_CONTINUOUS_V6__)return;
+window.__CC_ZORDON_CONTINUOUS_V6__=true;
 window.__CC_ZORDON_CONTINUOUS_V5__=true;
 window.__CC_ZORDON_CONTINUOUS_V4__=true;
 window.__CC_ZORDON_CONTINUOUS_V3__=true;
 
-const VERSION=5;
+const VERSION=6;
 const now=()=>new Date().toISOString();
 const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const normalize=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9ñ]+/g,' ').trim();
@@ -24,7 +25,7 @@ function learningStore(){
     store.enabled=true;
     store.mode='continuous';
     store.engine='ZORDON';
-    store.version=Math.max(Number(store.version)||0,5);
+    store.version=Math.max(Number(store.version)||0,6);
     if(!store.reportUsage||typeof store.reportUsage!=='object')store.reportUsage={};
     store.lastPolicyAppliedAt=store.lastPolicyAppliedAt||now();
     return store;
@@ -70,12 +71,12 @@ function fixChatBranding(root=document){
   const launcher=root?.querySelector?.('#ccEngineerChatLaunch');
   if(chat){
     setAttr(chat,'aria-label','Chat con ZORDON');
-    setText(chat.querySelector('.cc-eng-chat-head b'),'ZORDON · Ingeniero Civil');
-    setText(chat.querySelector('.cc-eng-chat-head small'),'Conversación continua · memoria y contexto del proyecto');
+    setText(chat.querySelector('.cc-eng-chat-head b'),'ZORDON');
+    setText(chat.querySelector('.cc-eng-chat-head small'),'Siempre aquí. Trabajo, proyectos o simplemente hablar.');
     const first=chat.querySelector('.cc-eng-chat-body > .cc-eng-msg.bot');
     if(first&&!first.dataset.zordonWelcome){
       first.dataset.zordonWelcome='1';
-      setText(first,'Qué tal. Soy ZORDON. Voy a seguir el hilo contigo sin hacerte repetir lo que ya quedó claro. Si hablamos de una obra, relaciono campo, contrato, plazo, pagos y decisiones cuando sea útil; si cambiamos de tema, sigo la conversación normalmente. Dime qué está pasando y parto de ahí.');
+      setText(first,'Aquí estoy. Sigo el hilo contigo sin hacerte repetir lo que ya quedó claro. Si hablamos de trabajo, voy al dato; si cambiamos de tema, sigo contigo normalmente.');
     }
     const form=chat.querySelector('.cc-eng-chat-form');
     const input=form?.querySelector('textarea');
@@ -141,16 +142,17 @@ function cloudContext(message){
     try{const base=window.__ccEngineerChat?.haluCloudContext?.(message);if(base)parts.push(base)}catch{}
     try{const learned=window.__ccZordonLearning?.contextFor?.(message,scope(message));if(learned&&!parts.join('\n').includes(learned))parts.push(learned)}catch{}
   }
-  parts.push('Identidad activa: ZORDON. Mantén continuidad real de conversación, usa la corrección más reciente disponible y evita respuestas genéricas si el contexto permite responder mejor.');
+  parts.push('Identidad activa: ZORDON. Habla como alguien que ya conoce la forma de trabajar de Luis: sereno, observador, directo, leal y con humor seco cuando encaje. No actúes como soporte al cliente, no uses saludos de oficio ni cierres automáticos. Mantén continuidad real de conversación, usa la corrección más reciente disponible y evita respuestas genéricas si el contexto permite responder mejor. La referencia literaria solo define rasgos generales de carácter; nunca copies frases, diálogos ni texto de libros.');
   return parts.join('\n\n').slice(0,4200);
 }
 
 function personalFallback(message){
   const q=normalize(message);
-  if(/\b(por que te ries|porque te ries|por que te estas riendo|porque te estas riendo)\b/.test(q))return'No me estoy riendo de ti. Ese emoji no venía al caso.';
-  if(/\b(triste|tristeza|llorar|me siento mal|dia pesado|dia dificil|angustiado|angustiada|ansioso|ansiosa)\b/.test(q))return'Aquí estoy. Cuéntame qué pasó o qué te tiene así.';
-  if(/\b(problema|problemas|preocupado|preocupada|estresado|estresada)\b/.test(q))return'Puede ser. Cuéntame qué problema crees que está detrás de esto.';
-  return'No pude conectar bien con la IA en este momento. Intenta una vez más.';
+  if(/\b(por que te ries|porque te ries|por que te estas riendo|porque te estas riendo)\b/.test(q))return'Ese emoji no venía al caso. Sigue.';
+  if(/\b(triste|tristeza|llorar|me siento mal|dia pesado|dia dificil|angustiado|angustiada|ansioso|ansiosa)\b/.test(q))return'Aquí estoy. Cuéntame qué pasó.';
+  if(/\b(problema|problemas|preocupado|preocupada|estresado|estresada)\b/.test(q))return'Entiendo. Dime qué pasó y lo vemos sin darle más vueltas.';
+  if(/^(hola|buenas|que tal|hey)$/.test(q))return'Aquí estoy. ¿Qué pasó?';
+  return'Se me cortó la conexión un momento. Mándame eso otra vez.';
 }
 
 async function askZordon(message){
@@ -175,7 +177,7 @@ async function askZordon(message){
     if(personal)return personalFallback(q);
     const remembered=window.__ccZordonLearning?.recall?.(q,2,scope(q))||[];
     if(remembered.length)return`Tengo este antecedente relacionado: ${remembered.map(item=>item.text).join(' También: ')}.`;
-    return fallback||'No pude conectar con el motor de IA en este momento. Intenta nuevamente.';
+    return fallback||'Se me cortó la conexión un momento. Mándame eso otra vez.';
   }
 }
 
@@ -194,7 +196,7 @@ async function runQuery(text){
   const chat=document.getElementById('ccEngineerChat'),body=chat?.querySelector('.cc-eng-chat-body'),input=chat?.querySelector('textarea'),send=chat?.querySelector('button[type="submit"]');if(!chat||!body)return;
   busy=true;if(send){send.disabled=true;send.setAttribute('aria-busy','true');send.setAttribute('aria-disabled','true')}addMessage('user',q);
   const typing=document.createElement('div');typing.className='cc-eng-msg bot';typing.dataset.zordonTyping='1';typing.textContent=personalConversation(q)?'…':'ZORDON está revisando el contexto…';body.appendChild(typing);body.scrollTop=body.scrollHeight;
-  try{const reply=await askZordon(q);typing.remove();addMessage('bot',reply||'No encontré una respuesta clara todavía. Dame el dato que falta y sigo desde el contexto actual.',q)}catch(error){typing.remove();addMessage('bot',personalConversation(q)?'Se cortó la respuesta. Intenta nuevamente.':'No pude completar esa consulta en este momento. El contexto de la conversación sigue intacto; inténtalo nuevamente.',q)}finally{busy=false;if(send){send.disabled=false;send.removeAttribute('aria-busy');send.setAttribute('aria-disabled','false');send.style.setProperty('pointer-events','auto','important')}if(input)input.focus();fixChatBranding(document)}
+  try{const reply=await askZordon(q);typing.remove();addMessage('bot',reply||'No encontré una respuesta clara todavía. Dame el dato que falta y sigo desde el contexto actual.',q)}catch(error){typing.remove();addMessage('bot','Se me cortó la respuesta un momento. El hilo sigue aquí; mándame eso otra vez.',q)}finally{busy=false;if(send){send.disabled=false;send.removeAttribute('aria-busy');send.setAttribute('aria-disabled','false');send.style.setProperty('pointer-events','auto','important')}if(input)input.focus();fixChatBranding(document)}
 }
 
 function consumeInput(form){
@@ -205,8 +207,8 @@ function consumeInput(form){
 }
 
 function installConversationOverride(){
-  if(document.documentElement.dataset.zordonConversation==='5')return;
-  document.documentElement.dataset.zordonConversation='5';
+  if(document.documentElement.dataset.zordonConversation==='6')return;
+  document.documentElement.dataset.zordonConversation='6';
 
   document.addEventListener('submit',event=>{
     const form=event.target;

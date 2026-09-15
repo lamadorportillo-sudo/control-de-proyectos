@@ -25,7 +25,7 @@ const SAVE=()=>{try{if(typeof saveDB==='function')saveDB()}catch(e){console.warn
 const TOAST=m=>{try{if(typeof toast==='function')toast(m);else console.log(m)}catch{}};
 const MONTHS=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
 const STORE='cc_transparency_period_v1';
-const state={period:localStorage.getItem(STORE)||HN_YM(),selected:new Set(),generated:false,activeTab:'',selectorOpen:false};
+const state={period:localStorage.getItem(STORE)||HN_YM(),selected:new Set(),generated:false,activeTab:'',selectorOpen:false,query:''};
 
 const schemas={
   projects:{label:'Proyectos en ejecución',fields:[
@@ -51,6 +51,9 @@ const categories=[
   {id:'quotations',label:'Cotizaciones',period:true},
   {id:'purchases',label:'Compras',period:true},
   {id:'payments',label:'Pagos',period:true},
+  {id:'estimates',label:'Estimaciones',period:true},
+  {id:'guarantees',label:'Garantías',period:true},
+  {id:'followup',label:'Deficiencias y seguimiento',period:true},
   {id:'noMovement',label:'Constancias de no movimiento',period:true},
   {id:'sources',label:'Documentos fuente del mes',period:true},
   {id:'excel',label:'Excel mensual',period:true}
@@ -94,7 +97,7 @@ function css(){if(document.getElementById('cc-transparency-v1-style'))return;con
 `;document.head.appendChild(s)}
 
 function generatorCss(){if(document.getElementById('cc-transparency-generator-style'))return;const s=document.createElement('style');s.id='cc-transparency-generator-style';s.textContent=`
-.tr-page{max-width:1180px;margin:0 auto;gap:16px}.tr-generator-head{padding:4px 2px 2px}.tr-generator-head h2{margin:4px 0 6px!important;font-size:25px!important;color:#eff6ff!important}.tr-generator-head p{margin:0;color:#9fb2c8;font-size:14px}.tr-picker{border:1px solid #29445f;background:#0d1c2c;border-radius:18px;padding:18px;box-shadow:0 12px 34px rgba(1,8,18,.22)}.tr-picker h3{margin:0 0 10px!important;color:#f4f8fc!important;font-size:16px!important}.tr-multiselect{position:relative}.tr-multiselect>summary{list-style:none;display:flex;justify-content:space-between;align-items:center;min-height:46px;padding:11px 14px;border:1px solid #3c5873;border-radius:12px;background:#12263a;color:#e8f1fa;cursor:pointer;font-weight:750}.tr-multiselect>summary::-webkit-details-marker{display:none}.tr-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:8px;padding:8px;border:1px solid #2d4963;border-radius:12px;background:#0a1724}.tr-option{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:9px;color:#dce8f4;font-size:14px;cursor:pointer}.tr-option:hover{background:#173047}.tr-option input{width:17px;height:17px;accent-color:#2e86de}.tr-picker-tools,.tr-flow-actions,.tr-preview-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}.tr-link-btn{border:0;background:transparent;color:#8fc7ff;padding:7px 3px;font-weight:750;cursor:pointer}.tr-chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.tr-chip{display:inline-flex;align-items:center;gap:7px;border:1px solid #3b5d78;background:#173047;color:#eaf4ff;border-radius:999px;padding:7px 10px;font-size:13px}.tr-chip button{border:0;background:transparent;color:#bcd8ef;font-size:17px;line-height:1;cursor:pointer}.tr-period-generator{display:grid;grid-template-columns:repeat(2,minmax(140px,190px));gap:9px;margin-top:14px}.tr-period-generator label span{display:block;color:#a9bbcc;font-size:13px;font-weight:700;margin-bottom:5px}.tr-period-generator select{width:100%}.tr-generate{margin-left:auto}.tr-empty-selection{margin-top:12px;color:#91a5b9;font-size:13px}.tr-preview-shell{border:1px solid #29445f;background:#0d1c2c;border-radius:18px;padding:14px}.tr-preview-top{justify-content:space-between;margin:0 0 12px}.tr-preview-top h3{color:#f2f7fb!important;margin:0!important;font-size:16px!important}.tr-tabs{display:flex;gap:6px;overflow-x:auto;padding:2px 1px 10px;scrollbar-width:thin}.tr-tabs button{flex:0 0 auto;border:1px solid #36516b;background:#12263a;color:#aebfd0;border-radius:10px;padding:9px 12px;font-weight:750;cursor:pointer}.tr-tabs button.active{background:#245e95;border-color:#4389c9;color:#fff}.tr-tab-panel{border-radius:14px;background:#f4f7f9;padding:13px;min-height:150px}.tr-tab-panel .tr-section{box-shadow:none}.tr-report-list{display:grid;gap:8px}.tr-report-item{border:1px solid #dce4ea;border-radius:11px;background:#fff;padding:11px}.tr-report-item b,.tr-report-item span{display:block}.tr-report-item span{margin-top:4px;color:#607080;font-size:13px}.tr-publish-state{color:#a9bbcc;font-size:13px}.tr-published{color:#9fe3b5}.tr-kpis{display:none!important}
+.tr-page{max-width:1180px;margin:0 auto;gap:16px}.tr-generator-head{padding:4px 2px 2px}.tr-generator-head h2{margin:4px 0 6px!important;font-size:25px!important;color:#eff6ff!important}.tr-generator-head p{margin:0;color:#9fb2c8;font-size:14px}.tr-picker{border:1px solid #29445f;background:#0d1c2c;border-radius:18px;padding:18px;box-shadow:0 12px 34px rgba(1,8,18,.22)}.tr-picker h3{margin:0 0 10px!important;color:#f4f8fc!important;font-size:16px!important}.tr-category-search{width:100%;height:44px;margin:0 0 9px;border:1px solid #3c5873;border-radius:11px;background:#091725;color:#edf6ff;padding:0 12px;font-size:13px}.tr-category-search::placeholder{color:#7f96ad}.tr-multiselect{position:relative}.tr-multiselect>summary{list-style:none;display:flex;justify-content:space-between;align-items:center;min-height:46px;padding:11px 14px;border:1px solid #3c5873;border-radius:12px;background:#12263a;color:#e8f1fa;cursor:pointer;font-weight:750}.tr-multiselect>summary::-webkit-details-marker{display:none}.tr-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:8px;padding:8px;border:1px solid #2d4963;border-radius:12px;background:#0a1724}.tr-option{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:9px;color:#dce8f4;font-size:14px;cursor:pointer}.tr-option:hover{background:#173047}.tr-option input{width:17px;height:17px;accent-color:#2e86de}.tr-picker-tools,.tr-flow-actions,.tr-preview-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}.tr-link-btn{border:0;background:transparent;color:#8fc7ff;padding:7px 3px;font-weight:750;cursor:pointer}.tr-chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.tr-chip{display:inline-flex;align-items:center;gap:7px;border:1px solid #3b5d78;background:#173047;color:#eaf4ff;border-radius:999px;padding:7px 10px;font-size:13px}.tr-chip button{border:0;background:transparent;color:#bcd8ef;font-size:17px;line-height:1;cursor:pointer}.tr-period-generator{display:grid;grid-template-columns:repeat(2,minmax(140px,190px));gap:9px;margin-top:14px}.tr-period-generator label span{display:block;color:#a9bbcc;font-size:13px;font-weight:700;margin-bottom:5px}.tr-period-generator select{width:100%}.tr-generate{margin-left:auto}.tr-empty-selection{margin-top:12px;color:#91a5b9;font-size:13px}.tr-preview-shell{border:1px solid #29445f;background:#0d1c2c;border-radius:18px;padding:14px}.tr-preview-top{justify-content:space-between;margin:0 0 12px}.tr-preview-top h3{color:#f2f7fb!important;margin:0!important;font-size:16px!important}.tr-tabs{display:flex;gap:6px;overflow-x:auto;padding:2px 1px 10px;scrollbar-width:thin}.tr-tabs button{flex:0 0 auto;border:1px solid #36516b;background:#12263a;color:#aebfd0;border-radius:10px;padding:9px 12px;font-weight:750;cursor:pointer}.tr-tabs button.active{background:#245e95;border-color:#4389c9;color:#fff}.tr-tab-panel{border-radius:14px;background:#f4f7f9;padding:13px;min-height:150px}.tr-tab-panel .tr-section{box-shadow:none}.tr-report-list{display:grid;gap:8px}.tr-report-item{border:1px solid #dce4ea;border-radius:11px;background:#fff;padding:11px}.tr-report-item b,.tr-report-item span{display:block}.tr-report-item span{margin-top:4px;color:#607080;font-size:13px}.tr-publish-state{color:#a9bbcc;font-size:13px}.tr-published{color:#9fe3b5}.tr-export-actions{display:flex;gap:7px;flex-wrap:wrap}.tr-export-actions .btn{white-space:nowrap}.tr-context-list{display:grid;gap:8px}.tr-context-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid #dce4ea;border-radius:11px;background:#fff;padding:11px}.tr-context-item b,.tr-context-item span,.tr-context-item small{display:block}.tr-context-item b{color:#22313f;font-size:13px}.tr-context-item span{color:#607080;font-size:12px;margin-top:3px}.tr-context-item small{color:#7d8b98;font-size:11px;margin-top:3px}.tr-kpis{display:none!important}
 body.cc-transparency-active .cc-commandbar{grid-template-columns:auto minmax(220px,1fr) auto}body.cc-transparency-active .tr-command-period{min-height:46px;display:flex;align-items:center;gap:10px;padding:7px 15px;border:1px solid #29445f;border-radius:14px;background:#0d1c2c}body.cc-transparency-active .tr-command-period small{color:#7f96ad;font-size:10px;font-weight:850;letter-spacing:.08em}body.cc-transparency-active .tr-command-period b{color:#eaf4ff;font-size:15px}body.cc-transparency-active .cc-command-actions{justify-content:flex-end}body.cc-transparency-active #trNewMonthButton{min-width:210px}
 @media(max-width:700px){.tr-options{grid-template-columns:1fr}.tr-picker{padding:14px}.tr-generate{width:100%;margin-left:0}.tr-period-generator{grid-template-columns:1fr 1fr}.tr-preview-top{align-items:flex-start}.tr-preview-top .tr-flow-actions{width:100%}.tr-preview-top .btn{flex:1}}
 `;document.head.appendChild(s)}
@@ -106,7 +109,7 @@ function openNewMonth(){
   const current=periodParts(),years=[];for(let y=current.year-3;y<=current.year+2;y++)years.push(y);
   const m=openModal('Nuevo mes del Portal de Transparencia',`<form id="trNewMonthForm" class="form-grid"><label class="field"><span>Mes</span><select id="trNewMonth">${MONTHS.map((name,i)=>`<option value="${i+1}" ${current.month===i+1?'selected':''}>${name}</option>`).join('')}</select></label><label class="field"><span>Año</span><select id="trNewYear">${years.map(y=>`<option value="${y}" ${current.year===y?'selected':''}>${y}</option>`).join('')}</select></label><div class="alert info wide">Se abrirá el mes seleccionado. Después eliges únicamente las categorías que necesitas preparar.</div><div class="modal-actions wide"><button type="button" class="btn" data-tr-new-cancel>Cancelar</button><button class="btn primary" type="submit">Continuar</button></div></form>`);
   m.querySelector('[data-tr-new-cancel]').onclick=()=>m.remove();
-  m.querySelector('#trNewMonthForm').onsubmit=e=>{e.preventDefault();const month=Number(m.querySelector('#trNewMonth').value),year=Number(m.querySelector('#trNewYear').value),period=`${year}-${String(month).padStart(2,'0')}`,exists=A(db?.transparencyMonths).some(x=>x.period===period);state.period=period;localStorage.setItem(STORE,period);state.selected=new Set();state.generated=false;state.activeTab='';state.selectorOpen=false;monthRecord(true);SAVE();m.remove();renderPortal();TOAST(exists?'Mes abierto. Se conservaron los datos ya registrados.':'Nuevo mes listo para preparar el Portal de Transparencia.')};
+  m.querySelector('#trNewMonthForm').onsubmit=e=>{e.preventDefault();const month=Number(m.querySelector('#trNewMonth').value),year=Number(m.querySelector('#trNewYear').value),period=`${year}-${String(month).padStart(2,'0')}`,exists=A(db?.transparencyMonths).some(x=>x.period===period);state.period=period;localStorage.setItem(STORE,period);state.selected=new Set();state.generated=false;state.activeTab='';state.selectorOpen=false;state.query='';monthRecord(true);SAVE();m.remove();renderPortal();TOAST(exists?'Mes abierto. Se conservaron los datos ya registrados.':'Nuevo mes listo para preparar el Portal de Transparencia.')};
 }
 function adaptCommandbar(){
   const bar=document.getElementById('ccCommandbar');if(!bar)return;
@@ -277,11 +280,98 @@ async function exportExcel(r){
 function projectRows(r,mode){const rows=A(r.projects);if(!rows.length)return'<div class="tr-empty"><div><b>Sin proyectos para mostrar</b><span>No se encontraron registros para esta selección.</span></div></div>';if(mode==='monthlyReport')return`<div class="tr-report-list">${rows.map(x=>`<article class="tr-report-item"><b>${H(x.code||'—')} · ${H(x.name||'Proyecto')}</b><span>${H(x.status||'—')} · ${H(x.location||'Ubicación no registrada')}</span><span>Orden de cambio: ${H(x.orderChange||'Pendiente de verificar')} · Ampliación: ${H(x.timeExtension||'Pendiente de verificar')}</span></article>`).join('')}</div>`;return section('projects',r)}
 function sourcePanel(r){return`<section class="tr-source"><div class="tr-source-grid"><div><h3 style="margin:0 0 4px">Documentos fuente del mes</h3><p class="muted" style="margin:0">Archivos que respaldan la información preparada.</p></div>${CAN()?'<label class="btn" style="cursor:pointer">＋ Registrar archivos<input id="trFiles" type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.docx" hidden></label>':''}</div><div class="tr-source-list">${r.sources.length?r.sources.map(s=>`<span class="tr-source-chip">${H(s.name)} · ${H(s.type||'archivo')}</span>`).join(''):'<span class="muted">Todavía no hay archivos fuente registrados en este periodo.</span>'}</div></section>`}
 function purchasesPanel(r){const rows=A(r.purchases);return`<section class="tr-section"><div class="tr-section-head"><div><h3>Compras</h3><p>Registros del periodo seleccionado.</p></div><div class="row"><span class="tr-count">${rows.length}</span>${CAN()?'<button class="btn" data-tr-add="purchases">＋ Agregar</button>':''}</div></div><div class="tr-section-body">${rows.length?rows.map(x=>`<div class="tr-row"><div><b>${H(x.code||'—')} · ${H(x.project||'Compra')}</b><small>${H(x.supplier||'')}</small></div><div>${x.amount?money(x.amount):'—'}</div><div>${dateText(x.date)}</div><div class="actions">${CAN()?`<button class="btn" data-tr-edit="purchases" data-id="${H(x.id)}">Editar</button><button class="btn danger" data-tr-del="purchases" data-id="${H(x.id)}">Eliminar</button>`:''}</div></div>`).join(''):'<div class="tr-empty"><div><b>Sin compras registradas</b><span>Agrega información únicamente si hubo movimiento en el mes.</span></div></div>'}</div></section>`}
+
+function trPeriodBounds(period){
+  const [y,m]=normalizePeriod(period).split('-').map(Number),last=new Date(y,m,0).getDate();
+  return{start:`${y}-${String(m).padStart(2,'0')}-01`,end:`${y}-${String(m).padStart(2,'0')}-${String(last).padStart(2,'0')}`};
+}
+function trDateInPeriod(value,period){
+  const d=String(value||'').slice(0,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return false;
+  const b=trPeriodBounds(period);return d>=b.start&&d<=b.end;
+}
+function trOpenContext(projectId,tab){
+  if(!projectId)return;
+  try{view.projectId=projectId;view.screen='project';view.tab=tab||'summary';if(typeof renderApp==='function')renderApp()}catch(e){console.warn(e)}
+}
+function trEstimateRows(r){
+  const d=typeof db!=='undefined'&&db?db:{},contracts=A(d.contracts),projects=A(d.projects);
+  return A(d.estimates).filter(e=>!e.voidedAt&&!e.voided_at&&trDateInPeriod(e.paymentDate||e.end||e.start,r.period)).map(e=>{
+    const contract=contracts.find(x=>String(x.id||'')===String(e.contractId||''))||{},project=projects.find(x=>String(x.id||'')===String(contract.projectId||''))||{};
+    return{projectId:project.id||'',code:project.code||'',project:project.name||'Proyecto',number:e.number??'—',amount:N(e.net??e.gross),date:e.paymentDate||e.end||e.start||'',status:e.status||'',contract:contract.number||''};
+  }).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+}
+function estimatesPanel(r){
+  const rows=trEstimateRows(r);
+  if(!rows.length)return'<div class="tr-empty"><div><b>Sin estimaciones del periodo</b><span>No se encontraron estimaciones vinculadas a este mes.</span></div></div>';
+  return `<div class="tr-context-list">${rows.map(x=>`<article class="tr-context-item"><div><b>${H(x.code||'—')} · ${H(x.project)}</b><span>Estimación N.º ${H(x.number)} · ${money(x.amount)}</span><small>${dateText(x.date)} · ${H(x.status||'Sin estado')} ${x.contract?'· Contrato '+H(x.contract):''}</small></div><button class="btn" data-tr-context="${H(x.projectId)}" data-tab="estimates">Abrir</button></article>`).join('')}</div>`;
+}
+function trGuaranteeRows(r){
+  const d=typeof db!=='undefined'&&db?db:{},projects=A(d.projects),contracts=A(d.contracts),bounds=trPeriodBounds(r.period);
+  return A(d.guarantees).filter(g=>!g.voidedAt&&!g.voided_at).filter(g=>{
+    const start=String(g.start||'').slice(0,10),end=String(g.end||'').slice(0,10);
+    if(!start&&!end)return false;
+    return(!start||start<=bounds.end)&&(!end||end>=bounds.start);
+  }).map(g=>{
+    const p=projects.find(x=>String(x.id||'')===String(g.projectId||''))||{},co=contracts.find(x=>String(x.id||'')===String(g.contractId||''))||{};
+    return{projectId:p.id||'',code:p.code||'',project:p.name||'Proyecto',type:g.type||'Garantía',number:g.number||'',issuer:g.issuer||'',start:g.start||'',end:g.end||'',amount:N(g.applied??g.calculated),contract:co.number||''};
+  }).sort((a,b)=>String(a.end||'').localeCompare(String(b.end||'')));
+}
+function guaranteesPanel(r){
+  const rows=trGuaranteeRows(r);
+  if(!rows.length)return'<div class="tr-empty"><div><b>Sin garantías vigentes en el periodo</b><span>No se encontraron garantías con vigencia relacionada con este mes.</span></div></div>';
+  return `<div class="tr-context-list">${rows.map(x=>`<article class="tr-context-item"><div><b>${H(x.code||'—')} · ${H(x.project)}</b><span>${H(x.type)} ${x.number?'· '+H(x.number):''}</span><small>Vigencia: ${dateText(x.start)} → ${dateText(x.end)} ${x.amount?'· '+money(x.amount):''}</small></div><button class="btn" data-tr-context="${H(x.projectId)}" data-tab="guarantees">Abrir</button></article>`).join('')}</div>`;
+}
+function trFollowupRows(r){
+  const d=typeof db!=='undefined'&&db?db:{},projects=A(d.projects),out=[];
+  for(const v of A(d.visits).filter(x=>!x.voidedAt&&!x.voided_at&&trDateInPeriod(x.date,r.period))){
+    const p=projects.find(x=>String(x.id||'')===String(v.projectId||''))||{};
+    for(const raw of A(v.observations)){
+      const o=typeof raw==='string'?{description:raw,status:'Pendiente'}:(raw||{}),status=String(o.status||'Pendiente');
+      if(/atendida|cerrada|resuelta|finalizada|completada/i.test(status))continue;
+      out.push({projectId:p.id||'',code:p.code||'',project:p.name||'Proyecto',date:v.date||'',text:o.description||o.detail||o.text||o.observation||'Observación registrada',status});
+    }
+  }
+  return out;
+}
+function followupPanel(r){
+  const rows=trFollowupRows(r);
+  if(!rows.length)return'<div class="tr-empty"><div><b>Sin deficiencias pendientes del periodo</b><span>No se encontraron observaciones abiertas registradas en visitas de este mes.</span></div></div>';
+  return `<div class="tr-context-list">${rows.map(x=>`<article class="tr-context-item"><div><b>${H(x.code||'—')} · ${H(x.project)}</b><span>${H(x.text)}</span><small>${dateText(x.date)} · ${H(x.status)}</small></div><button class="btn primary" data-tr-context="${H(x.projectId)}" data-tab="visits">Ir al problema</button></article>`).join('')}</div>`;
+}
+function trExportPayload(r){
+  const selected=[...state.selected];
+  return{period:r.period,categories:selected,preparedAt:ISO(),monthlyRecord:r,estimates:selected.includes('estimates')?trEstimateRows(r):[],guarantees:selected.includes('guarantees')?trGuaranteeRows(r):[],followup:selected.includes('followup')?trFollowupRows(r):[]};
+}
+function trPrintableHtml(r){
+  const p=periodParts(r.period),selected=[...state.selected].filter(id=>id!=='excel');
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Portal de Transparencia ${H(p.name)} ${p.year}</title><style>body{font-family:Arial,sans-serif;color:#17212b;margin:28px}h1{font-size:22px;margin:0 0 5px}h2{font-size:15px;margin:24px 0 8px;border-bottom:2px solid #29445f;padding-bottom:5px}.btn,button{display:none!important}.tr-section,.tr-source,.tr-context-item,.tr-report-item{border:1px solid #cfd8df;border-radius:8px;padding:9px;margin:7px 0}.tr-tabs,.tr-chips{display:none!important}.tr-row{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;padding:6px 0;border-bottom:1px solid #e7ecef}small{color:#607080}</style></head><body><h1>Portal de Transparencia</h1><div>Periodo: ${H(p.name)} ${p.year}</div>${selected.map(id=>`<h2>${H(category(id)?.label||id)}</h2>${categoryPanel(id,r)}`).join('')}</body></html>`;
+}
+function printTransparency(r){
+  const w=window.open('','_blank');if(!w){TOAST('El navegador bloqueó la ventana de impresión.');return}
+  w.document.open();w.document.write(trPrintableHtml(r));w.document.close();w.focus();setTimeout(()=>w.print(),250);
+}
+async function ensureTransparencyZip(){
+  if(window.JSZip)return window.JSZip;
+  await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';s.async=true;s.onload=resolve;s.onerror=reject;document.head.appendChild(s)});
+  if(!window.JSZip)throw new Error('JSZip no disponible');return window.JSZip;
+}
+async function exportTransparencyZip(r){
+  try{
+    const Zip=await ensureTransparencyZip(),zip=new Zip(),p=periodParts(r.period),base=`Transparencia_${r.period}`;
+    zip.file(`${base}/portal.html`,trPrintableHtml(r));
+    zip.file(`${base}/datos.json`,JSON.stringify(trExportPayload(r),null,2));
+    zip.file(`${base}/LEEME.txt`,`Portal de Transparencia · ${p.name} ${p.year}\nIncluye únicamente las categorías seleccionadas al momento de generar este paquete.\nLos documentos fuente se listan como metadatos cuando no existe un archivo binario disponible en el navegador.\n`);
+    const blob=await zip.generateAsync({type:'blob'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${base}.zip`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);TOAST('Paquete ZIP mensual generado.');
+  }catch(e){console.warn(e);TOAST('No se pudo generar el ZIP. Intenta nuevamente con conexión a internet.')}
+}
 function categoryPanel(id,r){
   if(id==='monthlyReport')return projectRows(r,'monthlyReport');
   if(id==='projectTable'||id==='projects')return projectRows(r,id);
   if(id==='noMovement')return constanciaCards(r);
   if(id==='sources')return sourcePanel(r);
+  if(id==='estimates')return estimatesPanel(r);
+  if(id==='guarantees')return guaranteesPanel(r);
+  if(id==='followup')return followupPanel(r);
   if(id==='excel')return`<section class="tr-section"><div class="tr-section-body"><div class="tr-empty"><div><b>Excel mensual listo para generar</b><span>Incluye la información preparada para ${H(periodParts(r.period).name)} ${r.year}.</span></div><button class="btn primary" id="trExcel">Descargar Excel mensual</button></div></div></section>`;
   if(id==='purchases')return purchasesPanel(r);
   return section(id,r);
@@ -317,13 +407,17 @@ function hydrateSelected(r){
   if(chosen.has('agreements')&&!r.agreements.length)r.agreements=A(db?.agreements).filter(x=>x.period===r.period).map(x=>({...x}));
   r.updatedAt=ISO();SAVE()
 }
-function renderSelection(c){c.innerHTML=`<div class="tr-page"><header class="tr-generator-head"><p class="eyebrow">PORTAL DE TRANSPARENCIA</p><h2>PORTAL DE TRANSPARENCIA</h2><p>Selecciona la información que necesitas preparar para el Portal de Transparencia.</p></header><section class="tr-picker"><h3>¿Qué información vas a ocupar?</h3><details class="tr-multiselect" ${state.selectorOpen?'open':''}><summary><span>${state.selected.size?`${state.selected.size} categoría${state.selected.size===1?'':'s'} seleccionada${state.selected.size===1?'':'s'}`:'Selecciona una o varias categorías'}</span><span>⌄</span></summary><div class="tr-options">${categories.map(x=>`<label class="tr-option"><input type="checkbox" data-tr-choice="${x.id}" ${state.selected.has(x.id)?'checked':''}><span>${H(x.label)}</span></label>`).join('')}</div></details><div class="tr-picker-tools"><button class="tr-link-btn" id="trSelectAll">Seleccionar todo</button><button class="tr-link-btn" id="trClear">Limpiar selección</button></div><div class="tr-chips">${selectionChips()}</div><div>${needsPeriod()?periodControls():''}</div><div class="tr-flow-actions"><span class="tr-empty-selection">${state.selected.size?'Solo se generará lo seleccionado.':'Selecciona al menos una categoría para continuar.'}</span><button class="btn primary tr-generate" id="trGenerate" ${state.selected.size?'':'disabled'}>Generar Portal de Transparencia</button></div></section></div>`;bindSelection(c)}
+function renderSelection(c){
+  const q=String(state.query||'').trim().toLowerCase(),visible=categories.filter(x=>!q||x.label.toLowerCase().includes(q));
+  c.innerHTML=`<div class="tr-page"><header class="tr-generator-head"><p class="eyebrow">PORTAL DE TRANSPARENCIA</p><h2>Generador mensual</h2><p>Busca y selecciona únicamente la información que vas a publicar.</p></header><section class="tr-picker"><input class="tr-category-search" id="trCategorySearch" placeholder="Buscar categoría: contratos, pagos, garantías, estimaciones…" value="${H(state.query)}"><details class="tr-multiselect" ${state.selectorOpen?'open':''}><summary><span>${state.selected.size?`${state.selected.size} seleccionada${state.selected.size===1?'':'s'}`:'Seleccionar categorías'}</span><span>⌄</span></summary><div class="tr-options">${visible.length?visible.map(x=>`<label class="tr-option"><input type="checkbox" data-tr-choice="${x.id}" ${state.selected.has(x.id)?'checked':''}><span>${H(x.label)}</span></label>`).join(''):'<div class="tr-empty-selection">No hay categorías con esa búsqueda.</div>'}</div></details><div class="tr-picker-tools"><button class="tr-link-btn" id="trClear">Limpiar selección</button></div><div class="tr-chips">${selectionChips()}</div><div>${needsPeriod()?periodControls():''}</div><div class="tr-flow-actions"><span class="tr-empty-selection">${state.selected.size?'Solo se preparará lo seleccionado.':'Selecciona al menos una categoría.'}</span><button class="btn primary tr-generate" id="trGenerate" ${state.selected.size?'':'disabled'}>Generar portal</button></div></section></div>`;
+  bindSelection(c)
+}
 function bindSelection(c){
   const refresh=()=>renderSelection(c);
   c.querySelector('.tr-multiselect')?.addEventListener('toggle',e=>{state.selectorOpen=e.currentTarget.open});
   c.querySelectorAll('[data-tr-choice]').forEach(input=>input.onchange=()=>{input.checked?state.selected.add(input.dataset.trChoice):state.selected.delete(input.dataset.trChoice);refresh()});
   c.querySelectorAll('[data-tr-remove]').forEach(b=>b.onclick=()=>{state.selected.delete(b.dataset.trRemove);refresh()});
-  c.querySelector('#trSelectAll').onclick=()=>{categories.forEach(x=>state.selected.add(x.id));refresh()};
+  const search=c.querySelector('#trCategorySearch');if(search)search.oninput=e=>{state.query=e.target.value;state.selectorOpen=true;clearTimeout(search._t);search._t=setTimeout(refresh,80)};
   c.querySelector('#trClear').onclick=()=>{state.selected.clear();refresh()};
   bindPeriod(c,refresh);
   c.querySelector('#trGenerate').onclick=()=>{if(!state.selected.size)return;state.generated=true;state.activeTab=[...state.selected][0];const r=monthRecord(true);hydrateSelected(r);renderPortal()};
@@ -336,15 +430,18 @@ function bindRecordActions(c,r){
   c.querySelectorAll('[data-tr-const]').forEach(b=>b.onclick=()=>openConstancia(b.dataset.trConst));
   c.querySelector('#trFiles')?.addEventListener('change',e=>{for(const f of A([...e.target.files]))r.sources.push({id:UID(),name:f.name,type:f.type||'archivo',size:f.size,lastModified:f.lastModified,addedAt:ISO()});r.updatedAt=ISO();SAVE();renderPortal()});
   c.querySelector('#trExcel')?.addEventListener('click',()=>exportExcel(r));
+  c.querySelectorAll('[data-tr-context]').forEach(b=>b.onclick=()=>trOpenContext(b.dataset.trContext,b.dataset.tab));
 }
 function renderPreview(c){
   const selected=[...state.selected];if(!selected.length){state.generated=false;return renderSelection(c)}
   if(!state.activeTab||!state.selected.has(state.activeTab))state.activeTab=selected[0];
   const r=monthRecord(true),p=periodParts(r.period),ready=!!r.readyAt&&selectionKey(r.readyCategories)===selectionKey(selected);
-  c.innerHTML=`<div class="tr-page"><header class="tr-generator-head"><p class="eyebrow">PORTAL DE TRANSPARENCIA</p><h2>Vista previa</h2><p>${needsPeriod()?`Periodo ${p.name} ${p.year}. `:''}Se muestran solamente las categorías seleccionadas.</p></header><section class="tr-preview-shell"><div class="tr-preview-top"><div><h3>Portal preparado</h3><div class="tr-chips">${selectionChips()}</div></div><div class="tr-flow-actions"><button class="btn" id="trEditSelection">Editar selección</button><button class="btn primary" id="trPublish">${ready?'Actualizar preparación':'Marcar listo para publicar'}</button></div></div><div class="tr-publish-state ${ready?'tr-published':''}">${ready?`Preparación guardada el ${dateText(r.readyAt)}`:'Revisa cada pestaña. Esta acción guarda el estado de preparación; no crea por sí sola una URL pública.'}</div><nav class="tr-tabs" role="tablist">${selected.map(id=>`<button role="tab" aria-selected="${state.activeTab===id}" class="${state.activeTab===id?'active':''}" data-tr-tab="${id}">${H(category(id)?.label||id)}</button>`).join('')}</nav><div class="tr-tab-panel" role="tabpanel">${categoryPanel(state.activeTab,r)}</div></section></div>`;
+  c.innerHTML=`<div class="tr-page"><header class="tr-generator-head"><p class="eyebrow">PORTAL DE TRANSPARENCIA · ${p.name} ${p.year}</p><h2>Vista previa</h2></header><section class="tr-preview-shell"><div class="tr-preview-top"><div><div class="tr-chips">${selectionChips()}</div></div><div class="tr-export-actions"><button class="btn" id="trEditSelection">Editar selección</button><button class="btn" id="trPrint">PDF / Imprimir</button><button class="btn" id="trZip">Generar ZIP</button><button class="btn primary" id="trPublish">${ready?'Actualizar preparación':'Marcar listo para publicar'}</button></div></div><div class="tr-publish-state ${ready?'tr-published':''}">${ready?`Preparación guardada el ${dateText(r.readyAt)}`:'Revisa únicamente las pestañas seleccionadas. Guardar la preparación no publica una URL automáticamente.'}</div><nav class="tr-tabs" role="tablist">${selected.map(id=>`<button role="tab" aria-selected="${state.activeTab===id}" class="${state.activeTab===id?'active':''}" data-tr-tab="${id}">${H(category(id)?.label||id)}</button>`).join('')}</nav><div class="tr-tab-panel" role="tabpanel">${categoryPanel(state.activeTab,r)}</div></section></div>`;
   c.querySelectorAll('[data-tr-tab]').forEach(b=>b.onclick=()=>{state.activeTab=b.dataset.trTab;renderPortal()});
   c.querySelectorAll('[data-tr-remove]').forEach(b=>b.onclick=()=>{state.selected.delete(b.dataset.trRemove);if(!state.selected.size)state.generated=false;renderPortal()});
   c.querySelector('#trEditSelection').onclick=()=>{state.generated=false;renderPortal()};
+  c.querySelector('#trPrint').onclick=()=>printTransparency(r);
+  c.querySelector('#trZip').onclick=()=>exportTransparencyZip(r);
   c.querySelector('#trPublish').onclick=()=>{r.readyAt=ISO();r.readyCategories=[...state.selected].sort();r.updatedAt=ISO();SAVE();TOAST('Preparación del Portal guardada en Supabase. No se creó una URL pública.');renderPortal()};
   bindRecordActions(c,r);
 }

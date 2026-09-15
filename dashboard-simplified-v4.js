@@ -51,7 +51,7 @@ function regroupSidebar(){
 
 function welcome(){
   const v=safeView(),content=Q('#content');
-  if(!v||v.screen!=='projects'||v.trash||!content||Q('.cc-dashboard-welcome-v4',content))return;
+  if(!v||v.screen!=='projects'||v.trash||currentMainRoute()!=='proyectos'||!content||Q('.cc-dashboard-welcome-v4',content))return;
   const first=(currentName().split(/\s+/)[0]||'Usuario').replace(/[^\p{L}\p{N}.'-]/gu,'');
   const execution=count(/ejecuci/i),alerts=Number(Q('.rail-attention-count')?.textContent||0),visits=(safeDB()?.visits||[]).length;
   const box=document.createElement('section');box.className='cc-dashboard-welcome-v4';
@@ -89,20 +89,32 @@ function compactHeader(){
   document.body.classList.add('cc-visible-redesign-v8');
   if(Q('#cc-visible-redesign-v8-style'))return;
   const style=document.createElement('style');style.id='cc-visible-redesign-v8-style';style.textContent=`
-    body.cc-visible-redesign-v8:not(.print-report) .topbar{min-height:88px!important;padding:16px 22px!important;margin-bottom:12px!important;border-radius:16px!important}
-    body.cc-visible-redesign-v8:not(.print-report) .topbar h1{font-size:24px!important;letter-spacing:-.025em!important}
-    body.cc-visible-redesign-v8:not(.print-report) .top-actions{width:auto!important;display:flex!important;gap:10px!important}
-    body.cc-visible-redesign-v8:not(.print-report) #ccCommandbar{margin-bottom:12px!important;border-radius:14px!important}
-    body.cc-visible-redesign-v8:not(.print-report) #content.cc-home-redesigned-v8>.cc-dashboard-welcome-v4{border-radius:14px!important;margin-bottom:12px!important;padding:14px 18px!important}
-    body.cc-visible-redesign-v8:not(.print-report) #content.cc-home-redesigned-v8>.exec-overview{display:none!important}
-    body.cc-visible-redesign-v8:not(.print-report) #content.cc-home-redesigned-v8>.cc-home-hero-v7{margin-bottom:14px!important}
-    @media(max-width:720px){body.cc-visible-redesign-v8:not(.print-report) .topbar{min-height:auto!important;padding:13px 14px!important}body.cc-visible-redesign-v8:not(.print-report) .top-actions{width:100%!important}}
+    body.cc-visible-redesign-v8:not(.print-report) .topbar{min-height:76px!important;padding:12px 18px!important;margin-bottom:10px!important;border-radius:14px!important}
+    body.cc-visible-redesign-v8:not(.print-report) .topbar h1{font-size:22px!important;letter-spacing:-.025em!important}
+    body.cc-visible-redesign-v8:not(.print-report) .top-actions{width:auto!important;display:flex!important;gap:8px!important}
+    body.cc-visible-redesign-v8:not(.print-report) #ccCommandbar{min-height:54px!important;margin-bottom:10px!important;padding:8px 10px!important;border-radius:12px!important}
+    body.cc-visible-redesign-v8[data-cc-main-route="inicio"]:not(.print-report) .topbar{display:none!important}
+    body.cc-visible-redesign-v8[data-cc-main-route="inicio"]:not(.print-report) #ccCommandbar .cc-command-btn:not(.primary){display:none!important}
+    body.cc-visible-redesign-v8[data-cc-main-route="inicio"]:not(.print-report) #content>.cc-dashboard-welcome-v4,
+    body.cc-visible-redesign-v8[data-cc-main-route="inicio"]:not(.print-report) #content>.exec-overview,
+    body.cc-visible-redesign-v8[data-cc-main-route="inicio"]:not(.print-report) #content>.cc-lifecycle-v4,
+    body.cc-visible-redesign-v8[data-cc-main-route="inicio"]:not(.print-report) #content>.dashboard-workspace-v3,
+    body.cc-visible-redesign-v8[data-cc-main-route="inicio"]:not(.print-report) #content>.projects-board,
+    body.cc-visible-redesign-v8[data-cc-main-route="inicio"]:not(.print-report) #content .exec-kpis,
+    body.cc-visible-redesign-v8[data-cc-main-route="inicio"]:not(.print-report) #content .followup-panel,
+    body.cc-visible-redesign-v8[data-cc-main-route="inicio"]:not(.print-report) #content .quick-panel{display:none!important}
+    body.cc-visible-redesign-v8:not(.print-report) #content.cc-home-redesigned-v8>.cc-home-hero-v7{margin-bottom:10px!important}
+    @media(max-width:900px){
+      body.cc-visible-redesign-v8:not(.print-report) #ccCommandbar{padding:7px 8px!important}
+      body.cc-visible-redesign-v8[data-cc-main-route="inicio"]:not(.print-report) #ccCommandbar .cc-command-actions{display:none!important}
+    }
+    @media(max-width:720px){body.cc-visible-redesign-v8:not(.print-report) .topbar{min-height:auto!important;padding:11px 12px!important}body.cc-visible-redesign-v8:not(.print-report) .top-actions{width:100%!important}}
   `;document.head.appendChild(style);
 }
 
 function lifecycle(){
   const v=safeView(),content=Q('#content');
-  if(!v||v.screen!=='projects'||v.trash||!content||Q('.cc-lifecycle-v4',content))return;
+  if(!v||v.screen!=='projects'||v.trash||currentMainRoute()!=='proyectos'||!content||Q('.cc-lifecycle-v4',content))return;
   const workspace=Q('.dashboard-workspace-v3',content);if(!workspace)return;
   const stages=[
     ['1','Planificación',/planific/i,'Planificación'],
@@ -135,7 +147,7 @@ function renderPortfolioTable(grid,cards){
   QA('[data-cc-pt-open]',grid).forEach(b=>b.onclick=()=>openProject(b.dataset.ccPtOpen));
 }
 function portfolioViews(){
-  const v=safeView(),board=Q('.projects-board');if(!v||v.screen!=='projects'||v.trash||!board)return;
+  const v=safeView(),board=Q('.projects-board');if(!v||v.screen!=='projects'||v.trash||currentMainRoute()!=='proyectos'||!board)return;
   const switcher=Q('.view-switch',board),grid=Q('.project-grid-v3',board);if(!switcher||!grid)return;
   const cardsBtn=Q('[data-dashboard-view="cards"]',switcher),executiveBtn=Q('[data-dashboard-view="compact"]',switcher);if(!cardsBtn||!executiveBtn)return;
   setText(cardsBtn,'▦ Tarjetas');setText(executiveBtn,'☰ Ejecutiva');

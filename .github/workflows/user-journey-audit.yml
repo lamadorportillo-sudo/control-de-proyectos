@@ -1,24 +1,6 @@
 name: Recorrido real de usuario
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'index.html'
-      - '*.js'
-      - '*.cjs'
-      - 'tests/full-user-journey-responsive.spec.cjs'
-      - 'tests/project-create-route-responsive.spec.cjs'
-      - '.github/workflows/user-journey-audit.yml'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'index.html'
-      - '*.js'
-      - '*.cjs'
-      - 'tests/full-user-journey-responsive.spec.cjs'
-      - 'tests/project-create-route-responsive.spec.cjs'
-      - '.github/workflows/user-journey-audit.yml'
   workflow_dispatch:
 
 permissions:

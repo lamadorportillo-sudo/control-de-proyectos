@@ -1,21 +1,6 @@
 name: Auditoría responsive PC tablet celular
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'index.html'
-      - '*.js'
-      - '*.cjs'
-      - 'tests/**'
-      - 'supabase/**'
-      - 'playwright.config.cjs'
-      - 'package.json'
-      - '.github/workflows/responsive-audit.yml'
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:

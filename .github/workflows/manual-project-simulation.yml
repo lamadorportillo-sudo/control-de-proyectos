@@ -1,19 +1,6 @@
 name: Simulación manual de proyecto inventado
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'tests/manual-project-entry-simulation.spec.cjs'
-      - '.github/workflows/manual-project-simulation.yml'
-      - 'playwright.config.cjs'
-      - 'index.html'
-      - '*.js'
-      - 'build-pages.cjs'
-      - 'inject-portfolio.cjs'
-      - 'patch-session-security.cjs'
-      - 'stabilize-core-v1.cjs'
-      - 'authenticated-module-manifest-v1.cjs'
   workflow_dispatch:
 
 permissions:

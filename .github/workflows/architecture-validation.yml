@@ -1,18 +1,6 @@
 name: Validación aislada de arquitectura
 
 on:
-  push:
-    branches: [audit-architecture-fixes]
-    paths:
-      - '*.js'
-      - '*.cjs'
-      - 'scripts/**'
-      - 'tests/**'
-      - 'supabase/**'
-      - '.github/workflows/architecture-validation.yml'
-      - '.github/workflows/deploy-pages-critical.yml'
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

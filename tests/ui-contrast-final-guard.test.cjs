@@ -4,7 +4,7 @@ const {supplementalModules}=require('../authenticated-module-manifest-v1.cjs');
 
 const guard=fs.readFileSync('ui-contrast-final-guard-v1.js','utf8');
 
-assert.match(guard,/GUARDIA FINAL DE CONTRASTE V11/,'debe existir la guardia final WCAG V11');
+assert.match(guard,/GUARDIA FINAL DE CONTRASTE V12 · BITÁCORA NOCTURNA/,'debe existir la guardia visual WCAG V12');
 assert.match(guard,/#content \.exec-overview \.portfolio-ring\{[\s\S]*opacity:1!important/,'el anillo del Inicio no puede heredar una opacidad de animación');
 assert.match(guard,/#content \.exec-overview \.portfolio-ring-content/,'el anillo del Inicio debe tener un fondo real auditable');
 assert.match(guard,/#content \.exec-overview \.exec-bar-label b/,'los valores financieros del hero deben permanecer claros');
@@ -53,6 +53,6 @@ const guardAt=names.indexOf('ui-contrast-final-guard-v1.js');
 const observerAt=names.indexOf('technical-control-observer-guard-v1.js');
 const technicalAt=names.indexOf('technical-control-v1.js');
 assert.ok(guardAt>=0&&guardAt<observerAt&&observerAt+1===technicalAt,'la corrección visual debe ejecutarse justo antes del par técnico final, sin desplazarlo');
-assert.equal(supplementalModules[guardAt][1],'20260915-budget-contrast11','la versión V11 de la guardia final debe quedar fijada en el manifiesto');
+assert.equal(supplementalModules[guardAt][1],'20260915-nocturnal-ledger12','la versión V12 de la guardia final debe quedar fijada en el manifiesto');
 
 console.log('ui-contrast-final-guard: superficies claras, oscuras, informes estándar, evaluación, proyectos y presupuesto protegidos por contexto antes del cierre técnico');

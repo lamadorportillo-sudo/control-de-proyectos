@@ -60,6 +60,8 @@ function welcome(){
 }
 
 function currentMainRoute(){
+  const active=String(Q('#ccSidebar .cc-side-btn.active[data-route]')?.dataset?.route||'').toLowerCase();
+  if(active)return active;
   let route='';
   try{route=String(document.body?.dataset?.ccMainRoute||window.__ccMainRoute||localStorage.getItem('cc_main_route_v2')||'').toLowerCase()}catch{}
   if(!route)route=String(Q('#ccSidebar .cc-side-btn.active[data-route]')?.dataset?.route||'').toLowerCase();
@@ -77,6 +79,25 @@ function homeHero(){
   const section=document.createElement('section');section.className='cc-home-hero-v7';
   section.innerHTML=`<div class="cc-home-copy-v7"><span class="cc-home-chip-v7">●&nbsp; CENTRO DE CONTROL</span><h2>Una vista clara de cada proyecto, su dinero y sus compromisos.</h2><p>Consulta rápidamente el estado contractual, financiero y documental. Los expedientes permanecen vinculados y sincronizados en Supabase para trabajar desde PC, tablet o celular.</p></div><div class="cc-home-stats-v7"><article><small>Portafolio registrado</small><strong>${H(total)}</strong><span>${active} expedientes activos</span></article><article><small>Avance estimado global</small><strong>${H(estimatedPct)}</strong><span>${H(estimated)} certificado</span></article><article><small>Desembolso global</small><strong>${H(paidPct)}</strong><span>${H(paid)} pagado</span></article><article><small>Alertas de garantía</small><strong>${H(guarantees)}</strong><span>${Number(guarantees)?'Requieren seguimiento':'Sin alertas activas'}</span></article></div>`;
   overview.insertAdjacentElement('beforebegin',section);
+  overview.hidden=true;
+  content.classList.add('cc-home-redesigned-v8');
+}
+
+function compactHeader(){
+  const top=Q('.top-actions');if(!top)return;
+  QA(':scope > button',top).forEach(button=>{button.hidden=true});
+  document.body.classList.add('cc-visible-redesign-v8');
+  if(Q('#cc-visible-redesign-v8-style'))return;
+  const style=document.createElement('style');style.id='cc-visible-redesign-v8-style';style.textContent=`
+    body.cc-visible-redesign-v8:not(.print-report) .topbar{min-height:88px!important;padding:16px 22px!important;margin-bottom:12px!important;border-radius:16px!important}
+    body.cc-visible-redesign-v8:not(.print-report) .topbar h1{font-size:24px!important;letter-spacing:-.025em!important}
+    body.cc-visible-redesign-v8:not(.print-report) .top-actions{width:auto!important;display:flex!important;gap:10px!important}
+    body.cc-visible-redesign-v8:not(.print-report) #ccCommandbar{margin-bottom:12px!important;border-radius:14px!important}
+    body.cc-visible-redesign-v8:not(.print-report) #content.cc-home-redesigned-v8>.cc-dashboard-welcome-v4{border-radius:14px!important;margin-bottom:12px!important;padding:14px 18px!important}
+    body.cc-visible-redesign-v8:not(.print-report) #content.cc-home-redesigned-v8>.exec-overview{display:none!important}
+    body.cc-visible-redesign-v8:not(.print-report) #content.cc-home-redesigned-v8>.cc-home-hero-v7{margin-bottom:14px!important}
+    @media(max-width:720px){body.cc-visible-redesign-v8:not(.print-report) .topbar{min-height:auto!important;padding:13px 14px!important}body.cc-visible-redesign-v8:not(.print-report) .top-actions{width:100%!important}}
+  `;document.head.appendChild(style);
 }
 
 function lifecycle(){
@@ -227,7 +248,7 @@ function bindDashboardNavigation(){
     if(action)bindDashboardNavigationItem(element,action,'Abrir '+text.split(/\s+/).slice(0,4).join(' '));
   });
 }
-function enhance(){if(working)return;working=true;try{regroupSidebar();welcome();homeHero();lifecycle();portfolioViews();bindDashboardNavigation()}finally{working=false}}
+function enhance(){if(working)return;working=true;try{compactHeader();regroupSidebar();welcome();homeHero();lifecycle();portfolioViews();bindDashboardNavigation()}finally{working=false}}
 function queueEnhance(){
   if(observerQueued)return;observerQueued=true;
   const run=()=>{observerQueued=false;enhance()};

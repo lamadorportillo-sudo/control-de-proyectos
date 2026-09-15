@@ -95,7 +95,7 @@ const supplementalModules=[
      preserva la consulta visible tras el rerender y refresca decoraciones. */
   ['authenticated-ui-sync-v1.js','20260911-authuisync3'],
   ['zordon-unified-density-v1.js','20260905-density2'],
-  ['home-industrial-hero-v1.js','20260914-step2'],
+  ['home-industrial-hero-v1.js','20260915-visible-redesign2'],
   ['projects-industrial-v1.js','20260914-step4'],
   ['zordon-chat-ui-v1.js','20260908-cleanchat6'],
   /* El expediente documental usa superficies claras y necesita una corrección
@@ -103,7 +103,7 @@ const supplementalModules=[
   ['contract-document-contrast-v1.js','20260905-contractdoccontrast3'],
   /* Última corrección visual general, antes del par técnico que debe seguir
      siendo el cierre funcional del plan autenticado. */
-  ['ui-contrast-final-guard-v1.js','20260915-budget-contrast11'],
+  ['ui-contrast-final-guard-v1.js','20260915-nocturnal-ledger12'],
   /* El guard se ejecuta inmediatamente antes del módulo técnico histórico y
      filtra su MutationObserver global sin afectar los observadores del resto. */
   ['technical-control-observer-guard-v1.js','20260904-controlobserver1'],

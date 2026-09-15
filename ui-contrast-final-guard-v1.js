@@ -1,7 +1,8 @@
-/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V11 ===== */
+/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V12 · BITÁCORA NOCTURNA ===== */
 (()=>{
 'use strict';
-if(window.__CC_CONTRAST_FINAL_GUARD_V11__)return;
+if(window.__CC_CONTRAST_FINAL_GUARD_V12__)return;
+window.__CC_CONTRAST_FINAL_GUARD_V12__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V11__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V10__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V9__=true;
@@ -236,6 +237,122 @@ function install(){
      secundarios, pero conservan contraste AA sin parecer una alerta activa. */
   html body.cc-portal-v2:not(.print-report) #content .cc-life-step:not(.has-data) > b{
     color:#d3deea!important;opacity:1!important;
+  }
+
+  /* Rediseño maestro · bitácora de obra nocturna. La composición cambia de
+     forma visible sin tocar datos, formularios ni rutas del sistema. */
+  html body.cc-portal-v2:not(.print-report){
+    --cc-bronze:#b98a43;--cc-bronze-light:#e1bd78;--cc-ink:#090b0a;--cc-paper:#111512;
+    background:
+      linear-gradient(rgba(185,138,67,.035) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(185,138,67,.028) 1px,transparent 1px),
+      radial-gradient(circle at 78% 8%,rgba(185,138,67,.12),transparent 30%),
+      linear-gradient(145deg,#070908 0%,#0b100e 54%,#060706 100%)!important;
+    background-size:48px 48px,48px 48px,auto,auto!important;
+  }
+  html body.cc-portal-v2:not(.print-report)::after{
+    width:460px!important;height:460px!important;right:-190px!important;top:12vh!important;
+    background:radial-gradient(circle,rgba(185,138,67,.16),rgba(185,138,67,.04) 46%,transparent 72%)!important;
+  }
+  html body.cc-portal-v2:not(.print-report) .cc-shell{
+    width:100%!important;max-width:none!important;margin:0!important;padding:0!important;
+    gap:0!important;background:#080b09!important;
+  }
+  html body.cc-portal-v2:not(.print-report) .cc-sidebar{
+    width:264px!important;flex:0 0 264px!important;padding:26px 18px!important;
+    background:linear-gradient(180deg,#0b0d0c 0%,#10140f 58%,#090a09 100%)!important;
+    border:0!important;border-right:1px solid rgba(185,138,67,.48)!important;
+    box-shadow:14px 0 40px rgba(0,0,0,.32)!important;
+  }
+  html body.cc-portal-v2:not(.print-report) .cc-sidebar-brand{
+    padding:0 4px 22px!important;border-bottom:1px solid rgba(185,138,67,.28)!important;
+  }
+  html body.cc-portal-v2:not(.print-report) .cc-sidebar-mark{
+    border-radius:2px!important;background:#171b16!important;color:var(--cc-bronze-light)!important;
+    border:1px solid var(--cc-bronze)!important;box-shadow:inset 0 0 0 3px #0b0d0c,0 8px 24px rgba(0,0,0,.3)!important;
+  }
+  html body.cc-portal-v2:not(.print-report) .cc-sidebar-brand strong{
+    color:#f3ead9!important;text-transform:uppercase!important;letter-spacing:.045em!important;
+  }
+  html body.cc-portal-v2:not(.print-report) .cc-sidebar-brand small{color:#9a9588!important}
+  html body.cc-portal-v2:not(.print-report) .cc-sidebar-motto{
+    border-radius:0!important;border:1px solid rgba(185,138,67,.35)!important;border-left:3px solid var(--cc-bronze)!important;
+    background:#121610!important;color:#c9bdab!important;box-shadow:none!important;
+  }
+  html body.cc-portal-v2:not(.print-report) .cc-nav-label{color:#8f7041!important;letter-spacing:.2em!important}
+  html body.cc-portal-v2:not(.print-report) .cc-side-btn{
+    border-radius:2px!important;border:1px solid transparent!important;color:#c9c4b9!important;background:transparent!important;
+  }
+  html body.cc-portal-v2:not(.print-report) .cc-side-btn:hover{
+    background:#171a15!important;border-color:rgba(185,138,67,.28)!important;color:#fff4df!important;
+  }
+  html body.cc-portal-v2:not(.print-report) .cc-side-btn.active{
+    background:linear-gradient(90deg,rgba(185,138,67,.23),rgba(185,138,67,.04))!important;
+    border-color:rgba(185,138,67,.44)!important;border-left:3px solid var(--cc-bronze)!important;color:#ffe7b5!important;
+  }
+  html body.cc-portal-v2:not(.print-report) .cc-side-icon{
+    border-radius:1px!important;background:#161b17!important;color:var(--cc-bronze-light)!important;border:1px solid rgba(185,138,67,.24)!important;
+  }
+  html body.cc-portal-v2:not(.print-report) .cc-app-column{padding:18px 22px 26px!important;background:transparent!important}
+  html body.cc-portal-v2:not(.print-report) .cc-app-column:has(> #ccCommandbar) > .topbar .top-actions{display:none!important}
+  html body.cc-portal-v2:not(.print-report) .topbar{
+    min-height:92px!important;margin:0 0 12px!important;padding:18px 22px!important;border-radius:0!important;
+    background:linear-gradient(100deg,#111612,#0d100e)!important;border:1px solid rgba(185,138,67,.28)!important;
+    border-top:3px solid var(--cc-bronze)!important;box-shadow:0 14px 34px rgba(0,0,0,.24)!important;
+  }
+  html body.cc-portal-v2:not(.print-report) .topbar .brand .logo{display:none!important}
+  html body.cc-portal-v2:not(.print-report) .topbar .eyebrow{color:var(--cc-bronze)!important;letter-spacing:.18em!important}
+  html body.cc-portal-v2:not(.print-report) .topbar h1{font-family:Georgia,'Times New Roman',serif!important;font-size:28px!important;color:#f4ecdd!important;letter-spacing:.01em!important}
+  html body.cc-portal-v2:not(.print-report) .cc-commandbar{
+    grid-template-columns:minmax(260px,1fr) auto!important;margin:0 0 16px!important;padding:10px!important;border-radius:0!important;
+    background:#0e120f!important;border:1px solid rgba(185,138,67,.34)!important;box-shadow:0 10px 28px rgba(0,0,0,.24)!important;
+  }
+  html body.cc-portal-v2:not(.print-report) .cc-commandbar::before{
+    content:'CONTROL DE OBRA  /  EXPEDIENTE 360';position:absolute;right:14px;top:-9px;padding:1px 8px;
+    background:#0e120f;color:#8f7041;font-size:8px;font-weight:900;letter-spacing:.16em;
+  }
+  html body.cc-portal-v2:not(.print-report) .cc-global-search input{
+    border-radius:1px!important;background:#080b09!important;border-color:rgba(185,138,67,.34)!important;color:#f5eddf!important;
+  }
+  html body.cc-portal-v2:not(.print-report) .cc-command-btn,
+  html body.cc-portal-v2:not(.print-report) .btn{
+    border-radius:2px!important;background:#171b17!important;border-color:rgba(185,138,67,.3)!important;color:#e8dfcf!important;box-shadow:none!important;
+  }
+  html body.cc-portal-v2:not(.print-report) .cc-command-btn.primary,
+  html body.cc-portal-v2:not(.print-report) .btn.primary{
+    background:linear-gradient(135deg,#b98a43,#765128)!important;border-color:#d4aa65!important;color:#100d08!important;font-weight:900!important;
+  }
+  html body.cc-portal-v2:not(.print-report) .cc-command-btn.gold{background:#211a10!important;color:#f0c774!important;border-color:#8a682f!important}
+  html body.cc-portal-v2:not(.print-report) #content > .panel,
+  html body.cc-portal-v2:not(.print-report) #content .exec-intro,
+  html body.cc-portal-v2:not(.print-report) #content .exec-visual,
+  html body.cc-portal-v2:not(.print-report) #content .card{
+    border-radius:2px!important;background:
+      linear-gradient(135deg,rgba(185,138,67,.045),transparent 32%),#101411!important;
+    border-color:rgba(185,138,67,.30)!important;box-shadow:0 16px 38px rgba(0,0,0,.28)!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content .exec-overview{gap:12px!important}
+  html body.cc-portal-v2:not(.print-report) #content .exec-intro{border-left:3px solid var(--cc-bronze)!important}
+  html body.cc-portal-v2:not(.print-report) #content .exec-overview h2,
+  html body.cc-portal-v2:not(.print-report) #content .exec-overview h3{font-family:Georgia,'Times New Roman',serif!important;color:#f3ead9!important}
+  html body.cc-portal-v2:not(.print-report) #content .exec-chip,
+  html body.cc-portal-v2:not(.print-report) #content .stat-chip{
+    border-radius:1px!important;background:#151914!important;border-color:rgba(185,138,67,.26)!important;
+  }
+  html body.cc-portal-v2:not(.print-report) .panel,
+  html body.cc-portal-v2:not(.print-report) .table-wrap{border-radius:2px!important}
+  html body.cc-portal-v2:not(.print-report) .footer-note{letter-spacing:.12em!important;color:#847968!important}
+  @media(max-width:900px){
+    html body.cc-portal-v2:not(.print-report) .cc-sidebar{width:min(286px,88vw)!important;flex-basis:auto!important}
+    html body.cc-portal-v2:not(.print-report) .cc-app-column{padding:10px!important}
+    html body.cc-portal-v2:not(.print-report) .topbar{min-height:72px!important;padding:14px!important}
+    html body.cc-portal-v2:not(.print-report) .topbar h1{font-size:22px!important}
+    html body.cc-portal-v2:not(.print-report) .cc-commandbar{grid-template-columns:auto minmax(0,1fr)!important}
+    html body.cc-portal-v2:not(.print-report) .cc-command-actions{grid-column:1/-1!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  }
+  @media(max-width:520px){
+    html body.cc-portal-v2:not(.print-report) .cc-command-actions{grid-template-columns:1fr 1fr!important}
+    html body.cc-portal-v2:not(.print-report) .cc-command-btn{font-size:10px!important;padding:7px!important}
   }
   `;
 }

@@ -16,7 +16,11 @@ let queued=false,working=false;
 function safeDB(){try{return typeof db!=='undefined'&&db?db:{}}catch{return{}}}
 function arr(v){return Array.isArray(v)?v:[]}
 function currentRoute(){
-  try{return String(document.body?.dataset?.ccMainRoute||window.__ccMainRoute||localStorage.getItem('cc_main_route_v2')||'').toLowerCase()}
+  try{
+    const active=String(Q('#ccSidebar .cc-side-btn.active[data-route]')?.dataset?.route||'').toLowerCase();
+    if(active)return active;
+    return String(document.body?.dataset?.ccMainRoute||window.__ccMainRoute||localStorage.getItem('cc_main_route_v2')||'').toLowerCase()
+  }
   catch{return''}
 }
 function validSrc(value){

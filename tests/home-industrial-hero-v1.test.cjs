@@ -13,5 +13,5 @@ test('Paso 2: portada industrial usa fotos reales y rota al abrir',()=>{
   assert.match(src,/Fotografía registrada en Control Contractual/);
   assert.match(src,/INFRAESTRUCTURA Y OBRA PÚBLICA/);
   assert.doesNotMatch(src,/Municipalidad de Santa María|Gobierno Autónomo Municipal/);
-  assert.match(html,/home-industrial-hero-v1\.js\?v=20260914-step2/);
+  assert.match(html,/home-industrial-hero-v1\.js\?v=20260915-visible-redesign2/);
 });

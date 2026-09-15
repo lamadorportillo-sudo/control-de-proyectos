@@ -197,6 +197,7 @@ function goTransparency(){
 
 function openOperationalCenter(route){
  if(!CENTER_GETTERS[route])return false;
+ closeMobileNav();
  leaveTransparencyShell();
  closeOperationalCenters(route);
  try{view.screen='projects';view.projectId=null;view.tab='summary';view.trash=false}catch{}

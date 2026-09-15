@@ -104,6 +104,7 @@ const supplementalModules=[
   /* Última corrección visual general, antes del par técnico que debe seguir
      siendo el cierre funcional del plan autenticado. */
   ['ui-contrast-final-guard-v1.js','20260915-nocturnal-ledger12'],
+  ['tablet-layout-fix-v1.js','20260915-tablet2'],
   /* El guard se ejecuta inmediatamente antes del módulo técnico histórico y
      filtra su MutationObserver global sin afectar los observadores del resto. */
   ['technical-control-observer-guard-v1.js','20260904-controlobserver1'],
@@ -141,7 +142,7 @@ const buildOnlyModules=[
   ['adaptive-chat-learning-v1.js','20260822-global1'],
   ['halu-page-controller-v1.js','20260824-control1'],
   ['engineer-chatbot-v3.js','20260913-ai6'],
-  ['halu-avatar-motion-v1.js','20260822-place13'],
+  ['halu-avatar-motion-v1.js','20260915-place14'],
 ];
 
 /* Orden exacto de inyección del constructor. Los módulos retirados no aparecen

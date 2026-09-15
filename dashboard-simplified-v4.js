@@ -66,17 +66,123 @@ function currentMainRoute(){
   if(route&&document.body?.dataset?.ccMainRoute!==route)document.body.dataset.ccMainRoute=route;
   return route;
 }
+const HOME_PHOTO_KEY='cc_home_photo_index_v2';
+let homePhotoCache=null,homePhotoPromise=null;
+
+function ensureHomeHeroStyle(){
+  if(Q('#cc-home-primary-industrial-style'))return;
+  const s=document.createElement('style');s.id='cc-home-primary-industrial-style';s.textContent=`
+  body.cc-portal-v2[data-cc-main-route="inicio"] #content .cc-home-hero-v7.cc-primary-industrial{
+    position:relative!important;display:block!important;overflow:hidden!important;isolation:isolate!important;
+    min-height:500px!important;padding:0!important;border:1px solid rgba(72,163,219,.30)!important;border-radius:18px!important;
+    background:#081725!important;box-shadow:0 22px 58px rgba(0,0,0,.24)!important
+  }
+  .cc-primary-industrial .cc-hi-photo{position:absolute;inset:0;z-index:0;background:linear-gradient(135deg,#0a2236,#124766)}
+  .cc-primary-industrial .cc-hi-photo img{width:100%;height:100%;object-fit:cover;object-position:center;display:block}
+  .cc-primary-industrial .cc-hi-photo:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(3,14,24,.96) 0%,rgba(3,14,24,.82) 39%,rgba(3,14,24,.32) 70%,rgba(3,14,24,.12) 100%)}
+  .cc-primary-industrial .cc-hi-grid{position:absolute;inset:0;z-index:1;opacity:.12;background-image:linear-gradient(rgba(255,255,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(90deg,#000,transparent 72%)}
+  .cc-primary-industrial .cc-home-copy-v7{position:relative;z-index:3;width:min(760px,67%);padding:64px 54px 150px!important}
+  .cc-primary-industrial .cc-home-chip-v7{display:inline-flex!important;align-items:center!important;gap:7px!important;color:#83d6ff!important;font-size:10px!important;font-weight:900!important;letter-spacing:.19em!important}
+  .cc-primary-industrial .cc-home-copy-v7 h2{max-width:690px!important;margin:12px 0 14px!important;font-size:clamp(38px,4.8vw,68px)!important;line-height:.98!important;letter-spacing:-.04em!important;color:#fff!important;text-shadow:0 4px 26px rgba(0,0,0,.35)}
+  .cc-primary-industrial .cc-home-copy-v7 p{max-width:650px!important;margin:0!important;color:#dce9f3!important;font-size:clamp(14px,1.1vw,18px)!important;line-height:1.58!important}
+  .cc-primary-industrial .cc-hi-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
+  .cc-primary-industrial .cc-hi-actions button{min-width:150px;padding:11px 16px;border-radius:8px;border:1px solid rgba(255,255,255,.38);background:rgba(6,23,38,.42);color:#fff;font-weight:850;backdrop-filter:blur(8px)}
+  .cc-primary-industrial .cc-hi-actions button.primary{background:#118ed7;border-color:#2eb5fb}
+  .cc-primary-industrial .cc-hi-caption{position:absolute;z-index:4;right:24px;top:24px;max-width:330px;padding:11px 13px;border-radius:10px;background:rgba(4,17,29,.75);border:1px solid rgba(255,255,255,.20);color:#fff;backdrop-filter:blur(10px)}
+  .cc-primary-industrial .cc-hi-caption small{display:block;color:#9fc1d8;font-size:8px;text-transform:uppercase;letter-spacing:.12em}
+  .cc-primary-industrial .cc-hi-caption b{display:block;margin-top:4px;font-size:12px;line-height:1.35}
+  .cc-primary-industrial .cc-hi-caption span{display:block;margin-top:3px;color:#c0d3df;font-size:9px}
+  .cc-primary-industrial .cc-hi-nav{position:absolute;z-index:5;right:24px;top:104px;display:flex;gap:7px}
+  .cc-primary-industrial .cc-hi-nav button{width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.40);background:rgba(4,17,29,.60);color:#fff;font-size:18px}
+  .cc-primary-industrial .cc-home-stats-v7{position:absolute!important;z-index:4!important;left:0;right:0;bottom:0;margin:0!important;padding:11px 14px!important;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important;background:rgba(4,17,29,.78)!important;border-top:1px solid rgba(255,255,255,.13)!important;backdrop-filter:blur(13px)}
+  .cc-primary-industrial .cc-home-stats-v7 article{min-width:0!important;padding:10px 11px!important;border:1px solid rgba(255,255,255,.10)!important;border-radius:10px!important;background:rgba(255,255,255,.045)!important}
+  .cc-primary-industrial .cc-home-stats-v7 small,.cc-primary-industrial .cc-home-stats-v7 span{color:#a9c0d1!important}
+  .cc-primary-industrial .cc-home-stats-v7 strong{color:#fff!important}
+  @media(max-width:930px){
+    .cc-primary-industrial .cc-home-copy-v7{width:100%;padding:46px 28px 190px!important}
+    .cc-primary-industrial .cc-hi-caption{top:auto;bottom:148px;right:18px;max-width:50%}
+    .cc-primary-industrial .cc-hi-nav{right:18px;top:18px}
+    .cc-primary-industrial .cc-home-stats-v7{grid-template-columns:1fr 1fr!important}
+  }
+  @media(max-width:590px){
+    body.cc-portal-v2[data-cc-main-route="inicio"] #content .cc-home-hero-v7.cc-primary-industrial{min-height:680px!important}
+    .cc-primary-industrial .cc-hi-photo:after{background:linear-gradient(180deg,rgba(3,14,24,.88),rgba(3,14,24,.52) 52%,rgba(3,14,24,.92))}
+    .cc-primary-industrial .cc-home-copy-v7{padding:34px 20px 300px!important}
+    .cc-primary-industrial .cc-home-copy-v7 h2{font-size:38px!important}
+    .cc-primary-industrial .cc-hi-caption{left:18px;right:18px;bottom:225px;max-width:none}
+    .cc-primary-industrial .cc-home-stats-v7{grid-template-columns:1fr!important}
+  }`;
+  document.head.appendChild(s);
+}
+function homeLocalPhotos(){
+  const d=safeDB()||{},out=[],seen=new Set();
+  const push=(src,p={})=>{src=String(src||'').trim();if(!src||seen.has(src)||!/^data:image\/(?:jpeg|jpg|png|webp);base64,/i.test(src))return;seen.add(src);out.push({src,project:p.name||p.code||'Proyecto',code:p.code||'',location:p.location||''})};
+  const projects=new Map((d.projects||[]).map(p=>[String(p.id),p]));
+  (d.visits||[]).forEach(v=>{const p=projects.get(String(v.projectId||v.project_id))||{};const raw=v.rawData||v.raw_data||{};(raw.photos||v.photos||[]).forEach(x=>push(x?.src||x,p))});
+  (d.projects||[]).forEach(p=>{const raw=p.rawData||p.raw_data||{};[...(p.photos||[]),...(raw.photos||[])].forEach(x=>push(x?.src||x,p))});
+  return out.slice(0,10);
+}
+function signedEvidenceUrl(path){
+  const encoded=String(path||'').split('/').map(encodeURIComponent).join('/');
+  return sbFetch('/storage/v1/object/sign/telegram-evidence/'+encoded,{method:'POST',body:{expiresIn:3600}}).then(r=>{
+    const u=r?.data?.signedURL||r?.data?.signedUrl||r?.data?.signed_url||'';
+    if(!u)return'';
+    if(/^https?:/i.test(u))return u;
+    return SUPABASE_URL+'/storage/v1'+(u.startsWith('/')?u:'/'+u);
+  }).catch(()=> '');
+}
+async function homeEvidencePhotos(){
+  if(homePhotoCache)return homePhotoCache;
+  if(homePhotoPromise)return homePhotoPromise;
+  homePhotoPromise=(async()=>{
+    const local=homeLocalPhotos();
+    if(local.length){homePhotoCache=local;return local}
+    if(typeof sbFetch!=='function'||!cloudWorkspaceId){homePhotoCache=[];return[]}
+    try{
+      const q='/rest/v1/project_evidence?select=id,project_id,storage_path,file_name,analysis,extracted_text,created_at&workspace_id=eq.'+encodeURIComponent(cloudWorkspaceId)+'&evidence_type=eq.photo&storage_path=not.is.null&order=created_at.desc&limit=10';
+      const r=await sbFetch(q),rows=Array.isArray(r?.data)?r.data:[],projects=new Map(activeProjects().map(p=>[String(p.id),p]));
+      const photos=[];
+      for(const e of rows){
+        const src=await signedEvidenceUrl(e.storage_path);if(!src)continue;
+        const p=projects.get(String(e.project_id))||{};
+        photos.push({src,project:p.name||p.code||'Proyecto',code:p.code||'',location:p.location||'',caption:e.analysis?.summary||e.extracted_text||e.file_name||'Evidencia fotográfica'});
+        if(photos.length>=8)break;
+      }
+      homePhotoCache=photos;return photos;
+    }catch(error){console.warn('Portada: no se pudieron preparar fotografías.',error);homePhotoCache=[];return[]}
+  })().finally(()=>{homePhotoPromise=null});
+  return homePhotoPromise;
+}
+function bindHomeHero(section){
+  const go=route=>Q('#ccSidebar [data-route="'+route+'"]')?.click();
+  QA('[data-hi-route]',section).forEach(b=>b.addEventListener('click',()=>go(b.dataset.hiRoute)));
+}
+async function hydrateHomePhoto(section){
+  if(!section?.isConnected)return;
+  const photos=await homeEvidencePhotos();if(!section.isConnected||!photos.length)return;
+  let last=Number(localStorage.getItem(HOME_PHOTO_KEY)||-1),index=photos.length===1?0:Math.floor(Math.random()*photos.length);
+  if(index===last&&photos.length>1)index=(index+1)%photos.length;
+  const img=Q('.cc-hi-photo img',section),cap=Q('.cc-hi-caption',section);
+  const apply=i=>{index=(i+photos.length)%photos.length;const x=photos[index];if(img){img.src=x.src;img.alt='Fotografía de '+(x.project||'proyecto')}if(cap){cap.hidden=false;cap.innerHTML='<small>Fotografía registrada en Control Contractual</small><b>'+H(x.project||'Proyecto')+'</b><span>'+H([x.code,x.location].filter(Boolean).join(' · ')||x.caption||'Evidencia fotográfica')+'</span>'}try{localStorage.setItem(HOME_PHOTO_KEY,String(index))}catch{}};
+  apply(index);
+  const nav=Q('.cc-hi-nav',section);if(nav){nav.hidden=photos.length<2;const bs=QA('button',nav);if(bs[0])bs[0].onclick=()=>apply(index-1);if(bs[1])bs[1].onclick=()=>apply(index+1)}
+}
 function homeHero(){
-  const content=Q('#content');if(!content||currentMainRoute()!=='inicio'||Q('.cc-home-hero-v7',content))return;
+  const content=Q('#content');if(!content||currentMainRoute()!=='inicio')return;
+  let section=Q('.cc-home-hero-v7',content);
   const overview=Q('.exec-overview',content);if(!overview)return;
+  if(section?.classList.contains('cc-primary-industrial'))return;
+  section?.remove();
   const total=Q('.exec-money strong',overview)?.textContent?.trim()||'L. 0.00',active=activeProjects().length;
   const estimatedPct=Q('.portfolio-ring-content b',overview)?.textContent?.trim()||'0.00%',labels=QA('.exec-bar-label',overview);
   const estimated=Q('b',labels[0])?.textContent?.trim()||'L. 0.00',paidPct=Q('b',labels[1])?.textContent?.trim()||'0.00%';
   const paid=Q('.exec-kpis .exec-kpi:nth-child(4) strong',content)?.textContent?.trim()||'L. 0.00';
   const guaranteeRow=QA('.rail-state-row',content).find(x=>/garant/i.test(x.textContent||'')),guarantees=Q('b',guaranteeRow)?.textContent?.trim()||'0';
-  const section=document.createElement('section');section.className='cc-home-hero-v7';
-  section.innerHTML=`<div class="cc-home-copy-v7"><span class="cc-home-chip-v7">●&nbsp; CENTRO DE CONTROL</span><h2>Una vista clara de cada proyecto, su dinero y sus compromisos.</h2><p>Consulta rápidamente el estado contractual, financiero y documental. Los expedientes permanecen vinculados y sincronizados en Supabase para trabajar desde PC, tablet o celular.</p></div><div class="cc-home-stats-v7"><article><small>Portafolio registrado</small><strong>${H(total)}</strong><span>${active} expedientes activos</span></article><article><small>Avance estimado global</small><strong>${H(estimatedPct)}</strong><span>${H(estimated)} certificado</span></article><article><small>Desembolso global</small><strong>${H(paidPct)}</strong><span>${H(paid)} pagado</span></article><article><small>Alertas de garantía</small><strong>${H(guarantees)}</strong><span>${Number(guarantees)?'Requieren seguimiento':'Sin alertas activas'}</span></article></div>`;
+  ensureHomeHeroStyle();
+  section=document.createElement('section');section.className='cc-home-hero-v7 cc-primary-industrial';
+  section.innerHTML=`<div class="cc-hi-photo"><img alt="" decoding="async"></div><div class="cc-hi-grid"></div><div class="cc-home-copy-v7"><span class="cc-home-chip-v7">INFRAESTRUCTURA · CONTROL CONTRACTUAL</span><h2>Control técnico y contractual de proyectos.</h2><p>Supervisión, contratos, presupuesto, pagos, garantías y evidencia de obra en un solo expediente. Una plataforma para distintos municipios e instituciones.</p><div class="cc-hi-actions"><button class="primary" type="button" data-hi-route="proyectos">Ver proyectos →</button><button type="button" data-hi-route="transparencia">Transparencia</button></div></div><div class="cc-hi-caption" hidden></div><div class="cc-hi-nav" hidden><button type="button" aria-label="Fotografía anterior">‹</button><button type="button" aria-label="Fotografía siguiente">›</button></div><div class="cc-home-stats-v7"><article><small>Portafolio registrado</small><strong>${H(total)}</strong><span>${active} expedientes activos</span></article><article><small>Avance estimado global</small><strong>${H(estimatedPct)}</strong><span>${H(estimated)} certificado</span></article><article><small>Desembolso global</small><strong>${H(paidPct)}</strong><span>${H(paid)} pagado</span></article><article><small>Alertas de garantía</small><strong>${H(guarantees)}</strong><span>${Number(guarantees)?'Requieren seguimiento':'Sin alertas activas'}</span></article></div>`;
   overview.insertAdjacentElement('beforebegin',section);
+  bindHomeHero(section);hydrateHomePhoto(section);
 }
 
 function lifecycle(){

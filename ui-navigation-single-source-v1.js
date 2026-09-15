@@ -34,6 +34,28 @@ function rememberRoute(route){
  try{localStorage.setItem(ROUTE_KEY,r)}catch{}
 }
 function toastSafe(message){try{if(typeof toast==='function')toast(message)}catch{}}
+const CENTER_GETTERS={
+ contratos:()=>window.__ccContractsCenter,
+ pagos:()=>window.__ccPaymentsCenter,
+ garantias:()=>window.__ccGuaranteesCenter,
+ visitas:()=>window.__ccVisitsCenter,
+ reportes:()=>window.__ccReportsCenter,
+ alertas:()=>window.__ccAlertsCenter,
+ auditoria:()=>window.__ccAuditCenter
+};
+function closeOperationalCenters(except=''){
+ for(const [route,get] of Object.entries(CENTER_GETTERS)){
+  if(route===except)continue;
+  try{get()?.close?.()}catch(e){console.warn(e)}
+ }
+}
+function leaveTransparencyShell(){
+ const leaving=screen()==='transparency'||document.body.classList.contains('cc-transparency-active');
+ if(!leaving)return false;
+ document.body.classList.remove('cc-transparency-active');
+ Q('#ccCommandbar')?.remove();
+ return true;
+}
 function closeMobileNav(){
  const side=Q('#ccSidebar'),overlay=Q('#ccSidebarOverlay');
  side?.classList.remove('open');overlay?.classList.remove('show');
@@ -139,6 +161,8 @@ function sanitizeLegacy(){
 }
 
 function goPortfolio(route){
+ closeOperationalCenters();
+ leaveTransparencyShell();
  rememberRoute(route);
  syncActive(Q('#ccSidebar'));
  try{
@@ -158,28 +182,35 @@ function goPortfolio(route){
 }
 
 function goBudget(){
+ closeOperationalCenters();
+ leaveTransparencyShell();
  rememberRoute('presupuesto');syncActive(Q('#ccSidebar'));
  try{view.screen='budgetPortfolio';view.projectId=null;view.tab='summary';renderApp();queue();setTimeout(queue,0)}catch(e){console.warn(e)}
 }
 
 function goTransparency(){
+ closeOperationalCenters();
  rememberRoute('transparencia');syncActive(Q('#ccSidebar'));
  if(typeof window.__ccOpenTransparencyDirect==='function')return window.__ccOpenTransparencyDirect();
  try{view.screen='transparency';view.projectId=null;view.tab='summary';renderApp();queue();setTimeout(queue,0)}catch(e){console.warn(e)}
 }
 
 function openOperationalCenter(route){
- const leavingTransparency=screen()==='transparency';
- try{view.screen='projects';view.projectId=null;view.tab='summary'}catch{}
- if(leavingTransparency){
-  document.body.classList.remove('cc-transparency-active');
-  /* Transparencia adapta la barra superior a su flujo mensual. Al abrir un
-     centro operativo se recrea la barra general para no dejar acciones del
-     portal visibles en Deficiencias o Auditoría. */
-  Q('#ccCommandbar')?.remove();
- }
- const api=route==='alertas'?window.__ccAlertsCenter:window.__ccAuditCenter;
- const open=()=>{const target=route==='alertas'?window.__ccAlertsCenter:window.__ccAuditCenter;if(target?.open){target.open();rememberRoute(route);syncActive(Q('#ccSidebar'));return true}return false};
+ if(!CENTER_GETTERS[route])return false;
+ leaveTransparencyShell();
+ closeOperationalCenters(route);
+ try{view.screen='projects';view.projectId=null;view.tab='summary';view.trash=false}catch{}
+ const open=()=>{
+  const target=CENTER_GETTERS[route]?.();
+  if(target?.open){
+   target.open();
+   rememberRoute(route);
+   syncActive(Q('#ccSidebar'));
+   queue();
+   return true;
+  }
+  return false;
+ };
  if(open())return true;
  setTimeout(open,120);setTimeout(open,450);
  return false;
@@ -211,12 +242,12 @@ document.addEventListener('click',event=>{
   syncActive(Q('#ccSidebar'));
  }
 
- if(r==='inicio'||r==='proyectos'||r==='presupuesto'||r==='transparencia'||r==='alertas'||r==='auditoria'||r==='usuarios'||r==='solicitudes'||r==='seguridad'){
+ if(r==='inicio'||r==='proyectos'||r==='presupuesto'||r==='transparencia'||CENTER_GETTERS[r]||r==='usuarios'||r==='solicitudes'||r==='seguridad'){
   event.preventDefault();event.stopImmediatePropagation();
   if(r==='inicio'||r==='proyectos')goPortfolio(r);
   else if(r==='presupuesto')goBudget();
   else if(r==='transparencia')goTransparency();
-  else if(r==='alertas'||r==='auditoria')openOperationalCenter(r);
+  else if(CENTER_GETTERS[r])openOperationalCenter(r);
   else if(r==='usuarios'){
    if(typeof window.adminUsersModal==='function')window.adminUsersModal();else Q('#ccTeamBtn')?.click();
   }else if(r==='solicitudes'){
@@ -234,5 +265,5 @@ if(NativeObserver)new NativeObserver(queue).observe(Q('#app')||document.document
 window.addEventListener('cc:route-changed',queue);
 window.addEventListener('cc:data-changed',queue);
 setTimeout(ensure,0);setTimeout(ensure,250);setTimeout(ensure,900);
-window.__ccSingleNav={refresh:ensure,goPortfolio,goBudget,goTransparency,closeMobileNav,activeRoute,rememberRoute};
+window.__ccSingleNav={refresh:ensure,goPortfolio,goBudget,goTransparency,openOperationalCenter,closeOperationalCenters,closeMobileNav,activeRoute,rememberRoute};
 })();

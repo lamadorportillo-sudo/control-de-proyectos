@@ -77,7 +77,7 @@ for(const vp of [{name:'desktop',width:1366,height:768},{name:'tablet',width:102
       await fill(page,'#authEmail','supervisor.prueba@example.com',metrics);await fill(page,'#authPass','Prueba-Segura-2026!',metrics);await click(page,'#authSubmit',metrics);
       await expect(page.locator('#ccSidebar')).toBeVisible({timeout:20000});
 
-      await click(page,'[data-command="project"],#newProjectBtn',metrics);await modalMetric(page,'Nuevo proyecto',metrics);
+      await click(page,'#ccCommandbar [data-command="project"]:visible, #newProjectBtn:visible',metrics);await modalMetric(page,'Nuevo proyecto',metrics);
       await fill(page,'#pCode',invented.code,metrics);await fill(page,'#pName',invented.name,metrics);await fill(page,'#pLocation',invented.location,metrics);await sel(page,'#pType','Obra',metrics);await fill(page,'#pBudget',invented.budget,metrics);await fill(page,'#pStart','2026-09-01',metrics);await fill(page,'#pDays','100',metrics);await sel(page,'#pStatus','Proceso de contratación',metrics);await fill(page,'#pDescription',invented.description,metrics);await click(page,'#projectForm button.btn.primary',metrics);
       await ensureProjectOpen(page,metrics);await shot(page,testInfo,'01-expediente-creado');
 

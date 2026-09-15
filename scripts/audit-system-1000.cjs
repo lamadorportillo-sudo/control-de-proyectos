@@ -137,7 +137,7 @@ check(!/document\.createElement\(["']script["']\)/.test(runtime),'performance-ru
 for(const name of forbiddenRuntimeModules)check(!runtime.includes(name),`performance-runtime no debe referenciar módulo funcional: ${name}`);
 
 /* Sintaxis mínima de versiones críticas y prevención de caché regresiva. */
-check(/cc-static-v1-20260911-stable-v3/.test(sw),'Nombre de caché crítico inesperado');
+check(/cc-static-v1-20260914-master1/.test(sw),'Nombre de caché crítico inesperado');
 check(/updateViaCache:'none'/.test(runtime),'Registro de service worker permite caché de actualización');
 check(/serviceWorker\.register/.test(runtime),'El coordinador dejó de registrar el service worker');
 

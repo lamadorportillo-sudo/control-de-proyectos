@@ -754,9 +754,35 @@ async function hardenedEnsureCloudSession(){
   return true;
 }
 function showStartupState(){
-  const app=document.getElementById('app');
-  if(!app||app.children.length)return;
-  app.innerHTML='<div class="auth"><div class="auth-card"><div class="logo">CC</div><p class="eyebrow">CONTROL DE PROYECTOS</p><h1>Abriendo tu espacio de trabajo</h1><p class="muted">Verificando la sesión y sincronizando la información con Supabase…</p><p class="notice">Recuperando primero tus proyectos para no dejar la pantalla bloqueada.</p></div></div>';
+  if(!session?.accessToken||document.getElementById('ccStableStartup'))return;
+  const style=document.createElement('style');style.id='ccStableStartupStyle';style.textContent=`
+  #ccStableStartup{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;background:#08111d;color:#f1f5f9;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;transition:opacity .16s ease}
+  #ccStableStartup.ready{opacity:0;pointer-events:none}
+  #ccStableStartup .cc-start-card{width:min(420px,calc(100vw - 36px));padding:28px 26px;border:1px solid rgba(94,165,214,.24);border-radius:16px;background:linear-gradient(145deg,#0c1d31,#0a1727);box-shadow:0 26px 70px rgba(0,0,0,.34)}
+  #ccStableStartup .cc-start-brand{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+  #ccStableStartup .cc-start-mark{width:42px;height:42px;border-radius:9px;display:grid;place-items:center;background:#123b5e;border:1px solid rgba(104,193,244,.28);font-weight:900}
+  #ccStableStartup b{display:block;font-size:14px}#ccStableStartup small{display:block;color:#91a9bd;margin-top:2px}
+  #ccStableStartup h1{margin:0 0 7px;font-size:21px;color:#fff}#ccStableStartup p{margin:0;color:#a7bbcb;font-size:12px;line-height:1.55}
+  #ccStableStartup .cc-start-line{height:3px;margin-top:18px;border-radius:99px;overflow:hidden;background:#132a41}
+  #ccStableStartup .cc-start-line i{display:block;width:38%;height:100%;background:#36b7f2;animation:ccStartMove 1.1s ease-in-out infinite alternate}
+  #ccStableStartup .cc-start-error{margin-top:14px;padding:10px;border:1px solid #783333;border-radius:9px;background:#291418;color:#fecaca}
+  #ccStableStartup button{margin-top:11px;border:1px solid #34536d;border-radius:8px;background:#102942;color:#fff;padding:8px 11px;font-weight:800}
+  @keyframes ccStartMove{from{transform:translateX(-10%)}to{transform:translateX(175%)}}
+  @media(prefers-reduced-motion:reduce){#ccStableStartup .cc-start-line i{animation:none;width:100%}}
+  `;document.head.appendChild(style);
+  const layer=document.createElement('div');layer.id='ccStableStartup';layer.setAttribute('role','status');layer.setAttribute('aria-live','polite');
+  layer.innerHTML='<div class="cc-start-card"><div class="cc-start-brand"><div class="cc-start-mark">CC</div><div><b>Control Contractual</b><small>Preparando el espacio de trabajo</small></div></div><h1>Preparando Control Contractual</h1><p>Sincronizando la sesión y cargando una sola interfaz estable.</p><div class="cc-start-line"><i></i></div></div>';
+  document.body.appendChild(layer);
+  const finish=()=>{if(!layer.isConnected)return;layer.classList.add('ready');setTimeout(()=>{layer.remove();style.remove()},180)};
+  document.addEventListener('cc:authenticated-modules-ready',finish,{once:true});
+  document.addEventListener('cc:authenticated-modules-partial',finish,{once:true});
+  document.addEventListener('cc:authenticated-boot-failed',()=>{
+    if(!layer.isConnected)return;
+    const card=layer.querySelector('.cc-start-card');
+    if(card)card.insertAdjacentHTML('beforeend','<div class="cc-start-error">No terminó de cargar la interfaz. Tus datos no se borraron.<br><button type="button" id="ccStableStartupRetry">Reintentar</button></div>');
+    layer.querySelector('#ccStableStartupRetry')?.addEventListener('click',()=>location.reload(),{once:true});
+  },{once:true});
+  if(window.__CC_AUTH_MODULES_READY__===true)setTimeout(finish,0);
 }
 try{ensureCloudSession=hardenedEnsureCloudSession}catch{}
 showStartupState();
@@ -806,18 +832,11 @@ async function readCloudRow(deadline=0){
 }
 function showConflict(serverData,serverVersion,conflicts){
   window.__ccSyncConflict={serverData:clone(serverData),serverVersion,conflicts:[...conflicts],localData:clone(db),at:new Date().toISOString()};
+  try{window.dispatchEvent(new CustomEvent('cc:sync-conflict',{detail:{count:conflicts.length,source:'cloud'}}))}catch{}
   if(conflictOpen)return;
   conflictOpen=true;
-  setTimeout(()=>{
-    try{
-      if(typeof openModal!=='function'){say('Hay cambios simultáneos. Recarga el expediente antes de continuar.');conflictOpen=false;return}
-      const list=conflicts.slice(0,10).map(x=>`<li>${typeof esc==='function'?esc(x):x}</li>`).join('');
-      const m=openModal('Cambios simultáneos detectados',`<div class="alert danger"><b>No se sobrescribió información.</b> Otro usuario modificó el mismo expediente mientras trabajabas. Tu copia local quedó protegida.</div><p class="muted">Conflictos detectados: ${conflicts.length}.</p>${list?`<ul>${list}</ul>`:''}<div class="actions"><button class="btn" id="ccConflictBackup">Guardar respaldo local</button><button class="btn primary" id="ccConflictReload">Recargar versión de la nube</button></div>`);
-      const b=m.querySelector('#ccConflictBackup');if(b)b.onclick=()=>{try{exportBackup()}catch{} };
-      const r=m.querySelector('#ccConflictReload');if(r)r.onclick=()=>{if(!confirm('Se reemplazará la copia de trabajo actual por la versión más reciente de la nube. ¿Continuar?'))return;db=Object.assign(defaultDB(),clone(serverData)||{});stateVersion=Number(serverVersion)||stateVersion;baseState=clone(serverData)||{};window.__ccCloudVersion=stateVersion;window.__ccCloudBaseState=clone(baseState);recoveryReadOnly=false;cloudRole=recoveredCloudRole;saveLocalSnapshot(db);window.__ccSyncConflict=null;m.remove();conflictOpen=false;try{renderApp()}catch{render()}};
-      const close=m.querySelector('.close');if(close)close.addEventListener('click',()=>{conflictOpen=false},{once:true});
-    }catch(e){console.warn(e);conflictOpen=false}
-  },0);
+  say(`Hay ${conflicts.length} cambio${conflicts.length===1?'':'s'} pendiente${conflicts.length===1?'':'s'} de revisar. Tus datos locales siguen protegidos.`);
+  setTimeout(()=>{conflictOpen=false},1200);
 }
 
 const numOrNull=v=>v==null||v===''?null:n(v);
@@ -1181,21 +1200,57 @@ function threeWayMerge(base,local,server){
   }
   return{data:out,conflicts};
 }
-function conflictModal(serverData,serverVersion,conflicts){
-  window.__ccOfflineSyncConflict={serverData:clone(serverData),serverVersion,localData:clone(db),conflicts:[...conflicts],at:now()};
-  emit('conflict',{message:'Hay cambios del mismo expediente en la nube y en este dispositivo.'});
-  if(typeof openModal!=='function'){say('Hay un conflicto de sincronización. Tus cambios locales siguen guardados.');return}
-  const items=conflicts.slice(0,8).map(x=>`<li>${String(x).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}</li>`).join('');
-  const m=openModal('Cambios pendientes por revisar',`<div class="alert danger"><b>No se sobrescribió información.</b> El mismo registro cambió en la nube mientras este dispositivo trabajaba sin conexión.</div><p class="muted">Tus cambios permanecen guardados en este dispositivo.</p>${items?`<ul>${items}</ul>`:''}<div class="actions"><button class="btn" id="ccOfflineBackup">Guardar respaldo</button><button class="btn" id="ccOfflineKeep">Revisar después</button><button class="btn danger" id="ccOfflineUseCloud">Usar versión de la nube</button></div>`);
+function activeConflict(){
+  return window.__ccOfflineSyncConflict||window.__ccSyncConflict||null;
+}
+function conflictIndicator(){
+  let host=document.querySelector('#ccSidebar .cc-sync-box');
+  if(!host)return null;
+  let button=document.getElementById('ccOfflineConflictReview');
+  if(!button){
+    button=document.createElement('button');button.id='ccOfflineConflictReview';button.type='button';
+    button.style.cssText='display:none;width:100%;margin-top:8px;padding:8px 9px;border:1px solid rgba(245,158,11,.35);border-radius:8px;background:rgba(245,158,11,.08);color:#fde3a7;text-align:left;font:800 9px/1.35 inherit;cursor:pointer';
+    button.addEventListener('click',openConflictReview);
+    host.appendChild(button);
+  }
+  return button;
+}
+function updateConflictIndicator(){
+  const item=activeConflict(),button=conflictIndicator();
+  if(!button)return;
+  const count=arr(item?.conflicts).length;
+  button.style.display=count?'block':'none';
+  button.textContent=count?`⚠ ${count} cambio${count===1?'':'s'} pendiente${count===1?'':'s'} · Revisar`:'';
+}
+function openConflictReview(){
+  const item=activeConflict();if(!item)return say('No hay cambios pendientes por revisar.');
+  const conflicts=arr(item.conflicts),serverData=item.serverData,serverVersion=item.serverVersion;
+  if(typeof openModal!=='function')return say('Hay cambios pendientes. Tus datos locales siguen protegidos.');
+  const items=conflicts.slice(0,12).map(x=>`<li>${String(x).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}</li>`).join('');
+  const m=openModal('Revisar cambios pendientes',`<div class="alert info"><b>Tus datos locales siguen protegidos.</b> Revisa las diferencias cuando te convenga; esta ventana ya no se abre automáticamente al iniciar.</div>${items?`<ul>${items}</ul>`:''}<div class="actions"><button class="btn" id="ccOfflineBackup">Guardar respaldo</button><button class="btn" id="ccOfflineKeep">Cerrar</button><button class="btn danger" id="ccOfflineUseCloud">Usar versión de la nube</button></div>`);
   m.querySelector('#ccOfflineBackup')?.addEventListener('click',()=>{try{exportBackup()}catch{say('No se pudo generar el respaldo desde esta pantalla.')}});
   m.querySelector('#ccOfflineKeep')?.addEventListener('click',()=>m.remove());
   m.querySelector('#ccOfflineUseCloud')?.addEventListener('click',async()=>{
+    if(!serverData)return say('La versión de la nube ya no está disponible en esta revisión.');
     if(!confirm('Se reemplazará la copia de trabajo local por la versión actual de la nube. ¿Continuar?'))return;
     db=Object.assign(defaultDB(),clone(serverData)||{});
-    window.__ccCloudVersion=serverVersion;window.__ccCloudBaseState=clone(serverData)||{};window.__ccOfflineSyncConflict=null;
+    window.__ccCloudVersion=serverVersion;window.__ccCloudBaseState=clone(serverData)||{};window.__ccOfflineSyncConflict=null;window.__ccSyncConflict=null;
     await persistSnapshot({pending:false,lastCloudAt:now(),baseState:serverData,stateVersion:serverVersion});
-    m.remove();try{renderApp()}catch{try{render()}catch{}}
+    updateConflictIndicator();m.remove();try{renderApp()}catch{try{render()}catch{}}
   });
+}
+function conflictModal(serverData,serverVersion,conflicts){
+  window.__ccOfflineSyncConflict={serverData:clone(serverData),serverVersion,localData:clone(db),conflicts:[...conflicts],at:now()};
+  emit('conflict',{message:'Hay cambios pendientes entre la nube y este dispositivo.'});
+  updateConflictIndicator();
+  try{window.dispatchEvent(new CustomEvent('cc:sync-conflict',{detail:{count:conflicts.length,source:'offline'}}))}catch{}
+  const signature=conflicts.slice().sort().join('|');
+  try{
+    if(sessionStorage.getItem('cc_conflict_notice_v2')!==signature){
+      sessionStorage.setItem('cc_conflict_notice_v2',signature);
+      say(`Hay ${conflicts.length} cambio${conflicts.length===1?'':'s'} pendiente${conflicts.length===1?'':'s'} de revisar. Puedes continuar trabajando.`);
+    }
+  }catch{}
 }
 async function readServerRow(){
   const wid=workspaceId();if(!wid)throw new Error('No hay espacio de trabajo asociado a esta copia offline.');
@@ -1231,7 +1286,7 @@ async function syncNow(retry=0){
       }
       if(!result?.saved)throw new Error('La nube cambió durante la sincronización. Se intentará nuevamente.');
       const newVersion=Number(result.new_version||serverVersion+1),savedState=safeState(merged.data),syncedAt=now();
-      window.__ccCloudVersion=newVersion;window.__ccCloudBaseState=clone(savedState);window.__ccOfflineSyncConflict=null;window.__CC_LOCAL_CLOUD_FALLBACK__=false;
+      window.__ccCloudVersion=newVersion;window.__ccCloudBaseState=clone(savedState);window.__ccOfflineSyncConflict=null;window.__ccSyncConflict=null;window.__CC_LOCAL_CLOUD_FALLBACK__=false;updateConflictIndicator();
       try{cloudLastSaved=new Date(syncedAt)}catch{}
       if(editSeq===capturedSeq){db=Object.assign(defaultDB(),clone(savedState));await persistSnapshot({pending:false,lastCloudAt:syncedAt,baseState:savedState,stateVersion:newVersion})}
       else{
@@ -1323,11 +1378,18 @@ window.ccOffline={
   syncNow,
   scheduleSync,
   restore:restoreSnapshot,
+  reviewConflict:openConflictReview,
+  updateConflictIndicator,
   mergePreview:(base,local,server)=>threeWayMerge(clone(base),clone(local),clone(server))
 };
 
 window.addEventListener('offline',()=>{emit('offline',{message:'Sin conexión. Puedes seguir trabajando; los cambios se guardan en este dispositivo.'});persistSnapshot({pending:runtimeState.pendingCount>0,pendingCount:runtimeState.pendingCount||0})});
 window.addEventListener('online',()=>{emit(runtimeState.pendingCount?'pending':'local',{message:'Conexión disponible.'});scheduleSync(120)});
+window.addEventListener('cc:sync-conflict',()=>setTimeout(updateConflictIndicator,0));
+if(typeof document!=='undefined'){
+  document.addEventListener('cc:authenticated-modules-ready',()=>setTimeout(updateConflictIndicator,0));
+  document.addEventListener('cc:authenticated-modules-partial',()=>setTimeout(updateConflictIndicator,0));
+}
 window.addEventListener('pagehide',()=>{if(runtimeState.pendingCount>0)persistSnapshot({pending:true,pendingCount:runtimeState.pendingCount})});
 
 (async()=>{
@@ -1807,7 +1869,7 @@ setTimeout(()=>{store();prof();button();estForm();visitForm()},0);window.openAda
 <script type="application/x-cc-auth" data-cc-auth-script data-src="alerts-compact-v1.js?v=20260820-master4"></script>
 <script type="application/x-cc-auth" data-cc-auth-script data-src="engineering-ux-v1.js?v=20260820-master4"></script>
 <script type="application/x-cc-auth" data-cc-auth-script data-src="procurement-thresholds-v1.js?v=20260820-gacetas4"></script>
-<script type="application/x-cc-auth" data-cc-auth-script data-src="contracts-center-v1.js?v=20260913-contracts3"></script>
+<script type="application/x-cc-auth" data-cc-auth-script data-src="contracts-center-v1.js?v=20260914-step5"></script>
 <script type="application/x-cc-auth" data-cc-auth-script data-src="corporate-ui-v1.js?v=20260820-corporate3"></script>
 <script type="application/x-cc-auth" data-cc-auth-script data-src="corporate-polish-v1.js?v=20260820-polish6"></script>
 <script type="application/x-cc-auth" data-cc-auth-script data-src="procurement-award-fix-v1.js?v=20260820-award3"></script>
@@ -1864,7 +1926,7 @@ setTimeout(()=>{store();prof();button();estForm();visitForm()},0);window.openAda
 <script type="application/x-cc-auth" data-cc-auth-script data-src="project-photo-story-v1.js?v=20260821-photostory1"></script>
 <script type="application/x-cc-auth" data-cc-auth-script data-src="photo-gallery-polish-v2.js?v=20260822-photopolish2"></script>
 <script type="application/x-cc-auth" data-cc-auth-script data-src="project-card-engineering-fix-v1.js?v=20260821-cardengfix1"></script>
-<script type="application/x-cc-auth" data-cc-auth-script data-src="ui-theme-unifier-v1.js?v=20260824-theme3d2"></script>
+<script type="application/x-cc-auth" data-cc-auth-script data-src="ui-theme-unifier-v1.js?v=20260914-industrial3"></script>
 <script type="application/x-cc-auth" data-cc-auth-script data-src="engineering-visibility-fix-v1.js?v=20260822-visibility1"></script>
 <script type="application/x-cc-auth" data-cc-auth-script data-src="ui-operational-polish-v1.js?v=20260822-operational2"></script>
 <script type="application/x-cc-auth" data-cc-auth-script data-src="system-ui-refinement-v3.js?v=20260905-system6"></script>
@@ -1885,6 +1947,8 @@ setTimeout(()=>{store();prof();button();estForm();visitForm()},0);window.openAda
 <script type="application/x-cc-auth" data-cc-auth-script data-src="zordon-project-search-v1.js?v=20260908-zordonsearch7"></script>
 <script type="application/x-cc-auth" data-cc-auth-script data-src="authenticated-ui-sync-v1.js?v=20260911-authuisync3"></script>
 <script type="application/x-cc-auth" data-cc-auth-script data-src="zordon-unified-density-v1.js?v=20260905-density2"></script>
+<script type="application/x-cc-auth" data-cc-auth-script data-src="home-industrial-hero-v1.js?v=20260914-step2"></script>
+<script type="application/x-cc-auth" data-cc-auth-script data-src="projects-industrial-v1.js?v=20260914-step4"></script>
 <script type="application/x-cc-auth" data-cc-auth-script data-src="zordon-chat-ui-v1.js?v=20260908-cleanchat6"></script>
 <script type="application/x-cc-auth" data-cc-auth-script data-src="contract-document-contrast-v1.js?v=20260905-contractdoccontrast3"></script>
 <script type="application/x-cc-auth" data-cc-auth-script data-src="ui-contrast-final-guard-v1.js?v=20260905-contrast-final10"></script>
@@ -1958,7 +2022,7 @@ setTimeout(()=>{store();prof();button();estForm();visitForm()},0);window.openAda
       styleOnce('project-detail-v2.css?v=20260901-detail2','ccAuthProjectCss');
       styleOnce('dashboard-simplified-v4.css?v=20260907-dashnav1','ccAuthDashboardCss');
 
-      await requireRun('portal-web-v2.js',()=>runSrc('portal-web-v2.js?v=20260904-web4'));
+      await requireRun('portal-web-v2.js',()=>runSrc('portal-web-v2.js?v=20260914-master1'));
       const tabs=nodeByBare('project-tabs-complete-v1.js');
       if(!tabs)throw new Error('Falta project-tabs-complete-v1.js en el plan autenticado.');
       await requireRun('project-tabs-complete-v1.js',()=>runNode(tabs));
@@ -1973,8 +2037,6 @@ setTimeout(()=>{store();prof();button();estForm();visitForm()},0);window.openAda
       const webModules=[
         'project-detail-v2.js?v=20260913-detail4',
         'dashboard-simplified-v4.js?v=20260914-step3',
-        'home-industrial-hero-v1.js?v=20260914-step2',
-        'projects-industrial-v1.js?v=20260914-step4',
         'payments-center-v1.js?v=20260913-payments3',
         'guarantees-center-v1.js?v=20260913-guarantees2',
         'visits-center-v1.js?v=20260913-visits2',

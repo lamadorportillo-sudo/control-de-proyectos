@@ -361,8 +361,10 @@ window.ccOffline={
 window.addEventListener('offline',()=>{emit('offline',{message:'Sin conexión. Puedes seguir trabajando; los cambios se guardan en este dispositivo.'});persistSnapshot({pending:runtimeState.pendingCount>0,pendingCount:runtimeState.pendingCount||0})});
 window.addEventListener('online',()=>{emit(runtimeState.pendingCount?'pending':'local',{message:'Conexión disponible.'});scheduleSync(120)});
 window.addEventListener('cc:sync-conflict',()=>setTimeout(updateConflictIndicator,0));
-document.addEventListener('cc:authenticated-modules-ready',()=>setTimeout(updateConflictIndicator,0));
-document.addEventListener('cc:authenticated-modules-partial',()=>setTimeout(updateConflictIndicator,0));
+if(typeof document!=='undefined'){
+  document.addEventListener('cc:authenticated-modules-ready',()=>setTimeout(updateConflictIndicator,0));
+  document.addEventListener('cc:authenticated-modules-partial',()=>setTimeout(updateConflictIndicator,0));
+}
 window.addEventListener('pagehide',()=>{if(runtimeState.pendingCount>0)persistSnapshot({pending:true,pendingCount:runtimeState.pendingCount})});
 
 (async()=>{

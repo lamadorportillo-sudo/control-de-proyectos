@@ -45,9 +45,35 @@ async function hardenedEnsureCloudSession(){
   return true;
 }
 function showStartupState(){
-  const app=document.getElementById('app');
-  if(!app||app.children.length)return;
-  app.innerHTML='<div class="auth"><div class="auth-card"><div class="logo">CC</div><p class="eyebrow">CONTROL DE PROYECTOS</p><h1>Abriendo tu espacio de trabajo</h1><p class="muted">Verificando la sesión y sincronizando la información con Supabase…</p><p class="notice">Recuperando primero tus proyectos para no dejar la pantalla bloqueada.</p></div></div>';
+  if(!session?.accessToken||document.getElementById('ccStableStartup'))return;
+  const style=document.createElement('style');style.id='ccStableStartupStyle';style.textContent=`
+  #ccStableStartup{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;background:#08111d;color:#f1f5f9;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;transition:opacity .16s ease}
+  #ccStableStartup.ready{opacity:0;pointer-events:none}
+  #ccStableStartup .cc-start-card{width:min(420px,calc(100vw - 36px));padding:28px 26px;border:1px solid rgba(94,165,214,.24);border-radius:16px;background:linear-gradient(145deg,#0c1d31,#0a1727);box-shadow:0 26px 70px rgba(0,0,0,.34)}
+  #ccStableStartup .cc-start-brand{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+  #ccStableStartup .cc-start-mark{width:42px;height:42px;border-radius:9px;display:grid;place-items:center;background:#123b5e;border:1px solid rgba(104,193,244,.28);font-weight:900}
+  #ccStableStartup b{display:block;font-size:14px}#ccStableStartup small{display:block;color:#91a9bd;margin-top:2px}
+  #ccStableStartup h1{margin:0 0 7px;font-size:21px;color:#fff}#ccStableStartup p{margin:0;color:#a7bbcb;font-size:12px;line-height:1.55}
+  #ccStableStartup .cc-start-line{height:3px;margin-top:18px;border-radius:99px;overflow:hidden;background:#132a41}
+  #ccStableStartup .cc-start-line i{display:block;width:38%;height:100%;background:#36b7f2;animation:ccStartMove 1.1s ease-in-out infinite alternate}
+  #ccStableStartup .cc-start-error{margin-top:14px;padding:10px;border:1px solid #783333;border-radius:9px;background:#291418;color:#fecaca}
+  #ccStableStartup button{margin-top:11px;border:1px solid #34536d;border-radius:8px;background:#102942;color:#fff;padding:8px 11px;font-weight:800}
+  @keyframes ccStartMove{from{transform:translateX(-10%)}to{transform:translateX(175%)}}
+  @media(prefers-reduced-motion:reduce){#ccStableStartup .cc-start-line i{animation:none;width:100%}}
+  `;document.head.appendChild(style);
+  const layer=document.createElement('div');layer.id='ccStableStartup';layer.setAttribute('role','status');layer.setAttribute('aria-live','polite');
+  layer.innerHTML='<div class="cc-start-card"><div class="cc-start-brand"><div class="cc-start-mark">CC</div><div><b>Control Contractual</b><small>Preparando el espacio de trabajo</small></div></div><h1>Preparando Control Contractual</h1><p>Sincronizando la sesión y cargando una sola interfaz estable.</p><div class="cc-start-line"><i></i></div></div>';
+  document.body.appendChild(layer);
+  const finish=()=>{if(!layer.isConnected)return;layer.classList.add('ready');setTimeout(()=>{layer.remove();style.remove()},180)};
+  document.addEventListener('cc:authenticated-modules-ready',finish,{once:true});
+  document.addEventListener('cc:authenticated-modules-partial',finish,{once:true});
+  document.addEventListener('cc:authenticated-boot-failed',()=>{
+    if(!layer.isConnected)return;
+    const card=layer.querySelector('.cc-start-card');
+    if(card)card.insertAdjacentHTML('beforeend','<div class="cc-start-error">No terminó de cargar la interfaz. Tus datos no se borraron.<br><button type="button" id="ccStableStartupRetry">Reintentar</button></div>');
+    layer.querySelector('#ccStableStartupRetry')?.addEventListener('click',()=>location.reload(),{once:true});
+  },{once:true});
+  if(window.__CC_AUTH_MODULES_READY__===true)setTimeout(finish,0);
 }
 try{ensureCloudSession=hardenedEnsureCloudSession}catch{}
 showStartupState();
@@ -97,18 +123,11 @@ async function readCloudRow(deadline=0){
 }
 function showConflict(serverData,serverVersion,conflicts){
   window.__ccSyncConflict={serverData:clone(serverData),serverVersion,conflicts:[...conflicts],localData:clone(db),at:new Date().toISOString()};
+  try{window.dispatchEvent(new CustomEvent('cc:sync-conflict',{detail:{count:conflicts.length,source:'cloud'}}))}catch{}
   if(conflictOpen)return;
   conflictOpen=true;
-  setTimeout(()=>{
-    try{
-      if(typeof openModal!=='function'){say('Hay cambios simultáneos. Recarga el expediente antes de continuar.');conflictOpen=false;return}
-      const list=conflicts.slice(0,10).map(x=>`<li>${typeof esc==='function'?esc(x):x}</li>`).join('');
-      const m=openModal('Cambios simultáneos detectados',`<div class="alert danger"><b>No se sobrescribió información.</b> Otro usuario modificó el mismo expediente mientras trabajabas. Tu copia local quedó protegida.</div><p class="muted">Conflictos detectados: ${conflicts.length}.</p>${list?`<ul>${list}</ul>`:''}<div class="actions"><button class="btn" id="ccConflictBackup">Guardar respaldo local</button><button class="btn primary" id="ccConflictReload">Recargar versión de la nube</button></div>`);
-      const b=m.querySelector('#ccConflictBackup');if(b)b.onclick=()=>{try{exportBackup()}catch{} };
-      const r=m.querySelector('#ccConflictReload');if(r)r.onclick=()=>{if(!confirm('Se reemplazará la copia de trabajo actual por la versión más reciente de la nube. ¿Continuar?'))return;db=Object.assign(defaultDB(),clone(serverData)||{});stateVersion=Number(serverVersion)||stateVersion;baseState=clone(serverData)||{};window.__ccCloudVersion=stateVersion;window.__ccCloudBaseState=clone(baseState);recoveryReadOnly=false;cloudRole=recoveredCloudRole;saveLocalSnapshot(db);window.__ccSyncConflict=null;m.remove();conflictOpen=false;try{renderApp()}catch{render()}};
-      const close=m.querySelector('.close');if(close)close.addEventListener('click',()=>{conflictOpen=false},{once:true});
-    }catch(e){console.warn(e);conflictOpen=false}
-  },0);
+  say(`Hay ${conflicts.length} cambio${conflicts.length===1?'':'s'} pendiente${conflicts.length===1?'':'s'} de revisar. Tus datos locales siguen protegidos.`);
+  setTimeout(()=>{conflictOpen=false},1200);
 }
 
 const numOrNull=v=>v==null||v===''?null:n(v);

@@ -26,13 +26,20 @@ function closeCenters(except=''){
 document.addEventListener('click',event=>{
   const button=event.target.closest?.('#ccSidebar .cc-side-btn[data-route]');if(!button)return;
   const route=button.dataset.route;
-  if(route==='contratos'&&window.__ccContractsCenter?.open){event.preventDefault();event.stopImmediatePropagation();closeCenters('contratos');window.__ccContractsCenter.open();setTimeout(sync,20);return}
-  if(route==='pagos'&&window.__ccPaymentsCenter?.open){event.preventDefault();event.stopImmediatePropagation();closeCenters('pagos');window.__ccPaymentsCenter.open();setTimeout(sync,20);return}
-  if(route==='garantias'&&window.__ccGuaranteesCenter?.open){event.preventDefault();event.stopImmediatePropagation();closeCenters('garantias');window.__ccGuaranteesCenter.open();setTimeout(sync,20);return}
-  if(route==='visitas'&&window.__ccVisitsCenter?.open){event.preventDefault();event.stopImmediatePropagation();closeCenters('visitas');window.__ccVisitsCenter.open();setTimeout(sync,20);return}
-  if(route==='reportes'&&window.__ccReportsCenter?.open){event.preventDefault();event.stopImmediatePropagation();closeCenters('reportes');window.__ccReportsCenter.open();setTimeout(sync,20);return}
-  if(route==='alertas'&&window.__ccAlertsCenter?.open){event.preventDefault();event.stopImmediatePropagation();closeCenters('alertas');window.__ccAlertsCenter.open();setTimeout(sync,20);return}
-  if(route==='auditoria'&&window.__ccAuditCenter?.open){event.preventDefault();event.stopImmediatePropagation();closeCenters('auditoria');window.__ccAuditCenter.open();setTimeout(sync,20);return}
+  const operational=['contratos','pagos','garantias','visitas','reportes','alertas','auditoria'];
+  if(operational.includes(route)){
+    event.preventDefault();event.stopImmediatePropagation();
+    if(window.__ccSingleNav?.openOperationalCenter){
+      window.__ccSingleNav.openOperationalCenter(route);
+      setTimeout(sync,20);
+      return;
+    }
+    const map={
+      contratos:window.__ccContractsCenter,pagos:window.__ccPaymentsCenter,garantias:window.__ccGuaranteesCenter,
+      visitas:window.__ccVisitsCenter,reportes:window.__ccReportsCenter,alertas:window.__ccAlertsCenter,auditoria:window.__ccAuditCenter
+    };
+    closeCenters(route);map[route]?.open?.();setTimeout(sync,20);return;
+  }
   closeCenters();
 },true);
 window.addEventListener('cc:route-changed',()=>setTimeout(sync,0));

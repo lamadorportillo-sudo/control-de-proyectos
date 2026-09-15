@@ -1,7 +1,8 @@
-/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V10 ===== */
+/* ===== CONTROL CONTRACTUAL · GUARDIA FINAL DE CONTRASTE V11 ===== */
 (()=>{
 'use strict';
-if(window.__CC_CONTRAST_FINAL_GUARD_V10__)return;
+if(window.__CC_CONTRAST_FINAL_GUARD_V11__)return;
+window.__CC_CONTRAST_FINAL_GUARD_V11__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V10__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V9__=true;
 window.__CC_CONTRAST_FINAL_GUARD_V8__=true;
@@ -135,6 +136,16 @@ function install(){
   html body.cc-portal-v2:not(.print-report) #content .cp-exec-ring-card strong,
   html body.cc-portal-v2:not(.print-report) #content .cp-exec-ring-card b{
     color:#f8fbff!important;opacity:1!important;text-shadow:none!important;
+  }
+
+  /* Tabla de presupuesto · el pulido operacional heredaba texto verde oscuro
+     sobre las filas finales azul oscuro. Se fijan los dos valores detectados
+     por la auditoría para conservar una lectura clara en PC y celular. */
+  html body.cc-portal-v2:not(.print-report) #content .cp-budget-table .cp-budget-name{
+    color:#f3f8ff!important;opacity:1!important;
+  }
+  html body.cc-portal-v2:not(.print-report) #content .cp-budget-table td.available{
+    color:#86efac!important;opacity:1!important;
   }
 
   /* Lectura operativa actual: todo el bloque es una superficie oscura. Las

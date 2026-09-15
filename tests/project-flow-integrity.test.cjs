@@ -61,10 +61,10 @@ test('el cargador autenticado invalida caché de los módulos corregidos',()=>{
   for(const version of [
     'project-detail-v2.js?v=20260913-detail4',
     'payments-center-v1.js?v=20260913-payments3',
-    'guarantees-center-v1.js?v=20260913-guarantees2',
-    'visits-center-v1.js?v=20260915-visits3',
-    'reports-center-v1.js?v=20260915-reports4',
-    'alerts-center-v1.js?v=20260915-alerts6'
+    'guarantees-center-v1.js?v=20260915-guarantees3',
+    'visits-center-v1.js?v=20260915-visits4',
+    'reports-center-v1.js?v=20260915-reports5',
+    'alerts-center-v1.js?v=20260915-alerts7'
   ]) assert.ok(stable.includes(version),'Falta versión nueva: '+version);
 });
 

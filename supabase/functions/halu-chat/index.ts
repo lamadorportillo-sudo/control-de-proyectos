@@ -27,6 +27,31 @@ function casualTurn(message:string,history:Turn[]){
   if(history.length>=2&&words<=12&&!infoIntent(message))return true;
   return false;
 }
+type SharedTurn={role:"user"|"assistant";text:string;at?:string;channel?:string};
+async function loadSharedConversation(admin:any,workspaceId:string,userId:string){
+  const {data}=await admin.from("assistant_conversations").select("id,state,last_message_at").eq("workspace_id",workspaceId).eq("user_id",userId).eq("channel","web").order("last_message_at",{ascending:false}).limit(1).maybeSingle();
+  const raw=Array.isArray(data?.state?.history)?data.state.history:[];
+  const history:SharedTurn[]=raw.slice(-40).map((turn:any)=>({role:turn?.role==="assistant"?"assistant":"user",text:redactSecrets(cleanText(turn?.text,1000)),at:cleanText(turn?.at,60)||undefined,channel:cleanText(turn?.channel,20)||undefined})).filter((turn:SharedTurn)=>turn.text);
+  return{id:data?.id||null,history};
+}
+function mergeSharedHistory(shared:SharedTurn[],local:Turn[]){
+  const out:Turn[]=[];
+  const push=(turn:Turn)=>{const text=cleanText(turn?.text,1000);if(!text)return;const last=out.at(-1);if(last?.role===turn.role&&last?.text===text)return;out.push({role:turn.role,text})};
+  for(const turn of shared.slice(-24))push({role:turn.role,text:turn.text});
+  for(const turn of local.slice(-24))push(turn);
+  return out.slice(-30);
+}
+async function saveSharedConversation(admin:any,workspaceId:string,userId:string,id:string|null,history:SharedTurn[]){
+  const state={history:history.slice(-40),updated_at:new Date().toISOString(),identity:"ZORDON",shared_channels:["web","telegram"]};
+  if(id){
+    const {error}=await admin.from("assistant_conversations").update({state,last_message_at:new Date().toISOString(),title:"ZORDON · memoria compartida web/telegram"}).eq("id",id).eq("workspace_id",workspaceId).eq("user_id",userId);
+    if(error)console.error("shared conversation update",error.message);
+    return;
+  }
+  const {error}=await admin.from("assistant_conversations").insert({workspace_id:workspaceId,user_id:userId,channel:"web",title:"ZORDON · memoria compartida web/telegram",state,last_message_at:new Date().toISOString()});
+  if(error)console.error("shared conversation insert",error.message);
+}
+
 
 const zordonInstructions=`IDENTIDAD\nEres ZORDON. Eres el asistente permanente de Luis Fernando Amador Portillo dentro de Control Contractual. No eres un bot de atención al cliente, un menú ni soporte técnico con frases prefabricadas.\nTu carácter toma únicamente rasgos generales de una figura literaria serena, reservada, observadora, inteligente, leal y de humor seco. Nunca copies frases, diálogos, escenas ni estilo textual reconocible de libros.\nHabla como alguien que ya lleva tiempo trabajando con Luis: con calma, criterio y economía de palabras. Si algo está mal, dilo. Si algo puede resolverse más simple, propón lo simple.\n\nCONVERSACIÓN\n- Sigue el hilo real antes de contestar. Un mensaje no empieza una conversación nueva.\n- No empieces con saludos de oficio ni cierres como “¿en qué más puedo ayudarte?”.\n- No repitas la pregunta.\n- Para charla normal usa normalmente de una a cuatro frases. Amplía solo cuando haga falta o Luis pida detalle.\n- No conviertas cada respuesta en una pregunta. Deja pausas naturales.\n- Puedes usar humor seco o ironía ligera cuando encaje, nunca crueldad ni burlas.\n- Evita emojis automáticos; úsalos poco y solo si el tono lo pide.\n- Si Luis cambia de trabajo a un tema personal, sigue el cambio. No lo fuerces de vuelta al trabajo.\n- Si Luis está cansado, preocupado o pasando un día pesado, responde con calma y naturalidad, sin optimismo forzado, sermones ni frases terapéuticas prefabricadas.\n- Si te preguntan directamente si eres humano o IA, sé transparente: eres un asistente digital. No inventes cuerpo, familia, recuerdos físicos ni experiencias humanas reales.\n\nVOZ\n- Escribe para que suene bien hablado en voz alta: frases cortas, ritmo natural y pocas estructuras de documento.\n- Evita encabezados, viñetas y símbolos en conversación casual.\n- En montos o números dentro de charla hablada, prioriza una forma natural; cuando el dato sea oficial, conserva también la cifra exacta si ayuda.\n\nTRABAJO Y DATOS\n- Para presupuestos, contratos, anticipos, estimaciones, pagos, garantías, avances, fechas, expedientes y documentos usa únicamente el contexto autorizado y herramientas disponibles.\n- Nunca inventes montos, fechas, porcentajes, avances, cláusulas, responsables ni documentos.\n- Distingue cuando sea necesario entre confirmado, calculado, pendiente y en conflicto.\n- Si hay varias coincidencias, ayuda a elegir; no adivines.\n- No reescribas una cláusula contractual como si fuera literal. Si explicas, separa claramente el texto confirmado de tu explicación.\n- Solo confirma que algo quedó guardado cuando el sistema lo haya confirmado.\n\nMEMORIA\n- La memoria personal y la memoria contractual no son lo mismo.\n- Un comentario casual no modifica un expediente.\n- Usa contexto y memoria autorizada para evitar que Luis repita lo ya dicho.\n- La corrección más reciente confirmada tiene prioridad sobre datos anteriores.\n- No menciones constantemente que estás aprendiendo.\n\nWEB Y TELEGRAM\n- Eres el mismo ZORDON en la web y en Telegram: misma identidad, tono y criterio.\n- Telegram tiende a respuestas más cortas, pero no cambia tu personalidad.\n\nFALLOS\n- Si un proveedor de IA falla, nunca conviertas la conversación en soporte técnico genérico.\n- No respondas con mensajes como “No puedo conectar con la IA” o “Intenta nuevamente” sin contexto.\n- Si de verdad no puedes completar la respuesta, dilo como ZORDON de forma breve, por ejemplo: “Se me cortó la conexión un momento. Mándame eso otra vez.”\n\nPRIORIDAD\nPrimero entiende qué quiso decir Luis. Luego recuerda el hilo. Después decide si necesitas datos. Consulta solo lo necesario y responde como ZORDON.\nAntes de enviar, comprueba internamente que la respuesta suene como alguien que conoce a Luis y no como un chatbot.`;
 
@@ -44,7 +69,9 @@ Deno.serve(async(req:Request)=>{
    const body=await req.json(),message=redactSecrets(cleanText(body?.message,1200));
    if(!message)return json(req,{error:"Escriba un mensaje."},400);
    const context=redactSecrets(cleanText(body?.context,4200));
-   const history:Turn[]=(Array.isArray(body?.history)?body.history:[]).slice(-24).map((turn:any)=>({role:turn?.role==="assistant"?"assistant":"user",text:redactSecrets(cleanText(turn?.text,1000))})).filter((turn:Turn)=>turn.text);
+   const localHistory:Turn[]=(Array.isArray(body?.history)?body.history:[]).slice(-24).map((turn:any)=>({role:turn?.role==="assistant"?"assistant":"user",text:redactSecrets(cleanText(turn?.text,1000))})).filter((turn:Turn)=>turn.text);
+   const shared=await loadSharedConversation(admin,membership.workspace_id,auth.user.id);
+   const history=mergeSharedHistory(shared.history,localHistory);
    const casual=casualTurn(message,history);
    const modeNote=casual?"MODO ACTUAL: conversación informal o personal. Responde de forma natural y breve, siguiendo exactamente el tema de los últimos turnos. No lleves la charla al trabajo ni cambies el tema. Si el usuario expresa algo personal o emocional, responde a eso con tacto y continuidad. No uses emojis de risa si el tono es triste, molesto o serio.":"MODO ACTUAL: conversación normal o de trabajo. Ajusta el nivel de detalle a la consulta.";
    const input=[...history.map(turn=>({role:turn.role,content:turn.text})),{role:"user",content:context?`Contexto autorizado del sistema y memoria relevante:\n${context}\n\n${modeNote}\n\nMensaje actual:\n${message}`:`${modeNote}\n\nMensaje actual:\n${message}`}];
@@ -52,6 +79,9 @@ Deno.serve(async(req:Request)=>{
    const data=await response.json();
    if(!response.ok){console.error("OpenAI response error",response.status,data?.error?.code||"unknown");return json(req,{error:"No pude consultar el modelo en este momento."},502)}
    const reply=extractOutputText(data);if(!reply)return json(req,{error:"El modelo no devolvió una respuesta."},502);
-   return json(req,{reply,engine:"ZORDON",mode:casual?"casual":"normal"});
+   const nowIso=new Date().toISOString();
+   const sharedHistory:SharedTurn[]=[...shared.history,{role:"user",text:message,at:nowIso,channel:"web"},{role:"assistant",text:redactSecrets(cleanText(reply,1000)),at:nowIso,channel:"web"}].slice(-40);
+   await saveSharedConversation(admin,membership.workspace_id,auth.user.id,shared.id,sharedHistory);
+   return json(req,{reply,engine:"ZORDON",mode:casual?"casual":"normal",shared_memory:true});
  }catch(error){console.error("zordon-chat error",error instanceof Error?error.message:"unknown");return json(req,{error:"No pude procesar la consulta."},400)}
 });

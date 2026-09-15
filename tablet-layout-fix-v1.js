@@ -31,6 +31,7 @@ body.cc-guarantees-center-active:not(.print-report) .topbar,
 body.cc-visits-center-active:not(.print-report) .topbar,
 body.cc-reports-center-active:not(.print-report) .topbar,
 body.cc-alerts-center-active:not(.print-report) .topbar,
+body.cc-audit-center-active:not(.print-report) .topbar,
 body.cc-transparency-active:not(.print-report) .topbar,
 body.cc-portal-v2[data-cc-main-route="proyectos"]:not(.print-report) .topbar,
 body.cc-portal-v2[data-cc-main-route="presupuesto"]:not(.print-report) .topbar{
@@ -42,6 +43,7 @@ body.cc-guarantees-center-active:not(.print-report) #ccCommandbar,
 body.cc-visits-center-active:not(.print-report) #ccCommandbar,
 body.cc-reports-center-active:not(.print-report) #ccCommandbar,
 body.cc-alerts-center-active:not(.print-report) #ccCommandbar,
+body.cc-audit-center-active:not(.print-report) #ccCommandbar,
 body.cc-portal-v2[data-cc-main-route="presupuesto"]:not(.print-report) #ccCommandbar{
   display:none!important;
 }

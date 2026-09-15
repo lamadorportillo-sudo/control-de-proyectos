@@ -23,6 +23,32 @@ body.cc-portal-v2:not(.print-report) .cc-commandbar{
 body.cc-portal-v2:not(.print-report) #ccEngineerChatLaunch.cc-eng-chat-launch{
   width:52px!important;height:106px!important;
 }
+
+/* Cada módulo usa su propia barra de trabajo. Evita títulos y acciones duplicadas. */
+body.cc-contracts-center-active:not(.print-report) .topbar,
+body.cc-payments-center-active:not(.print-report) .topbar,
+body.cc-guarantees-center-active:not(.print-report) .topbar,
+body.cc-visits-center-active:not(.print-report) .topbar,
+body.cc-reports-center-active:not(.print-report) .topbar,
+body.cc-alerts-center-active:not(.print-report) .topbar,
+body.cc-transparency-active:not(.print-report) .topbar,
+body.cc-portal-v2[data-cc-main-route="proyectos"]:not(.print-report) .topbar,
+body.cc-portal-v2[data-cc-main-route="presupuesto"]:not(.print-report) .topbar{
+  display:none!important;
+}
+body.cc-contracts-center-active:not(.print-report) #ccCommandbar,
+body.cc-payments-center-active:not(.print-report) #ccCommandbar,
+body.cc-guarantees-center-active:not(.print-report) #ccCommandbar,
+body.cc-visits-center-active:not(.print-report) #ccCommandbar,
+body.cc-reports-center-active:not(.print-report) #ccCommandbar,
+body.cc-alerts-center-active:not(.print-report) #ccCommandbar,
+body.cc-portal-v2[data-cc-main-route="presupuesto"]:not(.print-report) #ccCommandbar{
+  display:none!important;
+}
+/* Transparencia reutiliza la barra global solo para el periodo y Nuevo mes. */
+body.cc-transparency-active:not(.print-report) #ccCommandbar{
+  display:grid!important;
+}
 @media(max-width:900px){
   body.cc-portal-v2:not(.print-report) #ccEngineerChatLaunch.cc-eng-chat-launch{
     width:44px!important;height:90px!important;

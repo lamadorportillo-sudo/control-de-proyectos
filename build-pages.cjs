@@ -129,7 +129,7 @@ html=html.replace(bootMarker,`installProjectActionSafety();\n${coreHardening}\nr
 if(!fs.existsSync('budget-portfolio-tab-v1.js')) throw new Error('No se encontró budget-portfolio-tab-v1.js.');
 if(!html.includes('budget-portfolio-tab-v1.js')){
   const bodyEnd=html.toLowerCase().lastIndexOf('</body>');
-  html=html.slice(0,bodyEnd)+'<script src="budget-portfolio-tab-v1.js"></script>\n'+html.slice(bodyEnd);
+  html=html.slice(0,bodyEnd)+'<script src="budget-portfolio-tab-v1.js?v=20260915-step6"></script>\n'+html.slice(bodyEnd);
 }
 
 // Coordina los observadores antes de cargar cualquier módulo funcional.

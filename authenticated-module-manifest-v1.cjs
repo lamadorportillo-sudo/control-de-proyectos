@@ -95,7 +95,6 @@ const supplementalModules=[
      preserva la consulta visible tras el rerender y refresca decoraciones. */
   ['authenticated-ui-sync-v1.js','20260911-authuisync3'],
   ['zordon-unified-density-v1.js','20260905-density2'],
-  ['home-industrial-hero-v1.js','20260914-step2'],
   ['projects-industrial-v1.js','20260914-step4'],
   ['zordon-chat-ui-v1.js','20260908-cleanchat6'],
   /* El expediente documental usa superficies claras y necesita una corrección

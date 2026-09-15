@@ -256,7 +256,7 @@ if(!tail.includes('data-cc-auth-plan')){
       /* FASE B · CENTROS WEB PRINCIPALES, UNO A UNO. */
       const webModules=[
         'project-detail-v2.js?v=20260913-detail4',
-        'dashboard-simplified-v4.js?v=20260914-step3',
+        'dashboard-simplified-v4.js?v=20260915-homeprimary1',
         'payments-center-v1.js?v=20260913-payments3',
         'guarantees-center-v1.js?v=20260913-guarantees2',
         'visits-center-v1.js?v=20260913-visits2',

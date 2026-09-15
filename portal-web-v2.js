@@ -23,11 +23,11 @@ function openProjects(){
 function quick(action){try{if(typeof dashboardQuickAction==='function')dashboardQuickAction(action)}catch(e){console.warn(e)}}
 function showArchitecture(){
   const html=`<div class="cc-architecture">
-    <div class="cc-arch-intro"><b>Arquitectura de Control Contractual</b><br>La página mantiene el tema de gestión integral de proyectos municipales. Los canales y servicios auxiliares apoyan el expediente; Supabase continúa como base principal del sistema.</div>
+    <div class="cc-arch-intro"><b>Arquitectura de Control Contractual</b><br>La página mantiene el enfoque de gestión integral de proyectos de infraestructura. Los canales y servicios auxiliares apoyan el expediente; Supabase continúa como base principal del sistema.</div>
     <div class="cc-arch-flow">
       <div class="cc-arch-node"><h3>Supervisor / Usuario autorizado</h3><p>Consulta proyectos, registra visitas, estimaciones, garantías, observaciones y genera informes.</p><ul><li>Portal Web</li><li>Telegram para captura y consultas</li><li>Uso desde PC, tablet o celular</li></ul></div>
       <div class="cc-arch-arrow">→</div>
-      <div class="cc-arch-node primary"><h3>Control Contractual</h3><p>Centro operativo que organiza la información técnica, contractual y financiera por expediente.</p><ul><li>Proyectos y contratos</li><li>Pagos / estimaciones</li><li>Visitas y bitácora</li><li>Garantías, alertas y reportes</li></ul></div>
+      <div class="cc-arch-node primary"><h3>Control Contractual</h3><p>Centro operativo que organiza la información técnica, contractual y financiera de cada expediente, sin depender de una sola institución.</p><ul><li>Proyectos y contratos</li><li>Pagos / estimaciones</li><li>Visitas y bitácora</li><li>Garantías, alertas y reportes</li></ul></div>
       <div class="cc-arch-arrow">→</div>
       <div class="cc-arch-node green"><h3>Supabase · Base principal</h3><p>Autenticación, persistencia y sincronización de los expedientes del sistema.</p><ul><li>Datos estructurados</li><li>Usuarios y permisos</li><li>Trazabilidad</li></ul></div>
     </div>
@@ -72,7 +72,7 @@ function syncBadge(sidebar){
 function createSidebar(shell){
   const aside=document.createElement('aside');aside.className='cc-sidebar';aside.id='ccSidebar';
   aside.innerHTML=`
-    <div class="cc-sidebar-brand"><div class="cc-sidebar-mark">CC</div><div><strong>Control Contractual</strong><small>Gestión integral de proyectos municipales</small></div></div>
+    <div class="cc-sidebar-brand"><div class="cc-sidebar-mark">CC</div><div><strong>Control Contractual</strong><small>Gestión técnica y contractual de proyectos</small></div></div>
     <div class="cc-sidebar-motto">Registrar una vez · utilizar en todo el sistema.</div>
     <div class="cc-nav-label">Gestión</div>
     <nav class="cc-side-nav">

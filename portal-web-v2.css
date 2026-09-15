@@ -102,3 +102,35 @@ body.cc-portal-v2 .footer-note{color:#657e99;padding:18px 0 8px;text-align:cente
 @media(max-width:860px){body.cc-portal-v2 .shell.cc-shell{display:block}.cc-app-column{padding:12px}.cc-sidebar{position:fixed;left:-272px;top:0;width:260px;z-index:100;transition:left .2s ease}.cc-sidebar.open{left:0}.cc-sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99;display:none}.cc-sidebar-overlay.show{display:block}.cc-mobile-toggle{display:grid;place-items:center}.cc-commandbar{grid-template-columns:46px 1fr}.cc-command-actions{grid-column:1/-1;overflow:auto;flex-wrap:nowrap;justify-content:flex-start;padding-bottom:2px}.cc-command-btn{white-space:nowrap}.cc-global-search{max-width:none}.cc-arch-flow{grid-template-columns:1fr}.cc-arch-arrow{transform:rotate(90deg);height:24px}.cc-field-mode{grid-template-columns:1fr 1fr}}
 @media(max-width:620px){.cc-app-column{padding:9px}.cc-commandbar{margin-bottom:10px}.cc-command-actions .cc-command-btn{height:37px}.cc-sidebar{width:248px}.cc-arch-services,.cc-field-mode{grid-template-columns:1fr}.exec-intro h2{font-size:20px!important}.exec-overview{border-radius:16px!important}.projects-board{border-radius:15px!important}body.cc-portal-v2 .grid-kpi{grid-template-columns:1fr 1fr}.cc-global-search input{height:40px}.cc-commandbar{gap:8px}}
 @media(max-width:420px){body.cc-portal-v2 .grid-kpi{grid-template-columns:1fr}.cc-command-btn span{display:none}}
+
+
+/* PASO 3/30 · IDENTIDAD GENERAL Y NAVEGACIÓN INDUSTRIAL */
+body.cc-portal-v2 .cc-sidebar{background:
+  linear-gradient(180deg,rgba(2,19,34,.98),rgba(4,30,52,.98) 58%,rgba(3,20,35,.98)),
+  repeating-linear-gradient(135deg,rgba(255,255,255,.02) 0 1px,transparent 1px 18px)}
+body.cc-portal-v2 .cc-sidebar:before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(#2fb5ff,#1d5fb7 55%,#58d68d)}
+body.cc-portal-v2 .cc-sidebar-brand{position:relative;padding-top:6px}
+body.cc-portal-v2 .cc-sidebar-mark{
+  width:46px;height:46px;border-radius:10px;background:#0d3354;border:1px solid rgba(116,193,255,.30);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.035),0 10px 30px rgba(0,0,0,.24);letter-spacing:.04em
+}
+body.cc-portal-v2 .cc-sidebar-brand strong{font-size:15px;letter-spacing:-.01em}
+body.cc-portal-v2 .cc-sidebar-brand small{max-width:150px;color:#a6bdd0}
+body.cc-portal-v2 .cc-sidebar-motto{
+  border-radius:8px;border-left:3px solid #2fb5ff;background:rgba(47,181,255,.055);
+  color:#b9d8eb;letter-spacing:.015em
+}
+body.cc-portal-v2 .cc-nav-label{color:#6f93ae;font-size:8px;letter-spacing:.18em;padding-top:13px}
+body.cc-portal-v2 .cc-side-btn{border-radius:8px;min-height:42px}
+body.cc-portal-v2 .cc-side-btn.active{background:linear-gradient(90deg,#145d9a 0%,rgba(20,93,154,.26) 72%,transparent);box-shadow:inset 3px 0 #4fc3ff}
+body.cc-portal-v2 .cc-side-icon{border-radius:6px}
+body.cc-portal-v2 .cc-commandbar{
+  position:relative;padding:8px;border:1px solid rgba(112,165,205,.14);border-radius:12px;
+  background:linear-gradient(90deg,rgba(7,28,47,.82),rgba(10,37,61,.58));box-shadow:0 9px 24px rgba(0,0,0,.11)
+}
+body.cc-portal-v2 .cc-commandbar:after{content:'CONTROL TÉCNICO · CONTRATOS · SUPERVISIÓN';position:absolute;right:12px;bottom:-15px;color:#56738c;font-size:7px;letter-spacing:.16em;font-weight:850;pointer-events:none}
+body.cc-portal-v2 .cc-command-btn{border-radius:8px}
+body.cc-portal-v2 .cc-command-btn.primary{background:#1476bf}
+body.cc-portal-v2 .topbar{min-height:44px;padding-bottom:8px}
+body.cc-portal-v2 .topbar .brand .eyebrow{letter-spacing:.15em;text-transform:uppercase}
+@media(max-width:860px){body.cc-portal-v2 .cc-commandbar:after{display:none}}

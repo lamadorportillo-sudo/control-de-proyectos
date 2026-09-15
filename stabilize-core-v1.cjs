@@ -238,11 +238,11 @@ if(!tail.includes('data-cc-auth-plan')){
       const governor=nodeByBare('mutation-observer-governor-v1.js');
       if(!governor)throw new Error('Falta el gobernador de observadores.');
       await requireRun('mutation-observer-governor-v1.js',()=>runNode(governor));
-      styleOnce('portal-web-v2.css?v=20260903-web3','ccAuthPortalCss');
+      styleOnce('portal-web-v2.css?v=20260914-step3','ccAuthPortalCss');
       styleOnce('project-detail-v2.css?v=20260901-detail2','ccAuthProjectCss');
       styleOnce('dashboard-simplified-v4.css?v=20260907-dashnav1','ccAuthDashboardCss');
 
-      await requireRun('portal-web-v2.js',()=>runSrc('portal-web-v2.js?v=20260904-web4'));
+      await requireRun('portal-web-v2.js',()=>runSrc('portal-web-v2.js?v=20260914-master1'));
       const tabs=nodeByBare('project-tabs-complete-v1.js');
       if(!tabs)throw new Error('Falta project-tabs-complete-v1.js en el plan autenticado.');
       await requireRun('project-tabs-complete-v1.js',()=>runNode(tabs));
@@ -256,7 +256,7 @@ if(!tail.includes('data-cc-auth-plan')){
       /* FASE B · CENTROS WEB PRINCIPALES, UNO A UNO. */
       const webModules=[
         'project-detail-v2.js?v=20260913-detail4',
-        'dashboard-simplified-v4.js?v=20260907-dashnav1',
+        'dashboard-simplified-v4.js?v=20260914-step3',
         'payments-center-v1.js?v=20260913-payments3',
         'guarantees-center-v1.js?v=20260913-guarantees2',
         'visits-center-v1.js?v=20260913-visits2',

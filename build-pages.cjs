@@ -138,7 +138,7 @@ if(!fs.existsSync(performanceModule)) throw new Error(`No se encontró ${perform
 try{new vm.Script(fs.readFileSync(performanceModule,'utf8'),{filename:performanceModule})}catch(err){throw new Error(`JavaScript inválido en ${performanceModule}: ${err.message}`)}
 html=html.replace(/<script\s+src=["']performance-runtime-v1\.js(?:\?[^"']*)?["']\s*><\/script>\s*/gi,'');
 const firstFeature=/<script src="budget-portfolio-tab-v1\.js(?:\?v=[^"]+)?"><\/script>/;
-html=html.replace(firstFeature,`<script src="${performanceModule}?v=${performanceVersion}"></script>\n<script src="budget-portfolio-tab-v1.js?v=20260823-budget5"></script>`);
+html=html.replace(firstFeature,`<script src="${performanceModule}?v=${performanceVersion}"></script>\n<script src="budget-portfolio-tab-v1.js?v=20260915-budget6"></script>`);
 
 // Arquitectura ejecutiva, normativa histórica, documentos de adjudicación y diseño corporativo.
 // Los módulos funcionales se cargan de forma directa para no depender de cachés o cargadores secundarios.

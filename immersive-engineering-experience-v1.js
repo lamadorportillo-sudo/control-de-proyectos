@@ -208,12 +208,8 @@ function heroMarkup(){
 }
 
 function mountHero(){
-  if(document.getElementById(HERO_ID))return;
-  const visual=document.querySelector('.exec-visual');
-  if(!visual)return;
-  const previous=visual.querySelector('.portfolio-ring, .exec-visual-inner, .exec-visual-content');
-  if(previous)previous.style.opacity='.20';
-  visual.insertAdjacentHTML('beforeend',heroMarkup());
+  // El panel financiero pertenece a los datos; no insertar decoración sobre ellos.
+  document.getElementById(HERO_ID)?.remove();
 }
 
 function installTilt(){

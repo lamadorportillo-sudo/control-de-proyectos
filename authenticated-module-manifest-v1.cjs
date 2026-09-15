@@ -75,7 +75,7 @@ const supplementalModules=[
   ['engineering-manual-reference-v1.js','20260823-manual2'],
   ['technical-control-permissions-v1.js','20260905-controltecnicoperm6'],
   ['technical-control-scope-v2.js','20260904-controlscope5'],
-  ['immersive-engineering-experience-v1.js','20260828-immersive2'],
+  ['immersive-engineering-experience-v1.js','20260915-clearfinance3'],
   ['ui-visibility-audit-v1.js','20260904-visibility5'],
   ['ui-contrast-hardening-v1.js','20260831-contrast5'],
   ['contract-official-format-v1.js','20260831-phone3'],
@@ -104,7 +104,7 @@ const supplementalModules=[
   /* Última corrección visual general, antes del par técnico que debe seguir
      siendo el cierre funcional del plan autenticado. */
   ['ui-contrast-final-guard-v1.js','20260915-nocturnal-ledger12'],
-  ['tablet-layout-fix-v1.js','20260915-tablet7'],
+  ['tablet-layout-fix-v1.js','20260915-layout8'],
   /* El guard se ejecuta inmediatamente antes del módulo técnico histórico y
      filtra su MutationObserver global sin afectar los observadores del resto. */
   ['technical-control-observer-guard-v1.js','20260904-controlobserver1'],

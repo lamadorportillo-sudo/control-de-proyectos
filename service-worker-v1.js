@@ -1,4 +1,4 @@
-const CACHE='cc-static-v1-20260914-master1';
+const CACHE='cc-static-v1-20260915-layout8';
 const STATIC_EXT=/\.(?:js|css|webp|png|jpg|jpeg|svg|woff2?|webmanifest)(?:\?|$)/i;
 const SHELL=['./','./index.html','./manifest.webmanifest','./performance-runtime-v1.js','./private-access-v1.js','./password-recovery-v1.js'];
 

@@ -62,7 +62,7 @@ const supplementalModules=[
   ['project-photo-story-v1.js','20260821-photostory1'],
   ['photo-gallery-polish-v2.js','20260822-photopolish2'],
   ['project-card-engineering-fix-v1.js','20260821-cardengfix1'],
-  ['ui-theme-unifier-v1.js','20260824-theme3d2'],
+  ['ui-theme-unifier-v1.js','20260914-industrial3'],
   ['engineering-visibility-fix-v1.js','20260822-visibility1'],
   ['ui-operational-polish-v1.js','20260822-operational2'],
   /* Refinamiento visual general: ahora forma parte del plan canónico para
@@ -95,6 +95,8 @@ const supplementalModules=[
      preserva la consulta visible tras el rerender y refresca decoraciones. */
   ['authenticated-ui-sync-v1.js','20260911-authuisync3'],
   ['zordon-unified-density-v1.js','20260905-density2'],
+  ['home-industrial-hero-v1.js','20260914-step2'],
+  ['projects-industrial-v1.js','20260914-step4'],
   ['zordon-chat-ui-v1.js','20260908-cleanchat6'],
   /* El expediente documental usa superficies claras y necesita una corrección
      contextual antes de la guardia visual final. */

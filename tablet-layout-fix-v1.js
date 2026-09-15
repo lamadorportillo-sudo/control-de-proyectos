@@ -20,6 +20,14 @@ body.cc-portal-v2:not(.print-report) .topbar,
 body.cc-portal-v2:not(.print-report) .cc-commandbar{
   width:100%!important;max-width:100%!important;
 }
+body.cc-portal-v2:not(.print-report) #ccEngineerChatLaunch.cc-eng-chat-launch{
+  width:52px!important;height:106px!important;
+}
+@media(max-width:900px){
+  body.cc-portal-v2:not(.print-report) #ccEngineerChatLaunch.cc-eng-chat-launch{
+    width:44px!important;height:90px!important;
+  }
+}
 
 /* Escritorio: la columna reservada y el ancho visible del menú deben coincidir. */
 @media (min-width:1181px){

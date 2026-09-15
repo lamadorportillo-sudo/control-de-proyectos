@@ -39,12 +39,14 @@ assert.ok(fs.statSync('engineer-assistant-avatar.png').size>1000,'el avatar del 
 const legacy=fs.readFileSync('engineer-chatbot-v3.js','utf8');
 const zordonCore=fs.readFileSync('zordon-continuous-runtime-v1.js','utf8');
 const zordonChat=fs.readFileSync('zordon-chat-ui-v1.js','utf8');
-assert.match(zordonCore,/ZORDON · Ingeniero Civil/,'la identidad visible actual debe ser ZORDON');
+assert.match(zordonCore,/setText\(chat\.querySelector\('\.cc-eng-chat-head b'\),'ZORDON'\)/,'la identidad visible debe ser ZORDON sin encasillarlo como Ingeniero Civil');
 assert.match(zordonCore,/Conversación personal o informal/,'el contexto personal debe separarse del contexto técnico');
 assert.match(zordonCore,/personalFallback/,'debe existir respaldo conversacional sin regresar a menús técnicos');
 assert.doesNotMatch(zordonCore,/Lo relaciono con lo que ya tengo en contexto:/,'no debe reaparecer el fallback robótico observado en producción');
 assert.match(zordonChat,/por que te ries|porque te ries/,'el chat debe reconocer cuando el usuario cuestiona un emoji o una risa');
-assert.match(zordonChat,/No me estoy riendo de ti/,'el chat debe corregir una risa fuera de contexto');
+assert.match(zordonChat,/Toda charla casual pasa por ZORDON Core/,'los saludos y charla casual no deben resolverse con plantillas locales');
+assert.doesNotMatch(zordonChat,/¡Hola! ¿Cómo estás\?/,'no debe quedar el saludo robótico observado en producción');
+assert.doesNotMatch(zordonChat,/Bien también 😄/,'no debe quedar una respuesta casual enlatada');
 assert.match(legacy,/data-q="¿Qué puedes controlar\?">Controlar página/,'mantiene la acción rápida de control de página del motor técnico');
 assert.match(legacy,/data-q="Ponte aquí">Colocar avatar/,'mantiene la acción para colocar el avatar');
 assert.match(legacy,/haluCloudContext\(q\)/,'el motor técnico conserva el contexto relacionado para consultas de obra');

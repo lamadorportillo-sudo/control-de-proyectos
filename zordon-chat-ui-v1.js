@@ -1,7 +1,8 @@
-/* ===== ZORDON · CHAT NATURAL Y CONTINUO V6 · TONO CONTEXTUAL ===== */
+/* ===== ZORDON · CHAT NATURAL Y CONTINUO V7 · SIN RESPUESTAS ENLATADAS ===== */
 (()=>{
 'use strict';
-if(window.__CC_ZORDON_CHAT_UI_V6__)return;
+if(window.__CC_ZORDON_CHAT_UI_V7__)return;
+window.__CC_ZORDON_CHAT_UI_V7__=true;
 window.__CC_ZORDON_CHAT_UI_V6__=true;
 window.__CC_ZORDON_CHAT_UI_V5__=true;
 window.__CC_ZORDON_CHAT_UI_V4__=true;
@@ -70,13 +71,9 @@ function modeFor(text){
   return'normal';
 }
 
-function casualReply(text){
-  const q=norm(text);if(!q)return'';
-  if(/^(hola+|buenas|buenos dias|buenas tardes|buenas noches|hey|que tal)$/.test(q))return'¡Hola! ¿Cómo estás?';
-  if(/^(gracias|muchas gracias|gracias zordon)$/.test(q))return'¡De nada!';
-  if(/^(jaja+|jeje+|jajaja+|jiji+)$/.test(q))return'Jajaja 😄';
-  if(/\b(no quiero hablar de trabajo|cero trabajo|nada de trabajo)\b/.test(q))return'Va, cero trabajo.';
-  if(/\b(bien|muy bien|todo bien)\b.*\b(y tu|y vos|tu que tal)\b/.test(q)||/^(y tu|y vos)$/.test(q))return'Bien también 😄';
+function casualReply(){
+  // Toda charla casual pasa por ZORDON Core para conservar tono, memoria y continuidad.
+  // No se responden saludos ni frases personales con plantillas locales.
   return'';
 }
 
@@ -135,12 +132,13 @@ async function ask(text){
     else if(engine&&typeof engine.answer==='function')reply=await Promise.resolve(engine.answer(q));
     else throw new Error('Motor ZORDON no disponible');
     typing?.remove();
-    const clean=(mode==='casual'?compactCasual(reply,q):String(reply||'').replace(/\bHalu\b/gi,'ZORDON').trim())||'No pude completar la respuesta. Intenta nuevamente.';
+    const clean=(mode==='casual'?compactCasual(reply,q):String(reply||'').replace(/\bHalu\b/gi,'ZORDON').trim())||'Se me cortó la respuesta un momento. Mándame eso otra vez.';
     add('bot',clean);remember('assistant',clean,mode==='casual'?'social':mode);
   }catch(error){
     typing?.remove();
-    const fallback=mode==='casual'?'Se cortó la respuesta. Intenta nuevamente.':'No pude completar la consulta en este momento. Intenta nuevamente.';
+    const fallback='Se me cortó la respuesta un momento. El hilo sigue aquí; mándame eso otra vez.';
     add('bot',fallback);remember('assistant',fallback,mode==='casual'?'social':mode);
+    const inp=input();if(inp&&!inp.value)inp.value=q;
     console.warn('ZORDON: fallo de envío directo.',error?.message||error);
   }finally{finishControls(btn)}
 }
@@ -186,5 +184,5 @@ observer?.observe(document.documentElement,{childList:true,subtree:true});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindUi,{once:true});else bindUi();
 setTimeout(bindUi,250);setTimeout(bindUi,1000);
 window.addEventListener('pagehide',()=>observer?.disconnect?.(),{once:true});
-window.__ccZordonChatUI={send:ask,clean:removeIntro,status:()=>({busy,ready:!!sendButton(),version:6,mode:conversation()?.lastType||''})};
+window.__ccZordonChatUI={send:ask,clean:removeIntro,status:()=>({busy,ready:!!sendButton(),version:7,mode:conversation()?.lastType||''})};
 })();

@@ -160,8 +160,8 @@ body.cc-transparency-active:not(.print-report) #ccCommandbar{
     transform:translateX(0)!important;
   }
   body.cc-portal-v2:not(.print-report) .cc-sidebar-overlay{
-    position:fixed!important;inset:0!important;left:0!important;
-    width:100vw!important;height:100dvh!important;
+    position:fixed!important;top:0!important;right:0!important;bottom:0!important;
+    left:min(286px,86vw)!important;width:auto!important;height:100dvh!important;
     z-index:999!important;background:rgba(0,0,0,.58)!important;
   }
   body.cc-portal-v2:not(.print-report) .cc-app-column{

@@ -22,44 +22,38 @@ function openProjects(){
 }
 function quick(action){try{if(typeof dashboardQuickAction==='function')dashboardQuickAction(action)}catch(e){console.warn(e)}}
 function showArchitecture(){
-  const html=`<div class="cc-architecture">
-    <div class="cc-arch-intro"><b>Arquitectura de Control Contractual</b><br>La página mantiene el enfoque de gestión integral de proyectos de infraestructura. Los canales y servicios auxiliares apoyan el expediente; Supabase continúa como base principal del sistema.</div>
+  const html=`<div class="cc-architecture cc-architecture-compact">
     <div class="cc-arch-flow">
-      <div class="cc-arch-node"><h3>Supervisor / Usuario autorizado</h3><p>Consulta proyectos, registra visitas, estimaciones, garantías, observaciones y genera informes.</p><ul><li>Portal Web</li><li>Telegram para captura y consultas</li><li>Uso desde PC, tablet o celular</li></ul></div>
+      <div class="cc-arch-node"><h3>Usuario / Campo</h3><p>PC, tablet, celular y Telegram.</p></div>
       <div class="cc-arch-arrow">→</div>
-      <div class="cc-arch-node primary"><h3>Control Contractual</h3><p>Centro operativo que organiza la información técnica, contractual y financiera de cada expediente, sin depender de una sola institución.</p><ul><li>Proyectos y contratos</li><li>Pagos / estimaciones</li><li>Visitas y bitácora</li><li>Garantías, alertas y reportes</li></ul></div>
+      <div class="cc-arch-node primary"><h3>Control Contractual</h3><p>Proyectos · contratos · pagos · visitas · garantías · reportes.</p></div>
       <div class="cc-arch-arrow">→</div>
-      <div class="cc-arch-node green"><h3>Supabase · Base principal</h3><p>Autenticación, persistencia y sincronización de los expedientes del sistema.</p><ul><li>Datos estructurados</li><li>Usuarios y permisos</li><li>Trazabilidad</li></ul></div>
+      <div class="cc-arch-node green"><h3>Supabase</h3><p>Datos, usuarios, permisos, archivos y trazabilidad.</p></div>
     </div>
-    <div class="cc-arch-services">
-      <div class="cc-arch-service"><b>Telegram</b><span>Canal de campo y entrada de evidencias.</span></div>
-      <div class="cc-arch-service"><b>Google Sheets / Apps Script</b><span>Sincronización y flujos auxiliares cuando corresponda.</span></div>
-      <div class="cc-arch-service"><b>Gemini / IA</b><span>Análisis asistido, estructuración y apoyo documental con revisión humana.</span></div>
-      <div class="cc-arch-service"><b>Drive / AppSheet</b><span>Apoyo documental y consulta móvil dentro del ecosistema del proyecto.</span></div>
+    <div class="cc-arch-services cc-arch-services-compact">
+      <div class="cc-arch-service"><b>Telegram</b><span>Captura y consulta de campo.</span></div>
+      <div class="cc-arch-service"><b>Drive / Sheets</b><span>Apoyo documental y sincronización auxiliar.</span></div>
+      <div class="cc-arch-service"><b>IA</b><span>Análisis y apoyo documental con revisión humana.</span></div>
     </div>
-    <div class="cc-arch-node gold"><h3>Regla operativa</h3><p><b>REGISTRAR UNA VEZ → UTILIZAR EN TODO EL SISTEMA.</b> La IA organiza y propone; las decisiones técnicas, contractuales y financieras continúan bajo revisión del supervisor.</p></div>
+    <div class="cc-arch-rule">Registrar una vez · utilizar en todo el sistema.</div>
   </div>`;
-  try{if(typeof openModal==='function')openModal('Arquitectura e integraciones del sistema',html)}catch(e){console.warn(e)}
+  try{if(typeof openModal==='function')openModal('Arquitectura',html)}catch(e){console.warn(e)}
 }
 function showFieldMode(){
-  const html=`<div class="cc-architecture"><div class="cc-arch-intro"><b>Modo de trabajo en campo</b><br>Accesos rápidos adaptados al mismo Control Contractual. No se crea otra aplicación ni otro tema.</div><div class="cc-field-mode">
-    <button class="cc-field-action" data-field="visit"><b>📍 Registrar visita</b><span>Seleccionar proyecto y abrir el módulo de supervisión.</span></button>
-    <button class="cc-field-action" data-field="estimate"><b>💳 Nueva estimación</b><span>Registrar avance financiero o pago en el expediente.</span></button>
-    <button class="cc-field-action" data-field="guarantee"><b>🛡️ Garantía</b><span>Registrar vigencia y control contractual.</span></button>
-    <button class="cc-field-action" data-field="report"><b>📄 Generar informe</b><span>Abrir el módulo documental del proyecto.</span></button>
-    <button class="cc-field-action" data-field="projects"><b>🏗️ Proyectos</b><span>Volver al portafolio de obras bajo control.</span></button>
-    <button class="cc-field-action" data-field="architecture"><b>⌘ Arquitectura</b><span>Ver cómo se relacionan los componentes del sistema.</span></button>
+  const html=`<div class="cc-field-shell"><div class="cc-field-intro"><b>Modo campo</b><span>Accesos grandes para trabajar desde celular o tablet.</span></div><div class="cc-field-mode">
+    <button class="cc-field-action primary" data-field="visit"><b>⌖ Registrar visita</b><span>Fotos, avance, observaciones y evidencia.</span></button>
+    <button class="cc-field-action" data-field="projects"><b>▦ Buscar proyecto</b><span>Abrir rápidamente el expediente de obra.</span></button>
+    <button class="cc-field-action" data-field="alerts"><b>! Deficiencias</b><span>Revisar observaciones pendientes y seguimiento.</span></button>
+    <button class="cc-field-action" data-field="estimate"><b>$ Nueva estimación</b><span>Registrar avance financiero desde el expediente.</span></button>
   </div></div>`;
   try{
     if(typeof openModal!=='function')return;
-    const modal=openModal('Accesos rápidos de supervisión',html);
+    const modal=openModal('Modo campo',html);
     modal.querySelectorAll('[data-field]').forEach(b=>b.onclick=()=>{
       const a=b.dataset.field;modal.remove();
       if(a==='visit')quick('visit');
       else if(a==='estimate')quick('estimate');
-      else if(a==='guarantee')quick('guarantee');
-      else if(a==='report')quick('report');
-      else if(a==='architecture')showArchitecture();
+      else if(a==='alerts'){try{window.__ccAlertsCenter?.open?.()}catch{}}
       else openProjects();
     });
   }catch(e){console.warn(e)}

@@ -1,0 +1,47 @@
+name: Validate frontend-v2
+
+on:
+  push:
+    branches:
+      - integracion-ai-studio
+    paths:
+      - 'frontend-v2/**'
+      - '.github/workflows/frontend-v2-validate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-v2-validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: frontend-v2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: integracion-ai-studio
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend-v2/package.json
+      - name: Install dependencies
+        run: npm install --no-package-lock
+      - name: TypeScript check
+        run: npm run lint
+      - name: Production build
+        run: npm run build
+      - name: Validate output
+        run: |
+          test -f dist/index.html
+          test -d dist/assets
+          grep -q "Control Contractual" dist/index.html

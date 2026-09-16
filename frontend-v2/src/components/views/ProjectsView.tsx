@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Search, FolderGit2, MapPin, ArrowRight, Plus } from 'lucide-react';
 import type { Project } from '../../types.ts';
 import { formatLempiras, formatPercent } from '../../services/calculationService.ts';
@@ -7,13 +7,19 @@ interface ProjectsViewProps {
   projects: Project[];
   onOpenProject: (projectId: string) => void;
   onNewProject?: () => void;
+  initialQuery?: string;
 }
 
 const normalize = (value: string) =>
   value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
-export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, onOpenProject, onNewProject }) => {
-  const [query, setQuery] = useState('');
+export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, onOpenProject, onNewProject, initialQuery = '' }) => {
+  const [query, setQuery] = useState(initialQuery);
+
+  useEffect(() => {
+    setQuery(initialQuery);
+  }, [initialQuery]);
+
   const normalizedQuery = normalize(query);
 
   const results = useMemo(() => {

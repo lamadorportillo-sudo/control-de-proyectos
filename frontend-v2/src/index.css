@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --cc-ink-950: #0b1220;
+  --cc-ink-900: #111827;
+  --cc-ink-800: #172235;
+  --cc-ink-700: #243247;
+  --cc-slate-500: #718096;
+  --cc-slate-300: #cbd5e1;
+  --cc-slate-100: #eef2f6;
+  --cc-paper: #f8fafc;
+  --cc-white: #ffffff;
+  --cc-blue-600: #2563eb;
+  --cc-blue-500: #3b82f6;
+  --cc-blue-100: #dbeafe;
+  --cc-gold-500: #d3a63a;
+  --cc-gold-100: #f8edc7;
+  --cc-green-600: #16805b;
+  --cc-green-100: #d8f3e7;
+  --cc-amber-600: #b7791f;
+  --cc-amber-100: #fff3cd;
+  --cc-red-600: #c2413b;
+  --cc-red-100: #fee2e2;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--cc-ink-950);
+  color: #f1f5f9;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Custom scrollbars for engineering dense tables */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0b1220;
+}
+::-webkit-scrollbar-thumb {
+  background: #243247;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3b82f6;
+}
+
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

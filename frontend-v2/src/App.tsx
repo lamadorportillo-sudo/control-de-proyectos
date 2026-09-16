@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import type { AppModule, Project, Contract, Estimate, Guarantee, Deficiency, DocumentEvidence, AuditLog } from './types.ts';
+import type { AppModule, Project, Contract, Estimate, Guarantee, Deficiency, DocumentEvidence, AuditLog, FieldVisit } from './types.ts';
 import { dataRepository } from './services/backendAdapter.ts';
 import { Header } from './components/common/Header.tsx';
 import { Sidebar } from './components/common/Sidebar.tsx';
 import { ZordonLauncher } from './components/common/ZordonAvatar.tsx';
 import { ZordonAssistant } from './components/common/ZordonAssistant.tsx';
 import { InicioView } from './components/views/InicioView.tsx';
+import { ProjectsView } from './components/views/ProjectsView.tsx';
+import { ProjectExpedienteView } from './components/views/ProjectExpedienteView.tsx';
 import { PresupuestosView } from './components/views/PresupuestosView.tsx';
 import { ComprasView } from './components/views/ComprasView.tsx';
 import { AuditoriaView } from './components/views/AuditoriaView.tsx';
@@ -16,6 +18,7 @@ import { AlertTriangle, RefreshCw } from 'lucide-react';
 export default function App() {
   const [currentModule, setCurrentModule] = useState<AppModule>('inicio');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isZordonOpen, setIsZordonOpen] = useState(false);
@@ -29,19 +32,21 @@ export default function App() {
   const [guarantees, setGuarantees] = useState<Guarantee[]>([]);
   const [deficiencies, setDeficiencies] = useState<Deficiency[]>([]);
   const [documents, setDocuments] = useState<DocumentEvidence[]>([]);
+  const [visits, setVisits] = useState<FieldVisit[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
 
   const loadData = async () => {
     setLoading(true);
     setLoadError('');
     try {
-      const [projectData, contractData, estimateData, guaranteeData, deficiencyData, documentData, auditData] = await Promise.all([
+      const [projectData, contractData, estimateData, guaranteeData, deficiencyData, documentData, visitData, auditData] = await Promise.all([
         dataRepository.getProjects(),
         dataRepository.getContracts(),
         dataRepository.getEstimates(),
         dataRepository.getGuarantees(),
         dataRepository.getDeficiencies(),
         dataRepository.getDocuments(),
+        dataRepository.getFieldVisits(),
         dataRepository.getAuditLogs(),
       ]);
       setProjects(projectData);
@@ -50,6 +55,7 @@ export default function App() {
       setGuarantees(guaranteeData);
       setDeficiencies(deficiencyData);
       setDocuments(documentData);
+      setVisits(visitData);
       setAuditLogs(auditData);
     } catch (err: any) {
       console.error('V2 data load error', err);
@@ -68,17 +74,25 @@ export default function App() {
     [deficiencies]
   );
 
+  const selectedProject = useMemo(
+    () => projects.find((project) => project.id === selectedProjectId) || null,
+    [projects, selectedProjectId]
+  );
+
   const handleNavigate = (module: AppModule) => {
     setCurrentModule(module);
     setIsMobileSidebarOpen(false);
+    if (module !== 'proyectos') setSelectedProjectId(null);
   };
 
   const submitSearch = () => {
-    if (searchQuery.trim()) setCurrentModule('busqueda');
+    if (searchQuery.trim()) {
+      setSelectedProjectId(null);
+      setCurrentModule('busqueda');
+    }
   };
 
   const placeholderDescriptions: Partial<Record<AppModule, string>> = {
-    proyectos: 'Expedientes, fichas técnicas, avance físico-financiero y búsqueda precisa por código, nombre o ubicación.',
     contratos: 'Contratos y contratistas vinculados a cada proyecto, con soporte documental y control de adendas.',
     estimaciones: 'Estimaciones, deducciones, amortización de anticipo, órdenes de pago y liquidación.',
     garantias: 'Garantías y pólizas con vencimientos, prórrogas y vínculo directo al contrato correspondiente.',
@@ -86,7 +100,11 @@ export default function App() {
     documentos: 'Biblioteca documental y evidencias técnicas asociadas al expediente correcto.',
     transparencia: 'Generador mensual del portal de transparencia, publicando únicamente las categorías seleccionadas.',
     modo_campo: 'Captura de visitas, fotografías, observaciones y trabajo offline con sincronización posterior.',
-    busqueda: `Resultados para “${searchQuery}”. La vista detallada se está migrando sin sustituir el índice real de Supabase.`,
+  };
+
+  const openProject = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setCurrentModule('proyectos');
   };
 
   const renderModule = () => {
@@ -117,6 +135,28 @@ export default function App() {
       );
     }
 
+    if (currentModule === 'proyectos') {
+      if (selectedProject) {
+        return (
+          <ProjectExpedienteView
+            project={selectedProject}
+            contracts={contracts}
+            estimates={estimates}
+            guarantees={guarantees}
+            deficiencies={deficiencies}
+            documents={documents}
+            visits={visits}
+            onBack={() => setSelectedProjectId(null)}
+          />
+        );
+      }
+      return <ProjectsView projects={projects} onOpenProject={openProject} />;
+    }
+
+    if (currentModule === 'busqueda') {
+      return <ProjectsView projects={projects} onOpenProject={openProject} initialQuery={searchQuery} />;
+    }
+
     if (currentModule === 'presupuestos') {
       return <PresupuestosView projects={projects} amendments={[]} onNavigate={(module) => handleNavigate(module)} />;
     }
@@ -143,8 +183,8 @@ export default function App() {
   };
 
   const context = useMemo(
-    () => `Módulo activo: ${currentModule}. Proyectos cargados: ${projects.length}. Contratos: ${contracts.length}. Estimaciones: ${estimates.length}. Garantías: ${guarantees.length}. Documentos/evidencias: ${documents.length}.`,
-    [currentModule, projects.length, contracts.length, estimates.length, guarantees.length, documents.length]
+    () => `Módulo activo: ${currentModule}. Proyectos cargados: ${projects.length}. Contratos: ${contracts.length}. Estimaciones: ${estimates.length}. Garantías: ${guarantees.length}. Visitas: ${visits.length}. Documentos/evidencias: ${documents.length}.`,
+    [currentModule, projects.length, contracts.length, estimates.length, guarantees.length, visits.length, documents.length]
   );
 
   const viewportClass = viewportMode === 'desktop'

@@ -1,6 +1,6 @@
-const CACHE='cc-static-v1-20260915-layout8';
+const CACHE='cc-static-v1-20260916-stitch1';
 const STATIC_EXT=/\.(?:js|css|webp|png|jpg|jpeg|svg|woff2?|webmanifest)(?:\?|$)/i;
-const SHELL=['./','./index.html','./manifest.webmanifest','./performance-runtime-v1.js','./private-access-v1.js','./password-recovery-v1.js'];
+const SHELL=['./','./index.html','./manifest.webmanifest','./performance-runtime-v1.js','./private-access-v1.js','./password-recovery-v1.js','./stitch-design-system-v1.css'];
 
 function scoped(raw){return new URL(raw,self.registration.scope).href}
 async function cacheOne(cache,raw){

@@ -1,229 +1,208 @@
-import React, { useState, useEffect } from 'react';
-import { AppModule, Project } from './types.ts';
-import { appStore } from './services/storageService.ts';
-
-// Common Components
+import React, { useEffect, useMemo, useState } from 'react';
+import type { AppModule, Project, Contract, Estimate, Guarantee, Deficiency, DocumentEvidence, AuditLog } from './types.ts';
+import { dataRepository } from './services/backendAdapter.ts';
 import { Header } from './components/common/Header.tsx';
 import { Sidebar } from './components/common/Sidebar.tsx';
-import { ZordonAssistant } from './components/common/ZordonAssistant.tsx';
 import { ZordonLauncher } from './components/common/ZordonAvatar.tsx';
-
-// View Components
+import { ZordonAssistant } from './components/common/ZordonAssistant.tsx';
 import { InicioView } from './components/views/InicioView.tsx';
-import { ProjectsView } from './components/views/ProjectsView.tsx';
-import { ProjectExpedienteView } from './components/views/ProjectExpedienteView.tsx';
-import { SearchView } from './components/views/SearchView.tsx';
-import { ContratosView } from './components/views/ContratosView.tsx';
-import { EstimacionesView } from './components/views/EstimacionesView.tsx';
-import { GarantiasView } from './components/views/GarantiasView.tsx';
-import { DeficienciasView } from './components/views/DeficienciasView.tsx';
-import { DocumentosView } from './components/views/DocumentosView.tsx';
-import { TransparenciaView } from './components/views/TransparenciaView.tsx';
 import { PresupuestosView } from './components/views/PresupuestosView.tsx';
 import { ComprasView } from './components/views/ComprasView.tsx';
 import { AuditoriaView } from './components/views/AuditoriaView.tsx';
 import { ConfiguracionView } from './components/views/ConfiguracionView.tsx';
-import { ModoCampoView } from './components/views/ModoCampoView.tsx';
-
-import {
-  Sparkles,
-  AlertTriangle,
-  ArrowRight,
-  Home,
-  FolderGit2,
-  Receipt,
-  Smartphone,
-  ShieldCheck,
-  Send,
-} from 'lucide-react';
+import { ModulePlaceholder } from './components/views/ModulePlaceholder.tsx';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 export default function App() {
   const [currentModule, setCurrentModule] = useState<AppModule>('inicio');
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [selectedProjectTab, setSelectedProjectTab] = useState<string>('resumen');
-
-  // Search State
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchActive, setIsSearchActive] = useState(false);
-
-  // Viewport Mode ('desktop' | 'tablet' | 'mobile' | 'telegram')
-  const [viewportMode, setViewportMode] = useState<'desktop' | 'tablet' | 'mobile' | 'telegram'>('desktop');
-
-  // Sidebar Layout State
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-
-  // Zordon AI Assistant State
   const [isZordonOpen, setIsZordonOpen] = useState(false);
+  const [viewportMode, setViewportMode] = useState<'desktop' | 'tablet' | 'mobile' | 'telegram'>('desktop');
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
-  // Navigation action state (e.g. NEW_PROJECT, NEW_CONTRACT)
-  const [navAction, setNavAction] = useState<string | undefined>(undefined);
-  const [navExtra, setNavExtra] = useState<any>(undefined);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [estimates, setEstimates] = useState<Estimate[]>([]);
+  const [guarantees, setGuarantees] = useState<Guarantee[]>([]);
+  const [deficiencies, setDeficiencies] = useState<Deficiency[]>([]);
+  const [documents, setDocuments] = useState<DocumentEvidence[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
 
-  // Reactive Store Data
-  const [projects, setProjects] = useState(appStore.getProjects());
-  const [contracts, setContracts] = useState(appStore.getContracts());
-  const [estimates, setEstimates] = useState(appStore.getEstimates());
-  const [guarantees, setGuarantees] = useState(appStore.getGuarantees());
-  const [deficiencies, setDeficiencies] = useState(appStore.getDeficiencies());
-  const [documents, setDocuments] = useState(appStore.getDocuments());
-  const [amendments, setAmendments] = useState(appStore.getAmendments());
-  const [auditLogs, setAuditLogs] = useState(appStore.getAuditLogs());
-  const [isOnline, setIsOnline] = useState(appStore.getIsOnline());
+  const loadData = async () => {
+    setLoading(true);
+    setLoadError('');
+    try {
+      const [projectData, contractData, estimateData, guaranteeData, deficiencyData, documentData, auditData] = await Promise.all([
+        dataRepository.getProjects(),
+        dataRepository.getContracts(),
+        dataRepository.getEstimates(),
+        dataRepository.getGuarantees(),
+        dataRepository.getDeficiencies(),
+        dataRepository.getDocuments(),
+        dataRepository.getAuditLogs(),
+      ]);
+      setProjects(projectData);
+      setContracts(contractData);
+      setEstimates(estimateData);
+      setGuarantees(guaranteeData);
+      setDeficiencies(deficiencyData);
+      setDocuments(documentData);
+      setAuditLogs(auditData);
+    } catch (err: any) {
+      console.error('V2 data load error', err);
+      setLoadError(String(err?.message || 'No se pudo cargar la información productiva.'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const update = () => {
-      setProjects([...appStore.getProjects()]);
-      setContracts([...appStore.getContracts()]);
-      setEstimates([...appStore.getEstimates()]);
-      setGuarantees([...appStore.getGuarantees()]);
-      setDeficiencies([...appStore.getDeficiencies()]);
-      setDocuments([...appStore.getDocuments()]);
-      setAmendments([...appStore.getAmendments()]);
-      setAuditLogs([...appStore.getAuditLogs()]);
-      setIsOnline(appStore.getIsOnline());
-    };
-
-    const unsub = appStore.subscribe(update);
-    return unsub;
+    void loadData();
   }, []);
 
-  // Blocking deficiencies check
-  const blockingDefs = deficiencies.filter(
-    (d) => d.severity === 'BLOQUEANTE' && d.status !== 'CERRADA'
+  const blockingDefs = useMemo(
+    () => deficiencies.filter((d) => d.severity === 'BLOQUEANTE' && d.status !== 'CERRADA'),
+    [deficiencies]
   );
 
-  // Universal Navigation Handler
-  const handleNavigate = (module: AppModule, extra?: any) => {
-    setIsSearchActive(false);
-    setIsMobileSidebarOpen(false);
+  const handleNavigate = (module: AppModule) => {
     setCurrentModule(module);
-    setNavAction(extra?.action);
-    setNavExtra(extra);
+    setIsMobileSidebarOpen(false);
+  };
 
-    if (module === 'proyectos') {
-      if (extra?.projectId) {
-        setSelectedProjectId(extra.projectId);
-        setSelectedProjectTab(extra.tab || 'resumen');
-      } else if (!extra?.keepSelected) {
-        setSelectedProjectId(null);
-      }
-    } else {
-      setSelectedProjectId(null);
+  const submitSearch = () => {
+    if (searchQuery.trim()) setCurrentModule('busqueda');
+  };
+
+  const placeholderDescriptions: Partial<Record<AppModule, string>> = {
+    proyectos: 'Expedientes, fichas técnicas, avance físico-financiero y búsqueda precisa por código, nombre o ubicación.',
+    contratos: 'Contratos y contratistas vinculados a cada proyecto, con soporte documental y control de adendas.',
+    estimaciones: 'Estimaciones, deducciones, amortización de anticipo, órdenes de pago y liquidación.',
+    garantias: 'Garantías y pólizas con vencimientos, prórrogas y vínculo directo al contrato correspondiente.',
+    deficiencias: 'Deficiencias, no conformidades, evidencia de campo, seguimiento y cierre verificable.',
+    documentos: 'Biblioteca documental y evidencias técnicas asociadas al expediente correcto.',
+    transparencia: 'Generador mensual del portal de transparencia, publicando únicamente las categorías seleccionadas.',
+    modo_campo: 'Captura de visitas, fotografías, observaciones y trabajo offline con sincronización posterior.',
+    busqueda: `Resultados para “${searchQuery}”. La vista detallada se está migrando sin sustituir el índice real de Supabase.`,
+  };
+
+  const renderModule = () => {
+    if (loading) {
+      return (
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <div className="flex items-center gap-2 text-sm text-slate-400">
+            <RefreshCw className="h-4 w-4 animate-spin text-blue-400" />
+            Cargando información productiva…
+          </div>
+        </div>
+      );
     }
-  };
 
-  const handleSearchSubmit = () => {
-    if (searchQuery.trim().length > 0) {
-      setIsSearchActive(true);
+    if (currentModule === 'inicio') {
+      return (
+        <InicioView
+          onNavigate={(module) => handleNavigate(module)}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onSearchSubmit={submitSearch}
+          projects={projects}
+          deficiencies={deficiencies}
+          guarantees={guarantees}
+          estimates={estimates}
+          recentActivity={auditLogs}
+        />
+      );
     }
-  };
 
-  const handleOpenProjectExpediente = (projectId: string, tab: string = 'resumen') => {
-    setSelectedProjectId(projectId);
-    setSelectedProjectTab(tab);
-    setCurrentModule('proyectos');
-    setIsSearchActive(false);
-  };
-
-  // Resolve current active project object
-  const activeProject = selectedProjectId
-    ? projects.find((p) => p.id === selectedProjectId)
-    : null;
-
-  // Viewport Container Styles
-  const getViewportWrapperClass = () => {
-    switch (viewportMode) {
-      case 'telegram':
-        return 'max-w-[420px] mx-auto my-4 border-2 border-sky-600/70 rounded-2xl shadow-2xl overflow-hidden bg-[#0b1220] min-h-[780px]';
-      case 'mobile':
-        return 'max-w-[390px] mx-auto my-4 border border-[#243247] rounded-xl shadow-2xl overflow-hidden bg-[#0b1220] min-h-[720px]';
-      case 'tablet':
-        return 'max-w-[820px] mx-auto my-4 border border-[#243247] rounded-xl shadow-2xl overflow-hidden bg-[#0b1220] min-h-[820px]';
-      default:
-        return 'w-full min-h-screen bg-[#0b1220]';
+    if (currentModule === 'presupuestos') {
+      return <PresupuestosView projects={projects} amendments={[]} onNavigate={(module) => handleNavigate(module)} />;
     }
+
+    if (currentModule === 'compras') {
+      return <ComprasView projects={projects} onNavigate={(module) => handleNavigate(module)} />;
+    }
+
+    if (currentModule === 'auditoria') {
+      return <AuditoriaView auditLogs={auditLogs} onNavigate={(module) => handleNavigate(module)} />;
+    }
+
+    if (currentModule === 'configuracion') {
+      return <ConfiguracionView />;
+    }
+
+    return (
+      <ModulePlaceholder
+        title={currentModule.replaceAll('_', ' ').replace(/^./, (c) => c.toUpperCase())}
+        description={placeholderDescriptions[currentModule] || 'Módulo en proceso de integración con el backend productivo existente.'}
+        onBack={() => handleNavigate('inicio')}
+      />
+    );
   };
+
+  const context = useMemo(
+    () => `Módulo activo: ${currentModule}. Proyectos cargados: ${projects.length}. Contratos: ${contracts.length}. Estimaciones: ${estimates.length}. Garantías: ${guarantees.length}. Documentos/evidencias: ${documents.length}.`,
+    [currentModule, projects.length, contracts.length, estimates.length, guarantees.length, documents.length]
+  );
+
+  const viewportClass = viewportMode === 'desktop'
+    ? 'w-full min-h-screen'
+    : viewportMode === 'tablet'
+      ? 'max-w-[820px] mx-auto min-h-[820px] my-4 border border-[#243247] rounded-xl overflow-hidden shadow-2xl'
+      : 'max-w-[420px] mx-auto min-h-[740px] my-4 border border-[#243247] rounded-xl overflow-hidden shadow-2xl';
 
   return (
-    <div className={`text-slate-100 flex flex-col font-sans transition-all duration-300 ${getViewportWrapperClass()}`}>
-      {/* Telegram Mini App Simulator Header */}
-      {viewportMode === 'telegram' && (
-        <div className="bg-[#1c2738] border-b border-sky-900/80 px-3 py-1.5 flex items-center justify-between text-xs text-sky-200">
-          <div className="flex items-center gap-1.5">
-            <Send className="w-3.5 h-3.5 text-sky-400" />
-            <span className="font-bold">Telegram Mini App</span>
-            <span className="text-[10px] text-sky-400/80">• @ControlContractualBot</span>
-          </div>
-          <button
-            onClick={() => setViewportMode('desktop')}
-            className="text-[10px] px-2 py-0.5 rounded bg-sky-950 hover:bg-sky-900 text-sky-300 border border-sky-800"
-          >
-            Cerrar simulación
-          </button>
-        </div>
-      )}
-
-      {/* Global Header */}
+    <div className={`bg-[#0b1220] text-slate-100 ${viewportClass}`}>
       <Header
         currentModule={currentModule}
         onNavigate={handleNavigate}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        onSearchSubmit={handleSearchSubmit}
+        onSearchSubmit={submitSearch}
         viewportMode={viewportMode}
         onViewportModeChange={setViewportMode}
-        onToggleSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+        onToggleSidebar={() => setIsMobileSidebarOpen((value) => !value)}
         onOpenZordon={() => setIsZordonOpen(true)}
       />
 
-      {/* Blocking Deficiency Banner ("Sin calles sin salida": leads directly to resolution) */}
-      {blockingDefs.length > 0 && currentModule !== 'deficiencias' && (
-        <div
-          id="banner-blocking-alert"
-          className="bg-red-950/80 border-b border-red-800/70 px-3 md:px-5 py-2 flex items-start md:items-center justify-between gap-3 shadow-lg z-h20"
-        >
-          <div className="flex items-start gap-2.5">
-            <AlertTriangle className="w-5 h-5 text-red-300 shrink-0 mt-0.5 md:mt-0 animate-pulse" />
-            <div>
-              <div className="text-[11px] font-bold text-red-200 uppercase tracking-wide">
-                Control de Riesgo — Deficiencia Bloqueante
-              </div>
-              <div className="text-xs text-red-100 mt-0.5">
-                 Hay {blockingDefs.length} riesgo bloqueante sin resolver. Debe atenderse antes de continuar con pagos o recepciones.
-              </div>
-            </div>
+      {loadError && (
+        <div className="flex items-center justify-between gap-3 border-b border-amber-800/60 bg-amber-950/30 px-4 py-2 text-xs text-amber-200">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span>{loadError}</span>
           </div>
-          <button
-            onClick={() => handleNavigate('deficiencias', { deficiencyId: blockingDefs[0].id })}
-            className="px-3 py-1.5 rounded bg-red-900 hover:bg-red-800 text-white text-xs font-semibold flex items-center gap-1.5 shrink-0 self-end md:self-center transition-colors"
-          >
-            <span>Resolver aahora</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          <button onClick={() => void loadData()} className="rounded bg-amber-900/50 px-2 py-1 font-semibold hover:bg-amber-800/60">Reintentar</button>
         </div>
       )}
 
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* Desktop Sidebar */}
-        {/* Fixed/sticky layout: sidebar always dominant, without flicker */}
-        <div className="hidden lg:block shrink-0">
+      {blockingDefs.length > 0 && currentModule !== 'deficiencias' && (
+        <button
+          type="button"
+          onClick={() => handleNavigate('deficiencias')}
+          className="flex w-full items-center justify-between gap-3 border-b border-red-800/70 bg-red-950/55 px-4 py-2 text-left text-xs text-red-200"
+        >
+          <span><strong>{blockingDefs.length}</strong> deficiencia(s) bloqueante(s) requieren seguimiento.</span>
+          <span className="font-semibold">Abrir seguimiento →</span>
+        </button>
+      )}
+
+      <div className="flex min-h-[calc(100vh-56px)]">
+        <div className={`${viewportMode === 'mobile' || viewportMode === 'telegram' ? 'hidden' : 'hidden md:block'} shrink-0`}>
           <Sidebar
-            currentModule={currentModule }
+            currentModule={currentModule}
             onNavigate={handleNavigate}
             isCollapsed={isSidebarCollapsed}
-            onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            onToggleCollapse={() => setIsSidebarCollapsed((value) => !value)}
             blockingDeficiencyCount={blockingDefs.length}
           />
         </div>
-        {/* Mobile Sidebar Drawer */}
+
         {isMobileSidebarOpen && (
-          <div className="fixed inset-0 zit-50 lg:hidden">
-            <div
-              className="absolute inset-0 bg-black/60"
-              onClick={() => setIsMobileSidebarOpen(false)}
-            />
-            <div className="relative h-full shadow-2xl w-64">
+          <div className="fixed inset-0 z-50 flex md:hidden">
+            <button className="absolute inset-0 bg-black/70" aria-label="Cerrar menú" onClick={() => setIsMobileSidebarOpen(false)} />
+            <div className="relative h-full">
               <Sidebar
                 currentModule={currentModule}
                 onNavigate={handleNavigate}
@@ -235,209 +214,13 @@ export default function App() {
           </div>
         )}
 
-        {/* Content Stage */}
-        <main className="flex-1 overflow-y-auto p-3 sm:p-5 md:p-6 bg-[#0b1220]">
-          {/* If Search is Active */}
-          {isSearchActive ? (
-            <SearchView
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              onNavigate={handleNavigate}
-              projects={projects}
-              contracts={contracts}
-              estimates={estimates}
-              guarantees={guarantees}
-              deficiencies={deficiencies}
-              documents={documents}
-            />
-          ) : (
-            /* Standard Module Routing */
-            <>
-              {currentModule === 'inicio' && (
-                <InicioView
-                  onNavigate={handleNavigate}
-                  searchQuery={searchQuery}
-                  onSearchChange={setSearchQuery}
-                  onSearchSubmit={handleSearchSubmit}
-                  projects={projects}
-                  deficiencies={deficiencies}
-                  guarantees={guarantees}
-                  estimates={estimates}
-                  recentActivity={auditLogs}
-                />
-              )}
-
-              {currentModule === 'proyectos' && (
-                <>
-                  {activeProject ? (
-                    <ProjectExpedienteView
-                      project={activeProject}
-                      onBack={() => setSelectedProjectId(null)}
-                      onNavigate={handleNavigate}
-                      initialTab={selectedProjectTab}
-                    />
-                  ) : (
-                    <ProjectsView
-                      projects={projects}
-                      onSelectProject={(id) => handleOpenProjectExpediente(id)}
-                      onNavigate={handleNavigate}
-                      initialAction={navAction}
-                    />
-                  )}
-                </>
-              )}
-
-              {currentModule === 'contratos' && (
-                <ContratosView
-                  contracts={contracts}
-                  projects={projects}
-                  onNavigate={handleNavigate}
-                  initialAction={navAction}
-                />
-              )}
-
-              {currentModule === 'presupuestos' && (
-                <PresupuestosView
-                  projects={projects}
-                  amendments={amendments}
-                  onNavigate={handleNavigate}
-                />
-              )}
-
-              {currentModule === 'estimaciones' && (
-                <EstimacionesView
-                  estimates={estimates}
-                  projects={projects}
-                  onNavigate={handleNavigate}
-                  filterStatus={navExtra?.filterStatus}
-                  initialAction={navAction}
-                />
-              )}
-
-              {currentModule === 'garantias' && (
-                <GarantiasView
-                  guarantees={guarantees}
-                  projects={projects}
-                  onNavigate={handleNavigate}
-                  initialAction={navAction}
-                  targetGuaranteeId={navExtra?.guaranteeId}
-                />
-              )}
-
-              {currentModule === 'compras' && (
-                <ComprasView
-                  projects={projects}
-                  onNavigate={handleNavigate}
-                />
-              )}
-
-              {currentModule === 'deficiencias' && (
-                <DeficienciasView
-                  deficiencies={deficiencies}
-                  projects={projects}
-                  onNavigate={handleNavigate}
-                  initialAction={navAction}
-                  targetDeficiencyId={navExtra?.deficiencyId}
-                />
-              )}
-
-              {currentModule === 'documentos' && (
-                <DocumentosView
-                  documents={documents}
-                  projects={projects}
-                  onNavigate={handleNavigate}
-                  initialAction={navAction}
-                />
-              )}
-
-              {currentModule === 'transparencia' && (
-                <TransparenciaView
-                  projects={projects}
-                  contracts={contracts}
-                  estimates={estimates}
-                  guarantees={guarantees}
-                  deficiencies={deficiencies}
-                  documents={documents}
-                />
-              )}
-
-              {currentModule === 'auditoria' && (
-                <AuditoriaView
-                  auditLogs={auditLogs}
-                  onNavigate={handleNavigate}
-                />
-              )}
-
-              {currentModule === 'configuracion' && (
-                <ConfiguracionView />
-              )}
-
-              {currentModule === 'modo_campo' && (
-                <ModoCampoView
-                  projects={projects}
-                  preselectedProjectId={navExtra?.projectId}
-                  onNavigate={handleNavigate}
-                  isOnline={isOnline}
-                />
-              )}
-            </>
-          )}
+        <main className="min-w-0 flex-1 overflow-y-auto p-3 sm:p-4 md:p-5">
+          {renderModule()}
         </main>
       </div>
 
-      {/* Launcher Oficial: Pequeño Ingeniero / Avatar de ZORDON */}
-      <ZordonLauncher
-        onOpen={() => setIsZordonOpen(true)}
-        isAvailable={true}
-      />
-
-      {/* Zordon Assistant Drawer */}
-      <ZordonAssistant
-        isOpen={isZordonOpen}
-        onClose={() => setIsZordonOpen(false)}
-        onNavigate={handleNavigate}
-        currentModule={currentModule}
-        currentProjectId={selectedProjectId || undefined}
-      />
-
-      {/* Mobile Bottom Navigation Bar (Visible when on mobile / telegram views) */}
-      <div className={`md:hidden bg-[#111827] border-t border-[#1f2e45] p-2 flex items-center justify-around text-[10px] text-slate-400 shrink-0 ${viewportMode === 'desktop' ? 'hidden' : ''}`}
-        <button
-          onClick={() => handleNavigate('inicio')}
-          className={`flex flex-col items-center gap-0.5 ${currentModule === 'inicio' ? 'text-blue-400 font-bold' : ''}`}
-        >
-          <Home className="w-4 h-4" />
-          <span>Inicio</span>
-        </button>
-        <button
-          onClick={() => handleNavigate('proyectos')}
-          className={`flex flex-col items-center gap-0.5 ${currentModule === 'proyectos' ? 'text-blue-400 font-bold' : ''}`}
-        >
-          <FolderGit2 className="w-4 h-4" />
-          <span>Proyectos</span>
-        </button>
-        <button
-          onClick={() => handleNavigate('estimaciones')}
-          className={`flex flex-col items-center gap-0.5 ${currentModule === 'estimaciones' ? 'text-emerald-400 font-bold' : ''}`}
-        >
-          <Receipt className="w-4 h-4" />
-          <span>Pagos</span>
-        </button>
-        <button
-          onClick={() => handleNavigate('modo_campo')}
-          className={`flex flex-col items-center gap-0.5 ${currentModule === 'modo_campo' ? 'text-amber-400 font-bold' : ''}`}
-        >
-          <Smartphone className="w-4 h-4" />
-          <span>Campo</span>
-        </button>
-        <button
-          onClick={() => handleNavigate('transparencia')}
-          className={`flex flex-col items-center gap-0.5 ${currentModule === 'transparencia' ? 'text-amber-400 font-bold' : ''}`}
-        >
-          <ShieldCheck className="w-4 h-4" />
-          <span>Portal</span>
-        </button>
-      </div>
+      <ZordonLauncher onOpen={() => setIsZordonOpen(true)} isAvailable />
+      <ZordonAssistant open={isZordonOpen} onClose={() => setIsZordonOpen(false)} context={context} />
     </div>
   );
 }

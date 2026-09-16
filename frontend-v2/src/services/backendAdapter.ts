@@ -1,16 +1,11 @@
 /**
  * ADAPTADOR DE INTEGRACIÓN PRODUCTIVA — CONTROL CONTRACTUAL
- * Preparado para conexión con Supabase en: lamadorportillo-sudo/control-de-proyectos
- *
- * Este módulo desacopla la capa de presentación (UI) del almacenamiento,
- * permitiendo conmutar entre el repositorio local (offline/demo) y el backend
- * productivo de Supabase sin tocar los componentes de interfaz.
+ * Desacopla la interfaz V2 del almacenamiento y reutiliza la sesión productiva existente.
  */
 
 import {
   Project,
   Contract,
-  BudgetAmendment,
   Estimate,
   Guarantee,
   Deficiency,
@@ -20,51 +15,37 @@ import {
   User,
 } from '../types.ts';
 import { appStore } from './storageService.ts';
-import { hasSupabaseConfig } from './supabaseClient.ts';
+import { hasSupabaseConfig, ensureSupabaseSession } from './supabaseClient.ts';
 import { SupabaseDataRepository } from './supabaseRepository.ts';
 
-/**
- * Contrato de repositorio de datos para Supabase
- */
 export interface IDataRepository {
-  // Proyectos
   getProjects(): Promise<Project[]>;
   getProjectById(id: string): Promise<Project | undefined>;
   saveProject(project: Project): Promise<void>;
 
-  // Contratos
   getContracts(): Promise<Contract[]>;
   getContractByProjectId(projectId: string): Promise<Contract | undefined>;
   saveContract(contract: Contract): Promise<void>;
 
-  // Estimaciones
   getEstimates(projectId?: string): Promise<Estimate[]>;
   saveEstimate(estimate: Estimate): Promise<void>;
 
-  // Garantías
   getGuarantees(contractId?: string): Promise<Guarantee[]>;
   saveGuarantee(guarantee: Guarantee): Promise<void>;
 
-  // Deficiencias
   getDeficiencies(projectId?: string): Promise<Deficiency[]>;
   saveDeficiency(deficiency: Deficiency): Promise<void>;
 
-  // Documentos
   getDocuments(projectId?: string): Promise<DocumentEvidence[]>;
   saveDocument(doc: DocumentEvidence): Promise<void>;
 
-  // Visitas de Campo
   getFieldVisits(projectId?: string): Promise<FieldVisit[]>;
   saveFieldVisit(visit: FieldVisit): Promise<void>;
 
-  // Auditoría
   getAuditLogs(): Promise<AuditLog[]>;
   logAction(action: Omit<AuditLog, 'id' | 'timestamp'>): Promise<void>;
 }
 
-/**
- * Interfaz para puente de autenticación existente (Supabase Auth / JWT)
- */
 export interface IAuthAdapter {
   getCurrentUser(): User;
   isAuthenticated(): boolean;
@@ -72,9 +53,6 @@ export interface IAuthAdapter {
   onAuthStateChanged(callback: (user: User | null) => void): () => void;
 }
 
-/**
- * Interfaz para integración con Telegram Mini App (Web App API)
- */
 export interface ITelegramAdapter {
   isAvailable(): boolean;
   getInitData(): string | null;
@@ -84,10 +62,6 @@ export interface ITelegramAdapter {
   expandMiniApp(): void;
 }
 
-/**
- * Implementación local por defecto (usa el appStore desacoplado)
- * Lista para sustituir por SupabaseClient al integrar el repositorio productivo.
- */
 export class LocalDataRepository implements IDataRepository {
   async getProjects(): Promise<Project[]> {
     return appStore.getProjects();
@@ -173,9 +147,6 @@ export class LocalDataRepository implements IDataRepository {
   }
 }
 
-/**
- * Adaptador para Telegram WebApp (detección automática y API de interacción)
- */
 export const telegramAdapter: ITelegramAdapter = {
   isAvailable(): boolean {
     return typeof window !== 'undefined' && !!(window as any).Telegram?.WebApp;
@@ -210,6 +181,19 @@ export const telegramAdapter: ITelegramAdapter = {
   },
 };
 
+function sessionAwareRepository(repository: IDataRepository): IDataRepository {
+  return new Proxy(repository, {
+    get(target, property, receiver) {
+      const value = Reflect.get(target, property, receiver);
+      if (typeof value !== 'function') return value;
+      return async (...args: unknown[]) => {
+        await ensureSupabaseSession();
+        return value.apply(target, args);
+      };
+    },
+  }) as IDataRepository;
+}
+
 export const dataRepository: IDataRepository = hasSupabaseConfig
-  ? new SupabaseDataRepository()
+  ? sessionAwareRepository(new SupabaseDataRepository())
   : new LocalDataRepository();

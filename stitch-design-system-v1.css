@@ -1,0 +1,436 @@
+/* CONTROL CONTRACTUAL · STITCH DESIGN SYSTEM V1
+   Source: Stitch Project Control Design System / DESIGN.md
+   Goal: align the live application with the approved dark, restrained,
+   search-first interface without changing business logic or data flows. */
+
+:root{
+  --st-surface:#0e141b;
+  --st-canvas:#0B1118;
+  --st-nav:#101720;
+  --st-card:#151E29;
+  --st-elevated:#1B2735;
+  --st-border:#2B3A4A;
+  --st-border-soft:#1F2B3B;
+  --st-text:#F3F6FA;
+  --st-text-2:#B4C0CE;
+  --st-text-3:#8F9FB1;
+  --st-blue:#356AE6;
+  --st-blue-hover:#2558D4;
+  --st-gold:#C5A367;
+  --st-gold-surface:#5B430F;
+  --st-success:#35B882;
+  --st-warning:#E6B450;
+  --st-error:#E07178;
+  --st-radius-sm:8px;
+  --st-radius-card:12px;
+  --st-sidebar:232px;
+  --st-sidebar-mini:72px;
+}
+
+/* Base */
+html{background:var(--st-canvas)!important;color-scheme:dark}
+html body:not(.print-report){
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;
+  background:var(--st-canvas)!important;
+  color:var(--st-text)!important;
+  text-rendering:optimizeLegibility;
+  -webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums;
+}
+html body:not(.print-report)::before,
+html body:not(.print-report)::after{display:none!important;content:none!important}
+html body:not(.print-report) h1,
+html body:not(.print-report) h2,
+html body:not(.print-report) h3,
+html body:not(.print-report) h4{
+  color:var(--st-text)!important;
+  text-shadow:none!important;
+  letter-spacing:-.01em;
+}
+html body:not(.print-report) p,
+html body:not(.print-report) .muted,
+html body:not(.print-report) .notice,
+html body:not(.print-report) .footer-note{color:var(--st-text-2)!important}
+
+/* Remove decorative glow/gradient behavior from the operational shell. */
+html body.cc-portal-v2:not(.print-report) .shell,
+html body.cc-portal-v2:not(.print-report) #content,
+html body.cc-portal-v2:not(.print-report) .cc-app-column{
+  background:var(--st-canvas)!important;
+}
+html body.cc-portal-v2:not(.print-report) .shell{max-width:none!important}
+html body.cc-portal-v2:not(.print-report) .topbar,
+html body.cc-portal-v2:not(.print-report) .cc-topbar{
+  background:rgba(16,23,32,.97)!important;
+  border:0!important;
+  border-bottom:1px solid var(--st-border-soft)!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  backdrop-filter:blur(10px)!important;
+}
+html body.cc-portal-v2:not(.print-report) .topbar::before,
+html body.cc-portal-v2:not(.print-report) .topbar::after,
+html body.cc-portal-v2:not(.print-report) .cc-topbar::before,
+html body.cc-portal-v2:not(.print-report) .cc-topbar::after{display:none!important}
+
+/* Sidebar */
+html body.cc-portal-v2:not(.print-report) #ccSidebar,
+html body.cc-portal-v2:not(.print-report) .cc-sidebar{
+  background:var(--st-nav)!important;
+  border-right:1px solid var(--st-border-soft)!important;
+  box-shadow:none!important;
+}
+html body.cc-portal-v2:not(.print-report) .cc-sidebar-brand{
+  min-height:64px!important;
+  border-bottom:1px solid var(--st-border-soft)!important;
+  background:var(--st-nav)!important;
+}
+html body.cc-portal-v2:not(.print-report) .cc-sidebar-brand strong{color:var(--st-text)!important}
+html body.cc-portal-v2:not(.print-report) .cc-sidebar-brand small,
+html body.cc-portal-v2:not(.print-report) .cc-nav-label{
+  color:var(--st-text-3)!important;
+  letter-spacing:.10em!important;
+}
+html body.cc-portal-v2:not(.print-report) #ccSidebar .cc-side-btn{
+  min-height:38px!important;
+  margin:1px 0!important;
+  padding:8px 10px!important;
+  border:1px solid transparent!important;
+  border-radius:6px!important;
+  background:transparent!important;
+  color:var(--st-text-2)!important;
+  box-shadow:none!important;
+  transform:none!important;
+  transition:background .14s ease,color .14s ease,border-color .14s ease!important;
+}
+html body.cc-portal-v2:not(.print-report) #ccSidebar .cc-side-btn:hover{
+  background:var(--st-elevated)!important;
+  border-color:var(--st-border)!important;
+  color:var(--st-text)!important;
+  transform:none!important;
+}
+html body.cc-portal-v2:not(.print-report) #ccSidebar .cc-side-btn.active,
+html body.cc-portal-v2:not(.print-report) #ccSidebar .cc-side-btn[aria-current="page"]{
+  background:rgba(91,67,15,.72)!important;
+  border-color:rgba(197,163,103,.24)!important;
+  color:#F1D39B!important;
+  box-shadow:inset 3px 0 0 var(--st-gold)!important;
+}
+html body.cc-portal-v2:not(.print-report) #ccSidebar .cc-side-icon{
+  color:inherit!important;
+  opacity:.92!important;
+}
+
+/* Operational surfaces */
+html body:not(.print-report) .panel,
+html body:not(.print-report) .card,
+html body:not(.print-report) .kpi,
+html body:not(.print-report) .projects-board,
+html body:not(.print-report) .project-v3,
+html body:not(.print-report) .project-card-premium,
+html body:not(.print-report) .rail-card,
+html body:not(.print-report) .exec-intro,
+html body:not(.print-report) .exec-visual,
+html body:not(.print-report) .exec-kpi,
+html body:not(.print-report) .cc-lifecycle-v4,
+html body:not(.print-report) .cc-home-hero-v7{
+  background:var(--st-card)!important;
+  border:1px solid var(--st-border)!important;
+  border-radius:var(--st-radius-card)!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  filter:none!important;
+  transform:none!important;
+}
+html body:not(.print-report) .panel::before,
+html body:not(.print-report) .panel::after,
+html body:not(.print-report) .card::before,
+html body:not(.print-report) .card::after,
+html body:not(.print-report) .kpi::before,
+html body:not(.print-report) .kpi::after,
+html body:not(.print-report) .project-v3::before,
+html body:not(.print-report) .project-v3::after,
+html body:not(.print-report) .exec-intro::before,
+html body:not(.print-report) .exec-intro::after,
+html body:not(.print-report) .exec-visual::before,
+html body:not(.print-report) .exec-visual::after,
+html body:not(.print-report) .cc-home-hero-v7::before,
+html body:not(.print-report) .cc-home-hero-v7::after{display:none!important;content:none!important}
+html body:not(.print-report) .panel:hover,
+html body:not(.print-report) .card:hover,
+html body:not(.print-report) .kpi:hover,
+html body:not(.print-report) .project-v3:hover,
+html body:not(.print-report) .project-card-premium:hover{
+  transform:none!important;
+  box-shadow:none!important;
+  border-color:#3a4b60!important;
+}
+
+/* Typography and numeric discipline */
+html body:not(.print-report) .money,
+html body:not(.print-report) .money-dual,
+html body:not(.print-report) [data-money],
+html body:not(.print-report) .exec-kpi strong,
+html body:not(.print-report) .kpi strong,
+html body:not(.print-report) td.num,
+html body:not(.print-report) th.num{
+  font-variant-numeric:tabular-nums!important;
+}
+html body:not(.print-report) .eyebrow,
+html body:not(.print-report) .cc-welcome-kicker{
+  color:var(--st-gold)!important;
+  text-shadow:none!important;
+}
+
+/* Buttons */
+html body:not(.print-report) .btn,
+html body:not(.print-report) .icon-btn,
+html body:not(.print-report) button.btn{
+  min-height:40px!important;
+  padding:8px 12px!important;
+  border-radius:var(--st-radius-sm)!important;
+  background:var(--st-card)!important;
+  border:1px solid var(--st-border)!important;
+  color:var(--st-text)!important;
+  box-shadow:none!important;
+  filter:none!important;
+  transform:none!important;
+  transition:background .14s ease,border-color .14s ease,color .14s ease!important;
+}
+html body:not(.print-report) .btn:hover,
+html body:not(.print-report) .icon-btn:hover{
+  background:var(--st-elevated)!important;
+  border-color:#40536a!important;
+  transform:none!important;
+}
+html body:not(.print-report) .btn.primary{
+  background:var(--st-blue)!important;
+  border-color:var(--st-blue)!important;
+  color:#fff!important;
+  box-shadow:none!important;
+}
+html body:not(.print-report) .btn.primary:hover{background:var(--st-blue-hover)!important;border-color:var(--st-blue-hover)!important}
+html body:not(.print-report) .btn.good{
+  background:rgba(53,184,130,.10)!important;
+  border-color:rgba(53,184,130,.38)!important;
+  color:#A8EBCF!important;
+}
+html body:not(.print-report) .btn.danger{
+  background:rgba(224,113,120,.10)!important;
+  border-color:rgba(224,113,120,.42)!important;
+  color:#F5C3C7!important;
+}
+
+/* Forms */
+html body:not(.print-report) input,
+html body:not(.print-report) select,
+html body:not(.print-report) textarea,
+html body:not(.print-report) .input,
+html body:not(.print-report) .search{
+  min-height:44px!important;
+  background:var(--st-nav)!important;
+  border:1px solid var(--st-border)!important;
+  border-radius:var(--st-radius-sm)!important;
+  color:var(--st-text)!important;
+  box-shadow:none!important;
+}
+html body:not(.print-report) textarea{min-height:96px!important}
+html body:not(.print-report) input::placeholder,
+html body:not(.print-report) textarea::placeholder{color:var(--st-text-3)!important}
+html body:not(.print-report) input:focus,
+html body:not(.print-report) select:focus,
+html body:not(.print-report) textarea:focus,
+html body:not(.print-report) .input:focus{
+  outline:none!important;
+  border-color:var(--st-blue)!important;
+  box-shadow:0 0 0 3px rgba(53,106,230,.18)!important;
+}
+
+/* Tabs */
+html body:not(.print-report) .tabs,
+html body:not(.print-report) nav.tabs,
+html body:not(.print-report) .seg{
+  background:var(--st-nav)!important;
+  border:1px solid var(--st-border)!important;
+  border-radius:10px!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+}
+html body:not(.print-report) .tabs button,
+html body:not(.print-report) nav.tabs button,
+html body:not(.print-report) .seg button{
+  min-height:38px!important;
+  border:0!important;
+  border-radius:7px!important;
+  background:transparent!important;
+  color:var(--st-text-2)!important;
+  box-shadow:none!important;
+}
+html body:not(.print-report) .tabs button.active,
+html body:not(.print-report) nav.tabs button.active,
+html body:not(.print-report) .seg button.active{
+  background:var(--st-elevated)!important;
+  color:var(--st-text)!important;
+  box-shadow:inset 0 -2px 0 var(--st-gold)!important;
+}
+
+/* Tables */
+html body:not(.print-report) .table-wrap,
+html body:not(.print-report) .cc-portfolio-table-v4{
+  background:var(--st-card)!important;
+  border:1px solid var(--st-border)!important;
+  border-radius:var(--st-radius-card)!important;
+  box-shadow:none!important;
+}
+html body:not(.print-report) table,
+html body:not(.print-report) .table{background:transparent!important;color:var(--st-text-2)!important}
+html body:not(.print-report) table thead,
+html body:not(.print-report) .table thead,
+html body:not(.print-report) .cc-pt-head{
+  background:var(--st-nav)!important;
+  color:var(--st-text-3)!important;
+  border-color:var(--st-border)!important;
+}
+html body:not(.print-report) table th,
+html body:not(.print-report) table td,
+html body:not(.print-report) .table th,
+html body:not(.print-report) .table td,
+html body:not(.print-report) .cc-pt-row{
+  border-color:var(--st-border)!important;
+}
+html body:not(.print-report) table tbody tr:hover,
+html body:not(.print-report) .table tbody tr:hover,
+html body:not(.print-report) .cc-pt-row:hover{background:var(--st-elevated)!important}
+
+/* Status */
+html body:not(.print-report) .status.good{color:#A8EBCF!important;background:rgba(53,184,130,.09)!important;border-color:rgba(53,184,130,.32)!important}
+html body:not(.print-report) .status.warn{color:#F4D89B!important;background:rgba(230,180,80,.09)!important;border-color:rgba(230,180,80,.30)!important}
+html body:not(.print-report) .status.danger{color:#F3C0C4!important;background:rgba(224,113,120,.09)!important;border-color:rgba(224,113,120,.32)!important}
+
+/* Search-first density */
+html body.cc-portal-v2:not(.print-report) .toolbar,
+html body.cc-portal-v2:not(.print-report) .board-controls{
+  gap:10px!important;
+}
+html body.cc-portal-v2:not(.print-report) .search{max-width:none!important}
+html body.cc-portal-v2:not(.print-report) .empty{
+  color:var(--st-text-3)!important;
+  background:transparent!important;
+  border:1px dashed var(--st-border)!important;
+  border-radius:var(--st-radius-card)!important;
+  box-shadow:none!important;
+}
+
+/* Login / Access */
+html body:not(.print-report) .auth{
+  background:var(--st-canvas)!important;
+}
+html body:not(.print-report) .auth-card{
+  background:var(--st-card)!important;
+  border:1px solid var(--st-border)!important;
+  border-radius:16px!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+}
+html body:not(.print-report) .auth-card .logo{
+  background:var(--st-blue)!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+html body:not(.print-report) .cp-login-field>span,
+html body:not(.print-report) #authForm .field>span{color:var(--st-text-2)!important}
+html body:not(.print-report) #authSubmit{
+  min-height:48px!important;
+  background:var(--st-blue)!important;
+  border-color:var(--st-blue)!important;
+  color:#fff!important;
+}
+
+/* Modals */
+html body:not(.print-report) .modal-bg{
+  background:rgba(11,17,24,.76)!important;
+  backdrop-filter:blur(4px)!important;
+}
+html body:not(.print-report) .modal,
+html body:not(.print-report) .modal-head{
+  background:var(--st-elevated)!important;
+  border-color:var(--st-border)!important;
+  box-shadow:none!important;
+}
+html body:not(.print-report) .modal{border-radius:14px!important}
+
+/* Dashboard restraint: remove non-essential decorative geometry but keep data. */
+html body.cc-portal-v2:not(.print-report) .portfolio-ring{
+  box-shadow:none!important;
+  filter:none!important;
+}
+html body.cc-portal-v2:not(.print-report) .exec-bar,
+html body.cc-portal-v2:not(.print-report) .mini-progress-track,
+html body.cc-portal-v2:not(.print-report) .rail-state-bar,
+html body.cc-portal-v2:not(.print-report) .sv4-track{
+  background:#253241!important;
+}
+html body.cc-portal-v2:not(.print-report) .exec-bar>i,
+html body.cc-portal-v2:not(.print-report) .mini-progress-fill,
+html body.cc-portal-v2:not(.print-report) .rail-state-bar i,
+html body.cc-portal-v2:not(.print-report) .sv4-fill{
+  background:var(--st-blue)!important;
+  box-shadow:none!important;
+}
+
+/* Responsive: same information, adapted distribution. */
+@media(max-width:1100px){
+  :root{--st-sidebar:72px}
+  html body.cc-portal-v2:not(.print-report) .cc-sidebar:not(.open){width:72px!important}
+  html body.cc-portal-v2:not(.print-report) .cc-sidebar:not(.open) .cc-side-btn>span:not(.cc-side-icon),
+  html body.cc-portal-v2:not(.print-report) .cc-sidebar:not(.open) .cc-nav-label,
+  html body.cc-portal-v2:not(.print-report) .cc-sidebar:not(.open) .cc-sidebar-brand small,
+  html body.cc-portal-v2:not(.print-report) .cc-sidebar:not(.open) .cc-sidebar-brand strong{display:none!important}
+}
+@media(max-width:860px){
+  html body.cc-portal-v2:not(.print-report) .cc-sidebar{
+    width:min(280px,86vw)!important;
+    transform:translateX(-105%)!important;
+    transition:transform .18s ease!important;
+    box-shadow:0 18px 50px rgba(0,0,0,.35)!important;
+  }
+  html body.cc-portal-v2:not(.print-report) .cc-sidebar.open{transform:translateX(0)!important}
+  html body.cc-portal-v2:not(.print-report) .cc-app-column{margin-left:0!important;padding-left:14px!important;padding-right:14px!important}
+}
+@media(max-width:720px){
+  html body:not(.print-report) .shell{padding-left:12px!important;padding-right:12px!important}
+  html body:not(.print-report) .topbar,
+  html body:not(.print-report) .cc-topbar{
+    margin-left:-12px!important;margin-right:-12px!important;padding-left:12px!important;padding-right:12px!important;
+  }
+  html body:not(.print-report) .panel,
+  html body:not(.print-report) .card,
+  html body:not(.print-report) .kpi,
+  html body:not(.print-report) .projects-board,
+  html body:not(.print-report) .project-v3{border-radius:10px!important}
+  html body:not(.print-report) .btn,
+  html body:not(.print-report) .icon-btn{min-height:48px!important}
+  html body:not(.print-report) .tabs,
+  html body:not(.print-report) nav.tabs{
+    position:static!important;
+    overflow-x:auto!important;
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    padding:5px!important;
+  }
+  html body:not(.print-report) .tabs button,
+  html body:not(.print-report) nav.tabs button{min-width:max-content!important}
+}
+@media(max-width:480px){
+  html body:not(.print-report) .form-grid,
+  html body:not(.print-report) .summary-grid,
+  html body:not(.print-report) .grid-kpi,
+  html body:not(.print-report) .advance{grid-template-columns:1fr!important}
+}
+
+/* Accessibility */
+@media(prefers-reduced-motion:reduce){
+  html body:not(.print-report) *,html body:not(.print-report) *::before,html body:not(.print-report) *::after{
+    animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important;
+  }
+}

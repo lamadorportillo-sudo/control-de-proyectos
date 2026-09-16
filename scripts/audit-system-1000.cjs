@@ -39,6 +39,7 @@ const critical=[
   'index.html','build-pages.cjs','performance-runtime-v1.js','service-worker-v1.js',
   'portal-web-v2.js','portal-web-v2.css','dashboard-executive-v1.js',
   'dashboard-simplified-v4.js','portal-route-bridge-v1.js','ui-navigation-single-source-v1.js','ui-stability-v1.js',
+  'stitch-design-system-v1.css','stitch-ui-adapter-v1.js','tests/stitch-design-integration.test.cjs',
   'tests/startup-responsive.spec.cjs','.github/workflows/deploy-pages-critical.yml'
 ];
 for(const rel of critical)check(exists(rel),`Falta archivo crítico: ${rel}`);

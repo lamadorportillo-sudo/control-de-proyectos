@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { X, Send, Loader2, Bot, AlertTriangle } from 'lucide-react';
-import { supabase, hasSupabaseConfig } from '../../services/supabaseClient.ts';
+import { X, Send, Loader2, AlertTriangle } from 'lucide-react';
+import { supabase, hasSupabaseConfig, ensureSupabaseSession } from '../../services/supabaseClient.ts';
 import { EngineerFigure } from './ZordonAvatar.tsx';
 
 interface Turn {
@@ -32,12 +32,18 @@ export const ZordonAssistant: React.FC<ZordonAssistantProps> = ({ open, onClose,
     setHistory((prev) => [...prev, { role: 'user', text: q }]);
 
     if (!hasSupabaseConfig || !supabase) {
-      setHistory((prev) => [...prev, { role: 'assistant', text: 'La interfaz nueva todavía no tiene las credenciales públicas de Supabase cargadas. El ZORDON productivo sigue intacto; esta vista no usará respuestas simuladas.' }]);
+      setHistory((prev) => [...prev, { role: 'assistant', text: 'La interfaz nueva no tiene conexión pública de Supabase disponible. El ZORDON productivo sigue intacto; no usaré respuestas simuladas.' }]);
       return;
     }
 
     setLoading(true);
     try {
+      await ensureSupabaseSession();
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session?.access_token) {
+        throw new Error('No existe una sesión autenticada reutilizable.');
+      }
+
       const payloadHistory = history.slice(-24).map((turn) => ({ role: turn.role, text: turn.text.slice(0, 1000) }));
       const { data, error: invokeError } = await supabase.functions.invoke('halu-chat', {
         body: {
@@ -52,7 +58,7 @@ export const ZordonAssistant: React.FC<ZordonAssistantProps> = ({ open, onClose,
       setHistory((prev) => [...prev, { role: 'assistant', text: reply }]);
     } catch (err: any) {
       console.error('ZORDON invoke error', err);
-      setError('No pude completar la consulta en este momento. La conversación productiva no fue reemplazada ni alterada.');
+      setError('Necesito una sesión válida de Control Contractual para consultar ZORDON. No se modificó ninguna conversación ni expediente.');
     } finally {
       setLoading(false);
     }
@@ -66,7 +72,7 @@ export const ZordonAssistant: React.FC<ZordonAssistantProps> = ({ open, onClose,
             <EngineerFigure size={34} showStatusDot />
             <div>
               <div className="text-sm font-bold text-white">ZORDON</div>
-              <div className="text-[10px] text-emerald-400">Asistente técnico conectado al backend existente</div>
+              <div className="text-[10px] text-emerald-400">Mismo asistente de la web y Telegram</div>
             </div>
           </div>
           <button onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-[#172235] hover:text-white" aria-label="Cerrar ZORDON">
@@ -77,7 +83,7 @@ export const ZordonAssistant: React.FC<ZordonAssistantProps> = ({ open, onClose,
         <div className="flex-1 space-y-3 overflow-y-auto p-4">
           {history.length === 0 && (
             <div className="rounded-xl border border-[#1f2e45] bg-[#111827] p-4 text-xs leading-relaxed text-slate-400">
-              Esta interfaz reutiliza el Edge Function productivo <span className="font-mono text-slate-300">halu-chat</span>. No crea otro bot ni otra memoria paralela.
+              Esta interfaz reutiliza el ZORDON productivo y su memoria compartida. No crea otro bot ni otra base paralela.
             </div>
           )}
 

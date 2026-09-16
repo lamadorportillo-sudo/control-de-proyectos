@@ -1,45 +1,78 @@
 # Estado de integración — AI Studio → Control Contractual
 
-Fecha: 2026-09-15
+Fecha de actualización: 2026-09-16
 
 ## Rama de trabajo
 - `integracion-ai-studio`
 - `main` permanece intacta.
+- PR de seguimiento: `#25` en estado **draft**.
 
-## Base importada
-La nueva interfaz React/Vite vive en `frontend-v2/` para evitar sustituir prematuramente la SPA productiva actual.
-
-## Confirmado
+## Estado técnico confirmado
 - React 19 + Vite + TypeScript + Tailwind.
-- Cliente Supabase preparado con variables `VITE_SUPABASE_*`.
-- Proyecto Supabase existente: `flethujkrharehjikwgj`.
+- Supabase productivo: `flethujkrharehjikwgj`.
+- Clave **publishable** configurada para navegador; no se incluye `service_role` ni secretos privados.
+- La V2 reutiliza la sesión productiva `control_contractual_session_v3` y Supabase Auth.
+- Las consultas productivas se bloquean si no existe una sesión válida; no se muestran datos ficticios como sustituto.
+- Las políticas RLS continúan siendo la barrera de autorización.
 - No se incorpora Firebase ni Firestore.
-- Se conserva el avatar canónico de ZORDON: `/control-de-proyectos/engineer-assistant-avatar.png`.
-- El launcher de ZORDON conserva indicador de disponibilidad y `aria-label="Abrir ZORDON"`.
-- Se mantiene la infraestructura productiva existente de Supabase, Telegram, MFA, Edge Functions y pruebas.
+- ZORDON reutiliza el Edge Function existente `halu-chat`.
+- Telegram conserva la infraestructura existente y la V2 detecta Telegram WebApp.
+- El avatar canónico de ZORDON se conserva en `/control-de-proyectos/engineer-assistant-avatar.png`.
 
-## Importado hasta este punto
-- configuración Vite/TypeScript;
-- estilos base;
-- tipos de dominio;
-- motor de cálculos;
-- adaptador de backend;
-- cliente Supabase;
-- navegación lateral responsive;
-- launcher/avatar ZORDON;
-- vista Compras.
+## Módulos V2 conectados / montados
+- Inicio operativo.
+- Proyectos con búsqueda focalizada, sin cargar los 73 expedientes al entrar.
+- Expediente de proyecto por pestañas: resumen, contrato, presupuesto, estimaciones, garantías, visitas, deficiencias y documentos.
+- Contratos y contratistas.
+- Presupuestos.
+- Estimaciones y pagos.
+- Garantías.
+- Compras y cotizaciones.
+- Deficiencias y seguimiento.
+- Documentos y evidencias.
+- Transparencia como generador selectivo de categorías.
+- Auditoría.
+- Modo Campo.
+- Configuración segura.
+- ZORDON dentro de la nueva interfaz.
 
-## Pendiente antes de publicar
-1. Completar la importación de componentes/vistas restantes de AI Studio.
-2. Sustituir `mockData` y `LocalDataRepository` por adaptadores Supabase.
-3. Reutilizar autenticación/MFA productiva existente.
-4. Conectar ZORDON al Edge Function real `halu-chat`.
-5. Conectar Telegram Mini App/Bot al backend existente.
-6. Reutilizar flujo offline/sincronización existente.
-7. Validar Convenios, Reportes, Biblioteca, Contratistas y demás módulos que AI Studio no dejó completos.
-8. Ejecutar TypeScript/build y pruebas funcionales/responsive.
-9. Crear preview de la rama.
-10. Fusionar a `main` únicamente tras validación.
+## Fuente de datos
+`SupabaseDataRepository` ya lee las tablas productivas existentes, entre ellas:
+- `projects`
+- `contracts`
+- `estimates`
+- `guarantees`
+- `visits`
+- `project_evidence`
+- `alert_events`
+- `audit_log`
 
-## Regla
-No publicar `frontend-v2` como producción mientras existan datos DEMO o adaptadores locales como fuente principal.
+Los datos DEMO fueron retirados como fuente principal. `LocalDataRepository` queda únicamente como mecanismo técnico de fallback y no debe utilizarse para sustituir información productiva.
+
+## Protección de escritura
+Las operaciones de escritura directa desde la V2 siguen bloqueadas hasta validar los RPC/RLS productivos. Esto evita duplicar proyectos, contratos, estimaciones, garantías, visitas o evidencias durante la migración.
+
+## Validación automatizada
+Workflow: `Validate frontend-v2`
+
+Valida en cada cambio relevante:
+1. instalación de dependencias;
+2. TypeScript (`tsc --noEmit`);
+3. build de producción con Vite;
+4. existencia de `dist/index.html` y assets.
+
+La validación del commit `deba28941fe59ca7bfdfbe90272994e6a257faf3` terminó correctamente en todos los pasos.
+
+## Pendiente antes de producción
+1. Validar la V2 en navegador bajo el mismo origen de GitHub Pages con una sesión real iniciada.
+2. Probar RLS con los roles reales del workspace.
+3. Probar ZORDON autenticado desde la V2 y confirmar continuidad con Telegram.
+4. Corregir cualquier diferencia de mapeo detectada con datos reales (alertas, auditoría y documentos).
+5. Conectar los flujos productivos de escritura usando RPC/funciones ya autorizadas, no inserciones inseguras desde el navegador.
+6. Completar prueba responsive PC, tablet, celular y Telegram Mini App.
+7. Preparar preview controlado.
+8. Mantener el PR #25 como borrador hasta terminar estas pruebas.
+9. Fusionar a `main` únicamente después de la validación final.
+
+## Regla de seguridad
+La aplicación productiva actual no se reemplaza durante esta fase. La migración debe ser progresiva, reversible y sin pérdida de datos.

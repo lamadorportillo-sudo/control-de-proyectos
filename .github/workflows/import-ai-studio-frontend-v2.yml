@@ -1,0 +1,53 @@
+name: Import AI Studio source into frontend-v2
+
+on:
+  push:
+    branches:
+      - integracion-ai-studio
+    paths:
+      - 'frontend-v2/source-aistudio.zip'
+      - '.github/workflows/import-ai-studio-frontend-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout integration branch
+        uses: actions/checkout@v4
+        with:
+          ref: integracion-ai-studio
+          fetch-depth: 0
+
+      - name: Extract source archive
+        run: |
+          rm -rf /tmp/aistudio
+          mkdir -p /tmp/aistudio
+          unzip -q -o frontend-v2/source-aistudio.zip -d /tmp/aistudio
+
+      - name: Copy missing AI Studio views
+        run: |
+          set -euo pipefail
+          mkdir -p frontend-v2/src/components/common frontend-v2/src/components/views
+
+          cp /tmp/aistudio/src/components/common/ZordonAssistant.tsx frontend-v2/src/components/common/ZordonAssistant.tsx
+
+          for file in             ProjectsView.tsx             ModoCampoView.tsx             DeficienciasView.tsx             TransparenciaView.tsx             DocumentosView.tsx             SearchView.tsx             ContratosView.tsx             EstimacionesView.tsx             ProjectExpedienteView.tsx             GarantiasView.tsx             ConfiguracionView.tsx             InicioView.tsx
+          do
+            cp "/tmp/aistudio/src/components/views/$file" "frontend-v2/src/components/views/$file"
+          done
+
+      - name: Commit imported source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend-v2/src/components/common/ZordonAssistant.tsx frontend-v2/src/components/views
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Completa vistas AI Studio en frontend-v2"
+            git push origin HEAD:integracion-ai-studio
+          fi

@@ -20,6 +20,8 @@ import {
   User,
 } from '../types.ts';
 import { appStore } from './storageService.ts';
+import { hasSupabaseConfig } from './supabaseClient.ts';
+import { SupabaseDataRepository } from './supabaseRepository.ts';
 
 /**
  * Contrato de repositorio de datos para Supabase
@@ -208,4 +210,6 @@ export const telegramAdapter: ITelegramAdapter = {
   },
 };
 
-export const dataRepository: IDataRepository = new LocalDataRepository();
+export const dataRepository: IDataRepository = hasSupabaseConfig
+  ? new SupabaseDataRepository()
+  : new LocalDataRepository();

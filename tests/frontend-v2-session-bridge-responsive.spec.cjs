@@ -63,6 +63,24 @@ function projectRow() {
   };
 }
 
+async function seedProductionSession(page, token) {
+  await page.addInitScript(
+    ({ key, token, userId }) => {
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          userId,
+          email: 'qa-v2@example.com',
+          accessToken: token,
+          refreshToken: 'refresh-qa',
+          expiresAt: Date.now() + 3600_000,
+        })
+      );
+    },
+    { key: SESSION_KEY, token, userId: USER_ID }
+  );
+}
+
 async function mockSupabase(page, capture) {
   await page.route(`${SUPABASE_ORIGIN}/**`, async (route) => {
     const request = route.request();
@@ -112,11 +130,25 @@ async function mockSupabase(page, capture) {
       });
     }
 
-    if (path.startsWith('/functions/v1/')) {
+    if (path === '/functions/v1/halu-chat') {
+      capture.functionAuth = auth;
+      try {
+        capture.functionBody = request.postDataJSON();
+      } catch {
+        capture.functionBody = null;
+      }
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({ reply: 'Respuesta QA de ZORDON' }),
+      });
+    }
+
+    if (path.startsWith('/functions/v1/')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: '{}',
       });
     }
 
@@ -132,22 +164,7 @@ test('V2 reutiliza la sesión productiva al compartir el mismo origen', async ({
   const token = makeJwt();
   const capture = { token, restRequests: 0 };
 
-  await page.addInitScript(
-    ({ key, token, userId }) => {
-      localStorage.setItem(
-        key,
-        JSON.stringify({
-          userId,
-          email: 'qa-v2@example.com',
-          accessToken: token,
-          refreshToken: 'refresh-qa',
-          expiresAt: Date.now() + 3600_000,
-        })
-      );
-    },
-    { key: SESSION_KEY, token, userId: USER_ID }
-  );
-
+  await seedProductionSession(page, token);
   await mockSupabase(page, capture);
   await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
 
@@ -155,6 +172,55 @@ test('V2 reutiliza la sesión productiva al compartir el mismo origen', async ({
   await expect.poll(() => capture.restRequests).toBeGreaterThan(0);
   await expect.poll(() => capture.projectsAuth).toBe(`Bearer ${token}`);
   await expect(page.getByText(/Sesión requerida\. Abre la V2/)).toHaveCount(0);
+});
+
+test('ZORDON V2 usa la misma sesión y el Edge Function productivo', async ({ page }) => {
+  const token = makeJwt();
+  const capture = { token, restRequests: 0 };
+
+  await seedProductionSession(page, token);
+  await mockSupabase(page, capture);
+  await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
+
+  await page.getByRole('button', { name: 'Abrir ZORDON' }).first().click();
+  const input = page.getByPlaceholder('Escribe a ZORDON…');
+  await expect(input).toBeVisible();
+  await input.fill('Revisa el estado del proyecto QA.');
+  await input.press('Enter');
+
+  await expect(page.getByText('Respuesta QA de ZORDON')).toBeVisible();
+  await expect.poll(() => capture.functionAuth).toBe(`Bearer ${token}`);
+  expect(capture.functionBody?.message).toBe('Revisa el estado del proyecto QA.');
+});
+
+test('Telegram Mini App activa automáticamente el entorno Telegram', async ({ page }) => {
+  const token = makeJwt();
+  const capture = { token, restRequests: 0 };
+
+  await seedProductionSession(page, token);
+  await page.addInitScript(() => {
+    window.Telegram = {
+      WebApp: {
+        initData: 'query_id=qa',
+        initDataUnsafe: {
+          user: { id: 999001, first_name: 'QA', username: 'qa_control' },
+        },
+        expand() {
+          window.__CC_QA_TELEGRAM_EXPANDED__ = true;
+        },
+        sendData() {},
+        close() {},
+      },
+    };
+  });
+
+  await mockSupabase(page, capture);
+  await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
+
+  const root = page.locator('[data-telegram-mini-app="true"]');
+  await expect(root).toBeVisible();
+  await expect(root).toHaveAttribute('data-viewport-mode', 'telegram');
+  await expect.poll(() => page.evaluate(() => Boolean(window.__CC_QA_TELEGRAM_EXPANDED__))).toBe(true);
 });
 
 test('V2 bloquea lecturas de datos cuando no existe sesión productiva', async ({ page }) => {

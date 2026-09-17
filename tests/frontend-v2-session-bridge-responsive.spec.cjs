@@ -1,0 +1,169 @@
+const { test, expect } = require('@playwright/test');
+
+const APP_URL = process.env.FRONTEND_V2_URL || 'http://127.0.0.1:4173/frontend-v2/dist/';
+const SUPABASE_ORIGIN = 'https://flethujkrharehjikwgj.supabase.co';
+const SESSION_KEY = 'control_contractual_session_v3';
+const USER_ID = '11111111-1111-4111-8111-111111111111';
+
+function b64url(value) {
+  return Buffer.from(JSON.stringify(value)).toString('base64url');
+}
+
+function makeJwt() {
+  const now = Math.floor(Date.now() / 1000);
+  return [
+    b64url({ alg: 'HS256', typ: 'JWT' }),
+    b64url({
+      aud: 'authenticated',
+      exp: now + 3600,
+      iat: now - 10,
+      sub: USER_ID,
+      email: 'qa-v2@example.com',
+      role: 'authenticated',
+    }),
+    'qa-signature',
+  ].join('.');
+}
+
+function userPayload() {
+  return {
+    id: USER_ID,
+    aud: 'authenticated',
+    role: 'authenticated',
+    email: 'qa-v2@example.com',
+    email_confirmed_at: new Date().toISOString(),
+    app_metadata: { provider: 'email', providers: ['email'] },
+    user_metadata: {},
+    created_at: new Date().toISOString(),
+  };
+}
+
+function projectRow() {
+  return {
+    id: '22222222-2222-4222-8222-222222222222',
+    workspace_id: '33333333-3333-4333-8333-333333333333',
+    code: 'QA-V2-001',
+    name: 'Proyecto QA V2',
+    description: 'Prueba de puente de sesión',
+    location: 'Santa María',
+    project_type: 'Obra',
+    budget_estimate: 100000,
+    status: 'En ejecución',
+    start_date: '2026-09-01',
+    end_date: '2026-12-01',
+    archived_at: null,
+    raw_data: {
+      shortName: 'QA V2',
+      physicalProgress: 25,
+      financialProgress: 20,
+      fundingSource: 'Municipal',
+    },
+    created_at: '2026-09-01T00:00:00Z',
+    updated_at: '2026-09-16T00:00:00Z',
+  };
+}
+
+async function mockSupabase(page, capture) {
+  await page.route(`${SUPABASE_ORIGIN}/**`, async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const path = url.pathname;
+    const auth = request.headers()['authorization'] || '';
+
+    if (path === '/auth/v1/user') {
+      capture.userAuth = auth;
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(userPayload()),
+      });
+    }
+
+    if (path === '/auth/v1/token') {
+      const accessToken = capture.token || makeJwt();
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          access_token: accessToken,
+          refresh_token: 'refresh-qa',
+          expires_in: 3600,
+          token_type: 'bearer',
+          user: userPayload(),
+        }),
+      });
+    }
+
+    if (path.startsWith('/rest/v1/')) {
+      capture.restRequests = (capture.restRequests || 0) + 1;
+      if (path === '/rest/v1/projects') {
+        capture.projectsAuth = auth;
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([projectRow()]),
+        });
+      }
+
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: '[]',
+      });
+    }
+
+    if (path.startsWith('/functions/v1/')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ reply: 'Respuesta QA de ZORDON' }),
+      });
+    }
+
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: '{}',
+    });
+  });
+}
+
+test('V2 reutiliza la sesión productiva al compartir el mismo origen', async ({ page }) => {
+  const token = makeJwt();
+  const capture = { token, restRequests: 0 };
+
+  await page.addInitScript(
+    ({ key, token, userId }) => {
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          userId,
+          email: 'qa-v2@example.com',
+          accessToken: token,
+          refreshToken: 'refresh-qa',
+          expiresAt: Date.now() + 3600_000,
+        })
+      );
+    },
+    { key: SESSION_KEY, token, userId: USER_ID }
+  );
+
+  await mockSupabase(page, capture);
+  await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
+
+  await expect(page.getByText('Control Contractual').first()).toBeVisible();
+  await expect.poll(() => capture.restRequests).toBeGreaterThan(0);
+  await expect.poll(() => capture.projectsAuth).toBe(`Bearer ${token}`);
+  await expect(page.getByText(/Sesión requerida\. Abre la V2/)).toHaveCount(0);
+});
+
+test('V2 bloquea lecturas de datos cuando no existe sesión productiva', async ({ page }) => {
+  const capture = { restRequests: 0 };
+  await mockSupabase(page, capture);
+
+  await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
+
+  await expect(page.getByText(/Sesión requerida\. Abre la V2 desde una sesión iniciada en Control Contractual\./)).toBeVisible();
+  await page.waitForTimeout(500);
+  expect(capture.restRequests).toBe(0);
+});

@@ -6,6 +6,7 @@ on:
       - integracion-ai-studio
     paths:
       - 'frontend-v2/**'
+      - 'tests/frontend-v2-session-bridge-responsive.spec.cjs'
       - '.github/workflows/frontend-v2-validate.yml'
   workflow_dispatch:
 
@@ -19,29 +20,56 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
-    defaults:
-      run:
-        working-directory: frontend-v2
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: integracion-ai-studio
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: frontend-v2/package.json
-      - name: Install dependencies
+
+      - name: Install frontend-v2 dependencies
+        working-directory: frontend-v2
         run: npm install --no-package-lock
+
       - name: TypeScript check
+        working-directory: frontend-v2
         run: npm run lint
+
       - name: Production build
+        working-directory: frontend-v2
         run: npm run build
+
       - name: Validate output
+        working-directory: frontend-v2
         run: |
           test -f dist/index.html
           test -d dist/assets
           grep -q "Control Contractual" dist/index.html
+
+      - name: Install browser test dependencies
+        run: npm install --no-package-lock
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Serve repository on one origin
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/frontend-v2-http.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/frontend-v2/dist/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/frontend-v2-http.log
+          exit 1
+
+      - name: Same-origin session bridge smoke
+        env:
+          FRONTEND_V2_URL: http://127.0.0.1:4173/frontend-v2/dist/
+        run: npx playwright test tests/frontend-v2-session-bridge-responsive.spec.cjs --workers=1 --retries=0

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { AppModule, Project, Contract, Estimate, Guarantee, Deficiency, DocumentEvidence, AuditLog, FieldVisit } from './types.ts';
-import { dataRepository } from './services/backendAdapter.ts';
+import { dataRepository, telegramAdapter } from './services/backendAdapter.ts';
 import { Header } from './components/common/Header.tsx';
 import { Sidebar } from './components/common/Sidebar.tsx';
 import { ZordonLauncher } from './components/common/ZordonAvatar.tsx';
@@ -73,6 +73,10 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (telegramAdapter.isAvailable()) {
+      setViewportMode('telegram');
+      telegramAdapter.expandMiniApp();
+    }
     void loadData();
   }, []);
 
@@ -187,7 +191,11 @@ export default function App() {
       : 'max-w-[420px] mx-auto min-h-[740px] my-4 border border-[#243247] rounded-xl overflow-hidden shadow-2xl';
 
   return (
-    <div className={`bg-[#0b1220] text-slate-100 ${viewportClass}`}>
+    <div
+      className={`bg-[#0b1220] text-slate-100 ${viewportClass}`}
+      data-viewport-mode={viewportMode}
+      data-telegram-mini-app={viewportMode === 'telegram' ? 'true' : 'false'}
+    >
       <Header
         currentModule={currentModule}
         onNavigate={handleNavigate}

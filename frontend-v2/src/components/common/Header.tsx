@@ -70,6 +70,7 @@ export const Header: React.FC<HeaderProps> = ({
       presupuestos: 'Presupuesto y Ampliaciones',
       estimaciones: 'Estimaciones y Pagos',
       garantias: 'Garantías y Pólizas',
+      visitas: 'Visitas de obra',
       compras: 'Compras y Cotizaciones',
       deficiencias: 'Deficiencias y Seguimiento',
       documentos: 'Biblioteca Documental',

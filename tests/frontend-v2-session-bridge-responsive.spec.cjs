@@ -114,6 +114,9 @@ async function mockSupabase(page, capture) {
 
     if (path.startsWith('/rest/v1/')) {
       capture.restRequests = (capture.restRequests || 0) + 1;
+      if (!['GET', 'HEAD'].includes(request.method())) {
+        capture.restWriteRequests = (capture.restWriteRequests || 0) + 1;
+      }
       if (path === '/rest/v1/projects') {
         capture.projectsAuth = auth;
         return route.fulfill({
@@ -253,4 +256,27 @@ test('V2 no desborda horizontalmente en anchos oficiales', async ({ page }) => {
     expect(overflow.scrollWidth, `overflow horizontal a ${width}px`).toBeLessThanOrEqual(overflow.clientWidth + 2);
     await expect(page.getByRole('button', { name: 'Abrir ZORDON' }).first()).toBeVisible();
   }
+});
+
+
+test('Registrar visita mantiene escritura productiva desactivada por defecto', async ({ page }) => {
+  const token = makeJwt();
+  const capture = { token, restRequests: 0, restWriteRequests: 0 };
+
+  await seedProductionSession(page, token);
+  await mockSupabase(page, capture);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
+
+  await page.locator('#btn-sidebar-modo-campo').click();
+  await expect(page.getByRole('heading', { name: 'Modo campo' })).toBeVisible();
+  await page.getByRole('button', { name: 'Nueva visita' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Registrar visita de obra' })).toBeVisible();
+  await page.getByRole('button', { name: /Revisar y guardar/ }).click();
+
+  const saveButton = page.getByRole('button', { name: 'Guardar visita' });
+  await expect(saveButton).toBeDisabled();
+  await expect(page.getByText(/escritura productiva está preparada pero permanece desactivada/i)).toBeVisible();
+  expect(capture.restWriteRequests).toBe(0);
 });

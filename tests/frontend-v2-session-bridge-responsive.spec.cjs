@@ -244,6 +244,28 @@ test('Reportes expone generador de proyectos en ejecución sin escribir en backe
   await expect(page.getByRole('button', { name: /Exportar CSV/i })).toBeVisible();
 });
 
+
+for (const viewport of [
+  { name: 'celular-360', width: 360, height: 800 },
+  { name: 'tablet-768', width: 768, height: 1024 },
+  { name: 'pc-1440', width: 1440, height: 900 },
+]) {
+  test(`V2 responde correctamente en ${viewport.name}`, async ({ page }) => {
+    const token = makeJwt();
+    const capture = { token, restRequests: 0 };
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await seedProductionSession(page, token);
+    await mockSupabase(page, capture);
+    await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
+
+    await expect(page.getByText('Control Contractual').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Abrir ZORDON' }).first()).toBeVisible();
+
+    const bodyWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    expect(bodyWidth).toBeLessThanOrEqual(viewport.width + 4);
+  });
+}
+
 test('V2 bloquea lecturas de datos cuando no existe sesión productiva', async ({ page }) => {
   const capture = { restRequests: 0 };
   await mockSupabase(page, capture);

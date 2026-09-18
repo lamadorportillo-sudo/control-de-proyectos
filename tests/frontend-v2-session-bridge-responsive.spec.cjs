@@ -245,7 +245,7 @@ test('V2 no desborda horizontalmente en anchos oficiales', async ({ page }) => {
   for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
-    await expect(page.getByText('Control Contractual').first()).toBeVisible();
+    await expect(page.locator('[data-viewport-mode]').first()).toBeVisible();
     const overflow = await page.evaluate(() => ({
       scrollWidth: document.documentElement.scrollWidth,
       clientWidth: document.documentElement.clientWidth,

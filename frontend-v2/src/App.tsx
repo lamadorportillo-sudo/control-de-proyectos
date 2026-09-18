@@ -46,24 +46,24 @@ export default function App() {
     setLoading(true);
     setLoadError('');
     try {
-      const [projectData, contractData, estimateData, guaranteeData, deficiencyData, documentData, visitData, auditData] = await Promise.all([
+      // Arranque liviano: solo lo necesario para abrir Inicio sin bloquear la interfaz.
+      const [projectData, deficiencyData, auditData] = await Promise.all([
         dataRepository.getProjects(),
-        dataRepository.getContracts(),
-        dataRepository.getEstimates(),
-        dataRepository.getGuarantees(),
         dataRepository.getDeficiencies(),
-        dataRepository.getDocuments(),
-        dataRepository.getFieldVisits(),
         dataRepository.getAuditLogs(),
       ]);
       setProjects(projectData);
-      setContracts(contractData);
-      setEstimates(estimateData);
-      setGuarantees(guaranteeData);
       setDeficiencies(deficiencyData);
-      setDocuments(documentData);
-      setVisits(visitData);
       setAuditLogs(auditData);
+
+      // Pendientes financieros se completan en segundo plano y no bloquean el primer render.
+      void Promise.all([
+        dataRepository.getEstimates(),
+        dataRepository.getGuarantees(),
+      ]).then(([estimateData, guaranteeData]) => {
+        setEstimates(estimateData);
+        setGuarantees(guaranteeData);
+      }).catch((err) => console.warn('Carga secundaria V2:', err));
     } catch (err: any) {
       console.error('V2 data load error', err);
       setLoadError(String(err?.message || 'No se pudo cargar la información productiva.'));
@@ -79,6 +79,54 @@ export default function App() {
     }
     void loadData();
   }, []);
+
+  useEffect(() => {
+    // Los módulos pesados se consultan solamente cuando se necesitan.
+    const loadModuleData = async () => {
+      try {
+        if (currentModule === 'contratos' && contracts.length === 0) {
+          setContracts(await dataRepository.getContracts());
+        } else if (currentModule === 'estimaciones' && estimates.length === 0) {
+          setEstimates(await dataRepository.getEstimates());
+        } else if (currentModule === 'garantias' && guarantees.length === 0) {
+          setGuarantees(await dataRepository.getGuarantees());
+        } else if (currentModule === 'documentos' && documents.length === 0) {
+          setDocuments(await dataRepository.getDocuments());
+        } else if (currentModule === 'modo_campo' && visits.length === 0) {
+          setVisits(await dataRepository.getFieldVisits());
+        } else if (currentModule === 'transparencia') {
+          const tasks: Promise<any>[] = [];
+          if (contracts.length === 0) tasks.push(dataRepository.getContracts().then(setContracts));
+          if (estimates.length === 0) tasks.push(dataRepository.getEstimates().then(setEstimates));
+          if (guarantees.length === 0) tasks.push(dataRepository.getGuarantees().then(setGuarantees));
+          if (documents.length === 0) tasks.push(dataRepository.getDocuments().then(setDocuments));
+          if (tasks.length) await Promise.all(tasks);
+        }
+      } catch (err) {
+        console.warn('Carga bajo demanda V2:', err);
+      }
+    };
+
+    void loadModuleData();
+  }, [currentModule, contracts.length, estimates.length, guarantees.length, documents.length, visits.length]);
+
+  useEffect(() => {
+    if (!selectedProjectId) return;
+    // El expediente carga sus pestañas bajo demanda al abrir un proyecto.
+    void Promise.all([
+      contracts.length ? Promise.resolve(contracts) : dataRepository.getContracts(),
+      estimates.length ? Promise.resolve(estimates) : dataRepository.getEstimates(),
+      guarantees.length ? Promise.resolve(guarantees) : dataRepository.getGuarantees(),
+      documents.length ? Promise.resolve(documents) : dataRepository.getDocuments(),
+      visits.length ? Promise.resolve(visits) : dataRepository.getFieldVisits(),
+    ]).then(([contractData, estimateData, guaranteeData, documentData, visitData]) => {
+      if (contracts.length === 0) setContracts(contractData);
+      if (estimates.length === 0) setEstimates(estimateData);
+      if (guarantees.length === 0) setGuarantees(guaranteeData);
+      if (documents.length === 0) setDocuments(documentData);
+      if (visits.length === 0) setVisits(visitData);
+    }).catch((err) => console.warn('Carga de expediente V2:', err));
+  }, [selectedProjectId]);
 
   const blockingDefs = useMemo(
     () => deficiencies.filter((d) => d.severity === 'BLOQUEANTE' && d.status !== 'CERRADA'),

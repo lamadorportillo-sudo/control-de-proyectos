@@ -22,6 +22,7 @@ const supabasePublishableKey = String(
   DEFAULT_SUPABASE_PUBLISHABLE_KEY
 ).trim();
 
+export const supabaseBaseUrl = supabaseUrl;
 export const hasSupabaseConfig = Boolean(supabaseUrl && supabasePublishableKey);
 
 export const supabase: SupabaseClient | null = hasSupabaseConfig

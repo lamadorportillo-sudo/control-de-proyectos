@@ -60,8 +60,9 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
   };
 
   const printExecutionReport = () => {
-    const popup = window.open('', '_blank', 'noopener,noreferrer');
+    const popup = window.open('', '_blank');
     if (!popup) return;
+    try { popup.opener = null; } catch {}
 
     const esc = (value: unknown) => String(value ?? '')
       .replace(/&/g, '&amp;')

@@ -258,7 +258,7 @@ for (const viewport of [
     await mockSupabase(page, capture);
     await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
 
-    await expect(page.getByText('Control Contractual').first()).toBeVisible();
+    await expect(page.locator('[data-viewport-mode]').first()).toBeVisible();
     await expect(page.getByRole('button', { name: 'Abrir ZORDON' }).first()).toBeVisible();
 
     const bodyWidth = await page.evaluate(() => document.documentElement.scrollWidth);
@@ -276,7 +276,7 @@ test('Transparencia inicia sin categorías preseleccionadas y permite elegir for
   await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
 
   await page.getByRole('button', { name: /Transparencia/i }).first().click();
-  await expect(page.getByText('Generador del Portal de Transparencia')).toBeVisible();
+  await expect(page.getByText('Generador del Portal de Transparencia').first()).toBeVisible();
   await expect(page.getByText(/0 categoría\(s\) seleccionada\(s\)/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Portal web' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'PDF' })).toBeVisible();

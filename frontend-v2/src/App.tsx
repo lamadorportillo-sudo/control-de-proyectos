@@ -23,7 +23,7 @@ import { ComprasView } from './components/views/ComprasView.tsx';
 import { AuditoriaView } from './components/views/AuditoriaView.tsx';
 import { ConfiguracionView } from './components/views/ConfiguracionView.tsx';
 import { ModulePlaceholder } from './components/views/ModulePlaceholder.tsx';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw, LogIn, ShieldCheck } from 'lucide-react';
 
 export default function App() {
   const [currentModule, setCurrentModule] = useState<AppModule>('inicio');
@@ -35,6 +35,7 @@ export default function App() {
   const [viewportMode, setViewportMode] = useState<'desktop' | 'tablet' | 'mobile' | 'telegram'>('desktop');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [sessionRequired, setSessionRequired] = useState(false);
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -48,6 +49,7 @@ export default function App() {
   const loadData = async () => {
     setLoading(true);
     setLoadError('');
+    setSessionRequired(false);
     try {
       // Arranque liviano: solo lo necesario para abrir Inicio sin bloquear la interfaz.
       const [projectData, deficiencyData, auditData] = await Promise.all([
@@ -69,7 +71,9 @@ export default function App() {
       }).catch((err) => console.warn('Carga secundaria V2:', err));
     } catch (err: any) {
       console.error('V2 data load error', err);
-      setLoadError(String(err?.message || 'No se pudo cargar la información productiva.'));
+      const message = String(err?.message || 'No se pudo cargar la información productiva.');
+      setLoadError(message);
+      setSessionRequired(/sesión requerida/i.test(message));
     } finally {
       setLoading(false);
     }
@@ -252,6 +256,39 @@ export default function App() {
     : viewportMode === 'tablet'
       ? 'max-w-[820px] mx-auto min-h-[820px] my-4 border border-[#243247] rounded-xl overflow-hidden shadow-2xl'
       : 'max-w-[420px] mx-auto min-h-[740px] my-4 border border-[#243247] rounded-xl overflow-hidden shadow-2xl';
+
+  if (sessionRequired) {
+    return (
+      <div className="min-h-screen bg-[#0b1220] px-4 py-10 text-slate-100">
+        <div className="mx-auto flex min-h-[70vh] max-w-lg items-center justify-center">
+          <div className="w-full rounded-2xl border border-[#243247] bg-[#111827] p-6 shadow-2xl">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600/15 text-blue-400 ring-1 ring-blue-500/30">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="text-sm font-bold text-white">Control Contractual</div>
+                <div className="text-[11px] text-slate-500">Interfaz V2 protegida</div>
+              </div>
+            </div>
+            <h1 className="text-lg font-bold text-white">Sesión requerida</h1>
+            <p className="mt-2 text-sm leading-relaxed text-slate-400">
+              Sesión requerida. Abre la V2 desde una sesión iniciada en Control Contractual.
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-slate-500">
+              La V2 reutiliza el acceso, MFA y permisos del sistema actual; no crea una segunda cuenta ni un segundo inicio de sesión.
+            </p>
+            <a
+              href="/control-de-proyectos/"
+              className="mt-5 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-500"
+            >
+              <LogIn className="h-4 w-4" /> Ir al acceso
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

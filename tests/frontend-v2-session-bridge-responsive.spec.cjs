@@ -226,6 +226,24 @@ test('Telegram Mini App activa automáticamente el entorno Telegram', async ({ p
   await expect.poll(() => page.evaluate(() => Boolean(window.__CC_QA_TELEGRAM_EXPANDED__))).toBe(true);
 });
 
+
+test('Reportes expone generador de proyectos en ejecución sin escribir en backend', async ({ page }) => {
+  const token = makeJwt();
+  const capture = { token, restRequests: 0 };
+
+  await seedProductionSession(page, token);
+  await mockSupabase(page, capture);
+  await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
+
+  const reportNav = page.getByRole('button', { name: /Reportes/i }).first();
+  await expect(reportNav).toBeVisible();
+  await reportNav.click();
+
+  await expect(page.getByText('Reporte de proyectos en ejecución')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Imprimir \/ Guardar PDF/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Exportar CSV/i })).toBeVisible();
+});
+
 test('V2 bloquea lecturas de datos cuando no existe sesión productiva', async ({ page }) => {
   const capture = { restRequests: 0 };
   await mockSupabase(page, capture);

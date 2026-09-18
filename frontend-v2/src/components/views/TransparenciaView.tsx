@@ -31,7 +31,7 @@ type CategoryId = typeof CATEGORIES[number]['id'];
 export const TransparenciaView: React.FC<TransparenciaViewProps> = ({ projects, contracts, estimates, guarantees, deficiencies, documents }) => {
   const now = new Date();
   const [month, setMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
-  const [selected, setSelected] = useState<CategoryId[]>(['projects', 'contracts', 'payments']);
+  const [selected, setSelected] = useState<CategoryId[]>([]);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [sourceCounts, setSourceCounts] = useState({ agreements: 0, procurement: 0 });
 
@@ -72,8 +72,26 @@ export const TransparenciaView: React.FC<TransparenciaViewProps> = ({ projects, 
       </div>
 
       <div className="rounded-xl border border-[#1f2e45] bg-[#111827] p-4">
-        <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500">Mes del portal</label>
-        <div className="mt-2 flex max-w-xs items-center gap-2 rounded-lg border border-[#243247] bg-[#0b1220] px-3 py-2"><CalendarDays className="h-4 w-4 text-slate-400" /><input type="month" value={month} onChange={(e) => { setMonth(e.target.value); setGeneratedAt(null); }} className="w-full bg-transparent text-xs text-white outline-none" /></div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500">Mes del portal</label>
+            <div className="mt-2 flex max-w-xs items-center gap-2 rounded-lg border border-[#243247] bg-[#0b1220] px-3 py-2">
+              <CalendarDays className="h-4 w-4 text-slate-400" />
+              <input type="month" value={month} onChange={(e) => { setMonth(e.target.value); setGeneratedAt(null); }} className="w-full bg-transparent text-xs text-white outline-none" />
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              const now = new Date();
+              setMonth(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
+              setSelected([]);
+              setGeneratedAt(null);
+            }}
+            className="rounded-lg border border-[#243247] bg-[#172235] px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-[#1f2e45]"
+          >
+            Nuevo mes
+          </button>
+        </div>
       </div>
 
       <div className="rounded-xl border border-[#1f2e45] bg-[#111827] p-4">

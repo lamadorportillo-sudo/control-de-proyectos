@@ -169,7 +169,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id="btn-sidebar-modo-campo"
           onClick={() => onNavigate('modo_campo')}
           className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-semibold transition-all ${
-            currentModule === 'modo_campo'
+            (currentModule === 'modo_campo' || currentModule === 'registrar_visita')
               ? 'bg-amber-500 text-slate-950'
               : 'bg-[#172235] text-amber-300 hover:bg-amber-950/60 border border-amber-800/40'
           }`}

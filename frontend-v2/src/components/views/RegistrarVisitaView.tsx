@@ -2,6 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Camera, Mic, Plus, Save, MapPin } from 'lucide-react';
 import type { Project } from '../../types.ts';
+import { saveVisitWithEvidence, visitWritesEnabled } from '../../services/visitWriteService.ts';
 
 interface Props { projects: Project[]; onBack: () => void; }
 interface Draft {
@@ -20,6 +21,9 @@ export const RegistrarVisitaView: React.FC<Props> = ({ projects, onBack }) => {
   const [step, setStep] = useState(1);
   const [activity, setActivity] = useState('');
   const [saved, setSaved] = useState('');
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<Draft>({
     id: crypto.randomUUID(), projectId: '', date: now.toISOString().slice(0,10),
     time: now.toTimeString().slice(0,5), location: '', observedProgress: 0,
@@ -44,6 +48,40 @@ export const RegistrarVisitaView: React.FC<Props> = ({ projects, onBack }) => {
     const next = [savedDraft, ...current.filter((item) => item.id !== draft.id)].slice(0,25);
     localStorage.setItem(KEY, JSON.stringify(next));
     setSaved('Borrador guardado localmente con el mismo ID para sincronización posterior.');
+  };
+
+  const saveProduction = async () => {
+    if (!visitWritesEnabled) return;
+    if (!navigator.onLine) {
+      saveLocal();
+      setSaved('Sin conexión. La visita quedó guardada localmente y conserva el mismo ID.');
+      return;
+    }
+    setSaving(true);
+    setSaved('');
+    try {
+      const result = await saveVisitWithEvidence({
+        id: draft.id,
+        projectId: draft.projectId,
+        date: draft.date,
+        time: draft.time,
+        location: draft.location,
+        observedProgress: draft.observedProgress,
+        previousProgress: draft.previousProgress,
+        workObserved: draft.workObserved,
+        activities: draft.activities,
+        hasIncident: draft.hasIncident,
+        incidentDescription: draft.incidentDescription,
+        instruction: draft.instruction,
+        responsible: draft.responsible,
+        deadline: draft.deadline,
+      }, photoFiles, audioFile);
+      setSaved('Visita sincronizada con Supabase. Evidencias registradas: ' + String(result.evidenceCount) + (result.warning ? ' · ' + result.warning : ''));
+    } catch (error: any) {
+      setSaved('No se pudo sincronizar: ' + String(error?.message || error));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const canNext = step === 1
@@ -101,8 +139,8 @@ export const RegistrarVisitaView: React.FC<Props> = ({ projects, onBack }) => {
         {step === 3 && <div className="space-y-4">
           <Title n={3} text="Evidencia"/>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <label className="cursor-pointer rounded-xl border border-dashed border-[#334155] bg-[#0b1220] p-5 text-center"><Camera className="mx-auto h-6 w-6 text-blue-400"/><div className="mt-2 text-xs font-semibold text-white">Agregar fotografías</div><div className="mt-1 text-[10px] text-slate-500">{draft.photoNames.length ? String(draft.photoNames.length) + ' archivo(s)' : 'JPG/PNG desde cámara o galería'}</div><input type="file" accept="image/*" multiple className="hidden" onChange={(e)=>update({photoNames:e.target.files ? Array.from(e.target.files).map((f: File)=>f.name) : []})}/></label>
-            <label className="cursor-pointer rounded-xl border border-dashed border-[#334155] bg-[#0b1220] p-5 text-center"><Mic className="mx-auto h-6 w-6 text-amber-400"/><div className="mt-2 text-xs font-semibold text-white">Nota de voz</div><div className="mt-1 text-[10px] text-slate-500">{draft.audioName || 'Audio opcional'}</div><input type="file" accept="audio/*" className="hidden" onChange={(e)=>update({audioName:e.target.files?.[0]?.name})}/></label>
+            <label className="cursor-pointer rounded-xl border border-dashed border-[#334155] bg-[#0b1220] p-5 text-center"><Camera className="mx-auto h-6 w-6 text-blue-400"/><div className="mt-2 text-xs font-semibold text-white">Agregar fotografías</div><div className="mt-1 text-[10px] text-slate-500">{draft.photoNames.length ? String(draft.photoNames.length) + ' archivo(s)' : 'JPG/PNG desde cámara o galería'}</div><input type="file" accept="image/*" multiple className="hidden" onChange={(e)=>{ const files=e.target.files ? Array.from(e.target.files) : []; setPhotoFiles(files); update({photoNames:files.map((file)=>file.name)}); }}/></label>
+            <label className="cursor-pointer rounded-xl border border-dashed border-[#334155] bg-[#0b1220] p-5 text-center"><Mic className="mx-auto h-6 w-6 text-amber-400"/><div className="mt-2 text-xs font-semibold text-white">Nota de voz</div><div className="mt-1 text-[10px] text-slate-500">{draft.audioName || 'Audio opcional'}</div><input type="file" accept="audio/*" className="hidden" onChange={(e)=>{ const file=e.target.files?.[0] || null; setAudioFile(file); update({audioName:file?.name}); }}/></label>
           </div>
           <div className="rounded-lg border border-amber-900/40 bg-amber-950/20 p-3 text-[11px] text-amber-200">El borrador conserva metadatos de evidencia. La carga binaria se activará con Storage productivo para evitar duplicaciones.</div>
         </div>}
@@ -131,10 +169,16 @@ export const RegistrarVisitaView: React.FC<Props> = ({ projects, onBack }) => {
             <Summary label="Incidencia" value={draft.hasIncident ? 'Sí · Pendiente' : 'No'}/>
             <Summary label="ID del registro" value={draft.id}/>
           </div>
+          {!visitWritesEnabled && <div className="rounded-lg border border-amber-800/60 bg-amber-950/20 p-3 text-xs text-amber-200">La escritura productiva está preparada pero permanece desactivada en este preview. El borrador local sí está disponible.</div>}
           {saved && <div className="rounded-lg border border-emerald-800/60 bg-emerald-950/20 p-3 text-xs text-emerald-300">{saved}</div>}
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
             <button onClick={saveLocal} className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#334155] bg-[#172235] px-4 py-2 text-xs font-semibold text-slate-200"><Save className="h-4 w-4"/>Guardar borrador local</button>
-            <button disabled title="Se habilitará al validar escritura y sincronización productiva." className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-blue-600/40 px-4 py-2 text-xs font-semibold text-blue-200 opacity-60"><Check className="h-4 w-4"/>Guardar visita</button>
+            <button
+              disabled={!visitWritesEnabled || saving || !draft.projectId}
+              onClick={() => void saveProduction()}
+              title={visitWritesEnabled ? 'Guardar visita en Supabase usando el mismo ID del borrador.' : 'Escritura productiva desactivada hasta validar el preview.'}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-blue-600/40 disabled:text-blue-200 disabled:opacity-60"
+            ><Check className="h-4 w-4"/>{saving ? 'Guardando…' : 'Guardar visita'}</button>
           </div>
         </div>}
       </section>

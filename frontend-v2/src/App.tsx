@@ -173,7 +173,7 @@ export default function App() {
       case 'modo_campo':
         return <ModoCampoView visits={visits} projects={projects} onOpenProject={openProject} />;
       case 'presupuestos':
-        return <PresupuestosView projects={projects} amendments={[]} onNavigate={(module) => handleNavigate(module)} />;
+        return <PresupuestosView projects={projects} onNavigate={(module, extra) => handleNavigate(module, extra)} />;
       case 'compras':
         return <ComprasView projects={projects} onNavigate={(module, extra) => handleNavigate(module, extra)} />;
       case 'auditoria':

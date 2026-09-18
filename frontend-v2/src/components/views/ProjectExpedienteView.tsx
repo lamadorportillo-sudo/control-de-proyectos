@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ArrowLeft, FileText, Receipt, ShieldCheck, AlertOctagon, Camera, WalletCards, ClipboardList } from 'lucide-react';
 import type { Project, Contract, Estimate, Guarantee, Deficiency, DocumentEvidence, FieldVisit } from '../../types.ts';
 import { formatLempiras, formatPercent, formatDateSpanish } from '../../services/calculationService.ts';
+import { getEvidenceAccessUrl } from '../../services/evidenceAccessService.ts';
 
 interface ProjectExpedienteViewProps {
   project: Project;
@@ -27,6 +28,8 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
   onBack,
 }) => {
   const [tab, setTab] = useState<TabId>('resumen');
+  const [openingDocId, setOpeningDocId] = useState<string | null>(null);
+  const [documentError, setDocumentError] = useState('');
   const projectContracts = useMemo(() => contracts.filter((x) => x.projectId === project.id), [contracts, project.id]);
   const projectEstimates = useMemo(() => estimates.filter((x) => x.projectId === project.id), [estimates, project.id]);
   const projectGuarantees = useMemo(() => guarantees.filter((x) => x.projectId === project.id), [guarantees, project.id]);
@@ -34,6 +37,19 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
   const projectDocuments = useMemo(() => documents.filter((x) => x.projectId === project.id), [documents, project.id]);
   const projectVisits = useMemo(() => visits.filter((x) => x.projectId === project.id), [visits, project.id]);
   const contract = projectContracts[0];
+
+  const openEvidence = async (id: string) => {
+    setOpeningDocId(id);
+    setDocumentError('');
+    try {
+      const url = await getEvidenceAccessUrl(id);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (error: any) {
+      setDocumentError(String(error?.message || 'No fue posible abrir la evidencia.'));
+    } finally {
+      setOpeningDocId(null);
+    }
+  };
 
   const tabs: { id: TabId; label: string; count?: number }[] = [
     { id: 'resumen', label: 'Resumen' },
@@ -145,7 +161,8 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
 
       {tab === 'documentos' && (
         <Section icon={ClipboardList} title="Documentos y evidencias">
-          {projectDocuments.length === 0 ? <Empty text="No hay documentos o evidencias vinculadas." /> : <div className="space-y-2">{projectDocuments.map((d) => <div key={d.id} className="flex items-center justify-between gap-3 rounded-lg border border-[#243247] bg-[#0b1220] p-3"><div className="min-w-0"><div className="truncate text-xs font-semibold text-white">{d.title || d.fileName}</div><div className="mt-0.5 text-[10px] text-slate-500">{d.typeLabel} · {formatDateSpanish(d.uploadDate)}</div></div>{d.url && <a href={d.url} target="_blank" rel="noreferrer" className="text-xs font-semibold text-blue-400 hover:text-blue-300">Abrir</a>}</div>)}</div>}
+          {documentError && <div className="mb-3 rounded-lg border border-amber-800/60 bg-amber-950/25 p-3 text-xs text-amber-200">{documentError}</div>}
+          {projectDocuments.length === 0 ? <Empty text="No hay documentos o evidencias vinculadas." /> : <div className="space-y-2">{projectDocuments.map((d) => <div key={d.id} className="flex items-center justify-between gap-3 rounded-lg border border-[#243247] bg-[#0b1220] p-3"><div className="min-w-0"><div className="truncate text-xs font-semibold text-white">{d.title || d.fileName}</div><div className="mt-0.5 text-[10px] text-slate-500">{d.typeLabel} · {formatDateSpanish(d.uploadDate)}</div></div><button onClick={() => void openEvidence(d.id)} disabled={openingDocId === d.id} className="text-xs font-semibold text-blue-400 hover:text-blue-300 disabled:opacity-50">{openingDocId === d.id ? 'Abriendo…' : 'Abrir'}</button></div>)}</div>}
         </Section>
       )}
     </div>

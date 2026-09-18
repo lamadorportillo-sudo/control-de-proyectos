@@ -9,6 +9,7 @@ import { InicioView } from './components/views/InicioView.tsx';
 import { ProjectsView } from './components/views/ProjectsView.tsx';
 import { ProjectExpedienteView } from './components/views/ProjectExpedienteView.tsx';
 import { ContratosView } from './components/views/ContratosView.tsx';
+import { ContratistasView } from './components/views/ContratistasView.tsx';
 import { EstimacionesView } from './components/views/EstimacionesView.tsx';
 import { GarantiasView } from './components/views/GarantiasView.tsx';
 import { DeficienciasView } from './components/views/DeficienciasView.tsx';
@@ -84,7 +85,7 @@ export default function App() {
     // Los módulos pesados se consultan solamente cuando se necesitan.
     const loadModuleData = async () => {
       try {
-        if (currentModule === 'contratos' && contracts.length === 0) {
+        if ((currentModule === 'contratos' || currentModule === 'contratistas') && contracts.length === 0) {
           setContracts(await dataRepository.getContracts());
         } else if (currentModule === 'estimaciones' && estimates.length === 0) {
           setEstimates(await dataRepository.getEstimates());
@@ -208,6 +209,8 @@ export default function App() {
         return <ProjectsView projects={projects} onOpenProject={openProject} initialQuery={searchQuery} />;
       case 'contratos':
         return <ContratosView contracts={contracts} projects={projects} onOpenProject={openProject} />;
+      case 'contratistas':
+        return <ContratistasView contracts={contracts} projects={projects} onOpenProject={openProject} />;
       case 'estimaciones':
         return <EstimacionesView estimates={estimates} projects={projects} onOpenProject={openProject} />;
       case 'garantias':

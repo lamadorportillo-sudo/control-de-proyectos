@@ -233,3 +233,24 @@ test('V2 bloquea lecturas de datos cuando no existe sesión productiva', async (
   await page.waitForTimeout(500);
   expect(capture.restRequests).toBe(0);
 });
+
+
+test('V2 no desborda horizontalmente en anchos oficiales', async ({ page }) => {
+  const token = makeJwt();
+  const capture = { token, restRequests: 0 };
+  await seedProductionSession(page, token);
+  await mockSupabase(page, capture);
+
+  const widths = [360, 480, 768, 1024, 1440];
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByText('Control Contractual').first()).toBeVisible();
+    const overflow = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+    expect(overflow.scrollWidth, `overflow horizontal a ${width}px`).toBeLessThanOrEqual(overflow.clientWidth + 2);
+    await expect(page.getByRole('button', { name: 'Abrir ZORDON' }).first()).toBeVisible();
+  }
+});

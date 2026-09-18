@@ -252,7 +252,7 @@ function mapDocument(row: Row): DocumentEvidence {
     uploadDate: dateOnly(row.created_at),
     uploadedBy: s(raw.uploadedBy || ''),
     version: n(raw.version, 1),
-    url: s(row.storage_path || '') || undefined,
+    url: undefined,
   };
 }
 

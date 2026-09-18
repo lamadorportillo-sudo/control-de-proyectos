@@ -19,6 +19,8 @@ import { DocumentosView } from './components/views/DocumentosView.tsx';
 import { TransparenciaView } from './components/views/TransparenciaView.tsx';
 import { ReportesView } from './components/views/ReportesView.tsx';
 import { ModoCampoView } from './components/views/ModoCampoView.tsx';
+import { VisitasView } from './components/views/VisitasView.tsx';
+import { VisitDetailView } from './components/views/VisitDetailView.tsx';
 import { RegistrarVisitaView } from './components/views/RegistrarVisitaView.tsx';
 import { PresupuestosView } from './components/views/PresupuestosView.tsx';
 import { ComprasView } from './components/views/ComprasView.tsx';
@@ -32,6 +34,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedDeficiencyId, setSelectedDeficiencyId] = useState<string | null>(null);
+  const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isZordonOpen, setIsZordonOpen] = useState(false);
@@ -100,9 +103,9 @@ export default function App() {
           setEstimates(await dataRepository.getEstimates());
         } else if (currentModule === 'garantias' && guarantees.length === 0) {
           setGuarantees(await dataRepository.getGuarantees());
-        } else if ((currentModule === 'documentos' || currentModule === 'convenios' || (currentModule === 'deficiencias' && selectedDeficiencyId)) && documents.length === 0) {
+        } else if ((currentModule === 'documentos' || currentModule === 'convenios' || (currentModule === 'deficiencias' && selectedDeficiencyId) || (currentModule === 'visitas' && selectedVisitId)) && documents.length === 0) {
           setDocuments(await dataRepository.getDocuments());
-        } else if (currentModule === 'modo_campo' && visits.length === 0) {
+        } else if ((currentModule === 'modo_campo' || currentModule === 'visitas') && visits.length === 0) {
           setVisits(await dataRepository.getFieldVisits());
         } else if (currentModule === 'transparencia') {
           const tasks: Promise<any>[] = [];
@@ -118,7 +121,7 @@ export default function App() {
     };
 
     void loadModuleData();
-  }, [currentModule, selectedDeficiencyId, contracts.length, estimates.length, guarantees.length, documents.length, visits.length]);
+  }, [currentModule, selectedDeficiencyId, selectedVisitId, contracts.length, estimates.length, guarantees.length, documents.length, visits.length]);
 
   useEffect(() => {
     if (!selectedProjectId) return;
@@ -153,6 +156,11 @@ export default function App() {
     [deficiencies, selectedDeficiencyId]
   );
 
+  const selectedVisit = useMemo(
+    () => visits.find((item) => item.id === selectedVisitId) || null,
+    [visits, selectedVisitId]
+  );
+
   const handleNavigate = (module: AppModule, extra?: any) => {
     setCurrentModule(module);
     setIsMobileSidebarOpen(false);
@@ -164,9 +172,13 @@ export default function App() {
 
     if (module !== 'proyectos') setSelectedProjectId(null);
     if (module !== 'deficiencias') setSelectedDeficiencyId(null);
+    if (module !== 'visitas') setSelectedVisitId(null);
 
     if (module === 'deficiencias' && extra?.deficiencyId) {
       setSelectedDeficiencyId(String(extra.deficiencyId));
+    }
+    if (module === 'visitas' && extra?.visitId) {
+      setSelectedVisitId(String(extra.visitId));
     }
   };
 
@@ -258,6 +270,23 @@ export default function App() {
         return <ReportesView projects={projects} onOpenProject={openProject} />;
       case 'transparencia':
         return <TransparenciaView projects={projects} contracts={contracts} estimates={estimates} guarantees={guarantees} deficiencies={deficiencies} documents={documents} />;
+      case 'visitas':
+        return selectedVisit ? (
+          <VisitDetailView
+            visit={selectedVisit}
+            project={projects.find((p) => p.id === selectedVisit.projectId)}
+            documents={documents}
+            deficiencies={deficiencies}
+            onBack={() => setSelectedVisitId(null)}
+          />
+        ) : (
+          <VisitasView
+            visits={visits}
+            projects={projects}
+            onOpenVisit={setSelectedVisitId}
+            onNewVisit={() => handleNavigate('registrar_visita')}
+          />
+        );
       case 'modo_campo':
         return <ModoCampoView visits={visits} projects={projects} onOpenProject={openProject} onNewVisit={() => handleNavigate('registrar_visita')} />;
       case 'registrar_visita':

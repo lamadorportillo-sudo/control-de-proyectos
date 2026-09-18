@@ -33,6 +33,7 @@ export const TransparenciaView: React.FC<TransparenciaViewProps> = ({ projects, 
   const [month, setMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
   const [selected, setSelected] = useState<CategoryId[]>([]);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  const [format, setFormat] = useState<'PORTAL_WEB' | 'PDF' | 'ZIP'>('PORTAL_WEB');
   const [sourceCounts, setSourceCounts] = useState({ agreements: 0, procurement: 0 });
 
   useEffect(() => {
@@ -109,15 +110,40 @@ export const TransparenciaView: React.FC<TransparenciaViewProps> = ({ projects, 
         </div>
       </div>
 
+      <div className="rounded-xl border border-[#1f2e45] bg-[#111827] p-4">
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Formato de salida</div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {[
+            ['PORTAL_WEB', 'Portal web'],
+            ['PDF', 'PDF'],
+            ['ZIP', 'ZIP'],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              onClick={() => { setFormat(id as 'PORTAL_WEB' | 'PDF' | 'ZIP'); setGeneratedAt(null); }}
+              className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+                format === id
+                  ? 'border-blue-600 bg-blue-950/40 text-blue-300'
+                  : 'border-[#243247] bg-[#0b1220] text-slate-400 hover:text-white'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="flex flex-col gap-3 rounded-xl border border-[#1f2e45] bg-[#111827] p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-xs text-slate-400"><strong className="text-white">{selected.length}</strong> categoría(s) seleccionada(s) para <strong className="text-white">{month || 'mes no definido'}</strong>.</div>
-        <button disabled={selected.length === 0 || !month} onClick={generate} className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"><PackageCheck className="h-4 w-4" />Generar vista del portal</button>
+        <div className="text-xs text-slate-400">
+          <strong className="text-white">{selected.length}</strong> categoría(s) seleccionada(s) para <strong className="text-white">{month || 'mes no definido'}</strong> · <strong className="text-white">{format === 'PORTAL_WEB' ? 'Portal web' : format}</strong>.
+        </div>
+        <button disabled={selected.length === 0 || !month} onClick={generate} className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"><PackageCheck className="h-4 w-4" />Generar vista seleccionada</button>
       </div>
 
       {generatedAt && (
         <div className="rounded-xl border border-emerald-800/60 bg-emerald-950/20 p-4">
           <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-300">Portal preparado para revisión</h3>
-          <p className="mt-1 text-[11px] text-slate-400">La V2 ya respeta la selección: no añade KPIs ni categorías no marcadas. La exportación ZIP/PDF se conectará al generador productivo existente antes de publicar.</p>
+          <p className="mt-1 text-[11px] text-slate-400">La V2 respeta exactamente la selección: no añade KPIs ni categorías no marcadas. Formato preparado: <strong className="text-slate-200">{format === 'PORTAL_WEB' ? 'Portal web' : format}</strong>. La publicación final seguirá usando el backend productivo existente.</p>
           <div className="mt-3 flex flex-wrap gap-2">{selected.map((id) => <span key={id} className="rounded bg-emerald-950/50 px-2 py-1 text-[10px] font-semibold text-emerald-200">{CATEGORIES.find((c) => c.id === id)?.label}</span>)}</div>
         </div>
       )}

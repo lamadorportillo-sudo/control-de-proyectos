@@ -15,6 +15,7 @@ export interface GeneratedReportRecord {
   publicAccessEnabled: boolean;
   publicAccessExpiresAt?: string;
   publicViewCount: number;
+  publicUrl?: string;
 }
 
 const s = (value: unknown, fallback = '') =>
@@ -33,7 +34,7 @@ export async function getGeneratedReports(): Promise<GeneratedReportRecord[]> {
 
   const { data, error } = await supabase
     .from('generated_reports')
-    .select('id,project_id,report_type,title,format,file_name,size_bytes,evidence_count,created_at,version,lifecycle_status,public_access_enabled,public_access_expires_at,public_view_count')
+    .select('id,project_id,report_type,title,format,file_name,size_bytes,evidence_count,created_at,version,lifecycle_status,public_access_enabled,public_access_expires_at,public_view_count,public_token')
     .order('created_at', { ascending: false })
     .limit(250);
 
@@ -54,5 +55,9 @@ export async function getGeneratedReports(): Promise<GeneratedReportRecord[]> {
     publicAccessEnabled: Boolean(row.public_access_enabled),
     publicAccessExpiresAt: s(row.public_access_expires_at || '') || undefined,
     publicViewCount: n(row.public_view_count),
+    publicUrl:
+      row.public_access_enabled && row.public_token
+        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/document-public?t=${encodeURIComponent(String(row.public_token))}`
+        : undefined,
   }));
 }

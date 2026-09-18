@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FileSpreadsheet, CheckSquare2, Square, PackageCheck, CalendarDays } from 'lucide-react';
 import type { Project, Contract, Estimate, Guarantee, Deficiency, DocumentEvidence } from '../../types.ts';
+import { getTransparencySourceCounts } from '../../services/transparencyMetricsService.ts';
 
 interface TransparenciaViewProps {
   projects: Project[];
@@ -32,6 +33,13 @@ export const TransparenciaView: React.FC<TransparenciaViewProps> = ({ projects, 
   const [month, setMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
   const [selected, setSelected] = useState<CategoryId[]>(['projects', 'contracts', 'payments']);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  const [sourceCounts, setSourceCounts] = useState({ agreements: 0, procurement: 0 });
+
+  useEffect(() => {
+    void getTransparencySourceCounts()
+      .then(setSourceCounts)
+      .catch((error) => console.warn('Fuentes de transparencia:', error));
+  }, []);
 
   const toggle = (id: CategoryId) => {
     setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
@@ -40,8 +48,8 @@ export const TransparenciaView: React.FC<TransparenciaViewProps> = ({ projects, 
   const counts = useMemo<Record<CategoryId, number>>(() => ({
     projects: projects.filter((p) => p.status === 'EN_EJECUCION').length,
     contracts: contracts.length,
-    agreements: 0,
-    procurement: 0,
+    agreements: sourceCounts.agreements,
+    procurement: sourceCounts.procurement,
     purchases: 0,
     payments: estimates.length,
     certificates: 0,
@@ -49,7 +57,7 @@ export const TransparenciaView: React.FC<TransparenciaViewProps> = ({ projects, 
     guarantees: guarantees.length,
     deficiencies: deficiencies.length,
     monthly_reports: 0,
-  }), [projects, contracts, estimates, guarantees, deficiencies, documents]);
+  }), [projects, contracts, estimates, guarantees, deficiencies, documents, sourceCounts]);
 
   const generate = () => {
     if (selected.length === 0) return;

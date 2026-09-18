@@ -14,6 +14,7 @@ import { ConveniosView } from './components/views/ConveniosView.tsx';
 import { EstimacionesView } from './components/views/EstimacionesView.tsx';
 import { GarantiasView } from './components/views/GarantiasView.tsx';
 import { DeficienciasView } from './components/views/DeficienciasView.tsx';
+import { DeficiencyDetailView } from './components/views/DeficiencyDetailView.tsx';
 import { DocumentosView } from './components/views/DocumentosView.tsx';
 import { TransparenciaView } from './components/views/TransparenciaView.tsx';
 import { ReportesView } from './components/views/ReportesView.tsx';
@@ -30,6 +31,7 @@ export default function App() {
   const [currentModule, setCurrentModule] = useState<AppModule>('inicio');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedDeficiencyId, setSelectedDeficiencyId] = useState<string | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isZordonOpen, setIsZordonOpen] = useState(false);
@@ -98,7 +100,7 @@ export default function App() {
           setEstimates(await dataRepository.getEstimates());
         } else if (currentModule === 'garantias' && guarantees.length === 0) {
           setGuarantees(await dataRepository.getGuarantees());
-        } else if ((currentModule === 'documentos' || currentModule === 'convenios') && documents.length === 0) {
+        } else if ((currentModule === 'documentos' || currentModule === 'convenios' || (currentModule === 'deficiencias' && selectedDeficiencyId)) && documents.length === 0) {
           setDocuments(await dataRepository.getDocuments());
         } else if (currentModule === 'modo_campo' && visits.length === 0) {
           setVisits(await dataRepository.getFieldVisits());
@@ -116,7 +118,7 @@ export default function App() {
     };
 
     void loadModuleData();
-  }, [currentModule, contracts.length, estimates.length, guarantees.length, documents.length, visits.length]);
+  }, [currentModule, selectedDeficiencyId, contracts.length, estimates.length, guarantees.length, documents.length, visits.length]);
 
   useEffect(() => {
     if (!selectedProjectId) return;
@@ -146,6 +148,11 @@ export default function App() {
     [projects, selectedProjectId]
   );
 
+  const selectedDeficiency = useMemo(
+    () => deficiencies.find((item) => item.id === selectedDeficiencyId) || null,
+    [deficiencies, selectedDeficiencyId]
+  );
+
   const handleNavigate = (module: AppModule, extra?: any) => {
     setCurrentModule(module);
     setIsMobileSidebarOpen(false);
@@ -156,6 +163,11 @@ export default function App() {
     }
 
     if (module !== 'proyectos') setSelectedProjectId(null);
+    if (module !== 'deficiencias') setSelectedDeficiencyId(null);
+
+    if (module === 'deficiencias' && extra?.deficiencyId) {
+      setSelectedDeficiencyId(String(extra.deficiencyId));
+    }
   };
 
   const submitSearch = () => {
@@ -225,7 +237,21 @@ export default function App() {
       case 'garantias':
         return <GarantiasView guarantees={guarantees} projects={projects} onOpenProject={openProject} />;
       case 'deficiencias':
-        return <DeficienciasView deficiencies={deficiencies} projects={projects} onOpenProject={openProject} />;
+        return selectedDeficiency ? (
+          <DeficiencyDetailView
+            deficiency={selectedDeficiency}
+            project={projects.find((p) => p.id === selectedDeficiency.projectId)}
+            documents={documents}
+            onBack={() => setSelectedDeficiencyId(null)}
+          />
+        ) : (
+          <DeficienciasView
+            deficiencies={deficiencies}
+            projects={projects}
+            onOpenProject={openProject}
+            onOpenDeficiency={setSelectedDeficiencyId}
+          />
+        );
       case 'documentos':
         return <DocumentosView documents={documents} projects={projects} />;
       case 'reportes':

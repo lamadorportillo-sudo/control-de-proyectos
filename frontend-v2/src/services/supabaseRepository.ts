@@ -236,21 +236,67 @@ function mapVisit(row: Row): FieldVisit {
 
 function mapDocument(row: Row): DocumentEvidence {
   const raw = row.analysis || {};
+  const title = s(raw.title || row.file_name || 'Evidencia');
+  const classification = [
+    row.evidence_type,
+    row.file_name,
+    raw.documentType,
+    raw.document_type,
+    raw.type,
+    raw.category,
+    raw.title,
+    row.extracted_text,
+  ].map((value) => s(value)).join(' ').toLowerCase();
+
+  let type: DocumentEvidence['type'] = 'OTRO';
+  let typeLabel = s(raw.documentType || raw.document_type || row.evidence_type || 'Evidencia');
+
+  if (/\b(convenio|adenda|modificatorio)\b/.test(classification)) {
+    type = 'CONVENIO';
+    typeLabel = 'Convenio';
+  } else if (/\bcontrato\b/.test(classification)) {
+    type = 'CONTRATO';
+    typeLabel = 'Contrato';
+  } else if (/\bestimaci[oó]n\b/.test(classification)) {
+    type = 'ESTIMACION';
+    typeLabel = 'Estimación';
+  } else if (/orden.{0,8}pago|orden_de_pago/.test(classification)) {
+    type = 'ORDEN_PAGO';
+    typeLabel = 'Orden de pago';
+  } else if (/p[oó]liza|fianza|garant[ií]a/.test(classification)) {
+    type = 'POLIZA';
+    typeLabel = 'Póliza / garantía';
+  } else if (/\bplano\b|\.dwg\b|\.dxf\b/.test(classification)) {
+    type = 'PLANO';
+    typeLabel = 'Plano';
+  } else if (/\binforme\b|reporte/.test(classification)) {
+    type = 'INFORME';
+    typeLabel = 'Informe';
+  } else if (/\bacta\b/.test(classification)) {
+    type = 'ACTA';
+    typeLabel = 'Acta';
+  } else if (/bit[aá]cora/.test(classification)) {
+    type = 'BITACORA';
+    typeLabel = 'Bitácora';
+  } else if (/image|photo|foto|fotograf/i.test(classification)) {
+    type = 'FOTOGRAFIA';
+    typeLabel = 'Fotografía';
+  } else if (/audio|voice|nota de voz/i.test(classification)) {
+    type = 'AUDIO';
+    typeLabel = 'Audio';
+  }
+
   return {
     id: s(row.id),
     projectId: s(row.project_id || ''),
     visitId: s(row.visit_id || '') || undefined,
-    type: /image|photo/i.test(s(row.evidence_type))
-      ? 'FOTOGRAFIA'
-      : /audio/i.test(s(row.evidence_type))
-        ? 'AUDIO'
-        : 'OTRO',
-    typeLabel: s(row.evidence_type || 'Evidencia'),
-    title: s(raw.title || row.file_name || 'Evidencia'),
+    type,
+    typeLabel,
+    title,
     fileName: s(row.file_name || ''),
     fileSize: row.size_bytes ? `${row.size_bytes} bytes` : '',
     uploadDate: dateOnly(row.created_at),
-    uploadedBy: s(raw.uploadedBy || ''),
+    uploadedBy: s(raw.uploadedBy || raw.uploaded_by || ''),
     version: n(raw.version, 1),
     url: undefined,
   };

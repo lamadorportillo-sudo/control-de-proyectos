@@ -303,4 +303,5 @@ export type AppModule =
   | 'auditoria'
   | 'configuracion'
   | 'modo_campo'
+  | 'registrar_visita'
   | 'busqueda';

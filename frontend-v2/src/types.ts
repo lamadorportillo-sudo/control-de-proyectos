@@ -295,6 +295,7 @@ export type AppModule =
   | 'presupuestos'
   | 'estimaciones'
   | 'garantias'
+  | 'visitas'
   | 'compras'
   | 'deficiencias'
   | 'documentos'

@@ -18,6 +18,7 @@ import { DocumentosView } from './components/views/DocumentosView.tsx';
 import { TransparenciaView } from './components/views/TransparenciaView.tsx';
 import { ReportesView } from './components/views/ReportesView.tsx';
 import { ModoCampoView } from './components/views/ModoCampoView.tsx';
+import { RegistrarVisitaView } from './components/views/RegistrarVisitaView.tsx';
 import { PresupuestosView } from './components/views/PresupuestosView.tsx';
 import { ComprasView } from './components/views/ComprasView.tsx';
 import { AuditoriaView } from './components/views/AuditoriaView.tsx';
@@ -232,7 +233,9 @@ export default function App() {
       case 'transparencia':
         return <TransparenciaView projects={projects} contracts={contracts} estimates={estimates} guarantees={guarantees} deficiencies={deficiencies} documents={documents} />;
       case 'modo_campo':
-        return <ModoCampoView visits={visits} projects={projects} onOpenProject={openProject} />;
+        return <ModoCampoView visits={visits} projects={projects} onOpenProject={openProject} onNewVisit={() => handleNavigate('registrar_visita')} />;
+      case 'registrar_visita':
+        return <RegistrarVisitaView projects={projects} onBack={() => handleNavigate('modo_campo')} />;
       case 'presupuestos':
         return <PresupuestosView projects={projects} onNavigate={(module, extra) => handleNavigate(module, extra)} />;
       case 'compras':

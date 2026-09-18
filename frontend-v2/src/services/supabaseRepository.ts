@@ -284,7 +284,25 @@ function mapAlertToDeficiency(row: Row): Deficiency {
     verifiedDate: closed ? dateOnly(row.resolved_at) : undefined,
     closedDate: closed ? dateOnly(row.resolved_at) : undefined,
     evidenceUrls: [],
-    history: [],
+    linkedVisitId: /VISIT/i.test(s(row.source_type)) && row.source_id ? s(row.source_id) : undefined,
+    history: [
+      row.first_detected_at ? {
+        timestamp: s(row.first_detected_at),
+        action: 'Detectada',
+        user: 'Sistema',
+        comment: s(row.message || ''),
+      } : null,
+      row.acknowledged_at ? {
+        timestamp: s(row.acknowledged_at),
+        action: 'Reconocida',
+        user: s(row.acknowledged_by || 'Usuario'),
+      } : null,
+      row.resolved_at ? {
+        timestamp: s(row.resolved_at),
+        action: 'Cerrada',
+        user: 'Sistema',
+      } : null,
+    ].filter(Boolean) as Deficiency['history'],
   };
 }
 

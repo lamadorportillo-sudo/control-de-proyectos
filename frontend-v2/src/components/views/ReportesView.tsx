@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BarChart3, Search, RefreshCw, FileText, Eye, ExternalLink } from 'lucide-react';
+import { BarChart3, Search, RefreshCw, FileText, Eye, ExternalLink, Printer, Download } from 'lucide-react';
 import type { Project } from '../../types.ts';
 import { getGeneratedReports, type GeneratedReportRecord } from '../../services/reportService.ts';
-import { formatDateSpanish } from '../../services/calculationService.ts';
+import { formatDateSpanish, formatLempiras } from '../../services/calculationService.ts';
 
 interface ReportesViewProps {
   projects: Project[];
@@ -29,6 +29,76 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
 
   useEffect(() => { void load(); }, []);
 
+  const executionProjects = useMemo(
+    () => projects.filter((project) => project.status === 'EN_EJECUCION'),
+    [projects]
+  );
+
+  const exportExecutionCsv = () => {
+    const header = ['Código','Proyecto','Ubicación','Avance físico','Avance financiero','Presupuesto vigente','Fuente'];
+    const rows = executionProjects.map((project) => [
+      project.code,
+      project.name,
+      project.location,
+      `${project.physicalProgress.toFixed(2)}%`,
+      `${project.financialProgress.toFixed(2)}%`,
+      project.revisedBudget.toFixed(2),
+      project.fundingSource,
+    ]);
+    const csv = [header, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `reporte_proyectos_en_ejecucion_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const printExecutionReport = () => {
+    const popup = window.open('', '_blank', 'noopener,noreferrer');
+    if (!popup) return;
+
+    const esc = (value: unknown) => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
+    const rows = executionProjects.map((project) => `
+      <tr>
+        <td>${esc(project.code)}</td>
+        <td>${esc(project.name)}</td>
+        <td>${esc(project.location)}</td>
+        <td class="num">${esc(project.physicalProgress.toFixed(2))}%</td>
+        <td class="num">${esc(project.financialProgress.toFixed(2))}%</td>
+        <td class="num">${esc(formatLempiras(project.revisedBudget))}</td>
+      </tr>`
+    ).join('');
+
+    popup.document.write(`<!doctype html>
+      <html lang="es"><head><meta charset="utf-8"><title>Proyectos en ejecución</title>
+      <style>
+        body{font-family:Arial,sans-serif;color:#111827;margin:28px}
+        h1{font-size:20px;margin:0 0 4px}.meta{color:#64748b;font-size:11px;margin-bottom:18px}
+        table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #cbd5e1;padding:7px;vertical-align:top}
+        th{background:#e2e8f0;text-align:left}.num{text-align:right;white-space:nowrap}
+        @media print{body{margin:10mm}}
+      </style></head><body>
+      <h1>Reporte de proyectos en ejecución</h1>
+      <div class="meta">Control Contractual · Generado ${esc(new Date().toLocaleString('es-HN'))} · ${executionProjects.length} proyecto(s)</div>
+      <table><thead><tr><th>Código</th><th>Proyecto</th><th>Ubicación</th><th>Avance físico</th><th>Avance financiero</th><th>Presupuesto vigente</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="6">No hay proyectos en ejecución.</td></tr>'}</tbody></table>
+      <script>window.onload=()=>window.print();<\/script>
+      </body></html>`);
+    popup.document.close();
+  };
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return records;
@@ -50,6 +120,34 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
         <p className="mt-1 text-xs text-slate-400">
           Consulta de reportes realmente generados en el backend productivo. Esta pantalla no fabrica archivos ni registros.
         </p>
+      </div>
+
+      <div className="rounded-xl border border-blue-800/40 bg-blue-950/20 p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="text-sm font-bold text-white">Reporte de proyectos en ejecución</div>
+            <div className="mt-1 text-[11px] text-slate-400">
+              Usa los proyectos productivos actualmente clasificados como En ejecución. No crea registros ficticios.
+            </div>
+            <div className="mt-2 text-xs font-semibold text-blue-300">
+              {executionProjects.length} proyecto(s) incluidos
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={printExecutionReport}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500"
+            >
+              <Printer className="h-3.5 w-3.5" /> Imprimir / Guardar PDF
+            </button>
+            <button
+              onClick={exportExecutionCsv}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#243247] bg-[#172235] px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-[#1f2e45]"
+            >
+              <Download className="h-3.5 w-3.5" /> Exportar CSV
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="rounded-xl border border-[#1f2e45] bg-[#111827] p-3">

@@ -73,3 +73,11 @@ jobs:
         env:
           FRONTEND_V2_URL: http://127.0.0.1:4173/frontend-v2/dist/
         run: npx playwright test tests/frontend-v2-session-bridge-responsive.spec.cjs --workers=1 --retries=0
+
+      - name: Upload frontend-v2 preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-v2-preview
+          path: frontend-v2/dist
+          if-no-files-found: error
+          retention-days: 7

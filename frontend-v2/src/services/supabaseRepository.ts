@@ -259,11 +259,11 @@ function mapDocument(row: Row): DocumentEvidence {
 function mapAlertToDeficiency(row: Row): Deficiency {
   const severity = s(row.severity).toUpperCase();
   const sev: Deficiency['severity'] =
-    severity === 'CRITICAL'
+    /BLOQUEANTE/.test(severity)
       ? 'BLOQUEANTE'
-      : severity === 'HIGH'
+      : /CRITIC|URGENTE|VENCIDA|HIGH|ALTA/.test(severity)
         ? 'GRAVE'
-        : severity === 'MEDIUM'
+        : /ADVERTENCIA|MEDIUM|MEDIA/.test(severity)
           ? 'MODERADA'
           : 'LEVE';
   const closed = Boolean(row.resolved_at);
@@ -378,9 +378,22 @@ export class SupabaseDataRepository implements IDataRepository {
   }
 
   async getDeficiencies(projectId?: string): Promise<Deficiency[]> {
+    // Deficiencias de obra ≠ alertas administrativas/financieras.
+    // Solo se consumen fuentes que representan hallazgos técnicos/no conformidades.
+    const deficiencySources = [
+      'DEFICIENCY',
+      'FIELD_DEFICIENCY',
+      'SITE_DEFICIENCY',
+      'VISIT_DEFICIENCY',
+      'QUALITY_TEST',
+      'quality_tests',
+      'NONCONFORMITY',
+    ];
+
     let query = this.client()
       .from('alert_events')
       .select('*')
+      .in('source_type', deficiencySources)
       .order('last_evaluated_at', { ascending: false });
     if (projectId) query = query.eq('project_id', projectId);
     const { data, error } = await query;

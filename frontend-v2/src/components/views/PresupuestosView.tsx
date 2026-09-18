@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   DollarSign,
   Search,
@@ -12,20 +12,32 @@ import {
 } from 'lucide-react';
 import { Project, BudgetAmendment, AppModule } from '../../types.ts';
 import { formatLempiras, formatPercent, formatDateSpanish } from '../../services/calculationService.ts';
-import { appStore } from '../../services/storageService.ts';
+import { getBudgetAmendments } from '../../services/budgetService.ts';
 
 interface PresupuestosViewProps {
   projects: Project[];
-  amendments: BudgetAmendment[];
+  amendments?: BudgetAmendment[];
   onNavigate: (module: AppModule, extra?: any) => void;
 }
 
 export const PresupuestosView: React.FC<PresupuestosViewProps> = ({
   projects,
-  amendments,
+  amendments: suppliedAmendments,
   onNavigate,
 }) => {
   const [search, setSearch] = useState('');
+  const [amendments, setAmendments] = useState<BudgetAmendment[]>(suppliedAmendments || []);
+
+  useEffect(() => {
+    if (suppliedAmendments && suppliedAmendments.length > 0) {
+      setAmendments(suppliedAmendments);
+      return;
+    }
+    void getBudgetAmendments().then(setAmendments).catch((error) => {
+      console.warn('No se pudieron cargar movimientos presupuestarios:', error);
+      setAmendments([]);
+    });
+  }, [suppliedAmendments]);
 
   const totalAssigned = projects.reduce((acc, p) => acc + p.assignedBudget, 0);
   const totalRevised = projects.reduce((acc, p) => acc + p.revisedBudget, 0);

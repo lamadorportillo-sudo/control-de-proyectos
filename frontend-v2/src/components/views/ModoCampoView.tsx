@@ -8,11 +8,12 @@ interface ModoCampoViewProps {
   visits: FieldVisit[];
   projects: Project[];
   onOpenProject: (projectId: string) => void;
+  onNewVisit: () => void;
 }
 
 const norm = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
-export const ModoCampoView: React.FC<ModoCampoViewProps> = ({ visits, projects, onOpenProject }) => {
+export const ModoCampoView: React.FC<ModoCampoViewProps> = ({ visits, projects, onOpenProject, onNewVisit }) => {
   const [query, setQuery] = useState('');
   const q = norm(query.trim());
   const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
@@ -35,7 +36,7 @@ export const ModoCampoView: React.FC<ModoCampoViewProps> = ({ visits, projects, 
           <h2 className="flex items-center gap-2 text-xl font-bold text-white"><Smartphone className="h-5 w-5 text-amber-400" />Modo campo</h2>
           <p className="mt-1 text-xs text-slate-400">Visitas, evidencia y seguimiento desde obra. Preparado para celular y Telegram sin duplicar expedientes.</p>
         </div>
-        <button disabled className="inline-flex items-center gap-2 self-start rounded-lg border border-[#243247] bg-[#172235] px-3 py-2 text-xs font-semibold text-slate-500" title="La captura se habilitará cuando el flujo de escritura y sincronización quede validado"><Plus className="h-4 w-4" />Nueva visita</button>
+        <button onClick={onNewVisit} className="inline-flex items-center gap-2 self-start rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-amber-400"><Plus className="h-4 w-4" />Nueva visita</button>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

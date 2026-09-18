@@ -269,7 +269,7 @@ test('Registrar visita mantiene escritura productiva desactivada por defecto', a
   await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
 
   await page.locator('#btn-sidebar-modo-campo').click();
-  await expect(page.getByRole('heading', { name: 'Modo campo' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Modo campo', exact: true }).last()).toBeVisible();
   await page.getByRole('button', { name: 'Nueva visita' }).click();
 
   await expect(page.getByRole('heading', { name: 'Registrar visita de obra' })).toBeVisible();

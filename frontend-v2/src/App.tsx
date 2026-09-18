@@ -90,9 +90,15 @@ export default function App() {
     [projects, selectedProjectId]
   );
 
-  const handleNavigate = (module: AppModule) => {
+  const handleNavigate = (module: AppModule, extra?: any) => {
     setCurrentModule(module);
     setIsMobileSidebarOpen(false);
+
+    if (module === 'proyectos' && extra?.projectId) {
+      setSelectedProjectId(String(extra.projectId));
+      return;
+    }
+
     if (module !== 'proyectos') setSelectedProjectId(null);
   };
 
@@ -124,7 +130,7 @@ export default function App() {
       case 'inicio':
         return (
           <InicioView
-            onNavigate={(module) => handleNavigate(module)}
+            onNavigate={(module, extra) => handleNavigate(module, extra)}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onSearchSubmit={submitSearch}
@@ -169,7 +175,7 @@ export default function App() {
       case 'presupuestos':
         return <PresupuestosView projects={projects} amendments={[]} onNavigate={(module) => handleNavigate(module)} />;
       case 'compras':
-        return <ComprasView projects={projects} onNavigate={(module) => handleNavigate(module)} />;
+        return <ComprasView projects={projects} onNavigate={(module, extra) => handleNavigate(module, extra)} />;
       case 'auditoria':
         return <AuditoriaView auditLogs={auditLogs} onNavigate={(module) => handleNavigate(module)} />;
       case 'configuracion':
@@ -206,6 +212,7 @@ export default function App() {
         onViewportModeChange={setViewportMode}
         onToggleSidebar={() => setIsMobileSidebarOpen((value) => !value)}
         onOpenZordon={() => setIsZordonOpen(true)}
+        blockingDeficiencyCount={blockingDefs.length}
       />
 
       {loadError && (

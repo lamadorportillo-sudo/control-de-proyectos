@@ -3,6 +3,7 @@ import { FileText, Search, ExternalLink, Plus } from 'lucide-react';
 import type { DocumentEvidence, Project } from '../../types.ts';
 import { formatDateSpanish } from '../../services/calculationService.ts';
 import { getGeneratedReports, type GeneratedReportRecord } from '../../services/reportService.ts';
+import { getEvidenceAccessUrl } from '../../services/evidenceAccessService.ts';
 
 interface DocumentosViewProps {
   documents: DocumentEvidence[];
@@ -14,6 +15,8 @@ const norm = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/
 export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, projects }) => {
   const [query, setQuery] = useState('');
   const [reports, setReports] = useState<GeneratedReportRecord[]>([]);
+  const [openingId, setOpeningId] = useState<string | null>(null);
+  const [openError, setOpenError] = useState('');
 
   useEffect(() => {
     void getGeneratedReports()
@@ -37,6 +40,19 @@ export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, proje
     }).slice(0, 80);
   }, [reports, projects, q]);
 
+  const openEvidence = async (id: string) => {
+    setOpeningId(id);
+    setOpenError('');
+    try {
+      const url = await getEvidenceAccessUrl(id);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (error: any) {
+      setOpenError(String(error?.message || 'No fue posible abrir la evidencia.'));
+    } finally {
+      setOpeningId(null);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-6xl space-y-5 pb-12">
       <div className="flex items-start justify-between gap-3">
@@ -51,6 +67,8 @@ export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, proje
         <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Contrato, estimación, acta, fotografía, plano, proyecto…" className="w-full rounded-lg border border-[#243247] bg-[#0b1220] py-2.5 pl-9 pr-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-indigo-500" /></div>
         <div className="mt-2 text-[11px] text-slate-500">{q.length < 2 ? 'Escribe al menos 2 caracteres.' : `${results.length + reportResults.length} coincidencia(s).`}</div>
       </div>
+
+      {openError && <div className="rounded-lg border border-amber-800/60 bg-amber-950/25 p-3 text-xs text-amber-200">{openError}</div>}
 
       <div className="space-y-2">
         {reportResults.map((report) => {
@@ -85,7 +103,13 @@ export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, proje
                 <div className="mt-1.5 truncate text-xs font-semibold text-white">{doc.title || doc.fileName}</div>
                 <div className="mt-1 text-[10px] text-slate-500">{project?.name || 'Proyecto no identificado'} · {formatDateSpanish(doc.uploadDate)}</div>
               </div>
-              {doc.url ? <a href={doc.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-[#243247] bg-[#172235] px-2.5 py-1.5 text-[11px] font-semibold text-blue-300 hover:bg-[#1f2e45]">Abrir <ExternalLink className="h-3 w-3" /></a> : <span className="text-[10px] text-slate-600">Sin enlace público</span>}
+              <button
+                onClick={() => void openEvidence(doc.id)}
+                disabled={openingId === doc.id}
+                className="inline-flex items-center gap-1 rounded-lg border border-[#243247] bg-[#172235] px-2.5 py-1.5 text-[11px] font-semibold text-blue-300 hover:bg-[#1f2e45] disabled:opacity-50"
+              >
+                {openingId === doc.id ? 'Abriendo…' : 'Abrir'} <ExternalLink className="h-3 w-3" />
+              </button>
             </div>
           );
         })}

@@ -290,6 +290,7 @@ export type AppModule =
   | 'inicio'
   | 'proyectos'
   | 'contratos'
+  | 'contratistas'
   | 'presupuestos'
   | 'estimaciones'
   | 'garantias'

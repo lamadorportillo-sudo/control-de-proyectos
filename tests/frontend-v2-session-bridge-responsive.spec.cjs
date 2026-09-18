@@ -266,6 +266,24 @@ for (const viewport of [
   });
 }
 
+
+test('Transparencia inicia sin categorías preseleccionadas y permite elegir formato', async ({ page }) => {
+  const token = makeJwt();
+  const capture = { token, restRequests: 0 };
+
+  await seedProductionSession(page, token);
+  await mockSupabase(page, capture);
+  await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
+
+  await page.getByRole('button', { name: /Transparencia/i }).first().click();
+  await expect(page.getByText('Generador del Portal de Transparencia')).toBeVisible();
+  await expect(page.getByText(/0 categoría\(s\) seleccionada\(s\)/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Portal web' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'PDF' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'ZIP' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Generar vista seleccionada/i })).toBeDisabled();
+});
+
 test('V2 bloquea lecturas de datos cuando no existe sesión productiva', async ({ page }) => {
   const capture = { restRequests: 0 };
   await mockSupabase(page, capture);

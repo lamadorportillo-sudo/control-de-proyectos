@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Handshake, Search, ExternalLink } from 'lucide-react';
 import type { DocumentEvidence, Project } from '../../types.ts';
 import { formatDateSpanish } from '../../services/calculationService.ts';
+import { getEvidenceAccessUrl } from '../../services/evidenceAccessService.ts';
 
 interface ConveniosViewProps {
   documents: DocumentEvidence[];
@@ -14,6 +15,8 @@ const norm = (value: string) =>
 
 export const ConveniosView: React.FC<ConveniosViewProps> = ({ documents, projects, onOpenProject }) => {
   const [query, setQuery] = useState('');
+  const [openingId, setOpeningId] = useState<string | null>(null);
+  const [openError, setOpenError] = useState('');
 
   const convenioDocs = useMemo(() => documents.filter((doc) =>
     norm(`${doc.typeLabel} ${doc.title} ${doc.fileName}`).includes('convenio')
@@ -27,6 +30,19 @@ export const ConveniosView: React.FC<ConveniosViewProps> = ({ documents, project
       return norm(`${doc.title} ${doc.fileName} ${project?.code || ''} ${project?.name || ''}`).includes(q);
     });
   }, [convenioDocs, projects, query]);
+
+  const openEvidence = async (id: string) => {
+    setOpeningId(id);
+    setOpenError('');
+    try {
+      const url = await getEvidenceAccessUrl(id);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (error: any) {
+      setOpenError(String(error?.message || 'No fue posible abrir el documento.'));
+    } finally {
+      setOpeningId(null);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-6xl space-y-5 pb-12">
@@ -52,6 +68,8 @@ export const ConveniosView: React.FC<ConveniosViewProps> = ({ documents, project
         </div>
       </div>
 
+      {openError && <div className="rounded-lg border border-amber-800/60 bg-amber-950/25 p-3 text-xs text-amber-200">{openError}</div>}
+
       <div className="space-y-2">
         {filtered.map((doc) => {
           const project = projects.find((p) => p.id === doc.projectId);
@@ -69,11 +87,13 @@ export const ConveniosView: React.FC<ConveniosViewProps> = ({ documents, project
                     Abrir expediente
                   </button>
                 )}
-                {doc.url && (
-                  <a href={doc.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-[#243247] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-[#172235]">
-                    Documento <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-                )}
+                <button
+                  onClick={() => void openEvidence(doc.id)}
+                  disabled={openingId === doc.id}
+                  className="inline-flex items-center gap-1 rounded-lg border border-[#243247] px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-[#172235] disabled:opacity-50"
+                >
+                  {openingId === doc.id ? 'Abriendo…' : 'Documento'} <ExternalLink className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
           );

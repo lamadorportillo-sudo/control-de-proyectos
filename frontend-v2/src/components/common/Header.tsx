@@ -64,7 +64,8 @@ export const Header: React.FC<HeaderProps> = ({
     const titles: Partial<Record<AppModule, string>> = {
       inicio: 'Inicio',
       proyectos: 'Expedientes de Proyectos',
-      contratos: 'Contratos y Contratistas',
+      contratos: 'Contratos',
+      contratistas: 'Contratistas',
       presupuestos: 'Presupuesto y Ampliaciones',
       estimaciones: 'Estimaciones y Pagos',
       garantias: 'Garantías y Pólizas',

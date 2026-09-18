@@ -7,11 +7,12 @@ interface DeficienciasViewProps {
   deficiencies: Deficiency[];
   projects: Project[];
   onOpenProject: (projectId: string) => void;
+  onOpenDeficiency: (deficiencyId: string) => void;
 }
 
 const norm = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
-export const DeficienciasView: React.FC<DeficienciasViewProps> = ({ deficiencies, projects, onOpenProject }) => {
+export const DeficienciasView: React.FC<DeficienciasViewProps> = ({ deficiencies, projects, onOpenProject, onOpenDeficiency }) => {
   const [query, setQuery] = useState('');
   const [onlyOpen, setOnlyOpen] = useState(true);
   const q = norm(query.trim());
@@ -60,7 +61,7 @@ export const DeficienciasView: React.FC<DeficienciasViewProps> = ({ deficiencies
         {results.map((deficiency) => {
           const project = projects.find((p) => p.id === deficiency.projectId);
           return (
-            <button key={deficiency.id} onClick={() => onOpenProject(deficiency.projectId)} className="group w-full rounded-xl border border-[#1f2e45] bg-[#111827] p-4 text-left hover:border-red-800/70 hover:bg-[#151923]">
+            <button key={deficiency.id} onClick={() => onOpenDeficiency(deficiency.id)} className="group w-full rounded-xl border border-[#1f2e45] bg-[#111827] p-4 text-left hover:border-red-800/70 hover:bg-[#151923]">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2"><span className={`rounded border px-2 py-0.5 text-[10px] font-bold uppercase ${severityClass(deficiency.severity)}`}>{deficiency.severity}</span><span className="rounded bg-[#172235] px-2 py-0.5 text-[10px] font-semibold uppercase text-slate-300">{deficiency.statusLabel}</span></div>

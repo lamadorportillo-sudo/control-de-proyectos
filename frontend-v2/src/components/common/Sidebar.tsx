@@ -10,6 +10,7 @@ import {
   DollarSign,
   Receipt,
   ShieldCheck,
+  ClipboardCheck,
   ShoppingBag,
   AlertOctagon,
   FileText,
@@ -56,6 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'presupuestos', label: 'Presupuestos', icon: DollarSign },
     { id: 'estimaciones', label: 'Estimaciones y pagos', icon: Receipt },
     { id: 'garantias', label: 'Garantías', icon: ShieldCheck },
+    { id: 'visitas', label: 'Visitas de obra', icon: ClipboardCheck },
     { id: 'compras', label: 'Compras y cotizaciones', icon: ShoppingBag },
     {
       id: 'deficiencias',

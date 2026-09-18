@@ -1,4 +1,4 @@
-import { ensureSupabaseSession, getV2AuthState, supabase } from './supabaseClient.ts';
+import { ensureSupabaseSession, getV2AuthState, supabase, supabaseBaseUrl } from './supabaseClient.ts';
 
 export interface GeneratedReportRecord {
   id: string;
@@ -57,7 +57,7 @@ export async function getGeneratedReports(): Promise<GeneratedReportRecord[]> {
     publicViewCount: n(row.public_view_count),
     publicUrl:
       row.public_access_enabled && row.public_token
-        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/document-public?t=${encodeURIComponent(String(row.public_token))}`
+        ? `${supabaseBaseUrl}/functions/v1/document-public?t=${encodeURIComponent(String(row.public_token))}`
         : undefined,
   }));
 }

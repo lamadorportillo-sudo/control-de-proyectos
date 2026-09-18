@@ -16,7 +16,7 @@ export async function getTransparencySourceCounts(): Promise<TransparencySourceC
     supabase
       .from('project_evidence')
       .select('id,file_name,analysis')
-      .or('file_name.ilike.%convenio%,analysis.cs.{"title":"convenio"}'),
+      .limit(500),
   ]);
 
   if (procurement.error) throw procurement.error;

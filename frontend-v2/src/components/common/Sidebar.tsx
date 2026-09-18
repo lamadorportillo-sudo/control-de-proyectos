@@ -3,6 +3,7 @@ import {
   Home,
   FolderGit2,
   FileSignature,
+  Building2,
   DollarSign,
   Receipt,
   ShieldCheck,
@@ -46,7 +47,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems: NavItem[] = [
     { id: 'inicio', label: 'Inicio', icon: Home },
     { id: 'proyectos', label: 'Proyectos', icon: FolderGit2 },
-    { id: 'contratos', label: 'Contratos y contratistas', icon: FileSignature },
+    { id: 'contratos', label: 'Contratos', icon: FileSignature },
+    { id: 'contratistas', label: 'Contratistas', icon: Building2 },
     { id: 'presupuestos', label: 'Presupuestos', icon: DollarSign },
     { id: 'estimaciones', label: 'Estimaciones y pagos', icon: Receipt },
     { id: 'garantias', label: 'Garantías', icon: ShieldCheck },

@@ -76,3 +76,18 @@ La validación del commit `deba28941fe59ca7bfdfbe90272994e6a257faf3` terminó co
 
 ## Regla de seguridad
 La aplicación productiva actual no se reemplaza durante esta fase. La migración debe ser progresiva, reversible y sin pérdida de datos.
+
+
+## Avance 2026-09-18
+- Convenios incorporado como módulo físico sin inventar registros: usa únicamente evidencias reales identificadas como convenio.
+- Reportes conectado a `generated_reports`, incluyendo acceso a documento público verificado cuando existe token público habilitado.
+- Biblioteca Documental ahora incorpora también reportes digitales generados.
+- Transparencia toma conteos reales para procesos de contratación y convenios respaldados por evidencia.
+- Módulo Contratistas consolidado desde contratos productivos.
+- Compras consulta `project_procurement_audit`.
+- Presupuesto consulta movimientos reales de `budget_movements`.
+- Sesión V2 protegida: sin sesión productiva no se leen datos ni se abre la interfaz operativa.
+- Registro de visita ya tiene el flujo oficial de 5 pasos y guardado de borrador local con ID estable.
+- El guardado productivo de visita continúa bloqueado hasta terminar la integración segura de evidencia binaria y sincronización.
+- Smoke tests responsive aprobados en 360, 480, 768, 1024 y 1440 px.
+- Se genera artefacto `frontend-v2-preview` en GitHub Actions para inspección sin tocar `main`.

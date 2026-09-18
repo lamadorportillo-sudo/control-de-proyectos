@@ -10,11 +10,13 @@ import { ProjectsView } from './components/views/ProjectsView.tsx';
 import { ProjectExpedienteView } from './components/views/ProjectExpedienteView.tsx';
 import { ContratosView } from './components/views/ContratosView.tsx';
 import { ContratistasView } from './components/views/ContratistasView.tsx';
+import { ConveniosView } from './components/views/ConveniosView.tsx';
 import { EstimacionesView } from './components/views/EstimacionesView.tsx';
 import { GarantiasView } from './components/views/GarantiasView.tsx';
 import { DeficienciasView } from './components/views/DeficienciasView.tsx';
 import { DocumentosView } from './components/views/DocumentosView.tsx';
 import { TransparenciaView } from './components/views/TransparenciaView.tsx';
+import { ReportesView } from './components/views/ReportesView.tsx';
 import { ModoCampoView } from './components/views/ModoCampoView.tsx';
 import { PresupuestosView } from './components/views/PresupuestosView.tsx';
 import { ComprasView } from './components/views/ComprasView.tsx';
@@ -91,7 +93,7 @@ export default function App() {
           setEstimates(await dataRepository.getEstimates());
         } else if (currentModule === 'garantias' && guarantees.length === 0) {
           setGuarantees(await dataRepository.getGuarantees());
-        } else if (currentModule === 'documentos' && documents.length === 0) {
+        } else if ((currentModule === 'documentos' || currentModule === 'convenios') && documents.length === 0) {
           setDocuments(await dataRepository.getDocuments());
         } else if (currentModule === 'modo_campo' && visits.length === 0) {
           setVisits(await dataRepository.getFieldVisits());
@@ -211,6 +213,8 @@ export default function App() {
         return <ContratosView contracts={contracts} projects={projects} onOpenProject={openProject} />;
       case 'contratistas':
         return <ContratistasView contracts={contracts} projects={projects} onOpenProject={openProject} />;
+      case 'convenios':
+        return <ConveniosView documents={documents} projects={projects} onOpenProject={openProject} />;
       case 'estimaciones':
         return <EstimacionesView estimates={estimates} projects={projects} onOpenProject={openProject} />;
       case 'garantias':
@@ -219,6 +223,8 @@ export default function App() {
         return <DeficienciasView deficiencies={deficiencies} projects={projects} onOpenProject={openProject} />;
       case 'documentos':
         return <DocumentosView documents={documents} projects={projects} />;
+      case 'reportes':
+        return <ReportesView projects={projects} onOpenProject={openProject} />;
       case 'transparencia':
         return <TransparenciaView projects={projects} contracts={contracts} estimates={estimates} guarantees={guarantees} deficiencies={deficiencies} documents={documents} />;
       case 'modo_campo':

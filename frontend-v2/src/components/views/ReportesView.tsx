@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BarChart3, Search, RefreshCw, FileText, Eye, ExternalLink, Printer, Download } from 'lucide-react';
+import { BarChart3, Search, RefreshCw, FileText, Eye, ExternalLink, Printer, Download, FolderOpen } from 'lucide-react';
 import type { Project } from '../../types.ts';
 import { getGeneratedReports, type GeneratedReportRecord } from '../../services/reportService.ts';
 import { formatDateSpanish, formatLempiras } from '../../services/calculationService.ts';
@@ -8,6 +8,7 @@ import { downloadUrlFile } from '../../services/evidenceAccessService.ts';
 interface ReportesViewProps {
   projects: Project[];
   onOpenProject: (projectId: string) => void;
+  onOpenProjectTab?: (projectId: string, tab: string) => void;
 }
 
 const escapeHtml = (value: unknown) => String(value ?? '')
@@ -17,9 +18,10 @@ const escapeHtml = (value: unknown) => String(value ?? '')
   .replace(/"/g, '&quot;')
   .replace(/'/g, '&#039;');
 
-export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProject }) => {
+export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProject, onOpenProjectTab }) => {
   const [records, setRecords] = useState<GeneratedReportRecord[]>([]);
   const [query, setQuery] = useState('');
+  const [projectQuery, setProjectQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [paperSize, setPaperSize] = useState<'A4' | 'Letter'>('A4');
@@ -44,6 +46,12 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
     () => projects.filter((project) => project.status === 'EN_EJECUCION'),
     [projects]
   );
+
+  const projectMatches = useMemo(() => {
+    const q = projectQuery.trim().toLowerCase();
+    if (q.length < 2) return [];
+    return projects.filter((project) => `${project.code} ${project.executionCode || ''} ${project.name} ${project.shortName} ${project.location} ${project.community}`.toLowerCase().includes(q)).slice(0, 12);
+  }, [projects, projectQuery]);
 
   const downloadGeneratedReport = async (report: GeneratedReportRecord) => {
     if (!report.publicUrl) return;
@@ -179,6 +187,26 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
           Consulta de reportes realmente generados en el backend productivo. Esta pantalla no fabrica archivos ni registros.
         </p>
       </div>
+
+      <section className="rounded-xl border border-[#c5a367]/30 bg-[#211c13] p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-bold text-[#f1e4c5]"><FolderOpen className="h-4 w-4 text-[#c5a367]" /> Generar informe desde un expediente</div>
+            <p className="mt-1 text-[11px] text-[#c9bfa8]">Busca por código, nombre o ubicación y abre directamente la configuración de informes profesionales del proyecto.</p>
+          </div>
+          <div className="relative w-full max-w-xl">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#b3a88f]" />
+            <input value={projectQuery} onChange={(event) => setProjectQuery(event.target.value)} placeholder="Buscar proyecto para generar informe..." className="w-full rounded-lg border border-[#5b4a2c] bg-[#0b1220] py-2.5 pl-9 pr-3 text-xs text-white outline-none placeholder:text-[#8c816a] focus:border-[#c5a367]" />
+          </div>
+        </div>
+        {projectQuery.trim().length < 2 ? (
+          <div className="mt-3 rounded-lg border border-dashed border-[#5b4a2c] p-3 text-center text-[11px] text-[#a99e86]">Escribe al menos 2 caracteres. No se cargan todos los proyectos en esta pantalla.</div>
+        ) : projectMatches.length === 0 ? (
+          <div className="mt-3 rounded-lg border border-dashed border-[#5b4a2c] p-3 text-center text-[11px] text-[#a99e86]">No encontramos un proyecto con esa búsqueda.</div>
+        ) : (
+          <div className="mt-3 space-y-2">{projectMatches.map((project) => <div key={project.id} className="flex flex-col gap-2 rounded-lg border border-[#5b4a2c] bg-[#15120d] p-3 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="font-mono text-[10px] font-bold text-[#f1e4c5]">{project.code}</span><span className="rounded bg-[#3a3020] px-2 py-0.5 text-[10px] font-semibold uppercase text-[#d9c99f]">{project.statusLabel}</span></div><div className="mt-1 truncate text-xs font-semibold text-white">{project.name}</div><div className="mt-0.5 truncate text-[10px] text-slate-500">{project.location || project.community || 'Ubicación pendiente'}</div></div><button onClick={() => onOpenProjectTab ? onOpenProjectTab(project.id, 'informes') : onOpenProject(project.id)} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-[#c5a367] px-3 py-2 text-xs font-bold text-[#0b1118] hover:bg-[#d6bb83]"><FileText className="h-3.5 w-3.5" /> Abrir informes</button></div>)}</div>
+        )}
+      </section>
 
       <div className="rounded-xl border border-blue-800/40 bg-blue-950/20 p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

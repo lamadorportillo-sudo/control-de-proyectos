@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import type { Deficiency, DocumentEvidence, Project } from '../../types.ts';
 import { formatDateSpanish } from '../../services/calculationService.ts';
-import { getEvidenceAccessUrl } from '../../services/evidenceAccessService.ts';
+import { downloadEvidenceFile, getEvidenceAccessUrl } from '../../services/evidenceAccessService.ts';
 import {
   addDeficiencyFollowup,
   markDeficiencyInCorrection,
@@ -50,6 +50,7 @@ export const DeficiencyDetailView: React.FC<Props> = ({
 }) => {
   const [tab, setTab] = useState<Tab>('resumen');
   const [openingId, setOpeningId] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [openError, setOpenError] = useState('');
   const [busy, setBusy] = useState('');
   const [actionMessage, setActionMessage] = useState('');
@@ -94,6 +95,18 @@ export const DeficiencyDetailView: React.FC<Props> = ({
       setOpenError(String(error?.message || 'No fue posible abrir el archivo.'));
     } finally {
       setOpeningId(null);
+    }
+  };
+
+  const downloadEvidence = async (id: string) => {
+    setDownloadingId(id);
+    setOpenError('');
+    try {
+      await downloadEvidenceFile(id);
+    } catch (error: any) {
+      setOpenError(String(error?.message || 'No fue posible descargar el archivo.'));
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -239,7 +252,9 @@ export const DeficiencyDetailView: React.FC<Props> = ({
             icon={Camera}
             items={evidence}
             openingId={openingId}
+            downloadingId={downloadingId}
             onOpen={openEvidence}
+            onDownload={downloadEvidence}
             empty="No hay fotografías o audios vinculados directamente a esta deficiencia."
           />
           {deficiency.status !== 'CERRADA' && (
@@ -404,7 +419,9 @@ export const DeficiencyDetailView: React.FC<Props> = ({
           icon={FileText}
           items={formalDocs}
           openingId={openingId}
+          downloadingId={downloadingId}
           onOpen={openEvidence}
+          onDownload={downloadEvidence}
           empty="No hay documentos formales vinculados."
         />
       )}
@@ -462,9 +479,11 @@ const FileList: React.FC<{
   icon: React.ComponentType<{ className?: string }>;
   items: DocumentEvidence[];
   openingId: string | null;
+  downloadingId: string | null;
   onOpen: (id: string) => Promise<void>;
+  onDownload: (id: string) => Promise<void>;
   empty: string;
-}> = ({ title, icon: Icon, items, openingId, onOpen, empty }) => (
+}> = ({ title, icon: Icon, items, openingId, downloadingId, onOpen, onDownload, empty }) => (
   <section className="rounded-xl border border-[#1f2e45] bg-[#111827] p-4">
     <h3 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white">
       <Icon className="h-4 w-4 text-blue-400" />
@@ -480,13 +499,22 @@ const FileList: React.FC<{
                 {doc.typeLabel} · {formatDateSpanish(doc.uploadDate)}
               </div>
             </div>
-            <button
-              onClick={() => void onOpen(doc.id)}
-              disabled={openingId === doc.id}
-              className="text-xs font-semibold text-blue-400 disabled:opacity-50"
-            >
-              {openingId === doc.id ? 'Abriendo…' : 'Abrir'}
-            </button>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                onClick={() => void onOpen(doc.id)}
+                disabled={openingId === doc.id || downloadingId === doc.id}
+                className="text-xs font-semibold text-blue-400 disabled:opacity-50"
+              >
+                {openingId === doc.id ? 'Abriendo…' : 'Abrir'}
+              </button>
+              <button
+                onClick={() => void onDownload(doc.id)}
+                disabled={openingId === doc.id || downloadingId === doc.id}
+                className="rounded-lg border border-[#243247] px-2 py-1 text-[11px] font-semibold text-emerald-300 disabled:opacity-50"
+              >
+                {downloadingId === doc.id ? 'Descargando…' : 'Descargar'}
+              </button>
+            </div>
           </div>
         ))}
       </div>

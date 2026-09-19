@@ -84,7 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside
       id="main-app-sidebar"
-      className={`bg-[#101720] border-r border-[#2b3a4a] flex flex-col justify-between transition-all duration-200 z-20 shrink-0 ${
+      className={`h-full max-h-[100dvh] overflow-hidden bg-[#101720] border-r border-[#2b3a4a] flex flex-col justify-between transition-all duration-200 z-20 shrink-0 ${
         isCollapsed ? 'w-[72px]' : 'w-[232px]'
       }`}
     >

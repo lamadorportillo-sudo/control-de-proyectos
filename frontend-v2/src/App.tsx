@@ -206,6 +206,26 @@ export default function App() {
       return;
     }
 
+    // Los avisos de Inicio deben abrir el expediente en la pestaña correcta.
+    // Antes solo cambiaban al centro general de garantías/estimaciones.
+    if (module === 'garantias' && extra?.guaranteeId) {
+      const guarantee = guarantees.find((item) => item.id === String(extra.guaranteeId));
+      const projectId = String(extra.projectId || guarantee?.projectId || '');
+      if (projectId) {
+        openProjectAtTab(projectId, 'garantias');
+        return;
+      }
+    }
+
+    if (module === 'estimaciones' && extra?.estimateId) {
+      const estimate = estimates.find((item) => item.id === String(extra.estimateId));
+      const projectId = String(extra.projectId || estimate?.projectId || '');
+      if (projectId) {
+        openProjectAtTab(projectId, 'estimaciones');
+        return;
+      }
+    }
+
     if (module === 'proyectos') setSelectedProjectTab(null);
     if (module !== 'proyectos') {
       setSelectedProjectId(null);

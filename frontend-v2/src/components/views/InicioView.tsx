@@ -291,7 +291,7 @@ export const InicioView: React.FC<InicioViewProps> = ({
                     </div>
                   </div>
                   <button
-                    onClick={() => onNavigate('garantias', { guaranteeId: gar.id })}
+                    onClick={() => onNavigate('garantias', { guaranteeId: gar.id, projectId: gar.projectId, action: attention.kind })}
                     title={attention.detail}
                     className="px-3 py-1 bg-[#172235] hover:bg-amber-950/60 text-amber-200 text-xs font-medium rounded border border-[#243247] hover:border-amber-700/80 shrink-0 self-end sm:self-center transition-colors"
                   >
@@ -325,7 +325,7 @@ export const InicioView: React.FC<InicioViewProps> = ({
                     </div>
                   </div>
                   <button
-                    onClick={() => onNavigate('estimaciones', { estimateId: est.id })}
+                    onClick={() => onNavigate('estimaciones', { estimateId: est.id, projectId: est.projectId })}
                     className="px-3 py-1 bg-emerald-950 hover:bg-emerald-900 text-emerald-200 text-xs font-medium rounded border border-emerald-700/80 shrink-0 self-end sm:self-center transition-colors"
                   >
                     Ver orden y liquidar

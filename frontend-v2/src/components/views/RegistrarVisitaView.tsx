@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight, Check, Camera, Mic, Plus, Save, MapPin } from 'l
 import type { Project } from '../../types.ts';
 import { saveVisitWithEvidence, visitWritesEnabled } from '../../services/visitWriteService.ts';
 
-interface Props { projects: Project[]; onBack: () => void; }
+interface Props { projects: Project[]; initialProjectId?: string | null; onBack: () => void; }
 interface Draft {
   id: string; projectId: string; date: string; time: string; location: string;
   observedProgress: number; previousProgress: number; workObserved: string;
@@ -16,7 +16,7 @@ interface Draft {
 const KEY = 'cc_field_visit_drafts_v2';
 const inputClass = 'w-full rounded-lg border border-[#243247] bg-[#0b1220] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500';
 
-export const RegistrarVisitaView: React.FC<Props> = ({ projects, onBack }) => {
+export const RegistrarVisitaView: React.FC<Props> = ({ projects, initialProjectId = null, onBack }) => {
   const now = new Date();
   const [step, setStep] = useState(1);
   const [activity, setActivity] = useState('');
@@ -25,9 +25,12 @@ export const RegistrarVisitaView: React.FC<Props> = ({ projects, onBack }) => {
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<Draft>({
-    id: crypto.randomUUID(), projectId: '', date: now.toISOString().slice(0,10),
-    time: now.toTimeString().slice(0,5), location: '', observedProgress: 0,
-    previousProgress: 0, workObserved: '', activities: [], photoNames: [], hasIncident: false
+    id: crypto.randomUUID(), projectId: initialProjectId || '', date: now.toISOString().slice(0,10),
+    time: now.toTimeString().slice(0,5),
+    location: projects.find((p) => p.id === initialProjectId)?.location || '',
+    observedProgress: projects.find((p) => p.id === initialProjectId)?.physicalProgress || 0,
+    previousProgress: projects.find((p) => p.id === initialProjectId)?.physicalProgress || 0,
+    workObserved: '', activities: [], photoNames: [], hasIncident: false
   });
 
   const project = useMemo(() => projects.find((p) => p.id === draft.projectId), [projects, draft.projectId]);

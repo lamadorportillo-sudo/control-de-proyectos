@@ -482,7 +482,7 @@ export default function App() {
       )}
 
       {blockingDefs.length > 0 && currentModule !== 'deficiencias' && (
-        <button type="button" onClick={() => handleNavigate('deficiencias')} className="flex w-full items-center justify-between gap-3 border-b border-red-800/70 bg-red-950/55 px-4 py-2 text-left text-xs text-red-200">
+        <button type="button" onClick={() => handleNavigate('deficiencias', { deficiencyId: blockingDefs[0]?.id })} className="flex w-full items-center justify-between gap-3 border-b border-red-800/70 bg-red-950/55 px-4 py-2 text-left text-xs text-red-200">
           <span><strong>{blockingDefs.length}</strong> deficiencia(s) bloqueante(s) requieren seguimiento.</span><span className="font-semibold">Abrir seguimiento →</span>
         </button>
       )}

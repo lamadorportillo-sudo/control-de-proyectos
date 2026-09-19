@@ -4,6 +4,7 @@ import type { Project, Contract, Estimate, Guarantee, Deficiency, DocumentEviden
 import { getTransparencySourceCounts } from '../../services/transparencyMetricsService.ts';
 
 interface TransparenciaViewProps {
+  onPreviewPublic?: (draft: { month: string; selected: string[] }) => void;
   projects: Project[];
   contracts: Contract[];
   estimates: Estimate[];
@@ -28,7 +29,7 @@ const CATEGORIES = [
 
 type CategoryId = typeof CATEGORIES[number]['id'];
 
-export const TransparenciaView: React.FC<TransparenciaViewProps> = ({ projects, contracts, estimates, guarantees, deficiencies, documents }) => {
+export const TransparenciaView: React.FC<TransparenciaViewProps> = ({ projects, contracts, estimates, guarantees, deficiencies, documents, onPreviewPublic }) => {
   const now = new Date();
   const [month, setMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
   const [selected, setSelected] = useState<CategoryId[]>([]);
@@ -145,6 +146,14 @@ export const TransparenciaView: React.FC<TransparenciaViewProps> = ({ projects, 
           <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-300">Portal preparado para revisión</h3>
           <p className="mt-1 text-[11px] text-slate-400">La V2 respeta exactamente la selección: no añade KPIs ni categorías no marcadas. Formato preparado: <strong className="text-slate-200">{format === 'PORTAL_WEB' ? 'Portal web' : format}</strong>. La publicación final seguirá usando el backend productivo existente.</p>
           <div className="mt-3 flex flex-wrap gap-2">{selected.map((id) => <span key={id} className="rounded bg-emerald-950/50 px-2 py-1 text-[10px] font-semibold text-emerald-200">{CATEGORIES.find((c) => c.id === id)?.label}</span>)}</div>
+          {format === 'PORTAL_WEB' && onPreviewPublic && (
+            <button
+              onClick={() => onPreviewPublic({ month, selected: [...selected] })}
+              className="mt-4 rounded-lg bg-emerald-700 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-600"
+            >
+              Abrir vista pública
+            </button>
+          )}
         </div>
       )}
     </div>

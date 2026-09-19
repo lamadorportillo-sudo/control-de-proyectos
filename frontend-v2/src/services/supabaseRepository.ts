@@ -48,6 +48,7 @@ const dateOnly = (value: unknown): string => s(value).slice(0, 10);
 
 function projectStatus(row: Row): Project['status'] {
   const raw = s(row.raw_data?.status ?? row.status).toLowerCase();
+  if (/ampli/.test(raw)) return 'AMPLIACION_GARANTIAS';
   if (/final|cerr|termin/.test(raw)) return 'FINALIZADO';
   if (/suspend/.test(raw)) return 'SUSPENDIDO';
   if (/recep/.test(raw)) return 'RECEPCION_PROVISIONAL';
@@ -92,6 +93,7 @@ function mapProject(row: Row): Project {
     startDate: dateOnly(row.start_date || raw.start),
     expectedEndDate: dateOnly(row.end_date || raw.end),
     description: s(row.description || raw.description),
+    observations: s(raw.observations || row.observations || ''),
     contractId: s(raw.contractId || '') || undefined,
     createdAt: dateOnly(row.created_at || raw.createdAt),
     updatedAt: dateOnly(row.updated_at || raw.updatedAt),
@@ -194,6 +196,7 @@ function guaranteeType(value: unknown): Guarantee['type'] {
 function guaranteeStatus(row: Row): Guarantee['status'] {
   const raw = s(row.raw_data?.status || '').toLowerCase();
   if (row.voided_at) return 'EJECUTADA';
+  if (/reemplaz/.test(raw) || /reemplaz/.test(s(row.status))) return 'REEMPLAZADA';
   if (/liber/.test(raw)) return 'LIBERADA';
   const end = row.end_date ? new Date(row.end_date) : null;
   if (end && !Number.isNaN(end.getTime())) {
@@ -232,6 +235,8 @@ function mapGuarantee(row: Row): Guarantee {
     daysToExpiry: days,
     status: guaranteeStatus(row),
     statusLabel: guaranteeStatus(row).replaceAll('_', ' '),
+    statusLabel: s(row.raw_data?.status || row.status || guaranteeStatus(row)).replaceAll('_', ' '),
+    observations: s(row.raw_data?.observations || row.observations || ''),
     sourceDocumentId: s(row.document_ref || '') || undefined,
   };
 }
@@ -500,6 +505,7 @@ export class SupabaseDataRepository implements IDataRepository {
         physicalProgress: project.physicalProgress || 0,
         financialProgress: project.financialProgress || 0,
         status: statusLabel,
+        observations: project.observations || null,
       },
       updated_at: new Date().toISOString(),
     };
@@ -714,7 +720,8 @@ export class SupabaseDataRepository implements IDataRepository {
       end_date: guarantee.expiryDate,
       raw_data: {
         source: 'frontend-v2',
-        status: guarantee.statusLabel,
+        status: guarantee.status,
+        observations: guarantee.observations || null,
       },
       updated_at: new Date().toISOString(),
     };

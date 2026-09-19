@@ -10,12 +10,13 @@ interface ContratosViewProps {
   onOpenProject: (projectId: string) => void;
   onSaved?: () => Promise<void> | void;
   initialAction?: string | null;
+  initialProjectId?: string | null;
 }
 
 const norm = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const inputClass = 'w-full rounded-lg border border-[#243247] bg-[#0b1220] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500';
 
-export const ContratosView: React.FC<ContratosViewProps> = ({ contracts, projects, onOpenProject, onSaved, initialAction = null }) => {
+export const ContratosView: React.FC<ContratosViewProps> = ({ contracts, projects, onOpenProject, onSaved, initialAction = null, initialProjectId = null }) => {
   const [query, setQuery] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -33,7 +34,10 @@ export const ContratosView: React.FC<ContratosViewProps> = ({ contracts, project
     notes: '',
   });
 
-  useEffect(() => { if (initialAction === 'NEW_CONTRACT') setShowCreate(true); }, [initialAction]);
+  useEffect(() => {
+    if (initialAction === 'NEW_CONTRACT') setShowCreate(true);
+    if (initialProjectId) setForm((current) => ({ ...current, projectId: initialProjectId }));
+  }, [initialAction, initialProjectId]);
 
   const q = norm(query.trim());
   const results = useMemo(() => {

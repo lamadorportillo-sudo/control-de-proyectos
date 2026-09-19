@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, FileText, Receipt, ShieldCheck, AlertOctagon, Camera, WalletCards, ClipboardList, History, Plus } from 'lucide-react';
+import { ArrowLeft, FileText, Receipt, ShieldCheck, AlertOctagon, Camera, WalletCards, History, Plus } from 'lucide-react';
 import type { Project, Contract, Estimate, Guarantee, Deficiency, DocumentEvidence, FieldVisit, AuditLog, AppModule } from '../../types.ts';
 import { formatLempiras, formatPercent, formatDateSpanish } from '../../services/calculationService.ts';
 import { ProjectReportView } from './ProjectReportView.tsx';
@@ -18,8 +18,8 @@ interface ProjectExpedienteViewProps {
   initialTab?: string | null;
 }
 
-type TabId = 'resumen' | 'presupuesto' | 'contrato' | 'estimaciones' | 'garantias' | 'documentos' | 'visitas' | 'deficiencias' | 'historial' | 'informes';
-const tabIds: TabId[] = ['resumen', 'presupuesto', 'contrato', 'estimaciones', 'garantias', 'documentos', 'visitas', 'deficiencias', 'historial', 'informes'];
+type TabId = 'resumen' | 'presupuesto' | 'contrato' | 'estimaciones' | 'garantias' | 'visitas' | 'deficiencias' | 'historial' | 'informes';
+const tabIds: TabId[] = ['resumen', 'presupuesto', 'contrato', 'estimaciones', 'garantias', 'visitas', 'deficiencias', 'historial', 'informes'];
 const isTabId = (value: string | null | undefined): value is TabId => Boolean(value && tabIds.includes(value as TabId));
 
 export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
@@ -56,31 +56,6 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
     ).slice(0, 100),
     [auditLogs, project.id, project.code]
   );
-
-  const openEvidence = async (id: string) => {
-    setOpeningDocId(id);
-    setDocumentError('');
-    try {
-      const url = await getEvidenceAccessUrl(id);
-      window.open(url, '_blank', 'noopener,noreferrer');
-    } catch (error: any) {
-      setDocumentError(String(error?.message || 'No fue posible abrir la evidencia.'));
-    } finally {
-      setOpeningDocId(null);
-    }
-  };
-
-  const downloadEvidence = async (id: string) => {
-    setDownloadingDocId(id);
-    setDocumentError('');
-    try {
-      await downloadEvidenceFile(id);
-    } catch (error: any) {
-      setDocumentError(String(error?.message || 'No fue posible descargar la evidencia.'));
-    } finally {
-      setDownloadingDocId(null);
-    }
-  };
 
   const tabs: { id: TabId; label: string; count?: number }[] = [
     { id: 'resumen', label: 'Resumen' },

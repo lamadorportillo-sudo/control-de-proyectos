@@ -15,7 +15,6 @@ interface DeficienciasViewProps {
   initialProjectId?: string | null;
 }
 
-const norm = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const inputClass = 'w-full rounded-lg border border-[#243247] bg-[#0b1220] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-red-500';
 
 export const DeficienciasView: React.FC<DeficienciasViewProps> = ({

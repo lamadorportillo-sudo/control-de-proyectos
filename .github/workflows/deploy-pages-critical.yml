@@ -193,5 +193,22 @@ jobs:
           else
             git add index.html legacy.html assets/ v2/
             git commit -m "Publicar V2 principal y conservar interfaz anterior"
-            git push origin HEAD:main
+            # Otro cambio puede entrar a main mientras se ejecutan las pruebas.
+            # Rebasar el commit generado y reintentar evita el rechazo
+            # "cannot lock ref" sin sobrescribir cambios ajenos.
+            for attempt in 1 2 3; do
+              git fetch origin main
+              if ! git rebase -X theirs origin/main; then
+                git rebase --abort || true
+                echo "No se pudo integrar el artefacto publicado con main." >&2
+                exit 1
+              fi
+              if git push origin HEAD:main; then
+                exit 0
+              fi
+              echo "main cambió durante la publicación; reintentando (${attempt}/3)." >&2
+              sleep 3
+            done
+            echo "No se pudo publicar después de 3 intentos." >&2
+            exit 1
           fi

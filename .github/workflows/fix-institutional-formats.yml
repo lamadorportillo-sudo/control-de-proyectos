@@ -54,4 +54,18 @@ jobs:
           fi
           git add templates assets/formats
           git commit -m 'Corregir teléfono institucional en formatos Word'
-          git push origin HEAD:main
+          for attempt in 1 2 3; do
+            git fetch origin main
+            if ! git rebase -X theirs origin/main; then
+              git rebase --abort || true
+              echo 'No se pudo integrar la corrección de formatos con main.' >&2
+              exit 1
+            fi
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "main cambió durante la corrección de formatos; reintentando (${attempt}/3)." >&2
+            sleep 3
+          done
+          echo 'No se pudo publicar la corrección de formatos después de 3 intentos.' >&2
+          exit 1

@@ -11,8 +11,6 @@ import {
   XCircle,
   LockKeyhole,
   Plus,
-  UploadCloud,
-  Loader2,
 } from 'lucide-react';
 import type { Deficiency, DocumentEvidence, Project } from '../../types.ts';
 import { formatDateSpanish } from '../../services/calculationService.ts';
@@ -24,7 +22,6 @@ import {
   rejectDeficiencyCorrection,
   closeDeficiency,
 } from '../../services/deficiencyService.ts';
-import { uploadProjectDocument } from '../../services/documentUploadService.ts';
 
 interface Props {
   deficiency: Deficiency;
@@ -69,8 +66,6 @@ export const DeficiencyDetailView: React.FC<Props> = ({
     responsible: deficiency.responsibleContractor || '',
     dueDate: deficiency.deadline || '',
   });
-  const [evidenceTitle, setEvidenceTitle] = useState('');
-  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
 
   const linked = useMemo(
     () =>
@@ -144,30 +139,6 @@ export const DeficiencyDetailView: React.FC<Props> = ({
       'Seguimiento registrado.',
     );
     setFollowup((current) => ({ ...current, comment: '', instruction: '' }));
-  };
-
-  const uploadEvidence = async () => {
-    if (!evidenceFile) {
-      setActionMessage('Selecciona una fotografía o audio.');
-      return;
-    }
-    await run(
-      'evidence',
-      async () => {
-        await uploadProjectDocument({
-          projectId: deficiency.projectId,
-          deficiencyId: deficiency.id,
-          visitId: deficiency.linkedVisitId,
-          type: evidenceFile.type.startsWith('audio/') ? 'AUDIO' : 'FOTOGRAFIA',
-          title: evidenceTitle || `Evidencia · ${deficiency.title}`,
-          file: evidenceFile,
-        });
-        await onDocumentsChanged?.();
-      },
-      'Evidencia vinculada a la deficiencia.',
-    );
-    setEvidenceFile(null);
-    setEvidenceTitle('');
   };
 
   const tabs: Array<{ id: Tab; label: string; count?: number }> = [
@@ -257,44 +228,6 @@ export const DeficiencyDetailView: React.FC<Props> = ({
             onDownload={downloadEvidence}
             empty="No hay fotografías o audios vinculados directamente a esta deficiencia."
           />
-          {deficiency.status !== 'CERRADA' && (
-            <section className="rounded-xl border border-[#1f2e45] bg-[#111827] p-4">
-              <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white">
-                <UploadCloud className="h-4 w-4 text-emerald-400" />
-                Agregar evidencia
-              </h3>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <label>
-                  <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-slate-500">Título</span>
-                  <input
-                    value={evidenceTitle}
-                    onChange={(e) => setEvidenceTitle(e.target.value)}
-                    className={inputClass}
-                    placeholder="Ej. Corrección de fisura verificada"
-                  />
-                </label>
-                <label>
-                  <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-slate-500">Archivo</span>
-                  <input
-                    type="file"
-                    accept="image/*,audio/*"
-                    onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
-                    className={inputClass}
-                  />
-                </label>
-              </div>
-              <div className="mt-3 flex justify-end">
-                <button
-                  onClick={() => void uploadEvidence()}
-                  disabled={busy === 'evidence'}
-                  className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
-                >
-                  {busy === 'evidence' ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
-                  Vincular evidencia
-                </button>
-              </div>
-            </section>
-          )}
         </div>
       )}
 

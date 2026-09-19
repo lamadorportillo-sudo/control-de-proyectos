@@ -8,6 +8,7 @@ interface ContratosViewProps {
   contracts: Contract[];
   projects: Project[];
   onOpenProject: (projectId: string) => void;
+  onOpenProjectTab?: (projectId: string, tab: string) => void;
   onNavigate: (module: AppModule, extra?: any) => void;
   onSaved?: () => Promise<void> | void;
   initialAction?: string | null;
@@ -17,7 +18,7 @@ interface ContratosViewProps {
 const norm = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const inputClass = 'w-full rounded-lg border border-[#243247] bg-[#0b1220] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500';
 
-export const ContratosView: React.FC<ContratosViewProps> = ({ contracts, projects, onOpenProject, onNavigate, onSaved, initialAction = null, initialProjectId = null }) => {
+export const ContratosView: React.FC<ContratosViewProps> = ({ contracts, projects, onOpenProject, onOpenProjectTab, onNavigate, onSaved, initialAction = null, initialProjectId = null }) => {
   const [query, setQuery] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -150,7 +151,7 @@ export const ContratosView: React.FC<ContratosViewProps> = ({ contracts, project
             contract.status === 'MODIFICADO' ? 'bg-blue-950 text-blue-300' :
             'bg-[#172235] text-slate-300';
           return (
-            <button key={contract.id} onClick={() => onOpenProject(contract.projectId)} className="group w-full rounded-xl border border-[#1f2e45] bg-[#111827] p-4 text-left hover:border-blue-700 hover:bg-[#131d2f]">
+            <button key={contract.id} onClick={() => (onOpenProjectTab ? onOpenProjectTab(contract.projectId, 'contrato') : onOpenProject(contract.projectId))} className="group w-full rounded-xl border border-[#1f2e45] bg-[#111827] p-4 text-left hover:border-blue-700 hover:bg-[#131d2f]">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2"><span className="rounded bg-blue-950/70 px-2 py-0.5 font-mono text-xs font-bold text-blue-300">{contract.contractNumber || 'SIN NÚMERO'}</span><span className={`rounded px-2 py-0.5 text-[10px] font-semibold uppercase ${statusTone}`}>{contract.statusLabel}</span></div>

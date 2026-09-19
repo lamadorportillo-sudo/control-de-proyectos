@@ -41,6 +41,9 @@ export const EstimacionesView: React.FC<EstimacionesViewProps> = ({ estimates, p
     }).slice(0, 60);
   }, [estimates, projects, q]);
 
+  const totalNet = useMemo(() => estimates.reduce((sum, estimate) => sum + Number(estimate.netPayable || 0), 0), [estimates]);
+  const pendingReview = useMemo(() => estimates.filter((estimate) => estimate.paymentStatus === 'PENDIENTE_REVISION').length, [estimates]);
+
   const gross = Math.max(0, Number(form.gross) || 0);
   const advance = Math.max(0, Number(form.advance) || 0);
   const isr = Math.max(0, Number(form.isr) || 0);
@@ -100,17 +103,34 @@ export const EstimacionesView: React.FC<EstimacionesViewProps> = ({ estimates, p
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 text-xl font-bold text-white"><Receipt className="h-5 w-5 text-emerald-400" />Estimaciones y pagos</h2>
-          <p className="mt-1 text-xs text-slate-400">Búsqueda directa por proyecto, número de estimación o referencia de pago.</p>
+          <p className="mt-1 text-xs text-slate-400">Consulta pagos sin cargar listados completos y registra una nueva estimación cuando corresponda.</p>
         </div>
         <button onClick={() => {setShowCreate(true);setMessage('');}} className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-500"><Plus className="h-4 w-4" />Nueva estimación</button>
       </div>
 
       {message && <div className="rounded-lg border border-[#243247] bg-[#111827] p-3 text-xs text-slate-300">{message}</div>}
 
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Kpi label="Estimaciones registradas" value={String(estimates.length)} detail="Expedientes disponibles" />
+        <Kpi label="Pendientes de revisión" value={String(pendingReview)} detail="Requieren validación" />
+        <Kpi label="Total neto registrado" value={formatLempiras(totalNet)} detail="Suma de pagos netos" />
+      </div>
+
       <div className="rounded-xl border border-[#1f2e45] bg-[#111827] p-4">
         <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ej.: 0322, Estimación 1, orden de pago…" className="w-full rounded-lg border border-[#243247] bg-[#0b1220] py-2.5 pl-9 pr-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-500" /></div>
         <div className="mt-2 text-[11px] text-slate-500">{q.length < 2 ? 'Escribe al menos 2 caracteres.' : `${results.length} coincidencia(s).`}</div>
       </div>
+
+      {q.length < 2 && (
+        <div className="rounded-xl border border-dashed border-[#243247] bg-[#0d1623] p-5 text-center">
+          <div className="text-sm font-semibold text-white">{estimates.length === 0 ? 'Aún no hay estimaciones registradas' : 'Busca una estimación cuando la necesites'}</div>
+          <div className="mx-auto mt-1 max-w-xl text-xs leading-relaxed text-slate-500">{estimates.length === 0 ? 'Usa “Nueva estimación” para registrar periodo, avance, deducciones y total a pagar.' : 'Escribe al menos 2 caracteres para consultar por proyecto, número o referencia de pago.'}</div>
+        </div>
+      )}
+
+      {q.length >= 2 && results.length === 0 && (
+        <div className="rounded-xl border border-dashed border-[#243247] bg-[#0d1623] p-5 text-center text-xs text-slate-500">No encontramos estimaciones con esa búsqueda.</div>
+      )}
 
       <div className="space-y-3">
         {results.map((estimate) => {
@@ -172,6 +192,14 @@ export const EstimacionesView: React.FC<EstimacionesViewProps> = ({ estimates, p
     </div>
   );
 };
+
+const Kpi: React.FC<{ label: string; value: string; detail: string }> = ({ label, value, detail }) => (
+  <div className="rounded-xl border border-[#1f2e45] bg-[#111827] p-3.5">
+    <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</div>
+    <div className="mt-1 text-base font-bold text-white tabular-nums">{value}</div>
+    <div className="mt-0.5 text-[11px] text-slate-500">{detail}</div>
+  </div>
+);
 
 const Field: React.FC<{label:string;children:React.ReactNode;wide?:boolean}> = ({label,children,wide}) => <label className={wide ? 'sm:col-span-2 lg:col-span-3' : ''}><span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</span>{children}</label>;
 const Metric: React.FC<{ label: string; value: string; accent?: boolean }> = ({ label, value, accent }) => <div className="rounded-lg border border-[#243247] bg-[#0b1220] p-2"><div className="text-[9px] font-semibold uppercase tracking-wider text-slate-500">{label}</div><div className={`mt-1 text-[11px] font-semibold tabular-nums ${accent ? 'text-emerald-300' : 'text-slate-200'}`}>{value}</div></div>;

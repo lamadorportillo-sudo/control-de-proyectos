@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - integracion-ai-studio
+      - v2-auth-root-prep
     paths:
       - 'frontend-v2/**'
       - 'tests/frontend-v2-session-bridge-responsive.spec.cjs'

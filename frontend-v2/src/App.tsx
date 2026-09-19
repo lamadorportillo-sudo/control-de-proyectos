@@ -46,6 +46,7 @@ export default function App() {
   const [currentModule, setCurrentModule] = useState<AppModule>('inicio');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedProjectTab, setSelectedProjectTab] = useState<string | null>(null);
   const [selectedDeficiencyId, setSelectedDeficiencyId] = useState<string | null>(null);
   const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
   const [moduleAction, setModuleAction] = useState<string | null>(null);
@@ -201,10 +202,15 @@ export default function App() {
 
     if (module === 'proyectos' && extra?.projectId) {
       setSelectedProjectId(String(extra.projectId));
+      setSelectedProjectTab(extra?.tab ? String(extra.tab) : null);
       return;
     }
 
-    if (module !== 'proyectos') setSelectedProjectId(null);
+    if (module === 'proyectos') setSelectedProjectTab(null);
+    if (module !== 'proyectos') {
+      setSelectedProjectId(null);
+      setSelectedProjectTab(null);
+    }
     if (module !== 'deficiencias') setSelectedDeficiencyId(null);
     if (module !== 'visitas') setSelectedVisitId(null);
 
@@ -219,6 +225,7 @@ export default function App() {
   const submitSearch = () => {
     if (searchQuery.trim()) {
       setSelectedProjectId(null);
+      setSelectedProjectTab(null);
       setCurrentModule('busqueda');
     }
   };
@@ -227,6 +234,15 @@ export default function App() {
     setModuleAction(null);
     setModuleProjectId(projectId);
     setSelectedProjectId(projectId);
+    setSelectedProjectTab(null);
+    setCurrentModule('proyectos');
+  };
+
+  const openProjectAtTab = (projectId: string, tab: string) => {
+    setModuleAction(null);
+    setModuleProjectId(projectId);
+    setSelectedProjectId(projectId);
+    setSelectedProjectTab(tab);
     setCurrentModule('proyectos');
   };
 
@@ -269,7 +285,11 @@ export default function App() {
             visits={visits}
             auditLogs={auditLogs}
             onNavigate={handleNavigate}
-            onBack={() => setSelectedProjectId(null)}
+            initialTab={selectedProjectTab}
+            onBack={() => {
+              setSelectedProjectTab(null);
+              setSelectedProjectId(null);
+            }}
           />
         ) : (
           <ProjectsView projects={projects} onOpenProject={openProject} initialAction={moduleAction} onSaved={async () => setProjects(await dataRepository.getProjects())} />
@@ -277,15 +297,15 @@ export default function App() {
       case 'busqueda':
         return <ProjectsView projects={projects} onOpenProject={openProject} initialQuery={searchQuery} onSaved={async () => setProjects(await dataRepository.getProjects())} />;
       case 'contratos':
-        return <ContratosView contracts={contracts} projects={projects} onOpenProject={openProject} onNavigate={handleNavigate} initialAction={moduleAction} initialProjectId={moduleProjectId} onSaved={async () => setContracts(await dataRepository.getContracts())} />;
+        return <ContratosView contracts={contracts} projects={projects} onOpenProject={openProject} onOpenProjectTab={openProjectAtTab} onNavigate={handleNavigate} initialAction={moduleAction} initialProjectId={moduleProjectId} onSaved={async () => setContracts(await dataRepository.getContracts())} />;
       case 'contratistas':
         return <ContratistasView contracts={contracts} projects={projects} onOpenProject={openProject} />;
       case 'convenios':
         return <ConveniosView documents={documents} projects={projects} onOpenProject={openProject} />;
       case 'estimaciones':
-        return <EstimacionesView estimates={estimates} projects={projects} onOpenProject={openProject} initialAction={moduleAction} initialProjectId={moduleProjectId} onSaved={async () => setEstimates(await dataRepository.getEstimates())} />;
+        return <EstimacionesView estimates={estimates} projects={projects} onOpenProject={openProject} onOpenProjectTab={openProjectAtTab} initialAction={moduleAction} initialProjectId={moduleProjectId} onSaved={async () => setEstimates(await dataRepository.getEstimates())} />;
       case 'garantias':
-        return <GarantiasView guarantees={guarantees} projects={projects} onOpenProject={openProject} initialAction={moduleAction} initialProjectId={moduleProjectId} onSaved={async () => setGuarantees(await dataRepository.getGuarantees())} />;
+        return <GarantiasView guarantees={guarantees} projects={projects} onOpenProject={openProject} onOpenProjectTab={openProjectAtTab} initialAction={moduleAction} initialProjectId={moduleProjectId} onSaved={async () => setGuarantees(await dataRepository.getGuarantees())} />;
       case 'deficiencias':
         return selectedDeficiency ? (
           <DeficiencyDetailView

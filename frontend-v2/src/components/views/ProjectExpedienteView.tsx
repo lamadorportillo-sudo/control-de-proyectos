@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, FileText, Receipt, ShieldCheck, AlertOctagon, Camera, WalletCards, ClipboardList } from 'lucide-react';
-import type { Project, Contract, Estimate, Guarantee, Deficiency, DocumentEvidence, FieldVisit } from '../../types.ts';
+import { ArrowLeft, FileText, Receipt, ShieldCheck, AlertOctagon, Camera, WalletCards, ClipboardList, History, UploadCloud, Plus } from 'lucide-react';
+import type { Project, Contract, Estimate, Guarantee, Deficiency, DocumentEvidence, FieldVisit, AuditLog, AppModule } from '../../types.ts';
 import { formatLempiras, formatPercent, formatDateSpanish } from '../../services/calculationService.ts';
 import { getEvidenceAccessUrl } from '../../services/evidenceAccessService.ts';
 
@@ -12,10 +12,12 @@ interface ProjectExpedienteViewProps {
   deficiencies: Deficiency[];
   documents: DocumentEvidence[];
   visits: FieldVisit[];
+  auditLogs: AuditLog[];
+  onNavigate: (module: AppModule, extra?: any) => void;
   onBack: () => void;
 }
 
-type TabId = 'resumen' | 'contrato' | 'presupuesto' | 'estimaciones' | 'garantias' | 'visitas' | 'deficiencias' | 'documentos';
+type TabId = 'resumen' | 'presupuesto' | 'contrato' | 'estimaciones' | 'garantias' | 'documentos' | 'visitas' | 'deficiencias' | 'historial';
 
 export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
   project,
@@ -25,6 +27,8 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
   deficiencies,
   documents,
   visits,
+  auditLogs,
+  onNavigate,
   onBack,
 }) => {
   const [tab, setTab] = useState<TabId>('resumen');
@@ -37,6 +41,14 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
   const projectDocuments = useMemo(() => documents.filter((x) => x.projectId === project.id), [documents, project.id]);
   const projectVisits = useMemo(() => visits.filter((x) => x.projectId === project.id), [visits, project.id]);
   const contract = projectContracts[0];
+  const projectHistory = useMemo(
+    () => auditLogs.filter((log) =>
+      log.entityId === project.id ||
+      log.entityCode === project.code ||
+      String(log.details || '').toLowerCase().includes(project.code.toLowerCase())
+    ).slice(0, 100),
+    [auditLogs, project.id, project.code]
+  );
 
   const openEvidence = async (id: string) => {
     setOpeningDocId(id);
@@ -53,13 +65,14 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
 
   const tabs: { id: TabId; label: string; count?: number }[] = [
     { id: 'resumen', label: 'Resumen' },
-    { id: 'contrato', label: 'Contrato', count: projectContracts.length },
-    { id: 'presupuesto', label: 'Presupuesto' },
-    { id: 'estimaciones', label: 'Estimaciones', count: projectEstimates.length },
+    { id: 'presupuesto', label: 'Presupuesto y ampliaciones' },
+    { id: 'contrato', label: 'Contrato y contratista', count: projectContracts.length },
+    { id: 'estimaciones', label: 'Estimaciones y pagos', count: projectEstimates.length },
     { id: 'garantias', label: 'Garantías', count: projectGuarantees.length },
-    { id: 'visitas', label: 'Visitas', count: projectVisits.length },
-    { id: 'deficiencias', label: 'Deficiencias', count: projectDeficiencies.length },
-    { id: 'documentos', label: 'Documentos', count: projectDocuments.length },
+    { id: 'documentos', label: 'Documentos fuente', count: projectDocuments.length },
+    { id: 'visitas', label: 'Supervisión y visitas', count: projectVisits.length },
+    { id: 'deficiencias', label: 'Deficiencias y seguimiento', count: projectDeficiencies.length },
+    { id: 'historial', label: 'Historial / auditoría', count: projectHistory.length },
   ];
 
   return (
@@ -77,6 +90,18 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
           <h2 className="mt-2 text-lg font-bold leading-tight text-white md:text-xl">{project.name}</h2>
           <p className="mt-1 text-xs text-slate-400">{project.location || project.community || 'Ubicación pendiente de registrar'}</p>
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2 rounded-xl border border-[#1f2e45] bg-[#111827] p-3">
+        <button onClick={() => onNavigate('documentos', { action: 'UPLOAD_DOC' })} className="inline-flex items-center gap-1.5 rounded-lg bg-[#172235] px-3 py-2 text-xs font-semibold text-indigo-300 hover:bg-indigo-600 hover:text-white">
+          <UploadCloud className="h-3.5 w-3.5" /> Agregar documento
+        </button>
+        <button onClick={() => onNavigate('registrar_visita', { projectId: project.id })} className="inline-flex items-center gap-1.5 rounded-lg bg-[#172235] px-3 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-600 hover:text-white">
+          <Camera className="h-3.5 w-3.5" /> Registrar visita
+        </button>
+        <button onClick={() => onNavigate('deficiencias', { projectId: project.id })} className="inline-flex items-center gap-1.5 rounded-lg bg-[#172235] px-3 py-2 text-xs font-semibold text-red-300 hover:bg-red-700 hover:text-white">
+          <AlertOctagon className="h-3.5 w-3.5" /> Ver deficiencias
+        </button>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-[#1f2e45] bg-[#111827] p-1.5">
@@ -108,7 +133,15 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
 
       {tab === 'contrato' && (
         <Section icon={FileText} title="Contrato y contratista">
-          {projectContracts.length === 0 ? <Empty text="No hay contrato vinculado a este proyecto." /> : projectContracts.map((c) => (
+          {projectContracts.length === 0 ? (
+            <EmptyActions
+              text="No hay contrato vinculado a este proyecto."
+              actions={[
+                { label: 'Ingresar datos manualmente', onClick: () => onNavigate('contratos', { action: 'NEW_CONTRACT', projectId: project.id }) },
+                { label: 'Subir documento', onClick: () => onNavigate('documentos', { action: 'UPLOAD_DOC', projectId: project.id }) },
+              ]}
+            />
+          ) : projectContracts.map((c) => (
             <div key={c.id} className="grid grid-cols-1 gap-3 md:grid-cols-4">
               <Metric label="Contrato" value={c.contractNumber || 'Sin número'} />
               <Metric label="Contratista" value={c.contractorName || 'No registrado'} />
@@ -135,7 +168,12 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
 
       {tab === 'estimaciones' && (
         <Section icon={Receipt} title="Estimaciones y pagos">
-          {projectEstimates.length === 0 ? <Empty text="No hay estimaciones registradas." /> : (
+          {projectEstimates.length === 0 ? (
+            <EmptyActions
+              text="No hay estimaciones registradas."
+              actions={[{ label: 'Agregar nueva estimación', onClick: () => onNavigate('estimaciones', { action: 'NEW_ESTIMATE', projectId: project.id }) }]}
+            />
+          ) : (
             <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-xs"><thead className="border-b border-[#243247] text-slate-500"><tr><th className="p-2">N.º</th><th className="p-2">Periodo</th><th className="p-2">Bruto</th><th className="p-2">Deducciones</th><th className="p-2">Neto</th><th className="p-2">Estado</th></tr></thead><tbody className="divide-y divide-[#1f2e45]">{projectEstimates.map((e) => <tr key={e.id}><td className="p-2 font-bold text-white">{e.estimateNumber}</td><td className="p-2 text-slate-300">{formatDateSpanish(e.periodStart)} – {formatDateSpanish(e.periodEnd)}</td><td className="p-2 tabular-nums text-slate-200">{formatLempiras(e.grossAmount)}</td><td className="p-2 tabular-nums text-amber-300">{formatLempiras(e.grossAmount - e.netPayable)}</td><td className="p-2 tabular-nums font-semibold text-emerald-300">{formatLempiras(e.netPayable)}</td><td className="p-2 text-slate-300">{e.paymentStatusLabel}</td></tr>)}</tbody></table></div>
           )}
         </Section>
@@ -143,7 +181,7 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
 
       {tab === 'garantias' && (
         <Section icon={ShieldCheck} title="Garantías y pólizas">
-          {projectGuarantees.length === 0 ? <Empty text="No hay garantías registradas." /> : <div className="grid grid-cols-1 gap-3 md:grid-cols-2">{projectGuarantees.map((g) => <div key={g.id} className="rounded-lg border border-[#243247] bg-[#0b1220] p-3"><div className="flex items-center justify-between gap-3"><strong className="text-sm text-white">{g.typeLabel}</strong><span className="text-[10px] font-semibold uppercase text-amber-300">{g.statusLabel}</span></div><div className="mt-2 space-y-1 text-xs text-slate-400"><div>Póliza: <span className="text-slate-200">{g.policyNumber || 'No registrada'}</span></div><div>Monto: <span className="text-slate-200">{formatLempiras(g.amount)}</span></div><div>Vence: <span className="text-slate-200">{formatDateSpanish(g.expiryDate)}</span></div></div></div>)}</div>}
+          {projectGuarantees.length === 0 ? <EmptyActions text="No hay garantías registradas." actions={[{ label: 'Crear nueva garantía', onClick: () => onNavigate('garantias', { action: 'NEW_GUARANTEE', projectId: project.id }) }]} /> : <div className="grid grid-cols-1 gap-3 md:grid-cols-2">{projectGuarantees.map((g) => <div key={g.id} className="rounded-lg border border-[#243247] bg-[#0b1220] p-3"><div className="flex items-center justify-between gap-3"><strong className="text-sm text-white">{g.typeLabel}</strong><span className="text-[10px] font-semibold uppercase text-amber-300">{g.statusLabel}</span></div><div className="mt-2 space-y-1 text-xs text-slate-400"><div>Póliza: <span className="text-slate-200">{g.policyNumber || 'No registrada'}</span></div><div>Monto: <span className="text-slate-200">{formatLempiras(g.amount)}</span></div><div>Vence: <span className="text-slate-200">{formatDateSpanish(g.expiryDate)}</span></div></div></div>)}</div>}
         </Section>
       )}
 
@@ -160,9 +198,26 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
       )}
 
       {tab === 'documentos' && (
-        <Section icon={ClipboardList} title="Documentos y evidencias">
+        <Section icon={ClipboardList} title="Documentos fuente">
           {documentError && <div className="mb-3 rounded-lg border border-amber-800/60 bg-amber-950/25 p-3 text-xs text-amber-200">{documentError}</div>}
-          {projectDocuments.length === 0 ? <Empty text="No hay documentos o evidencias vinculadas." /> : <div className="space-y-2">{projectDocuments.map((d) => <div key={d.id} className="flex items-center justify-between gap-3 rounded-lg border border-[#243247] bg-[#0b1220] p-3"><div className="min-w-0"><div className="truncate text-xs font-semibold text-white">{d.title || d.fileName}</div><div className="mt-0.5 text-[10px] text-slate-500">{d.typeLabel} · {formatDateSpanish(d.uploadDate)}</div></div><button onClick={() => void openEvidence(d.id)} disabled={openingDocId === d.id} className="text-xs font-semibold text-blue-400 hover:text-blue-300 disabled:opacity-50">{openingDocId === d.id ? 'Abriendo…' : 'Abrir'}</button></div>)}</div>}
+          {projectDocuments.length === 0 ? <EmptyActions text="No hay documentos o evidencias vinculadas." actions={[{ label: 'Subir documento', onClick: () => onNavigate('documentos', { action: 'UPLOAD_DOC', projectId: project.id }) }]} /> : <div className="space-y-2">{projectDocuments.map((d) => <div key={d.id} className="flex items-center justify-between gap-3 rounded-lg border border-[#243247] bg-[#0b1220] p-3"><div className="min-w-0"><div className="truncate text-xs font-semibold text-white">{d.title || d.fileName}</div><div className="mt-0.5 text-[10px] text-slate-500">{d.typeLabel} · {formatDateSpanish(d.uploadDate)}</div></div><button onClick={() => void openEvidence(d.id)} disabled={openingDocId === d.id} className="text-xs font-semibold text-blue-400 hover:text-blue-300 disabled:opacity-50">{openingDocId === d.id ? 'Abriendo…' : 'Abrir'}</button></div>)}</div>}
+        </Section>
+      )}
+
+      {tab === 'historial' && (
+        <Section icon={History} title="Historial / auditoría">
+          {projectHistory.length === 0 ? <Empty text="No hay eventos de auditoría vinculados directamente a este expediente." /> : (
+            <div className="space-y-2">{projectHistory.map((log) => (
+              <div key={log.id} className="rounded-lg border border-[#243247] bg-[#0b1220] p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <strong className="text-xs text-white">{log.action}</strong>
+                  <span className="text-[10px] text-slate-500">{formatDateSpanish(log.timestamp)}</span>
+                </div>
+                <div className="mt-1 text-[10px] text-slate-500">{log.user} · {log.role}</div>
+                <p className="mt-2 text-xs text-slate-300">{log.details}</p>
+              </div>
+            ))}</div>
+          )}
         </Section>
       )}
     </div>
@@ -184,3 +239,16 @@ const Section: React.FC<{ icon: React.ComponentType<{ className?: string }>; tit
 );
 
 const Empty: React.FC<{ text: string }> = ({ text }) => <div className="rounded-lg border border-dashed border-[#243247] p-5 text-center text-xs text-slate-500">{text}</div>;
+
+const EmptyActions: React.FC<{text:string;actions:Array<{label:string;onClick:()=>void}>}> = ({text,actions}) => (
+  <div className="rounded-lg border border-dashed border-[#243247] p-5 text-center">
+    <div className="text-xs text-slate-500">{text}</div>
+    <div className="mt-3 flex flex-wrap justify-center gap-2">
+      {actions.map((action) => (
+        <button key={action.label} onClick={action.onClick} className="inline-flex items-center gap-1 rounded-lg bg-[#172235] px-3 py-2 text-xs font-semibold text-blue-300 hover:bg-blue-600 hover:text-white">
+          <Plus className="h-3.5 w-3.5" /> {action.label}
+        </button>
+      ))}
+    </div>
+  </div>
+);

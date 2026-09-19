@@ -15,7 +15,6 @@ import { EstimacionesView } from './components/views/EstimacionesView.tsx';
 import { GarantiasView } from './components/views/GarantiasView.tsx';
 import { DeficienciasView } from './components/views/DeficienciasView.tsx';
 import { DeficiencyDetailView } from './components/views/DeficiencyDetailView.tsx';
-import { DocumentosView } from './components/views/DocumentosView.tsx';
 import { TransparenciaView } from './components/views/TransparenciaView.tsx';
 import { PublicTransparencyPortalView, type PublicPortalDraft } from './components/views/PublicTransparencyPortalView.tsx';
 import { ReportesView } from './components/views/ReportesView.tsx';
@@ -137,7 +136,7 @@ export default function App() {
           setEstimates(await dataRepository.getEstimates());
         } else if (currentModule === 'garantias' && guarantees.length === 0) {
           setGuarantees(await dataRepository.getGuarantees());
-        } else if ((currentModule === 'documentos' || currentModule === 'convenios' || (currentModule === 'deficiencias' && selectedDeficiencyId) || (currentModule === 'visitas' && selectedVisitId)) && documents.length === 0) {
+        } else if ((currentModule === 'convenios' || (currentModule === 'deficiencias' && selectedDeficiencyId) || (currentModule === 'visitas' && selectedVisitId)) && documents.length === 0) {
           setDocuments(await dataRepository.getDocuments());
         } else if ((currentModule === 'modo_campo' || currentModule === 'visitas') && visits.length === 0) {
           setVisits(await dataRepository.getFieldVisits());
@@ -373,8 +372,6 @@ export default function App() {
             onSaved={async () => setDeficiencies(await dataRepository.getDeficiencies())}
           />
         );
-      case 'documentos':
-        return <DocumentosView documents={documents} projects={projects} initialAction={moduleAction} initialProjectId={moduleProjectId} onUploaded={async () => setDocuments(await dataRepository.getDocuments())} />;
       case 'reportes':
         return <ReportesView projects={projects} onOpenProject={openProject} onOpenProjectTab={openProjectAtTab} />;
       case 'transparencia':

@@ -11,6 +11,7 @@ import {
   Menu,
   UserRound,
   Settings,
+  LogOut,
 } from 'lucide-react';
 import type { AppModule } from '../../types.ts';
 import { getV2AuthState } from '../../services/supabaseClient.ts';
@@ -27,6 +28,7 @@ interface HeaderProps {
   onToggleSidebar?: () => void;
   onOpenZordon?: () => void;
   blockingDeficiencyCount?: number;
+  onLogout?: () => Promise<void> | void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -40,6 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleSidebar,
   onOpenZordon,
   blockingDeficiencyCount = 0,
+  onLogout,
 }) => {
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
   const [authEmail, setAuthEmail] = useState('');
@@ -158,6 +161,14 @@ export const Header: React.FC<HeaderProps> = ({
                 <button onClick={() => { onNavigate('configuracion'); setShowUserMenu(false); }} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-slate-300 hover:bg-[#172235] hover:text-white">
                   <Settings className="h-3.5 w-3.5" /> Configuración
                 </button>
+                {onLogout && authenticated && (
+                  <button
+                    onClick={() => { setShowUserMenu(false); void onLogout(); }}
+                    className="mt-1 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-red-300 hover:bg-red-950/40 hover:text-red-200"
+                  >
+                    <LogOut className="h-3.5 w-3.5" /> Cerrar sesión
+                  </button>
+                )}
               </div>
               <p className="mt-2 text-[10px] leading-relaxed text-slate-500">La V2 no permite cambiar roles manualmente. El rol proviene de Supabase y las políticas RLS.</p>
             </div>

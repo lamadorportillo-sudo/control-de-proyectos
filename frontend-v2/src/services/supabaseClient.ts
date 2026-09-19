@@ -4,7 +4,7 @@ const DEFAULT_SUPABASE_URL = 'https://flethujkrharehjikwgj.supabase.co';
 // Publishable client key: designed by Supabase to be exposed in browser applications.
 // Authorization continues to be enforced by Auth + RLS; no service-role secret is embedded here.
 const DEFAULT_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_UqstbAXxbwLd8NqeiyEQrA_IOESNT-6';
-const LEGACY_SESSION_KEY = 'control_contractual_session_v3';
+export const LEGACY_SESSION_KEY = 'control_contractual_session_v3';
 
 const runtimeConfig = typeof window !== 'undefined'
   ? (window as any).__CC_V2_CONFIG__ || {}
@@ -16,7 +16,7 @@ const supabaseUrl = String(
   DEFAULT_SUPABASE_URL
 ).trim();
 
-const supabasePublishableKey = String(
+export const supabasePublishableKey = String(
   runtimeConfig.supabasePublishableKey ||
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
   DEFAULT_SUPABASE_PUBLISHABLE_KEY

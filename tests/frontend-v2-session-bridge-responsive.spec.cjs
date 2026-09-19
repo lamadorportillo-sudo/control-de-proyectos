@@ -133,6 +133,27 @@ async function mockSupabase(page, capture) {
       });
     }
 
+    if (path === '/functions/v1/secure-login') {
+      capture.secureLoginRequests = (capture.secureLoginRequests || 0) + 1;
+      let body = {};
+      try { body = request.postDataJSON(); } catch {}
+      capture.secureLoginBody = body;
+      const accessToken = capture.token || makeJwt();
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          user: userPayload(),
+          access_token: accessToken,
+          refresh_token: 'refresh-qa',
+          expires_in: 3600,
+          security_session_id: 'qa-security-session',
+          device_label: 'Chromium QA',
+          mfa_required: false,
+        }),
+      });
+    }
+
     if (path === '/functions/v1/halu-chat') {
       capture.functionAuth = auth;
       try {
@@ -304,15 +325,38 @@ test('Portal Público se abre separado del shell administrativo', async ({ page 
   await expect(page.getByRole('button', { name: /Volver al generador/i })).toBeVisible();
 });
 
-test('V2 bloquea lecturas de datos cuando no existe sesión productiva', async ({ page }) => {
+test('V2 muestra acceso propio y bloquea datos sin sesión', async ({ page }) => {
   const capture = { restRequests: 0 };
   await mockSupabase(page, capture);
 
   await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
 
-  await expect(page.getByText(/Sesión requerida\. Abre la V2 desde una sesión iniciada en Control Contractual\./)).toBeVisible();
-  await page.waitForTimeout(500);
+  await expect(page.getByRole('heading', { name: 'Ingresar' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Ingresar' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Solicitar acceso' })).toBeVisible();
+  await page.waitForTimeout(300);
   expect(capture.restRequests).toBe(0);
+});
+
+test('V2 puede iniciar sesión directamente con secure-login', async ({ page }) => {
+  const token = makeJwt();
+  const capture = { token, restRequests: 0, secureLoginRequests: 0 };
+  await mockSupabase(page, capture);
+
+  await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
+  await page.getByPlaceholder('correo@institucion.hn').fill('qa-v2@example.com');
+  const password = page.locator('input[autocomplete="current-password"]');
+  await password.fill('Clave-Segura-123');
+  await page.getByRole('button', { name: 'Ingresar' }).click();
+
+  await expect.poll(() => capture.secureLoginRequests).toBe(1);
+  expect(capture.secureLoginBody?.email).toBe('qa-v2@example.com');
+  await expect.poll(() => capture.restRequests).toBeGreaterThan(0);
+  await expect(page.locator('[data-viewport-mode]').first()).toBeVisible();
+
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('control_contractual_session_v3') || 'null'));
+  expect(stored?.accessToken).toBe(token);
+  expect(stored?.securitySessionId).toBe('qa-security-session');
 });
 
 

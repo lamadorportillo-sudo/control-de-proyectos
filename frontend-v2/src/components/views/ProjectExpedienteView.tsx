@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, FileText, Receipt, ShieldCheck, AlertOctagon, Camera, WalletCards, ClipboardList, History, UploadCloud, Plus } from 'lucide-react';
+import { ArrowLeft, FileText, Receipt, ShieldCheck, AlertOctagon, Camera, WalletCards, ClipboardList, History, Plus } from 'lucide-react';
 import type { Project, Contract, Estimate, Guarantee, Deficiency, DocumentEvidence, FieldVisit, AuditLog, AppModule } from '../../types.ts';
 import { formatLempiras, formatPercent, formatDateSpanish } from '../../services/calculationService.ts';
-import { downloadEvidenceFile, getEvidenceAccessUrl } from '../../services/evidenceAccessService.ts';
 import { ProjectReportView } from './ProjectReportView.tsx';
 
 interface ProjectExpedienteViewProps {
@@ -37,15 +36,9 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
   initialTab = null,
 }) => {
   const [tab, setTab] = useState<TabId>('resumen');
-  const [openingDocId, setOpeningDocId] = useState<string | null>(null);
-  const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null);
-  const [documentError, setDocumentError] = useState('');
 
   useEffect(() => {
     setTab(isTabId(initialTab) ? initialTab : 'resumen');
-    setOpeningDocId(null);
-    setDownloadingDocId(null);
-    setDocumentError('');
   }, [project.id, initialTab]);
   const projectContracts = useMemo(() => contracts.filter((x) => x.projectId === project.id), [contracts, project.id]);
   const projectEstimates = useMemo(() => estimates.filter((x) => x.projectId === project.id), [estimates, project.id]);
@@ -95,7 +88,6 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
     { id: 'contrato', label: 'Contrato', count: projectContracts.length },
     { id: 'estimaciones', label: 'Pagos', count: projectEstimates.length },
     { id: 'garantias', label: 'Garantías', count: projectGuarantees.length },
-    { id: 'documentos', label: 'Documentos', count: projectDocuments.length },
     { id: 'visitas', label: 'Visitas', count: projectVisits.length },
     { id: 'deficiencias', label: 'Deficiencias', count: projectDeficiencies.length },
     { id: 'historial', label: 'Historial / auditoría', count: projectHistory.length },
@@ -121,9 +113,6 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
       </div>
 
       <div className="flex flex-wrap gap-2 rounded-xl border border-[#2b3a4a] bg-[#151e29] p-3">
-        <button onClick={() => onNavigate('documentos', { action: 'UPLOAD_DOC' })} className="inline-flex items-center gap-1.5 rounded-lg bg-[#1b2735] px-3 py-2 text-xs font-semibold text-indigo-300 hover:bg-[#2b3a4a] hover:text-white">
-          <UploadCloud className="h-3.5 w-3.5" /> Agregar documento
-        </button>
         <button onClick={() => onNavigate('registrar_visita', { projectId: project.id })} className="inline-flex items-center gap-1.5 rounded-lg bg-[#c5a367] px-3 py-2 text-xs font-semibold text-[#0b1118] hover:bg-[#d4b779]">
           <Camera className="h-3.5 w-3.5" /> Registrar visita
         </button>
@@ -177,7 +166,6 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
               text="No hay contrato vinculado a este proyecto."
               actions={[
                 { label: 'Ingresar datos manualmente', onClick: () => onNavigate('contratos', { action: 'NEW_CONTRACT', projectId: project.id }) },
-                { label: 'Subir documento', onClick: () => onNavigate('documentos', { action: 'UPLOAD_DOC', projectId: project.id }) },
               ]}
             />
           ) : projectContracts.map((c) => (
@@ -233,16 +221,6 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
       {tab === 'deficiencias' && (
         <Section icon={AlertOctagon} title="Deficiencias y seguimiento">
           {projectDeficiencies.length === 0 ? <Empty text="No hay deficiencias registradas para este expediente." /> : <div className="space-y-2">{projectDeficiencies.map((d) => <div key={d.id} className="rounded-lg border border-red-900/50 bg-red-950/20 p-3"><div className="flex flex-wrap items-center justify-between gap-2"><strong className="text-xs text-white">{d.title}</strong><span className="text-[10px] font-bold uppercase text-red-300">{d.severity} · {d.statusLabel}</span></div><p className="mt-2 text-xs text-slate-300">{d.description}</p></div>)}</div>}
-        </Section>
-      )}
-
-      {tab === 'documentos' && (
-        <Section icon={ClipboardList} title="Documentos fuente">
-          {documentError && <div className="mb-3 rounded-lg border border-amber-800/60 bg-amber-950/25 p-3 text-xs text-amber-200">{documentError}</div>}
-          {projectDocuments.length === 0 ? <EmptyActions text="No hay documentos o evidencias vinculadas." actions={[{ label: 'Subir documento', onClick: () => onNavigate('documentos', { action: 'UPLOAD_DOC', projectId: project.id }) }]} /> : <div className="space-y-2">{projectDocuments.map((d) => <div key={d.id} className="flex items-center justify-between gap-3 rounded-lg border border-[#2b3a4a] bg-[#0b1118] p-3"><div className="min-w-0"><div className="truncate text-xs font-semibold text-white">{d.title || d.fileName}</div><div className="mt-0.5 text-[10px] text-slate-500">{d.typeLabel} · {formatDateSpanish(d.uploadDate)}</div></div><div className="flex shrink-0 items-center gap-2">
-                  <button onClick={() => void openEvidence(d.id)} disabled={openingDocId === d.id || downloadingDocId === d.id} className="text-xs font-semibold text-[#c5a367] hover:text-[#f1e4c5] disabled:opacity-50">{openingDocId === d.id ? 'Abriendo…' : 'Abrir'}</button>
-                  <button onClick={() => void downloadEvidence(d.id)} disabled={openingDocId === d.id || downloadingDocId === d.id} className="rounded-lg border border-[#2b3a4a] px-2 py-1 text-xs font-semibold text-blue-300 hover:bg-[#1b2735] disabled:opacity-50">{downloadingDocId === d.id ? 'Descargando…' : 'Descargar'}</button>
-                </div></div>)}</div>}
         </Section>
       )}
 

@@ -40,6 +40,9 @@ export const GarantiasView: React.FC<GarantiasViewProps> = ({ guarantees, projec
     }).slice(0, 60);
   }, [guarantees, projects, q]);
 
+  const totalGuaranteed = useMemo(() => guarantees.reduce((sum, guarantee) => sum + Number(guarantee.amount || 0), 0), [guarantees]);
+  const attentionCount = useMemo(() => guarantees.filter((guarantee) => guarantee.status === 'VENCIDA' || guarantee.status === 'POR_VENCER').length, [guarantees]);
+
   const saveGuarantee = async () => {
     const amount = Number(form.amount) || 0;
     if (!form.projectId || !form.issueDate || !form.expiryDate || amount <= 0) {
@@ -102,10 +105,27 @@ export const GarantiasView: React.FC<GarantiasViewProps> = ({ guarantees, projec
 
       {message && <div className="rounded-lg border border-[#243247] bg-[#111827] p-3 text-xs text-slate-300">{message}</div>}
 
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Kpi label="Garantías registradas" value={String(guarantees.length)} detail="Pólizas disponibles" />
+        <Kpi label="Requieren atención" value={String(attentionCount)} detail="Vencidas o por vencer" />
+        <Kpi label="Monto garantizado" value={formatLempiras(totalGuaranteed)} detail="Suma de pólizas" />
+      </div>
+
       <div className="rounded-xl border border-[#1f2e45] bg-[#111827] p-4">
         <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Proyecto, póliza, tipo, emisor o estado…" className="w-full rounded-lg border border-[#243247] bg-[#0b1220] py-2.5 pl-9 pr-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-amber-500" /></div>
         <div className="mt-2 text-[11px] text-slate-500">{q.length < 2 ? 'Escribe al menos 2 caracteres.' : `${results.length} coincidencia(s).`}</div>
       </div>
+
+      {q.length < 2 && (
+        <div className="rounded-xl border border-dashed border-[#243247] bg-[#0d1623] p-5 text-center">
+          <div className="text-sm font-semibold text-white">{guarantees.length === 0 ? 'Aún no hay garantías registradas' : 'Busca una garantía cuando la necesites'}</div>
+          <div className="mx-auto mt-1 max-w-xl text-xs leading-relaxed text-slate-500">{guarantees.length === 0 ? 'Usa “Nueva garantía” para registrar la póliza, fechas, monto y emisor.' : 'Escribe al menos 2 caracteres para consultar por proyecto, póliza, emisor o estado.'}</div>
+        </div>
+      )}
+
+      {q.length >= 2 && results.length === 0 && (
+        <div className="rounded-xl border border-dashed border-[#243247] bg-[#0d1623] p-5 text-center text-xs text-slate-500">No encontramos garantías con esa búsqueda.</div>
+      )}
 
       <div className="space-y-3">
         {results.map((guarantee) => {
@@ -155,6 +175,14 @@ export const GarantiasView: React.FC<GarantiasViewProps> = ({ guarantees, projec
     </div>
   );
 };
+
+const Kpi: React.FC<{ label: string; value: string; detail: string }> = ({ label, value, detail }) => (
+  <div className="rounded-xl border border-[#1f2e45] bg-[#111827] p-3.5">
+    <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</div>
+    <div className="mt-1 text-base font-bold text-white tabular-nums">{value}</div>
+    <div className="mt-0.5 text-[11px] text-slate-500">{detail}</div>
+  </div>
+);
 
 const Field: React.FC<{label:string;children:React.ReactNode;wide?:boolean}> = ({label,children,wide}) => <label className={wide ? 'sm:col-span-2' : ''}><span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</span>{children}</label>;
 const Metric: React.FC<{ label: string; value: string }> = ({ label, value }) => <div className="rounded-lg border border-[#243247] bg-[#0b1220] p-2"><div className="text-[9px] font-semibold uppercase tracking-wider text-slate-500">{label}</div><div className="mt-1 text-[11px] font-semibold text-slate-200 tabular-nums">{value}</div></div>;

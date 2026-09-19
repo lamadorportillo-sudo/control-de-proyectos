@@ -50,7 +50,8 @@ export const ContratosView: React.FC<ContratosViewProps> = ({ contracts, project
   }, [contracts, projects, q]);
 
   const totalContracted = useMemo(() => contracts.reduce((sum, contract) => sum + Number(contract.amount || 0), 0), [contracts]);
-  const activeContracts = useMemo(() => contracts.filter((contract) => contract.status === 'VIGENTE').length, [contracts]);
+  const activeContracts = useMemo(() => contracts.filter((contract) => contract.status === 'VIGENTE' || contract.status === 'MODIFICADO').length, [contracts]);
+  const pendingSignature = useMemo(() => contracts.filter((contract) => contract.status === 'PENDIENTE_FIRMA').length, [contracts]);
 
   const saveContract = async () => {
     if (!form.projectId || !form.contractNumber.trim() || !form.contractorName.trim() || Number(form.amount) <= 0) {
@@ -109,9 +110,10 @@ export const ContratosView: React.FC<ContratosViewProps> = ({ contracts, project
 
       {message && <div className="rounded-lg border border-[#243247] bg-[#111827] p-3 text-xs text-slate-300">{message}</div>}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label="Contratos registrados" value={String(contracts.length)} detail="Expedientes disponibles" />
-        <Kpi label="Contratos vigentes" value={String(activeContracts)} detail="Estado actual" />
+        <Kpi label="Contratos activos" value={String(activeContracts)} detail="Vigentes o modificados" />
+        <Kpi label="Pendientes de firma" value={String(pendingSignature)} detail="Requieren formalización" />
         <Kpi label="Monto contractual" value={formatLempiras(totalContracted)} detail="Suma de contratos" />
       </div>
 
@@ -137,14 +139,28 @@ export const ContratosView: React.FC<ContratosViewProps> = ({ contracts, project
       <div className="space-y-3">
         {results.map((contract) => {
           const project = projects.find((p) => p.id === contract.projectId);
+          const actionLabel =
+            contract.status === 'PENDIENTE_FIRMA' ? 'Completar firma y formalización' :
+            contract.status === 'VIGENTE' ? 'Dar seguimiento a ejecución' :
+            contract.status === 'MODIFICADO' ? 'Revisar modificación contractual' :
+            'Consultar liquidación y cierre';
+          const statusTone =
+            contract.status === 'PENDIENTE_FIRMA' ? 'bg-amber-950 text-amber-300' :
+            contract.status === 'LIQUIDADO' ? 'bg-emerald-950 text-emerald-300' :
+            contract.status === 'MODIFICADO' ? 'bg-blue-950 text-blue-300' :
+            'bg-[#172235] text-slate-300';
           return (
             <button key={contract.id} onClick={() => onOpenProject(contract.projectId)} className="group w-full rounded-xl border border-[#1f2e45] bg-[#111827] p-4 text-left hover:border-blue-700 hover:bg-[#131d2f]">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2"><span className="rounded bg-blue-950/70 px-2 py-0.5 font-mono text-xs font-bold text-blue-300">{contract.contractNumber || 'SIN NÚMERO'}</span><span className="rounded bg-[#172235] px-2 py-0.5 text-[10px] font-semibold uppercase text-slate-300">{contract.statusLabel}</span></div>
+                  <div className="flex flex-wrap items-center gap-2"><span className="rounded bg-blue-950/70 px-2 py-0.5 font-mono text-xs font-bold text-blue-300">{contract.contractNumber || 'SIN NÚMERO'}</span><span className={`rounded px-2 py-0.5 text-[10px] font-semibold uppercase ${statusTone}`}>{contract.statusLabel}</span></div>
                   <h3 className="mt-2 text-sm font-semibold text-white">{contract.contractorName || 'Contratista no registrado'}</h3>
                   <div className="mt-1 text-xs text-slate-400">{project?.code} · {project?.name}</div>
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-400"><span>Monto: <strong className="text-slate-200">{formatLempiras(contract.amount)}</strong></span><span>Firma: <strong className="text-slate-200">{formatDateSpanish(contract.signedDate)}</strong></span><span>Plazo: <strong className="text-slate-200">{contract.executionTermDays || 0} días</strong></span></div>
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[#243247] pt-3">
+                    <span className={contract.status === 'PENDIENTE_FIRMA' ? 'text-[11px] font-semibold text-amber-300' : contract.status === 'LIQUIDADO' ? 'text-[11px] font-semibold text-emerald-300' : 'text-[11px] font-semibold text-blue-300'}>{actionLabel}</span>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-300 group-hover:text-white">Abrir expediente <ArrowRight className="h-3 w-3" /></span>
+                  </div>
                 </div>
                 <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-slate-500 group-hover:translate-x-0.5 group-hover:text-blue-400" />
               </div>

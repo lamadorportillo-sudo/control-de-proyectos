@@ -14,14 +14,16 @@ import {
 
 interface Props {
   onAuthenticated: () => Promise<void> | void;
+  forceRecovery?: boolean;
+  onRecoveryCompleted?: () => void;
 }
 
 type Mode = 'login' | 'request' | 'recovery';
 
 const inputClass = 'w-full rounded-lg border border-[#2b3a50] bg-[#0b1220] px-3 py-2.5 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30';
 
-export const LoginView: React.FC<Props> = ({ onAuthenticated }) => {
-  const [mode, setMode] = useState<Mode>(recoveryModeRequested() ? 'recovery' : 'login');
+export const LoginView: React.FC<Props> = ({ onAuthenticated, forceRecovery = false, onRecoveryCompleted }) => {
+  const [mode, setMode] = useState<Mode>(forceRecovery || recoveryModeRequested() ? 'recovery' : 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -116,6 +118,7 @@ export const LoginView: React.FC<Props> = ({ onAuthenticated }) => {
       setMessage('Contraseña actualizada. Ya puedes ingresar.');
       setPassword('');
       setConfirmPassword('');
+      onRecoveryCompleted?.();
       setMode('login');
     } catch (error: any) {
       setMessage(String(error?.message || 'No se pudo actualizar la contraseña.'));

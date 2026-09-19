@@ -6,6 +6,7 @@ on:
       - integracion-ai-studio
       - v2-auth-root-prep
       - v2-root-switch
+      - v2-final-hardening
     paths:
       - 'frontend-v2/**'
       - 'tests/frontend-v2-session-bridge-responsive.spec.cjs'
@@ -26,8 +27,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: integracion-ai-studio
 
       - name: Setup Node
         uses: actions/setup-node@v4

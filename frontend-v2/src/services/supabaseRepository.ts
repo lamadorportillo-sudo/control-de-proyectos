@@ -32,6 +32,17 @@ function uniqueRows<T extends Row>(rows: T[]): T[] {
   });
 }
 
+function uniqueByBusinessKey<T extends Row>(rows: T[], keyOf: (row: T) => string): T[] {
+  const seen = new Set<string>();
+  return rows.filter((row) => {
+    const businessKey = keyOf(row).trim();
+    const key = businessKey || `id:${s(row.id)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 const dateOnly = (value: unknown): string => s(value).slice(0, 10);
 
 function projectStatus(row: Row): Project['status'] {
@@ -429,7 +440,7 @@ export class SupabaseDataRepository implements IDataRepository {
     if (workspaceId) query = query.eq('workspace_id', workspaceId);
     const { data, error } = await query;
     if (error) throw error;
-    return uniqueRows(data || []).map(mapProject).sort((a, b) =>
+    return uniqueByBusinessKey(uniqueRows(data || []), (row) => s(row.code) || [s(row.name), s(row.location)].join('|')).map(mapProject).sort((a, b) =>
       String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''))
     );
   }
@@ -502,7 +513,7 @@ export class SupabaseDataRepository implements IDataRepository {
       .is('voided_at', null)
       .order('updated_at', { ascending: false });
     if (error) throw error;
-    return uniqueRows(data || []).map(mapContract);
+    return uniqueByBusinessKey(uniqueRows(data || []), (row) => [s(row.project_id), s(row.number)].join('|')).map(mapContract);
   }
 
   async getContractByProjectId(projectId: string): Promise<Contract | undefined> {
@@ -570,7 +581,7 @@ export class SupabaseDataRepository implements IDataRepository {
     if (projectId) query = query.eq('project_id', projectId);
     const { data, error } = await query;
     if (error) throw error;
-    return uniqueRows(data || []).map(mapEstimate);
+    return uniqueByBusinessKey(uniqueRows(data || []), (row) => [s(row.project_id), s(row.number)].join('|')).map(mapEstimate);
   }
 
   async saveEstimate(estimate: Estimate): Promise<void> {
@@ -643,7 +654,7 @@ export class SupabaseDataRepository implements IDataRepository {
     if (contractId) query = query.eq('contract_id', contractId);
     const { data, error } = await query;
     if (error) throw error;
-    return uniqueRows(data || []).map(mapGuarantee);
+    return uniqueByBusinessKey(uniqueRows(data || []), (row) => [s(row.project_id), s(row.guarantee_type), s(row.number)].join('|')).map(mapGuarantee);
   }
 
   async saveGuarantee(guarantee: Guarantee): Promise<void> {
@@ -732,7 +743,7 @@ export class SupabaseDataRepository implements IDataRepository {
       byDeficiency.set(key, list);
     }
 
-    return uniqueRows(data || []).map((row: Row) => mapStructuredDeficiency(row, byDeficiency.get(s(row.id)) || []));
+    return uniqueByBusinessKey(uniqueRows(data || []), (row) => [s(row.project_id), s(row.title), s(row.reported_at || row.created_at)].join('|')).map((row: Row) => mapStructuredDeficiency(row, byDeficiency.get(s(row.id)) || []));
   }
 
   async saveDeficiency(deficiency: Deficiency): Promise<void> {
@@ -777,7 +788,7 @@ export class SupabaseDataRepository implements IDataRepository {
     if (projectId) query = query.eq('project_id', projectId);
     const { data, error } = await query;
     if (error) throw error;
-    return uniqueRows(data || []).map(mapDocument);
+    return uniqueByBusinessKey(uniqueRows(data || []), (row) => [s(row.project_id), s(row.visit_id), s(row.deficiency_id), s(row.file_name), s(row.created_at)].join('|')).map(mapDocument);
   }
 
   async saveDocument(_doc: DocumentEvidence): Promise<void> {
@@ -793,7 +804,7 @@ export class SupabaseDataRepository implements IDataRepository {
     if (projectId) query = query.eq('project_id', projectId);
     const { data, error } = await query;
     if (error) throw error;
-    return uniqueRows(data || []).map(mapVisit);
+    return uniqueByBusinessKey(uniqueRows(data || []), (row) => [s(row.project_id), s(row.visit_date), s(row.inspector)].join('|')).map(mapVisit);
   }
 
   async saveFieldVisit(visit: FieldVisit): Promise<void> {

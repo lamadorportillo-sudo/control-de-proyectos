@@ -265,7 +265,7 @@ export default function App() {
           />
         );
       case 'documentos':
-        return <DocumentosView documents={documents} projects={projects} />;
+        return <DocumentosView documents={documents} projects={projects} onUploaded={async () => setDocuments(await dataRepository.getDocuments())} />;
       case 'reportes':
         return <ReportesView projects={projects} onOpenProject={openProject} />;
       case 'transparencia':

@@ -284,6 +284,26 @@ test('Transparencia inicia sin categorías preseleccionadas y permite elegir for
   await expect(page.getByRole('button', { name: /Generar vista seleccionada/i })).toBeDisabled();
 });
 
+
+test('Portal Público se abre separado del shell administrativo', async ({ page }) => {
+  const token = makeJwt();
+  const capture = { token, restRequests: 0 };
+
+  await seedProductionSession(page, token);
+  await mockSupabase(page, capture);
+  await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
+
+  await page.getByRole('button', { name: /Transparencia/i }).first().click();
+  await page.getByRole('button', { name: /Proyectos en ejecución/i }).click();
+  await page.getByRole('button', { name: /Generar vista seleccionada/i }).click();
+  await page.getByRole('button', { name: /Abrir vista pública/i }).click();
+
+  await expect(page.getByText('Portal público de transparencia')).toBeVisible();
+  await expect(page.getByText('Vista ciudadana · Solo contenido seleccionado')).toBeVisible();
+  await expect(page.locator('#main-app-sidebar')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Volver al generador/i })).toBeVisible();
+});
+
 test('V2 bloquea lecturas de datos cuando no existe sesión productiva', async ({ page }) => {
   const capture = { restRequests: 0 };
   await mockSupabase(page, capture);

@@ -47,6 +47,7 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
   const projectDocuments = useMemo(() => documents.filter((x) => x.projectId === project.id), [documents, project.id]);
   const projectVisits = useMemo(() => visits.filter((x) => x.projectId === project.id), [visits, project.id]);
   const contract = projectContracts[0];
+  const openDeficiencyCount = useMemo(() => projectDeficiencies.filter((item) => item.status !== 'CERRADA').length, [projectDeficiencies]);
   const projectHistory = useMemo(
     () => auditLogs.filter((log) =>
       log.entityId === project.id ||
@@ -71,13 +72,13 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
 
   const tabs: { id: TabId; label: string; count?: number }[] = [
     { id: 'resumen', label: 'Resumen' },
-    { id: 'presupuesto', label: 'Presupuesto y ampliaciones' },
-    { id: 'contrato', label: 'Contrato y contratista', count: projectContracts.length },
-    { id: 'estimaciones', label: 'Estimaciones y pagos', count: projectEstimates.length },
+    { id: 'presupuesto', label: 'Presupuesto' },
+    { id: 'contrato', label: 'Contrato', count: projectContracts.length },
+    { id: 'estimaciones', label: 'Pagos', count: projectEstimates.length },
     { id: 'garantias', label: 'Garantías', count: projectGuarantees.length },
-    { id: 'documentos', label: 'Documentos fuente', count: projectDocuments.length },
-    { id: 'visitas', label: 'Supervisión y visitas', count: projectVisits.length },
-    { id: 'deficiencias', label: 'Deficiencias y seguimiento', count: projectDeficiencies.length },
+    { id: 'documentos', label: 'Documentos', count: projectDocuments.length },
+    { id: 'visitas', label: 'Visitas', count: projectVisits.length },
+    { id: 'deficiencias', label: 'Deficiencias', count: projectDeficiencies.length },
     { id: 'historial', label: 'Historial / auditoría', count: projectHistory.length },
   ];
 
@@ -110,12 +111,20 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
         </button>
       </div>
 
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        <Metric label="Presupuesto vigente" value={formatLempiras(project.revisedBudget || project.assignedBudget)} />
+        <Metric label="Contrato" value={contract ? 'Registrado' : 'Pendiente'} />
+        <Metric label="Avance" value={`${formatPercent(project.physicalProgress)} físico · ${formatPercent(project.financialProgress)} financiero`} />
+        <Metric label="Pendientes" value={`${openDeficiencyCount} deficiencia(s) abierta(s)`} />
+      </div>
+
       <div className="overflow-x-auto rounded-xl border border-[#2b3a4a] bg-[#151e29] p-1.5">
         <div className="flex min-w-max gap-1">
           {tabs.map((item) => (
             <button
               key={item.id}
               onClick={() => setTab(item.id)}
+              aria-current={tab === item.id ? 'page' : undefined}
               className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${tab === item.id ? 'bg-[#c5a367] text-[#0b1118]' : 'text-[#8f9fb1] hover:bg-[#1b2735] hover:text-white'}`}
             >
               {item.label}{item.count !== undefined ? ` (${item.count})` : ''}

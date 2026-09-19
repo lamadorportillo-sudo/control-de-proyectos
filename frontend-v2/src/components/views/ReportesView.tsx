@@ -9,6 +9,13 @@ interface ReportesViewProps {
   onOpenProject: (projectId: string) => void;
 }
 
+const escapeHtml = (value: unknown) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#039;');
+
 export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProject }) => {
   const [records, setRecords] = useState<GeneratedReportRecord[]>([]);
   const [query, setQuery] = useState('');
@@ -64,20 +71,13 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
     if (!popup) return;
     try { popup.opener = null; } catch {}
 
-    const esc = (value: unknown) => String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-
     const rows = executionProjects.map((project) => `
       <tr>
-        <td>${esc(project.code)}</td>
-        <td>${esc(project.name)}</td>
-        <td>${esc(project.location)}</td>
-        <td class="num">${esc(project.physicalProgress.toFixed(2))}%</td>
-        <td class="num">${esc(project.financialProgress.toFixed(2))}%</td>
+        <td>${escapeHtml(project.code)}</td>
+        <td>${escapeHtml(project.name)}</td>
+        <td>${escapeHtml(project.location)}</td>
+        <td class="num">${escapeHtml(project.physicalProgress.toFixed(2))}%</td>
+        <td class="num">${escapeHtml(project.financialProgress.toFixed(2))}%</td>
         <td class="num">${esc(formatLempiras(project.revisedBudget))}</td>
       </tr>`
     ).join('');
@@ -92,12 +92,50 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
         @media print{body{margin:10mm}}
       </style></head><body>
       <h1>Reporte de proyectos en ejecución</h1>
-      <div class="meta">Control Contractual · Generado ${esc(new Date().toLocaleString('es-HN'))} · ${executionProjects.length} proyecto(s)</div>
+      <div class="meta">Control Contractual · Generado ${escapeHtml(new Date().toLocaleString('es-HN'))} · ${executionProjects.length} proyecto(s)</div>
       <table><thead><tr><th>Código</th><th>Proyecto</th><th>Ubicación</th><th>Avance físico</th><th>Avance financiero</th><th>Presupuesto vigente</th></tr></thead>
       <tbody>${rows || '<tr><td colspan="6">No hay proyectos en ejecución.</td></tr>'}</tbody></table>
       <script>window.onload=()=>window.print();<\/script>
       </body></html>`);
     popup.document.close();
+  };
+
+  const exportExecutionWord = () => {
+    const rows = executionProjects.map((project) => `
+      <tr>
+        <td>${escapeHtml(project.code)}</td>
+        <td>${escapeHtml(project.name)}</td>
+        <td>${escapeHtml(project.location)}</td>
+        <td>${escapeHtml(project.physicalProgress.toFixed(2))}%</td>
+        <td>${escapeHtml(project.financialProgress.toFixed(2))}%</td>
+        <td>${escapeHtml(formatLempiras(project.revisedBudget))}</td>
+        <td>${escapeHtml(project.fundingSource)}</td>
+      </tr>`
+    ).join('');
+
+    const html = `<!doctype html>
+      <html lang="es"><head><meta charset="utf-8"><title>Proyectos en ejecución</title>
+      <style>
+        body{font-family:Arial,sans-serif;color:#111827;margin:28px}
+        h1{font-size:20px;margin:0 0 4px}.meta{color:#64748b;font-size:11px;margin-bottom:18px}
+        table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #cbd5e1;padding:7px;vertical-align:top}
+        th{background:#e2e8f0;text-align:left}
+      </style></head><body>
+      <h1>Reporte de proyectos en ejecución</h1>
+      <div class="meta">Control Contractual · Generado ${escapeHtml(new Date().toLocaleString('es-HN'))} · ${executionProjects.length} proyecto(s)</div>
+      <table><thead><tr><th>Código</th><th>Proyecto</th><th>Ubicación</th><th>Avance físico</th><th>Avance financiero</th><th>Presupuesto vigente</th><th>Fuente</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="7">No hay proyectos en ejecución.</td></tr>'}</tbody></table>
+      </body></html>`;
+
+    const blob = new Blob(['\uFEFF' + html], { type: 'application/msword;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `reporte_proyectos_en_ejecucion_${new Date().toISOString().slice(0, 10)}.doc`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   };
 
   const filtered = useMemo(() => {
@@ -140,6 +178,12 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
               className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500"
             >
               <Printer className="h-3.5 w-3.5" /> Imprimir / Guardar PDF
+            </button>
+            <button
+              onClick={exportExecutionWord}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-800/60 bg-indigo-950/30 px-3 py-2 text-xs font-semibold text-indigo-300 hover:bg-indigo-900/50"
+            >
+              <FileText className="h-3.5 w-3.5" /> Descargar Word
             </button>
             <button
               onClick={exportExecutionCsv}

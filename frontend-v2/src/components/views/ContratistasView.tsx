@@ -4,7 +4,7 @@ import type { Contract, Project } from '../../types.ts';
 import { formatLempiras } from '../../services/calculationService.ts';
 
 const normalizeContractor = (value: string) =>
-  value.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().trim().replace(/\\s+/g, ' ');
+  value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
 
 const normalizeContractorKey = (value: string) =>
   normalizeContractor(value).replace(/[^a-z0-9]/g, '');

@@ -119,6 +119,10 @@ export default function App() {
           setEstimates(await dataRepository.getEstimates());
         } else if (currentModule === 'garantias' && guarantees.length === 0) {
           setGuarantees(await dataRepository.getGuarantees());
+        } else if (currentModule === 'deficiencias' && deficiencies.length === 0) {
+          setDeficiencies(await dataRepository.getDeficiencies());
+        } else if (currentModule === 'auditoria' && auditLogs.length === 0) {
+          setAuditLogs(await dataRepository.getAuditLogs());
         } else if ((currentModule === 'documentos' || currentModule === 'convenios' || (currentModule === 'deficiencias' && selectedDeficiencyId) || (currentModule === 'visitas' && selectedVisitId)) && documents.length === 0) {
           setDocuments(await dataRepository.getDocuments());
         } else if ((currentModule === 'modo_campo' || currentModule === 'visitas') && visits.length === 0) {
@@ -137,7 +141,7 @@ export default function App() {
     };
 
     void loadModuleData();
-  }, [currentModule, selectedDeficiencyId, selectedVisitId, contracts.length, estimates.length, guarantees.length, documents.length, visits.length]);
+  }, [currentModule, selectedDeficiencyId, selectedVisitId, contracts.length, estimates.length, guarantees.length, deficiencies.length, auditLogs.length, documents.length, visits.length]);
 
   useEffect(() => {
     if (!selectedProjectId) return;

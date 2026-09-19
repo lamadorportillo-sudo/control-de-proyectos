@@ -15,9 +15,12 @@ interface ProjectExpedienteViewProps {
   auditLogs: AuditLog[];
   onNavigate: (module: AppModule, extra?: any) => void;
   onBack: () => void;
+  initialTab?: string | null;
 }
 
 type TabId = 'resumen' | 'presupuesto' | 'contrato' | 'estimaciones' | 'garantias' | 'documentos' | 'visitas' | 'deficiencias' | 'historial';
+const tabIds: TabId[] = ['resumen', 'presupuesto', 'contrato', 'estimaciones', 'garantias', 'documentos', 'visitas', 'deficiencias', 'historial'];
+const isTabId = (value: string | null | undefined): value is TabId => Boolean(value && tabIds.includes(value as TabId));
 
 export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
   project,
@@ -30,16 +33,17 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
   auditLogs,
   onNavigate,
   onBack,
+  initialTab = null,
 }) => {
   const [tab, setTab] = useState<TabId>('resumen');
   const [openingDocId, setOpeningDocId] = useState<string | null>(null);
   const [documentError, setDocumentError] = useState('');
 
   useEffect(() => {
-    setTab('resumen');
+    setTab(isTabId(initialTab) ? initialTab : 'resumen');
     setOpeningDocId(null);
     setDocumentError('');
-  }, [project.id]);
+  }, [project.id, initialTab]);
   const projectContracts = useMemo(() => contracts.filter((x) => x.projectId === project.id), [contracts, project.id]);
   const projectEstimates = useMemo(() => estimates.filter((x) => x.projectId === project.id), [estimates, project.id]);
   const projectGuarantees = useMemo(() => guarantees.filter((x) => x.projectId === project.id), [guarantees, project.id]);

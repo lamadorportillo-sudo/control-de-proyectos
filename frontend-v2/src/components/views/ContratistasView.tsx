@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Building2, Search, ArrowRight, FileSignature } from 'lucide-react';
 import type { Contract, Project } from '../../types.ts';
 import { formatLempiras } from '../../services/calculationService.ts';
+import { matchesSearch, normalizeSearch } from '../../services/searchService.ts';
 
 interface ContratistasViewProps {
   contracts: Contract[];
@@ -111,11 +112,9 @@ export const ContratistasView: React.FC<ContratistasViewProps> = ({ contracts, p
   }, [contracts]);
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = normalizeSearch(search);
     if (!q) return contractors;
-    return contractors.filter((c) =>
-      `${c.name} ${c.rtn} ${c.representative}`.toLowerCase().includes(q)
-    );
+    return contractors.filter((c) => matchesSearch(q, [c.name, c.rtn, c.representative]));
   }, [contractors, search]);
 
   return (
@@ -140,6 +139,10 @@ export const ContratistasView: React.FC<ContratistasViewProps> = ({ contracts, p
             className="w-full rounded-lg border border-[#243247] bg-[#0b1220] py-2 pl-9 pr-3 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500"
           />
         </div>
+      </div>
+
+      <div className="text-[11px] text-slate-500">
+        {search.trim() ? `${filtered.length} contratista(s) encontrado(s)` : `${contractors.length} contratista(s) consolidado(s) · ${contracts.length} contrato(s) conservado(s)`}
       </div>
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">

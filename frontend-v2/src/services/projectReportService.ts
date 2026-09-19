@@ -315,8 +315,9 @@ export function buildProjectReportBody(data: ProjectReportData, type: ProjectRep
   return `<div class="report-shell">${options.includeCover ? `<article class="report-cover"><div class="crest">SM</div><div class="report-kicker">MUNICIPALIDAD DE SANTA MARÍA, LA PAZ</div><h1>${esc(typeTitle(type))}</h1><h2>${text(data.project.name)}</h2><p>Código: <b>${text(data.project.code)}</b></p><p>${text(data.project.location || data.project.community)}</p><div class="cover-meta">Unidad de Proyectos · Control Contractual<br>Generado: ${esc(dateTime())}</div></article>` : ''}<article class="report-sheet">${reportHeader(data, type)}${sections.join('')}${notice}${options.includeSignatures ? signatures() : ''}<footer class="report-footer"><span>${text(data.project.code)}</span><span>Control Contractual · ${esc(typeTitle(type))}</span><span>Uso administrativo</span></footer></article></div>`;
 }
 
-export function buildStandaloneReportHtml(data: ProjectReportData, type: ProjectReportType, options: ProjectReportOptions): string {
-  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(typeTitle(type))} · ${esc(plain(data.project.code, 'Proyecto'))}</title><style>${reportCss(options)}</style></head><body>${buildProjectReportBody(data, type, options)}<script>window.addEventListener('load',()=>{const images=[...document.images];Promise.race([Promise.all(images.map((image)=>image.complete?Promise.resolve():new Promise((resolve)=>{image.onload=image.onerror=resolve}))),new Promise((resolve)=>setTimeout(resolve,3500))]).then(()=>{if(new URLSearchParams(location.search).has('autoprint'))setTimeout(()=>window.print(),160);});});<\/script></body></html>`;
+export function buildStandaloneReportHtml(data: ProjectReportData, type: ProjectReportType, options: ProjectReportOptions, bodyOverride?: string): string {
+  const body = bodyOverride ?? buildProjectReportBody(data, type, options);
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(typeTitle(type))} · ${esc(plain(data.project.code, 'Proyecto'))}</title><style>${reportCss(options)}</style></head><body>${body}<script>window.addEventListener('load',()=>{const images=[...document.images];Promise.race([Promise.all(images.map((image)=>image.complete?Promise.resolve():new Promise((resolve)=>{image.onload=image.onerror=resolve}))),new Promise((resolve)=>setTimeout(resolve,3500))]).then(()=>{if(new URLSearchParams(location.search).has('autoprint'))setTimeout(()=>window.print(),160);});});<\/script></body></html>`;
 }
 
 function safeFilePart(value: unknown): string {
@@ -334,19 +335,19 @@ function downloadBlob(blob: Blob, fileName: string): void {
   window.setTimeout(() => URL.revokeObjectURL(url), 1800);
 }
 
-export function openProjectReportPrint(data: ProjectReportData, type: ProjectReportType, options: ProjectReportOptions): boolean {
+export function openProjectReportPrint(data: ProjectReportData, type: ProjectReportType, options: ProjectReportOptions, bodyOverride?: string): boolean {
   const popup = window.open('', '_blank', 'width=1200,height=900');
   if (!popup) return false;
   try { popup.opener = null; } catch {}
   const printScript = `<script>window.addEventListener('load',()=>{const images=[...document.images];Promise.race([Promise.all(images.map((image)=>image.complete?Promise.resolve():new Promise((resolve)=>{image.onload=image.onerror=resolve}))),new Promise((resolve)=>setTimeout(resolve,3500))]).then(()=>setTimeout(()=>window.print(),160));});<\/script>`;
   popup.document.open();
-  popup.document.write(buildStandaloneReportHtml(data, type, options).replace('</body>', `${printScript}</body>`));
+  popup.document.write(buildStandaloneReportHtml(data, type, options, bodyOverride).replace('</body>', `${printScript}</body>`));
   popup.document.close();
   return true;
 }
 
-export function downloadProjectReportHtml(data: ProjectReportData, type: ProjectReportType, options: ProjectReportOptions): void {
-  const html = buildStandaloneReportHtml(data, type, options);
+export function downloadProjectReportHtml(data: ProjectReportData, type: ProjectReportType, options: ProjectReportOptions, bodyOverride?: string): void {
+  const html = buildStandaloneReportHtml(data, type, options, bodyOverride);
   downloadBlob(new Blob([html], { type: 'text/html;charset=utf-8' }), `informe-${safeFilePart(type)}-${safeFilePart(data.project.code)}.html`);
 }
 
@@ -355,13 +356,13 @@ export function downloadProjectReportHtml(data: ProjectReportData, type: Project
  * completo (tablas, portada, fotografías y espacios de firma) sin depender de
  * una plantilla remota ni de un servidor de conversión.
  */
-export function downloadProjectReportWord(data: ProjectReportData, type: ProjectReportType, options: ProjectReportOptions): void {
-  const html = buildStandaloneReportHtml(data, type, options);
+export function downloadProjectReportWord(data: ProjectReportData, type: ProjectReportType, options: ProjectReportOptions, bodyOverride?: string): void {
+  const html = buildStandaloneReportHtml(data, type, options, bodyOverride);
   downloadBlob(new Blob([`\ufeff${html}`], { type: 'application/msword' }), `informe-${safeFilePart(type)}-${safeFilePart(data.project.code)}.doc`);
 }
 
-export async function downloadProjectReportDocx(data: ProjectReportData, type: ProjectReportType, options: ProjectReportOptions): Promise<void> {
-  const html = buildStandaloneReportHtml(data, type, options);
+export async function downloadProjectReportDocx(data: ProjectReportData, type: ProjectReportType, options: ProjectReportOptions, bodyOverride?: string): Promise<void> {
+  const html = buildStandaloneReportHtml(data, type, options, bodyOverride);
   const zip = new JSZip();
   zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="htm" ContentType="text/html"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>`);
   zip.file('_rels/.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`);

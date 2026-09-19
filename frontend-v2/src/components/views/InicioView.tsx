@@ -49,6 +49,11 @@ export const InicioView: React.FC<InicioViewProps> = ({
   const pendingEstimates = estimates.filter(
     (e) => e.paymentStatus === 'ORDEN_PAGO' || e.paymentStatus === 'APROBADA'
   );
+  const totalBudget = projects.reduce(
+    (total, project) => total + (project.revisedBudget || project.assignedBudget || 0),
+    0
+  );
+  const attentionCount = blockingDefs.length + expiredGuarantees.length + pendingEstimates.length;
 
   const quickActions = [
     {
@@ -116,6 +121,60 @@ export const InicioView: React.FC<InicioViewProps> = ({
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </form>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4" aria-label="Resumen operativo">
+        <button
+          type="button"
+          onClick={() => onNavigate('proyectos')}
+          className="rounded-xl border border-[#2b3a4a] bg-[#151e29] p-3 text-left transition hover:border-[#c5a367] hover:bg-[#1b2735]"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Expedientes</span>
+            <FolderGit2 className="h-4 w-4 text-[#c5a367]" />
+          </div>
+          <div className="mt-1 text-lg font-bold tabular-nums text-white">{projects.length}</div>
+          <div className="text-[11px] text-slate-400">proyectos disponibles</div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onNavigate('presupuestos')}
+          className="rounded-xl border border-[#2b3a4a] bg-[#151e29] p-3 text-left transition hover:border-[#c5a367] hover:bg-[#1b2735]"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Presupuesto</span>
+            <CreditCard className="h-4 w-4 text-emerald-400" />
+          </div>
+          <div className="mt-1 truncate text-base font-bold tabular-nums text-white">{formatLempiras(totalBudget)}</div>
+          <div className="text-[11px] text-slate-400">vigente registrado</div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onNavigate('deficiencias')}
+          className="rounded-xl border border-[#2b3a4a] bg-[#151e29] p-3 text-left transition hover:border-red-700/80 hover:bg-[#1b2735]"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Bloqueantes</span>
+            <AlertOctagon className="h-4 w-4 text-red-400" />
+          </div>
+          <div className="mt-1 text-lg font-bold tabular-nums text-white">{blockingDefs.length}</div>
+          <div className="text-[11px] text-slate-400">requieren seguimiento</div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onNavigate(expiredGuarantees.length > 0 ? 'garantias' : 'estimaciones')}
+          className="rounded-xl border border-[#2b3a4a] bg-[#151e29] p-3 text-left transition hover:border-amber-700/80 hover:bg-[#1b2735]"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Por atender</span>
+            <ShieldCheck className="h-4 w-4 text-amber-300" />
+          </div>
+          <div className="mt-1 text-lg font-bold tabular-nums text-white">{attentionCount}</div>
+          <div className="text-[11px] text-slate-400">garantías y pagos</div>
+        </button>
       </div>
 
       <div>
@@ -284,21 +343,27 @@ export const InicioView: React.FC<InicioViewProps> = ({
           </button>
         </div>
 
-        <div className="divide-y divide-[#172235]">
-          {recentActivity.slice(0, 5).map((log) => (
-            <div key={log.id} className="py-2.5 flex items-start justify-between gap-3 text-xs">
-              <div className="space-y-0.5">
-                <div className="text-slate-200 font-medium">{log.details}</div>
-                <div className="text-[11px] text-slate-500 flex items-center gap-2">
-                  <span>{log.user} ({log.role})</span><span>•</span><span>{log.timestamp}</span>
+        {recentActivity.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-[#2b3a4a] px-3 py-5 text-center text-xs text-slate-500">
+            No hay movimientos recientes para mostrar.
+          </div>
+        ) : (
+          <div className="divide-y divide-[#172235]">
+            {recentActivity.slice(0, 5).map((log) => (
+              <div key={log.id} className="py-2.5 flex items-start justify-between gap-3 text-xs">
+                <div className="space-y-0.5">
+                  <div className="text-slate-200 font-medium">{log.details}</div>
+                  <div className="text-[11px] text-slate-500 flex items-center gap-2">
+                    <span>{log.user} ({log.role})</span><span>•</span><span>{log.timestamp}</span>
+                  </div>
                 </div>
+                {log.entityCode && (
+                  <span className="px-2 py-0.5 rounded bg-[#172235] text-slate-300 text-[10px] font-mono shrink-0">{log.entityCode}</span>
+                )}
               </div>
-              {log.entityCode && (
-                <span className="px-2 py-0.5 rounded bg-[#172235] text-slate-300 text-[10px] font-mono shrink-0">{log.entityCode}</span>
-              )}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

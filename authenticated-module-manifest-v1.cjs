@@ -109,6 +109,7 @@ const supplementalModules=[
      filtra su MutationObserver global sin afectar los observadores del resto. */
   ['technical-control-observer-guard-v1.js','20260904-controlobserver1'],
   ['technical-control-v1.js','20260913-controltecnico2'],
+  ['stitch-ui-adapter-v1.js','20260916-stitch1'],
 ];
 
 /* Módulos que el constructor histórico necesita añadir al artefacto y que no

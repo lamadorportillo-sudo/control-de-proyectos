@@ -234,7 +234,6 @@ function mapGuarantee(row: Row): Guarantee {
     expiryDate: dateOnly(row.end_date),
     daysToExpiry: days,
     status: guaranteeStatus(row),
-    statusLabel: guaranteeStatus(row).replaceAll('_', ' '),
     statusLabel: s(row.raw_data?.status || row.status || guaranteeStatus(row)).replaceAll('_', ' '),
     observations: s(row.raw_data?.observations || row.observations || ''),
     sourceDocumentId: s(row.document_ref || '') || undefined,

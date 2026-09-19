@@ -726,16 +726,19 @@ export class SupabaseDataRepository implements IDataRepository {
   }
 
   async getDeficiencies(projectId?: string): Promise<Deficiency[]> {
+    const workspaceId = await this.getWorkspaceId();
     let deficiencyQuery = this.client()
       .from('deficiencies')
       .select('*')
       .order('reported_at', { ascending: false });
+    if (workspaceId) deficiencyQuery = deficiencyQuery.eq('workspace_id', workspaceId);
     if (projectId) deficiencyQuery = deficiencyQuery.eq('project_id', projectId);
 
     let followupQuery = this.client()
       .from('deficiency_followups')
       .select('*')
       .order('created_at', { ascending: true });
+    if (workspaceId) followupQuery = followupQuery.eq('workspace_id', workspaceId);
     if (projectId) followupQuery = followupQuery.eq('project_id', projectId);
 
     const [{ data, error }, { data: followups, error: followupError }] = await Promise.all([
@@ -792,10 +795,12 @@ export class SupabaseDataRepository implements IDataRepository {
   }
 
   async getDocuments(projectId?: string): Promise<DocumentEvidence[]> {
+    const workspaceId = await this.getWorkspaceId();
     let query = this.client()
       .from('project_evidence')
       .select('*')
       .order('created_at', { ascending: false });
+    if (workspaceId) query = query.eq('workspace_id', workspaceId);
     if (projectId) query = query.eq('project_id', projectId);
     const { data, error } = await query;
     if (error) throw error;
@@ -807,11 +812,13 @@ export class SupabaseDataRepository implements IDataRepository {
   }
 
   async getFieldVisits(projectId?: string): Promise<FieldVisit[]> {
+    const workspaceId = await this.getWorkspaceId();
     let query = this.client()
       .from('visits')
       .select('*')
       .is('voided_at', null)
       .order('visit_date', { ascending: false });
+    if (workspaceId) query = query.eq('workspace_id', workspaceId);
     if (projectId) query = query.eq('project_id', projectId);
     const { data, error } = await query;
     if (error) throw error;
@@ -855,11 +862,14 @@ export class SupabaseDataRepository implements IDataRepository {
   }
 
   async getAuditLogs(): Promise<AuditLog[]> {
-    const { data, error } = await this.client()
+    const workspaceId = await this.getWorkspaceId();
+    let query = this.client()
       .from('audit_log')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(250);
+    if (workspaceId) query = query.eq('workspace_id', workspaceId);
+    const { data, error } = await query;
     if (error) throw error;
     return (data || []).map((row: Row) => ({
       id: s(row.id),

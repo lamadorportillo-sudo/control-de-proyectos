@@ -215,6 +215,7 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
           </div>
         </div>
       </div>
+      </div>
 
       <div className="rounded-xl border border-[#1f2e45] bg-[#111827] p-3">
         <div className="relative max-w-xl">

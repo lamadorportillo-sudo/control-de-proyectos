@@ -20,7 +20,7 @@ const normalize = (value: unknown) => String(value || '').normalize('NFD').repla
 
 const isFinishedProject = (project?: Project) => {
   if (!project) return false;
-  return project.status === 'FINALIZADO' || /finaliz|liquid|cerrad/.test(normalize(project.statusLabel));
+  return project.status === 'FINALIZADO' || /finaliz|liquid|cerrad|terminad|concluid/.test(normalize(project.statusLabel));
 };
 
 const yearFromDate = (value?: string) => {

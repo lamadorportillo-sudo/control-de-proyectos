@@ -3,7 +3,9 @@ const fs=require('node:fs');
 const path=require('node:path');
 
 const read=f=>fs.readFileSync(f,'utf8');
-const html=read('index.html');
+// La interfaz principal ya es V2. Estas comprobaciones pertenecen al respaldo histórico.
+const htmlPath=fs.existsSync('legacy.html')?'legacy.html':'index.html';
+const html=read(htmlPath);
 const scripts=[...html.matchAll(/<script\s+[^>]*src="([^"]+)"/g)].map(m=>m[1].split('?')[0]);
 for(const src of scripts){
   if(/^https?:/i.test(src))continue;

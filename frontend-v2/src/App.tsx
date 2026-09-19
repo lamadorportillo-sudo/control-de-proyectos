@@ -365,10 +365,10 @@ export default function App() {
   );
 
   const viewportClass = viewportMode === 'desktop'
-    ? 'w-full h-[100dvh]'
+    ? 'w-full min-h-[100dvh]'
     : viewportMode === 'tablet'
-      ? 'max-w-[820px] mx-auto min-h-[820px] my-4 border border-[#243247] rounded-xl overflow-hidden shadow-2xl'
-      : 'max-w-[420px] mx-auto min-h-[740px] my-4 border border-[#243247] rounded-xl overflow-hidden shadow-2xl';
+      ? 'max-w-[820px] mx-auto min-h-[820px] my-4 border border-[#243247] rounded-xl overflow-visible shadow-2xl'
+      : 'max-w-[420px] mx-auto min-h-[740px] my-4 border border-[#243247] rounded-xl overflow-visible shadow-2xl';
 
   if (sessionRequired || recoveryRequested) {
     return (
@@ -401,7 +401,7 @@ export default function App() {
 
   return (
     <div
-      className={`flex h-[100dvh] flex-col bg-[#0b1118] text-slate-100 overflow-hidden ${viewportClass}`}
+      className={`flex min-h-[100dvh] flex-col bg-[#0b1118] text-slate-100 overflow-visible ${viewportClass}`}
       data-viewport-mode={viewportMode}
       data-telegram-mini-app={viewportMode === 'telegram' ? 'true' : 'false'}
     >
@@ -447,7 +447,7 @@ export default function App() {
         </button>
       )}
 
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 items-start">
         <div className={`${viewportMode === 'mobile' || viewportMode === 'telegram' ? 'hidden' : 'hidden md:block'} shrink-0`}>
           <Sidebar currentModule={currentModule} onNavigate={handleNavigate} isCollapsed={isSidebarCollapsed} onToggleCollapse={() => setIsSidebarCollapsed((value) => !value)} blockingDeficiencyCount={blockingDefs.length} />
         </div>
@@ -459,7 +459,7 @@ export default function App() {
           </div>
         )}
 
-        <main className="min-w-0 min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4 md:p-5 [touch-action:pan-y]">{renderModule()}</main>
+        <main className="min-w-0 min-h-0 flex-1 overflow-visible overscroll-contain p-3 sm:p-4 md:p-5 [touch-action:pan-y]">{renderModule()}</main>
       </div>
 
       <nav className="flex shrink-0 items-center justify-around border-t border-[#2b3a4a] bg-[#101720] px-2 py-2 md:hidden" aria-label="Navegación móvil">

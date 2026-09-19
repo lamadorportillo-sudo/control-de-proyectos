@@ -28,18 +28,19 @@ body {
   background-color: var(--cc-ink-950);
   color: #f1f5f9;
   margin: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 html,
 #root {
-  height: 100%;
+  height: auto;
   min-height: 100%;
   margin: 0;
 }
 
-/* La aplicación usa un único scroll en el área central. El body no debe
-   bloquear el desplazamiento de las vistas largas. */
+/* La aplicación usa el desplazamiento natural del documento para que todas
+   las vistas largas funcionen igual en PC, tablet y celular. */
 html,
 body,
 #root {

@@ -5,6 +5,8 @@ export interface UploadProjectDocumentInput {
   type: string;
   title: string;
   file: File;
+  deficiencyId?: string;
+  visitId?: string;
 }
 
 const safeFileName = (name: string) =>
@@ -78,6 +80,8 @@ export async function uploadProjectDocument(input: UploadProjectDocumentInput): 
       created_by: auth.user.id,
       verification_status: 'unreviewed',
       source_kind: 'web',
+      deficiency_id: input.deficiencyId || null,
+      visit_id: input.visitId || null,
     });
 
   if (insertError) {

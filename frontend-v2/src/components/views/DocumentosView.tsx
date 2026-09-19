@@ -59,6 +59,8 @@ export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, proje
     }).slice(0, 80);
   }, [reports, projects, q]);
 
+  const documentTypeCount = useMemo(() => new Set(documents.map((document) => document.type)).size, [documents]);
+
   const openEvidence = async (id: string) => {
     setOpeningId(id);
     setOpenError('');
@@ -109,12 +111,29 @@ export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, proje
 
       {uploadMessage && <div className="rounded-lg border border-[#243247] bg-[#111827] p-3 text-xs text-slate-300">{uploadMessage}</div>}
 
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Kpi label="Documentos vinculados" value={String(documents.length)} detail="Evidencias de expedientes" />
+        <Kpi label="Tipos documentales" value={String(documentTypeCount)} detail="Clasificaciones usadas" />
+        <Kpi label="Reportes digitales" value={String(reports.length)} detail="Generados en la plataforma" />
+      </div>
+
       <div className="rounded-xl border border-[#1f2e45] bg-[#111827] p-4">
         <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Contrato, estimación, acta, fotografía, plano, proyecto…" className="w-full rounded-lg border border-[#243247] bg-[#0b1220] py-2.5 pl-9 pr-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-indigo-500" /></div>
         <div className="mt-2 text-[11px] text-slate-500">{q.length < 2 ? 'Escribe al menos 2 caracteres.' : `${results.length + reportResults.length} coincidencia(s).`}</div>
       </div>
 
       {openError && <div className="rounded-lg border border-amber-800/60 bg-amber-950/25 p-3 text-xs text-amber-200">{openError}</div>}
+
+      {q.length < 2 && (
+        <div className="rounded-xl border border-dashed border-[#243247] bg-[#0d1623] p-5 text-center">
+          <div className="text-sm font-semibold text-white">{documents.length === 0 && reports.length === 0 ? 'Aún no hay documentos visibles' : 'Busca una evidencia cuando la necesites'}</div>
+          <div className="mx-auto mt-1 max-w-xl text-xs leading-relaxed text-slate-500">{documents.length === 0 && reports.length === 0 ? 'Usa “Subir documento” para vincular contratos, estimaciones, pólizas, actas, fotografías u otros respaldos al proyecto.' : 'Escribe al menos 2 caracteres para buscar por proyecto, tipo, nombre de archivo o título.'}</div>
+        </div>
+      )}
+
+      {q.length >= 2 && results.length + reportResults.length === 0 && (
+        <div className="rounded-xl border border-dashed border-[#243247] bg-[#0d1623] p-5 text-center text-xs text-slate-500">No encontramos documentos ni reportes con esa búsqueda.</div>
+      )}
 
       <div className="space-y-2">
         {reportResults.map((report) => {
@@ -192,5 +211,13 @@ export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, proje
     </div>
   );
 };
+
+const Kpi: React.FC<{ label: string; value: string; detail: string }> = ({ label, value, detail }) => (
+  <div className="rounded-xl border border-[#1f2e45] bg-[#111827] p-3.5">
+    <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</div>
+    <div className="mt-1 text-base font-bold text-white tabular-nums">{value}</div>
+    <div className="mt-0.5 text-[11px] text-slate-500">{detail}</div>
+  </div>
+);
 
 const Field: React.FC<{label:string;children:React.ReactNode;wide?:boolean}> = ({label,children,wide}) => <label className={wide ? 'sm:col-span-2' : ''}><span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</span>{children}</label>;

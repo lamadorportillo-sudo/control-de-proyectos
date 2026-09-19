@@ -47,6 +47,18 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
     [projects]
   );
 
+  const executionStats = useMemo(() => {
+    const count = executionProjects.length;
+    const totalBudget = executionProjects.reduce((sum, project) => sum + (Number(project.revisedBudget) || 0), 0);
+    const avgPhysical = count
+      ? executionProjects.reduce((sum, project) => sum + (Number(project.physicalProgress) || 0), 0) / count
+      : 0;
+    const avgFinancial = count
+      ? executionProjects.reduce((sum, project) => sum + (Number(project.financialProgress) || 0), 0) / count
+      : 0;
+    return { count, totalBudget, avgPhysical, avgFinancial };
+  }, [executionProjects]);
+
   const projectMatches = useMemo(() => {
     const q = projectQuery.trim().toLowerCase();
     if (q.length < 2) return [];
@@ -91,69 +103,68 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
     URL.revokeObjectURL(url);
   };
 
+  const buildExecutionReportHtml = (autoPrint = false) => {
+    const rows = executionProjects.map((project) => `
+      <tr>
+        <td class="code">${escapeHtml(project.code)}</td>
+        <td><b>${escapeHtml(project.name)}</b><div class="sub">${escapeHtml(project.location || project.community || '')}</div></td>
+        <td class="num">${escapeHtml(project.physicalProgress.toFixed(2))}%</td>
+        <td class="num">${escapeHtml(project.financialProgress.toFixed(2))}%</td>
+        <td class="num">${escapeHtml(formatLempiras(project.revisedBudget))}</td>
+        <td>${escapeHtml(project.fundingSource || 'No registrada')}</td>
+      </tr>`
+    ).join('');
+
+    const generated = escapeHtml(new Date().toLocaleString('es-HN'));
+    const size = paperSize === 'Letter' ? 'letter' : 'A4';
+    const printScript = autoPrint ? '<script>window.onload=()=>window.print();<\\/script>' : '';
+
+    return `<!doctype html>
+      <html lang="es"><head><meta charset="utf-8"><title>Reporte de proyectos en ejecución</title>
+      <style>
+        @page{size:${size} ${orientation};margin:13mm}
+        *{box-sizing:border-box}
+        body{font-family:Arial,Helvetica,sans-serif;color:#1d2b36;margin:0;background:#fff;font-size:10pt;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        .header{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:end;border-bottom:3px solid #315f8c;padding-bottom:9px;margin-bottom:11px}
+        .kicker{font-size:8pt;font-weight:800;letter-spacing:.08em;color:#60778c}
+        h1{font-size:18pt;color:#244766;margin:4px 0 2px}.meta{font-size:8pt;color:#657b8d}.badge{border:1px solid #b9c9d8;padding:8px 11px;text-align:right;color:#425a6d}.badge b{display:block;font-size:12pt;color:#244766}
+        .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:12px 0}
+        .metric{border:1px solid #c8d4de;border-top:3px solid #315f8c;background:#fbfcfd;padding:8px;min-height:67px}.metric.gold{border-top-color:#c5a367}
+        .metric label{display:block;font-size:7.3pt;font-weight:800;text-transform:uppercase;letter-spacing:.035em;color:#667b8c}.metric strong{display:block;font-size:13pt;color:#244766;margin-top:4px}.metric small{display:block;font-size:7.2pt;color:#788a98;margin-top:2px}
+        .section-title{border-left:4px solid #315f8c;padding-left:8px;margin:14px 0 7px}.section-title h2{font-size:11pt;color:#244766;margin:0;text-transform:uppercase;letter-spacing:.025em}.section-title p{font-size:8pt;color:#6a7e8e;margin:2px 0 0}
+        table{width:100%;border-collapse:collapse;font-size:8.5pt}th,td{border:1px solid #aabccd;padding:6px 7px;vertical-align:top;overflow-wrap:anywhere}th{background:#e9f0f6;color:#294760;text-align:left;text-transform:uppercase;font-size:7.5pt;letter-spacing:.02em}tbody tr:nth-child(even) td{background:#fafcfd}.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}.code{font-weight:800;white-space:nowrap}.sub{font-size:7.5pt;color:#6f8190;margin-top:2px}
+        .note{margin-top:10px;border-left:3px solid #9eafbc;background:#f6f8fa;padding:8px;font-size:8pt;color:#607180}.footer{display:flex;justify-content:space-between;border-top:2px solid #c5a367;margin-top:12mm;padding-top:5px;font-size:7.5pt;color:#687b8d}
+        @media print{body{margin:0}tr{break-inside:avoid;page-break-inside:avoid}thead{display:table-header-group}}
+      </style></head><body>
+      <header class="header">
+        <div><div class="kicker">CONTROL CONTRACTUAL · REPORTE OPERATIVO</div><h1>Proyectos en ejecución</h1><div class="meta">Generado ${generated} · Información registrada en el sistema</div></div>
+        <div class="badge"><b>${executionStats.count}</b> proyecto(s)</div>
+      </header>
+      <section class="summary">
+        <div class="metric"><label>Proyectos incluidos</label><strong>${executionStats.count}</strong><small>Clasificados en ejecución</small></div>
+        <div class="metric gold"><label>Presupuesto vigente</label><strong>${escapeHtml(formatLempiras(executionStats.totalBudget))}</strong><small>Suma del conjunto mostrado</small></div>
+        <div class="metric"><label>Avance físico promedio</label><strong>${executionStats.avgPhysical.toFixed(2)}%</strong><small>Promedio simple</small></div>
+        <div class="metric gold"><label>Avance financiero promedio</label><strong>${executionStats.avgFinancial.toFixed(2)}%</strong><small>Promedio simple</small></div>
+      </section>
+      <div class="section-title"><h2>Detalle de proyectos</h2><p>Código, ubicación, avances, presupuesto y fuente de financiamiento.</p></div>
+      <table><thead><tr><th>Código</th><th>Proyecto / ubicación</th><th>Avance físico</th><th>Avance financiero</th><th>Presupuesto vigente</th><th>Fuente</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="6">No hay proyectos en ejecución.</td></tr>'}</tbody></table>
+      <div class="note"><b>Nota de control:</b> este reporte resume únicamente los datos disponibles en Control Contractual al momento de generarlo. Los documentos fuente y el expediente de cada proyecto prevalecen para revisión y firma.</div>
+      <footer class="footer"><span>Control Contractual</span><span>Reporte de proyectos en ejecución</span><span>Uso administrativo</span></footer>
+      ${printScript}
+      </body></html>`;
+  };
+
   const printExecutionReport = () => {
     const popup = window.open('', '_blank');
     if (!popup) return;
     try { popup.opener = null; } catch {}
-
-    const rows = executionProjects.map((project) => `
-      <tr>
-        <td>${escapeHtml(project.code)}</td>
-        <td>${escapeHtml(project.name)}</td>
-        <td>${escapeHtml(project.location)}</td>
-        <td class="num">${escapeHtml(project.physicalProgress.toFixed(2))}%</td>
-        <td class="num">${escapeHtml(project.financialProgress.toFixed(2))}%</td>
-        <td class="num">${escapeHtml(formatLempiras(project.revisedBudget))}</td>
-      </tr>`
-    ).join('');
-
-    popup.document.write(`<!doctype html>
-      <html lang="es"><head><meta charset="utf-8"><title>Proyectos en ejecución</title>
-      <style>
-        body{font-family:Arial,sans-serif;color:#111827;margin:28px}
-        h1{font-size:20px;margin:0 0 4px}.meta{color:#64748b;font-size:11px;margin-bottom:18px}
-        table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #cbd5e1;padding:7px;vertical-align:top}
-        th{background:#e2e8f0;text-align:left}.num{text-align:right;white-space:nowrap}
-        @page{size: ${paperSize} ${orientation}; margin: 10mm}
-        @media print{body{margin:0}}
-      </style></head><body>
-      <h1>Reporte de proyectos en ejecución</h1>
-      <div class="meta">Control Contractual · Generado ${escapeHtml(new Date().toLocaleString('es-HN'))} · ${executionProjects.length} proyecto(s)</div>
-      <table><thead><tr><th>Código</th><th>Proyecto</th><th>Ubicación</th><th>Avance físico</th><th>Avance financiero</th><th>Presupuesto vigente</th></tr></thead>
-      <tbody>${rows || '<tr><td colspan="6">No hay proyectos en ejecución.</td></tr>'}</tbody></table>
-      <script>window.onload=()=>window.print();<\/script>
-      </body></html>`);
+    popup.document.write(buildExecutionReportHtml(true));
     popup.document.close();
   };
 
   const exportExecutionWord = () => {
-    const rows = executionProjects.map((project) => `
-      <tr>
-        <td>${escapeHtml(project.code)}</td>
-        <td>${escapeHtml(project.name)}</td>
-        <td>${escapeHtml(project.location)}</td>
-        <td>${escapeHtml(project.physicalProgress.toFixed(2))}%</td>
-        <td>${escapeHtml(project.financialProgress.toFixed(2))}%</td>
-        <td>${escapeHtml(formatLempiras(project.revisedBudget))}</td>
-        <td>${escapeHtml(project.fundingSource)}</td>
-      </tr>`
-    ).join('');
-
-    const html = `<!doctype html>
-      <html lang="es"><head><meta charset="utf-8"><title>Proyectos en ejecución</title>
-      <style>
-        body{font-family:Arial,sans-serif;color:#111827;margin:28px}
-        h1{font-size:20px;margin:0 0 4px}.meta{color:#64748b;font-size:11px;margin-bottom:18px}
-        table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #cbd5e1;padding:7px;vertical-align:top}
-        th{background:#e2e8f0;text-align:left}
-        @page{size: ${paperSize} ${orientation}; margin: 10mm}
-      </style></head><body>
-      <h1>Reporte de proyectos en ejecución</h1>
-      <div class="meta">Control Contractual · Generado ${escapeHtml(new Date().toLocaleString('es-HN'))} · ${executionProjects.length} proyecto(s)</div>
-      <table><thead><tr><th>Código</th><th>Proyecto</th><th>Ubicación</th><th>Avance físico</th><th>Avance financiero</th><th>Presupuesto vigente</th><th>Fuente</th></tr></thead>
-      <tbody>${rows || '<tr><td colspan="7">No hay proyectos en ejecución.</td></tr>'}</tbody></table>
-      </body></html>`;
-
+    const html = buildExecutionReportHtml(false);
     const blob = new Blob(['\uFEFF' + html], { type: 'application/msword;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');

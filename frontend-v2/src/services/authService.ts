@@ -113,7 +113,7 @@ export async function verifyMfaLogin(seed: LoginSeed, code: string): Promise<voi
 
 export async function requestPasswordReset(email: string): Promise<void> {
   if (!supabase) throw new Error('Supabase no está configurado.');
-  const redirectTo = `${window.location.origin}/control-de-proyectos/v2/`;
+  const redirectTo = `${window.location.origin}${window.location.pathname}`;
   const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo });
   if (error) throw error;
 }
@@ -129,7 +129,7 @@ export async function updateRecoveredPassword(password: string): Promise<void> {
   if (!supabase) throw new Error('Supabase no está configurado.');
   const { error } = await supabase.auth.updateUser({ password });
   if (error) throw error;
-  history.replaceState(null, '', `${window.location.origin}/control-de-proyectos/v2/`);
+  history.replaceState(null, '', `${window.location.origin}${window.location.pathname}`);
 }
 
 export interface AccessRequestInput {

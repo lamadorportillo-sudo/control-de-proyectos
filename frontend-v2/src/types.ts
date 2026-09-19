@@ -301,6 +301,7 @@ export type AppModule =
   | 'documentos'
   | 'reportes'
   | 'transparencia'
+  | 'portal_publico'
   | 'auditoria'
   | 'configuracion'
   | 'modo_campo'

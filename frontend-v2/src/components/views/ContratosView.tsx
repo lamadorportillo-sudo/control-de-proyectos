@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FileSignature, Search, ArrowRight, Plus, X, Save, FileUp } from 'lucide-react';
+import { FileSignature, Search, ArrowRight, Plus, X, Save } from 'lucide-react';
 import type { AppModule, Contract, Project } from '../../types.ts';
 import { formatLempiras, formatDateSpanish } from '../../services/calculationService.ts';
 import { dataRepository } from '../../services/backendAdapter.ts';
@@ -104,7 +104,6 @@ export const ContratosView: React.FC<ContratosViewProps> = ({ contracts, project
           <p className="mt-1 text-xs text-slate-400">Registra contratos, consulta sus datos y vincula el respaldo documental desde el mismo flujo.</p>
         </div>
         <div className="flex flex-wrap justify-end gap-2">
-          <button onClick={() => onNavigate('documentos', { action: 'UPLOAD_DOC' })} className="inline-flex items-center gap-2 rounded-lg border border-indigo-800/70 bg-indigo-950/30 px-3 py-2 text-xs font-semibold text-indigo-300 hover:bg-indigo-900/50"><FileUp className="h-4 w-4" />Subir respaldo</button>
           <button onClick={() => { setShowCreate(true); setMessage(''); }} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500"><Plus className="h-4 w-4" />Crear nuevo</button>
         </div>
       </div>
@@ -129,7 +128,7 @@ export const ContratosView: React.FC<ContratosViewProps> = ({ contracts, project
       {q.length < 2 && (
         <div className="rounded-xl border border-dashed border-[#243247] bg-[#0d1623] p-5 text-center">
           <div className="text-sm font-semibold text-white">{contracts.length === 0 ? 'Aún no hay contratos registrados' : 'Busca un contrato cuando lo necesites'}</div>
-          <div className="mx-auto mt-1 max-w-xl text-xs leading-relaxed text-slate-500">{contracts.length === 0 ? 'Puedes ingresar los datos manualmente con “Crear nuevo” o vincular el documento de respaldo desde “Subir respaldo”.' : 'Escribe al menos 2 caracteres para consultar por número, contratista, RTN o proyecto.'}</div>
+          <div className="mx-auto mt-1 max-w-xl text-xs leading-relaxed text-slate-500">{contracts.length === 0 ? 'Ingresa los datos contractuales manualmente con “Crear nuevo”.' : 'Escribe al menos 2 caracteres para consultar por número, contratista, RTN o proyecto.'}</div>
         </div>
       )}
 

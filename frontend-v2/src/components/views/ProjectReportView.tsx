@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Download, FileDown, FileText, Image, Pencil, Printer, RefreshCw, RotateCcw, Save, Settings2, X } from 'lucide-react';
+import { BarChart3, Check, Download, FileDown, FileText, Image, Images, ListChecks, Pencil, Printer, RefreshCw, RotateCcw, Save, Settings2, Target, X } from 'lucide-react';
 import type { AuditLog, Contract, Deficiency, DocumentEvidence, Estimate, FieldVisit, Guarantee, Project } from '../../types.ts';
 import {
   REPORT_TYPES,
@@ -28,9 +28,12 @@ interface ProjectReportViewProps {
 const defaultOptions = (estimates: Estimate[], visits: FieldVisit[]): ProjectReportOptions => ({
   paperSize: 'A4',
   orientation: 'portrait',
-  includeCover: true,
+  includeCover: false,
   includeEvidence: true,
   includeSignatures: true,
+  includeCharts: true,
+  includeProcessGuide: true,
+  compactLayout: true,
   estimateId: estimates.at(-1)?.id,
   visitId: visits.at(-1)?.id,
 });
@@ -78,6 +81,29 @@ export const ProjectReportView: React.FC<ProjectReportViewProps> = ({
   const preview = useMemo(() => buildProjectReportBody(data, type, options), [data, type, options]);
   const selectedDefinition = REPORT_TYPES.find((item) => item.id === type);
   const activePreview = hasManualEdits ? editedPreview : preview;
+  const progressGap = useMemo(
+    () => Math.abs((Number(project.physicalProgress) || 0) - (Number(project.financialProgress) || 0)),
+    [project.physicalProgress, project.financialProgress]
+  );
+  const openDeficiencyCount = useMemo(
+    () => deficiencies.filter((item) => !/cerrad|resuelt|subsanad|corregid|finaliz/i.test(String(item.statusLabel || item.status || ''))).length,
+    [deficiencies]
+  );
+  const photoCount = useMemo(
+    () => visits.reduce((sum, visit) => sum + (visit.photoUrls?.length || 0), 0),
+    [visits]
+  );
+
+  const scrollPreviewTo = (selector: string) => {
+    const root = editorRef.current;
+    const target = root?.querySelector(selector) as HTMLElement | null;
+    if (!target) {
+      setMessage('Ese bloque no está disponible en este informe con la configuración actual.');
+      return;
+    }
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setMessage('');
+  };
 
   useEffect(() => {
     setEditingOnline(false);
@@ -177,6 +203,33 @@ export const ProjectReportView: React.FC<ProjectReportViewProps> = ({
         ))}
       </div>
 
+      <section className="rounded-xl border border-[#2b3a4a] bg-[#111827] p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white"><Target className="h-4 w-4 text-[#c5a367]" /> Panel interactivo de seguimiento</div>
+            <p className="mt-1 text-[11px] text-slate-400">Acceso rápido a los puntos que ayudan a revisar avance, pendientes, evidencia y siguiente paso del proyecto.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="rounded-lg border border-[#2b3a4a] bg-[#0b1220] px-3 py-2"><div className="text-[9px] uppercase text-slate-500">Físico</div><div className="text-sm font-bold text-white">{Number(project.physicalProgress || 0).toFixed(2)}%</div></div>
+            <div className="rounded-lg border border-[#2b3a4a] bg-[#0b1220] px-3 py-2"><div className="text-[9px] uppercase text-slate-500">Financiero</div><div className="text-sm font-bold text-white">{Number(project.financialProgress || 0).toFixed(2)}%</div></div>
+            <div className={`rounded-lg border px-3 py-2 ${progressGap >= 10 ? 'border-amber-700/60 bg-amber-950/20' : 'border-[#2b3a4a] bg-[#0b1220]'}`}><div className="text-[9px] uppercase text-slate-500">Diferencia</div><div className={`text-sm font-bold ${progressGap >= 10 ? 'text-amber-300' : 'text-white'}`}>{progressGap.toFixed(2)} pp</div></div>
+            <div className={`rounded-lg border px-3 py-2 ${openDeficiencyCount ? 'border-rose-800/60 bg-rose-950/20' : 'border-[#2b3a4a] bg-[#0b1220]'}`}><div className="text-[9px] uppercase text-slate-500">Deficiencias abiertas</div><div className={`text-sm font-bold ${openDeficiencyCount ? 'text-rose-300' : 'text-white'}`}>{openDeficiencyCount}</div></div>
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button type="button" onClick={() => scrollPreviewTo('.report-summary-grid')} className="inline-flex items-center gap-1.5 rounded-lg border border-[#334155] bg-[#172235] px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-[#243247]"><Target className="h-3.5 w-3.5" /> Resumen</button>
+          <button type="button" onClick={() => scrollPreviewTo('.report-chart-grid')} disabled={!options.includeCharts} className="inline-flex items-center gap-1.5 rounded-lg border border-[#334155] bg-[#172235] px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-[#243247] disabled:cursor-not-allowed disabled:opacity-40"><BarChart3 className="h-3.5 w-3.5" /> Gráficos</button>
+          <button type="button" onClick={() => scrollPreviewTo('.report-process-flow')} disabled={!options.includeProcessGuide} className="inline-flex items-center gap-1.5 rounded-lg border border-[#334155] bg-[#172235] px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-[#243247] disabled:cursor-not-allowed disabled:opacity-40"><ListChecks className="h-3.5 w-3.5" /> Ruta de avance</button>
+          <button type="button" onClick={() => scrollPreviewTo('.photo-grid')} disabled={!options.includeEvidence || photoCount === 0} className="inline-flex items-center gap-1.5 rounded-lg border border-[#334155] bg-[#172235] px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-[#243247] disabled:cursor-not-allowed disabled:opacity-40"><Images className="h-3.5 w-3.5" /> Fotos ({photoCount})</button>
+        </div>
+        {(progressGap >= 10 || openDeficiencyCount > 0) && (
+          <div className="mt-3 rounded-lg border border-amber-700/40 bg-amber-950/20 px-3 py-2 text-[11px] leading-relaxed text-amber-200">
+            {progressGap >= 10 && <>Revisar diferencia entre avance físico y financiero ({progressGap.toFixed(2)} puntos). </>}
+            {openDeficiencyCount > 0 && <>Hay {openDeficiencyCount} deficiencia(s) que requieren seguimiento según su estado registrado.</>}
+          </div>
+        )}
+      </section>
+
       <section className="rounded-xl border border-[#2b3a4a] bg-[#151e29] p-4">
         <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white"><Settings2 className="h-4 w-4 text-[#c5a367]" /> Configuración de impresión</div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
@@ -187,9 +240,12 @@ export const ProjectReportView: React.FC<ProjectReportViewProps> = ({
           {type === 'visitas' && <label><span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-slate-500">Visita a informar</span><select value={options.visitId || ''} onChange={(event) => updateOption('visitId', event.target.value || undefined)} className={controlClass}><option value="">Todas las visitas</option>{visits.map((item) => <option key={item.id} value={item.id}>{item.visitDate} · {item.inspectorName || 'Sin supervisor'}</option>)}</select></label>}
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          <Toggle checked={options.includeCover} label="Portada institucional" onChange={(value) => updateOption('includeCover', value)} />
+          <Toggle checked={options.compactLayout} label="Diseño compacto" onChange={(value) => updateOption('compactLayout', value)} />
+          <Toggle checked={options.includeCharts} label="Gráficos de seguimiento" onChange={(value) => updateOption('includeCharts', value)} icon={<BarChart3 className="h-3 w-3" />} />
+          <Toggle checked={options.includeProcessGuide} label="Ruta de avance" onChange={(value) => updateOption('includeProcessGuide', value)} icon={<ListChecks className="h-3 w-3" />} />
           <Toggle checked={options.includeEvidence} label="Registro fotográfico" onChange={(value) => updateOption('includeEvidence', value)} icon={<Image className="h-3 w-3" />} />
           <Toggle checked={options.includeSignatures} label="Espacios de firma" onChange={(value) => updateOption('includeSignatures', value)} />
+          <Toggle checked={options.includeCover} label="Portada institucional adicional" onChange={(value) => updateOption('includeCover', value)} />
         </div>
       </section>
 

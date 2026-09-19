@@ -262,6 +262,8 @@ export default function App() {
             deficiency={selectedDeficiency}
             project={projects.find((p) => p.id === selectedDeficiency.projectId)}
             documents={documents}
+            onChanged={async () => setDeficiencies(await dataRepository.getDeficiencies())}
+            onDocumentsChanged={async () => setDocuments(await dataRepository.getDocuments())}
             onBack={() => setSelectedDeficiencyId(null)}
           />
         ) : (

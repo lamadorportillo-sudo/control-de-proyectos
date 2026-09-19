@@ -100,7 +100,7 @@ export const RegistrarVisitaView: React.FC<Props> = ({ projects, onBack }) => {
           <h2 className="text-xl font-bold text-white">Registrar visita de obra</h2>
           <p className="mt-1 text-xs text-slate-400">Flujo oficial de 5 pasos. El borrador local conserva un único ID.</p>
         </div>
-        <span className="rounded-full border border-amber-800/60 bg-amber-950/30 px-2.5 py-1 text-[10px] font-bold uppercase text-amber-300">Pendiente de sincronización</span>
+        <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase ${visitWritesEnabled ? 'border-emerald-800/60 bg-emerald-950/30 text-emerald-300' : 'border-amber-800/60 bg-amber-950/30 text-amber-300'}`}>{visitWritesEnabled ? 'Sincronización habilitada' : 'Pendiente de sincronización'}</span>
       </div>
 
       <div className="grid grid-cols-5 gap-1 rounded-xl border border-[#1f2e45] bg-[#111827] p-2">
@@ -142,7 +142,7 @@ export const RegistrarVisitaView: React.FC<Props> = ({ projects, onBack }) => {
             <label className="cursor-pointer rounded-xl border border-dashed border-[#334155] bg-[#0b1220] p-5 text-center"><Camera className="mx-auto h-6 w-6 text-blue-400"/><div className="mt-2 text-xs font-semibold text-white">Agregar fotografías</div><div className="mt-1 text-[10px] text-slate-500">{draft.photoNames.length ? String(draft.photoNames.length) + ' archivo(s)' : 'JPG/PNG desde cámara o galería'}</div><input type="file" accept="image/*" multiple className="hidden" onChange={(e)=>{ const files: File[] = e.currentTarget.files ? (Array.from(e.currentTarget.files) as File[]) : []; setPhotoFiles(files); update({photoNames:files.map((file: File)=>file.name)}); }}/></label>
             <label className="cursor-pointer rounded-xl border border-dashed border-[#334155] bg-[#0b1220] p-5 text-center"><Mic className="mx-auto h-6 w-6 text-amber-400"/><div className="mt-2 text-xs font-semibold text-white">Nota de voz</div><div className="mt-1 text-[10px] text-slate-500">{draft.audioName || 'Audio opcional'}</div><input type="file" accept="audio/*" className="hidden" onChange={(e)=>{ const file=e.target.files?.[0] || null; setAudioFile(file); update({audioName:file?.name}); }}/></label>
           </div>
-          <div className="rounded-lg border border-amber-900/40 bg-amber-950/20 p-3 text-[11px] text-amber-200">El borrador conserva metadatos de evidencia. La carga binaria se activará con Storage productivo para evitar duplicaciones.</div>
+          <div className="rounded-lg border border-emerald-900/40 bg-emerald-950/20 p-3 text-[11px] text-emerald-200">Las fotografías y el audio se cargan a Storage productivo con el mismo ID de la visita. Si no hay conexión, conserva el borrador local para sincronizar después.</div>
         </div>}
 
         {step === 4 && <div className="space-y-4">

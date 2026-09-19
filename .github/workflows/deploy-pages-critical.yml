@@ -121,6 +121,12 @@ jobs:
       - name: Preparar herramientas de prueba
         run: npm install --no-save --include=dev @playwright/test@1.55.0
 
+      - name: Instalar dependencias raíz para pruebas
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-package-lock
+
       - name: Instalar navegador de prueba
         run: npx playwright install --with-deps chromium
 

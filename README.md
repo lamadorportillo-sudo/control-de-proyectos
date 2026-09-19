@@ -1,41 +1,46 @@
 # Control de Proyectos
 
-Sistema web para **control financiero, contractual y supervisión de proyectos**, conectado a Supabase y diseñado para funcionar en PC, tablet y celular.
+Sistema web para control financiero, contractual y supervisión de proyectos, conectado a Supabase y usable en PC, tablet y celular.
+
+## Arquitectura activa
+
+- `frontend-v2/`: aplicación React/Vite/TypeScript y fuente principal.
+- `index.html`: interfaz V2 publicada en la raíz de GitHub Pages.
+- `assets/` y `v2/`: artefactos generados por la publicación.
+- `legacy.html`: respaldo de la interfaz anterior; se conserva para reconstrucción y recuperación.
+- `supabase/`: funciones y migraciones de la base de datos.
+- `templates/` y `assets/formats/`: plantillas y formatos institucionales.
+- `build-pages.cjs` y `authenticated-module-manifest-v1.cjs`: reconstrucción y control de módulos de la interfaz anterior.
 
 ## Funciones principales
 
-- Gestión de proyectos y contratos.
-- Anticipos y amortización.
-- Estimaciones/pagos con deducciones.
-- Retención y devolución de garantía de calidad.
-- Garantías y ampliaciones de vigencia.
-- Visitas, observaciones y seguimiento.
-- Ofertas, adjudicación y decisión final.
-- Modificaciones contractuales.
-- Evaluación final del contratista y del proyecto.
-- Informes de adjudicación, anticipo, estimación, calidad de obra y cierre/final.
-- Tablero ejecutivo responsive con indicadores y alertas.
+- Proyectos, contratos, presupuestos, ampliaciones, estimaciones y pagos.
+- Garantías, visitas de obra, evidencias, deficiencias y seguimientos.
+- Compras, biblioteca documental, reportes, transparencia y auditoría.
+- ZORDON y acceso desde Telegram.
+- Trabajo responsive para PC, tablet y celular.
 
-## Estructura actual del repositorio
+## Desarrollo local
 
-- `index.html` — punto de entrada de la aplicación.
-- `bundle-01.js` a `bundle-12.js` — bloques comprimidos que reconstruyen la versión funcional actual de la aplicación en el navegador.
-- `README.md` — documentación general del proyecto.
+Para validar la interfaz principal:
 
-La aplicación continúa siendo una SPA web sin proceso de compilación y conserva la lógica de la versión standalone utilizada durante el desarrollo.
+```bash
+cd frontend-v2
+npm install
+npm run lint
+npm run build
+```
 
-## Base de datos
+Para revisar la página generada desde la raíz, sirve el repositorio con cualquier servidor HTTP estático.
 
-El sistema utiliza el proyecto Supabase independiente **control de proyectos** para autenticación y persistencia en la nube. No está vinculado al proyecto HALU.
+## Publicación
 
-## Ejecución
+El workflow crítico de `main` valida la aplicación, construye `frontend-v2`, ejecuta las comprobaciones responsive y publica la V2 en la raíz conservando `legacy.html` como respaldo.
 
-Para ejecutarlo desde un servidor web estático, el archivo principal es `index.html`. El cargador reconstruye automáticamente la aplicación completa desde los archivos `bundle-*.js`.
+## Base de datos y seguridad
 
-## Seguridad
+El sistema utiliza Supabase para autenticación y persistencia. En el navegador solo debe utilizarse configuración pública/publishable. Nunca deben agregarse claves `service_role`, secret keys, contraseñas ni otras credenciales privadas.
 
-El frontend puede utilizar una **publishable key** de Supabase. Nunca deben agregarse a este repositorio claves `service_role`, secret keys, contraseñas ni otras credenciales privadas.
+La rama principal es `main` y la página publicada es:
 
-## Estado
-
-Repositorio de trabajo de **Control de Proyectos**. La rama principal es `main`.
+https://lamadorportillo-sudo.github.io/control-de-proyectos/

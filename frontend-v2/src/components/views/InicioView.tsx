@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   Search,
+  FolderGit2,
   FolderPlus,
   FilePlus2,
   Receipt,
@@ -13,6 +14,7 @@ import {
   Clock,
   ArrowRight,
   ShieldAlert,
+  ShieldCheck,
 } from 'lucide-react';
 import { AppModule, Project, Deficiency, Guarantee, Estimate } from '../../types.ts';
 import { formatLempiras, formatDateSpanish } from '../../services/calculationService.ts';

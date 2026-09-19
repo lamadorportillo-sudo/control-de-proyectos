@@ -3,6 +3,7 @@ import { Search, FolderGit2, MapPin, ArrowRight, Plus, X, Save } from 'lucide-re
 import type { Project, ProjectStatus } from '../../types.ts';
 import { formatLempiras, formatPercent } from '../../services/calculationService.ts';
 import { dataRepository } from '../../services/backendAdapter.ts';
+import { matchesSearch } from '../../services/searchService.ts';
 
 interface ProjectsViewProps {
   projects: Project[];
@@ -77,7 +78,18 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
           if (haystack.includes(token)) score += 15;
           if (normalize(project.name).includes(token)) score += 8;
         }
-        return { project, score };
+        const values = [
+          project.code,
+          project.planningCode,
+          project.executionCode,
+          project.name,
+          project.shortName,
+          project.location,
+          project.community,
+          project.statusLabel,
+        ];
+        if (!matchesSearch(normalizedQuery, values)) return { project, score: 0 };
+        return { project, score: Math.max(score, 1) };
       })
       .filter((item) => item.score > 0)
       .sort((a, b) => b.score - a.score || a.project.name.localeCompare(b.project.name))

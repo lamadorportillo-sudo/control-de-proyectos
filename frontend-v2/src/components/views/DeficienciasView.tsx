@@ -155,6 +155,10 @@ export const DeficienciasView: React.FC<DeficienciasViewProps> = ({
                   <h3 className="mt-2 text-sm font-semibold text-white">{deficiency.title}</h3>
                   <p className="mt-1 text-xs leading-relaxed text-slate-400">{deficiency.description}</p>
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500"><span>{project?.code} · {project?.name}</span>{deficiency.specificLocation && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{deficiency.specificLocation}</span>}<span>Reportada: {formatDateSpanish(deficiency.reportedDate)}</span></div>
+                  <div className="mt-3 flex items-center justify-between gap-2 border-t border-[#243247] pt-3">
+                    <span className="text-[11px] font-semibold text-red-300">{deficiency.status === 'CERRADA' ? 'Consultar cierre' : 'Abrir corrección y seguimiento'}</span>
+                    <span className="text-[11px] font-semibold text-slate-400 group-hover:text-white">Ver detalle <ArrowRight className="inline h-3 w-3" /></span>
+                  </div>
                 </div>
                 <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-slate-500 group-hover:translate-x-0.5 group-hover:text-red-400" />
               </div>

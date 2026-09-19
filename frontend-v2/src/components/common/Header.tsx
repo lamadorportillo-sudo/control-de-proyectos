@@ -78,7 +78,7 @@ export const Header: React.FC<HeaderProps> = ({
       deficiencias: 'Deficiencias y Seguimiento',
       documentos: 'Biblioteca Documental',
       reportes: 'Reportes',
-      transparencia: 'Generador del Portal de Transparencia',
+      transparencia: 'Transparencia',
       auditoria: 'Registro de Auditoría y Trazabilidad',
       configuracion: 'Configuración',
       modo_campo: 'Modo Campo',
@@ -96,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
         <div className="flex min-w-0 items-center gap-2">
-          <span className="hidden text-xs font-semibold uppercase tracking-wider text-slate-500 sm:inline">Control Contractual</span>
+          <span className="max-w-[8rem] truncate text-xs font-semibold uppercase tracking-wider text-slate-500 sm:max-w-none">Control Contractual</span>
           <span className="hidden text-slate-600 sm:inline">/</span>
           <h1 className="truncate text-sm font-semibold text-white md:text-base">{getModuleTitle(currentModule)}</h1>
         </div>

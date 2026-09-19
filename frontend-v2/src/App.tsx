@@ -466,8 +466,12 @@ export default function App() {
         <MobileNavButton active={currentModule === 'inicio'} label="Inicio" onClick={() => handleNavigate('inicio')}><Home className="h-4 w-4" /></MobileNavButton>
         <MobileNavButton active={currentModule === 'proyectos'} label="Proyectos" onClick={() => handleNavigate('proyectos')}><FolderGit2 className="h-4 w-4" /></MobileNavButton>
         <MobileNavButton active={currentModule === 'estimaciones'} label="Pagos" onClick={() => handleNavigate('estimaciones')}><Receipt className="h-4 w-4" /></MobileNavButton>
-        <MobileNavButton active={currentModule === 'modo_campo'} label="Campo" onClick={() => handleNavigate('modo_campo')}><Smartphone className="h-4 w-4" /></MobileNavButton>
-        <MobileNavButton active={false} label="Más" onClick={() => setIsMobileSidebarOpen(true)}><MoreHorizontal className="h-4 w-4" /></MobileNavButton>
+        <MobileNavButton active={currentModule === 'modo_campo' || currentModule === 'registrar_visita'} label="Campo" onClick={() => handleNavigate('modo_campo')}><Smartphone className="h-4 w-4" /></MobileNavButton>
+        <MobileNavButton
+          active={!['inicio', 'proyectos', 'estimaciones', 'modo_campo', 'registrar_visita'].includes(currentModule)}
+          label="Más"
+          onClick={() => setIsMobileSidebarOpen(true)}
+        ><MoreHorizontal className="h-4 w-4" /></MobileNavButton>
       </nav>
 
       <ZordonLauncher onOpen={() => setIsZordonOpen(true)} isAvailable />
@@ -477,7 +481,12 @@ export default function App() {
 }
 
 const MobileNavButton: React.FC<{ active: boolean; label: string; onClick: () => void; children: React.ReactNode }> = ({ active, label, onClick, children }) => (
-  <button type="button" onClick={onClick} className={`flex min-w-[56px] flex-col items-center gap-1 rounded-lg px-2 py-1 text-[10px] transition-colors ${active ? 'text-[#c5a367]' : 'text-[#8f9fb1] hover:bg-[#151e29] hover:text-[#f3f6fa]'}`}>
+  <button
+    type="button"
+    onClick={onClick}
+    aria-current={active ? 'page' : undefined}
+    className={`flex min-w-[56px] flex-col items-center gap-1 rounded-lg px-2 py-1 text-[10px] transition-colors ${active ? 'text-[#c5a367]' : 'text-[#8f9fb1] hover:bg-[#151e29] hover:text-[#f3f6fa]'}`}
+  >
     {children}
     <span>{label}</span>
   </button>

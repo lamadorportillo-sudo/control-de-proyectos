@@ -25,7 +25,8 @@ export type ProjectStatus =
   | 'EN_EJECUCION'
   | 'SUSPENDIDO'
   | 'RECEPCION_PROVISIONAL'
-  | 'FINALIZADO';
+  | 'FINALIZADO'
+  | 'AMPLIACION_GARANTIAS';
 
 export interface Project {
   id: string;
@@ -48,6 +49,7 @@ export interface Project {
   startDate: string;
   expectedEndDate: string;
   description: string;
+  observations?: string;
   contractId?: string;
   createdAt: string;
   updatedAt: string;
@@ -76,6 +78,7 @@ export interface Contract {
   isDraft: boolean;
   status: ContractStatus;
   statusLabel: string;
+  observations?: string;
   sourceDocumentId?: string;
   notes?: string;
   createdAt: string;
@@ -136,7 +139,8 @@ export type GuaranteeStatus =
   | 'POR_VENCER'
   | 'VENCIDA'
   | 'LIBERADA'
-  | 'EJECUTADA';
+  | 'EJECUTADA'
+  | 'REEMPLAZADA';
 
 export interface Guarantee {
   id: string;

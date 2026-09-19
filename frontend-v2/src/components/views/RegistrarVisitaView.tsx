@@ -151,18 +151,6 @@ export const RegistrarVisitaView: React.FC<Props> = ({ projects, initialProjectI
           </div>}
         </div>}
 
-        {step === 3 && <div className="space-y-4">
-          <Title n={3} text="Incidencias"/>
-          <label className="flex items-center gap-2 text-xs font-semibold text-slate-200"><input type="checkbox" checked={draft.hasIncident} onChange={(e)=>update({hasIncident:e.target.checked})}/>Registrar incidencia o deficiencia observada</label>
-          {draft.hasIncident && <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <Field label="Problema observado" wide><textarea rows={4} value={draft.incidentDescription || ''} onChange={(e)=>update({incidentDescription:e.target.value})} className={inputClass}/></Field>
-            <Field label="Instrucción del supervisor" wide><textarea rows={3} value={draft.instruction || ''} onChange={(e)=>update({instruction:e.target.value})} className={inputClass}/></Field>
-            <Field label="Responsable"><input value={draft.responsible || ''} onChange={(e)=>update({responsible:e.target.value})} className={inputClass}/></Field>
-            <Field label="Fecha límite"><input type="date" value={draft.deadline || ''} onChange={(e)=>update({deadline:e.target.value})} className={inputClass}/></Field>
-            <div className="md:col-span-2 rounded-lg border border-amber-800/50 bg-amber-950/20 p-3 text-xs text-amber-200">Estado inicial automático: <strong>Pendiente</strong>. Corregida no significa cerrada; verificación y cierre son acciones separadas.</div>
-          </div>}
-        </div>}
-
         {step === 4 && <div className="space-y-4">
           <Title n={4} text="Revisar y guardar"/>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">

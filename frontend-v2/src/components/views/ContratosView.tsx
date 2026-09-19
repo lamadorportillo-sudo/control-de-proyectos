@@ -3,6 +3,7 @@ import { FileSignature, Search, ArrowRight, Plus, X, Save, FileUp } from 'lucide
 import type { AppModule, Contract, Project } from '../../types.ts';
 import { formatLempiras, formatDateSpanish } from '../../services/calculationService.ts';
 import { dataRepository } from '../../services/backendAdapter.ts';
+import { matchesSearch, normalizeSearch } from '../../services/searchService.ts';
 
 interface ContratosViewProps {
   contracts: Contract[];
@@ -15,7 +16,6 @@ interface ContratosViewProps {
   initialProjectId?: string | null;
 }
 
-const norm = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const inputClass = 'w-full rounded-lg border border-[#243247] bg-[#0b1220] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500';
 
 export const ContratosView: React.FC<ContratosViewProps> = ({ contracts, projects, onOpenProject, onOpenProjectTab, onNavigate, onSaved, initialAction = null, initialProjectId = null }) => {
@@ -41,12 +41,12 @@ export const ContratosView: React.FC<ContratosViewProps> = ({ contracts, project
     if (initialProjectId) setForm((current) => ({ ...current, projectId: initialProjectId }));
   }, [initialAction, initialProjectId]);
 
-  const q = norm(query.trim());
+  const q = normalizeSearch(query.trim());
   const results = useMemo(() => {
     if (q.length < 2) return [];
     return contracts.filter((contract) => {
       const project = projects.find((p) => p.id === contract.projectId);
-      return norm([contract.contractNumber, contract.contractorName, contract.contractorRTN, project?.code, project?.name, project?.location].filter(Boolean).join(' ')).includes(q);
+      return matchesSearch(q, [contract.contractNumber, contract.contractorName, contract.contractorRTN, project?.code, project?.name, project?.location]);
     }).slice(0, 50);
   }, [contracts, projects, q]);
 

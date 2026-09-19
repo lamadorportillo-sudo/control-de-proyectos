@@ -184,6 +184,47 @@ async function mockSupabase(page, capture) {
   });
 }
 
+
+test('V2 permite iniciar sesión directamente sin depender de la interfaz anterior', async ({ page }) => {
+  const token = makeJwt();
+  const capture = { token, restRequests: 0 };
+
+  await page.route(`${SUPABASE_ORIGIN}/functions/v1/secure-login`, async (route) => {
+    const request = route.request();
+    capture.loginBody = request.postDataJSON();
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        user: { id: USER_ID, email: 'qa-v2@example.com' },
+        access_token: token,
+        refresh_token: 'refresh-qa',
+        expires_in: 3600,
+        token_type: 'bearer',
+        security_session_id: 'qa-security-session',
+        device_label: 'QA Browser',
+        mfa_required: false,
+      }),
+    });
+  });
+
+  await mockSupabase(page, capture);
+  await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
+
+  await expect(page.getByRole('heading', { name: 'Ingresar' })).toBeVisible();
+  await page.getByPlaceholder('correo@institucion.hn').fill('qa-v2@example.com');
+  await page.locator('input[autocomplete="current-password"]').fill('ClaveQA-2026!');
+  await page.getByRole('button', { name: 'Ingresar' }).click();
+
+  await expect.poll(() => capture.loginBody?.email).toBe('qa-v2@example.com');
+  await expect(page.getByText('Control Contractual').first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Ingresar' })).toHaveCount(0);
+
+  const stored = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) || 'null'), SESSION_KEY);
+  expect(stored?.accessToken).toBe(token);
+  expect(stored?.securitySessionId).toBe('qa-security-session');
+});
+
 test('V2 reutiliza la sesión productiva al compartir el mismo origen', async ({ page }) => {
   const token = makeJwt();
   const capture = { token, restRequests: 0 };

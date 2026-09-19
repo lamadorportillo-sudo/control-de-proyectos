@@ -459,7 +459,7 @@ export default function App() {
           </div>
         )}
 
-        <main className="min-w-0 min-h-0 flex-1 overflow-y-auto p-3 sm:p-4 md:p-5">{renderModule()}</main>
+        <main className="min-w-0 min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4 md:p-5 [touch-action:pan-y]">{renderModule()}</main>
       </div>
 
       <nav className="flex shrink-0 items-center justify-around border-t border-[#2b3a4a] bg-[#101720] px-2 py-2 md:hidden" aria-label="Navegación móvil">

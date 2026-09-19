@@ -3,6 +3,7 @@ import { ShieldCheck, Search, Plus, AlertTriangle, ArrowRight, X, Save } from 'l
 import type { Guarantee, Project } from '../../types.ts';
 import { formatLempiras, formatDateSpanish } from '../../services/calculationService.ts';
 import { dataRepository } from '../../services/backendAdapter.ts';
+import { getGuaranteeAttention } from '../../services/guaranteeLifecycleService.ts';
 
 interface GarantiasViewProps {
   guarantees: Guarantee[];
@@ -41,16 +42,12 @@ export const GarantiasView: React.FC<GarantiasViewProps> = ({ guarantees, projec
   }, [guarantees, projects, q]);
 
   const totalGuaranteed = useMemo(() => guarantees.reduce((sum, guarantee) => sum + Number(guarantee.amount || 0), 0), [guarantees]);
-  const needsClosureReview = (guarantee: Guarantee) => {
-    const project = projects.find((item) => item.id === guarantee.projectId);
-    return project?.status === 'FINALIZADO' && !['LIBERADA', 'EJECUTADA'].includes(guarantee.status);
-  };
   const attentionCount = useMemo(
-    () => guarantees.filter((guarantee) =>
-      guarantee.status === 'VENCIDA' ||
-      guarantee.status === 'POR_VENCER' ||
-      needsClosureReview(guarantee)
-    ).length,
+    () => guarantees.filter((guarantee) => {
+      const project = projects.find((item) => item.id === guarantee.projectId);
+      const attention = getGuaranteeAttention(guarantee, project);
+      return guarantee.status === 'VENCIDA' || guarantee.status === 'POR_VENCER' || attention.isClosureCandidate;
+    }).length,
     [guarantees, projects]
   );
 
@@ -141,15 +138,8 @@ export const GarantiasView: React.FC<GarantiasViewProps> = ({ guarantees, projec
       <div className="space-y-3">
         {results.map((guarantee) => {
           const project = projects.find((p) => p.id === guarantee.projectId);
-          const closureReview = needsClosureReview(guarantee);
-          const warning = guarantee.status === 'VENCIDA' || guarantee.status === 'POR_VENCER' || closureReview;
-          const actionLabel =
-            guarantee.status === 'VENCIDA' ? 'Revisar garantía vencida' :
-            closureReview ? 'Cerrar o liberar por proyecto finalizado' :
-            guarantee.status === 'POR_VENCER' ? 'Solicitar ampliación de vigencia' :
-            guarantee.status === 'LIBERADA' ? 'Ver liberación' :
-            guarantee.status === 'EJECUTADA' ? 'Ver ejecución' :
-            'Revisar garantía';
+          const attention = getGuaranteeAttention(guarantee, project);
+          const warning = guarantee.status === 'VENCIDA' || guarantee.status === 'POR_VENCER' || attention.isClosureCandidate;
           return (
             <button key={guarantee.id} onClick={() => onOpenProject(guarantee.projectId)} className={`group w-full rounded-xl border p-4 text-left ${warning ? 'border-amber-800/60 bg-amber-950/20' : 'border-[#1f2e45] bg-[#111827] hover:border-amber-700'}`}>
               <div className="flex items-start justify-between gap-4">
@@ -158,7 +148,7 @@ export const GarantiasView: React.FC<GarantiasViewProps> = ({ guarantees, projec
                   <h3 className="mt-2 text-sm font-semibold text-white">{project?.code} · {project?.name || 'Proyecto'}</h3>
                   <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4"><Metric label="Póliza" value={guarantee.policyNumber || 'No registrada'} /><Metric label="Emisor" value={guarantee.issuer || 'No registrado'} /><Metric label="Monto" value={formatLempiras(guarantee.amount)} /><Metric label="Vence" value={formatDateSpanish(guarantee.expiryDate)} /></div>
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[#243247] pt-3">
-                    <span className={warning ? 'text-[11px] font-semibold text-amber-300' : 'text-[11px] text-slate-400'}>{actionLabel}</span>
+                    <span className={warning ? 'text-[11px] font-semibold text-amber-300' : 'text-[11px] text-slate-400'}>{attention.label}</span>
                     <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-300 group-hover:text-white">Abrir seguimiento <ArrowRight className="h-3 w-3" /></span>
                   </div>
                 </div>

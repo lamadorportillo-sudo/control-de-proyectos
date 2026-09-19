@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { AppModule, Project, Deficiency, Guarantee, Estimate } from '../../types.ts';
 import { formatLempiras, formatDateSpanish } from '../../services/calculationService.ts';
+import { getGuaranteeAttention } from '../../services/guaranteeLifecycleService.ts';
 
 interface InicioViewProps {
   onNavigate: (module: AppModule, extraData?: any) => void;
@@ -259,6 +260,7 @@ export const InicioView: React.FC<InicioViewProps> = ({
 
             {expiredGuarantees.map((gar) => {
               const prj = projects.find((p) => p.id === gar.projectId);
+              const attention = getGuaranteeAttention(gar, prj);
               const isExpired = gar.status === 'VENCIDA';
               return (
                 <div
@@ -283,13 +285,17 @@ export const InicioView: React.FC<InicioViewProps> = ({
                       <div className="text-[11px] text-slate-300 mt-0.5">
                         {prj?.shortName} • Vencimiento: {formatDateSpanish(gar.expiryDate)} • {formatLempiras(gar.amount)}
                       </div>
+                      <div className="mt-1 text-[11px] text-amber-200/90">
+                        {attention.context}: {attention.detail}
+                      </div>
                     </div>
                   </div>
                   <button
                     onClick={() => onNavigate('garantias', { guaranteeId: gar.id })}
+                    title={attention.detail}
                     className="px-3 py-1 bg-[#172235] hover:bg-amber-950/60 text-amber-200 text-xs font-medium rounded border border-[#243247] hover:border-amber-700/80 shrink-0 self-end sm:self-center transition-colors"
                   >
-                    Tramitar prórroga
+                    {attention.label}
                   </button>
                 </div>
               );

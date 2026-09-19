@@ -378,8 +378,55 @@ export class SupabaseDataRepository implements IDataRepository {
     return data ? mapProject(data) : undefined;
   }
 
-  async saveProject(_project: Project): Promise<void> {
-    throw new Error('La escritura de proyectos se habilitará tras validar el contrato RLS/RPC productivo.');
+  async saveProject(project: Project): Promise<void> {
+    const { data: membership, error: membershipError } = await this.client()
+      .from('workspace_members')
+      .select('workspace_id')
+      .eq('active', true)
+      .limit(1)
+      .maybeSingle();
+    if (membershipError) throw membershipError;
+    if (!membership?.workspace_id) throw new Error('No se pudo resolver el espacio de trabajo activo.');
+
+    const statusLabel =
+      project.status === 'EN_EJECUCION' ? 'En ejecución' :
+      project.status === 'SUSPENDIDO' ? 'Suspendido' :
+      project.status === 'RECEPCION_PROVISIONAL' ? 'Recepción provisional' :
+      project.status === 'FINALIZADO' ? 'Finalizado' :
+      'Planificación';
+
+    const row = {
+      id: project.id || crypto.randomUUID(),
+      workspace_id: membership.workspace_id,
+      code: project.code.trim(),
+      name: project.name.trim(),
+      description: project.description || null,
+      location: project.location || null,
+      project_type: 'Obra',
+      budget_estimate: project.assignedBudget || project.revisedBudget || 0,
+      status: statusLabel,
+      start_date: project.startDate || null,
+      end_date: project.expectedEndDate || null,
+      raw_data: {
+        source: 'frontend-v2',
+        planningCode: project.planningCode || null,
+        executionCode: project.executionCode || null,
+        shortName: project.shortName || project.name,
+        community: project.community || project.location || '',
+        responsibleUnit: project.responsibleUnit || 'Unidad de Proyectos',
+        responsiblePerson: project.responsiblePerson || '',
+        fundingSource: project.fundingSource || 'Por registrar',
+        physicalProgress: project.physicalProgress || 0,
+        financialProgress: project.financialProgress || 0,
+        status: statusLabel,
+      },
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await this.client()
+      .from('projects')
+      .upsert(row, { onConflict: 'id' });
+    if (error) throw error;
   }
 
   async getContracts(): Promise<Contract[]> {

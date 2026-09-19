@@ -3,6 +3,7 @@ import { BarChart3, Search, RefreshCw, FileText, Eye, ExternalLink, Printer, Dow
 import type { Project } from '../../types.ts';
 import { getGeneratedReports, type GeneratedReportRecord } from '../../services/reportService.ts';
 import { formatDateSpanish, formatLempiras } from '../../services/calculationService.ts';
+import { downloadUrlFile } from '../../services/evidenceAccessService.ts';
 
 interface ReportesViewProps {
   projects: Project[];
@@ -23,6 +24,7 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
   const [error, setError] = useState('');
   const [paperSize, setPaperSize] = useState<'A4' | 'Letter'>('A4');
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('landscape');
+  const [downloadingReportId, setDownloadingReportId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -42,6 +44,19 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
     () => projects.filter((project) => project.status === 'EN_EJECUCION'),
     [projects]
   );
+
+  const downloadGeneratedReport = async (report: GeneratedReportRecord) => {
+    if (!report.publicUrl) return;
+    setDownloadingReportId(report.id);
+    setError('');
+    try {
+      await downloadUrlFile(report.publicUrl, report.fileName || 'reporte');
+    } catch (err: any) {
+      setError(String(err?.message || 'No fue posible descargar el reporte.'));
+    } finally {
+      setDownloadingReportId(null);
+    }
+  };
 
   const exportExecutionCsv = () => {
     const header = ['Código','Proyecto','Ubicación','Avance físico','Avance financiero','Presupuesto vigente','Fuente'];
@@ -273,13 +288,13 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
                         >
                           <ExternalLink className="h-3.5 w-3.5" /> Abrir documento
                         </a>
-                        <a
-                          href={report.publicUrl}
-                          download={report.fileName || undefined}
-                          className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#243247] bg-[#172235] px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-[#1f2e45]"
+                        <button
+                          onClick={() => void downloadGeneratedReport(report)}
+                          disabled={downloadingReportId === report.id}
+                          className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#243247] bg-[#172235] px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-[#1f2e45] disabled:opacity-50"
                         >
-                          <Download className="h-3.5 w-3.5" /> Descargar {report.format || 'archivo'}
-                        </a>
+                          <Download className="h-3.5 w-3.5" /> {downloadingReportId === report.id ? 'Descargando…' : `Descargar ${report.format || 'archivo'}`}
+                        </button>
                       </>
                     )}
                     {report.projectId && (

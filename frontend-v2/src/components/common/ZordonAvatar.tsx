@@ -73,7 +73,7 @@ interface ZordonLauncherProps {
 }
 
 type Position = { left: number; top: number };
-const POSITION_KEY = 'control-contractual:zordon-position:v1';
+const POSITION_KEY = 'control-contractual:zordon-position:v2';
 const VISIBILITY_KEY = 'control-contractual:zordon-visibility:v1';
 const EDGE = 8;
 
@@ -110,8 +110,8 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
   useEffect(() => {
     const place = () => {
       setPosition((current) => clampPosition(current || {
-        left: Math.max(EDGE, window.innerWidth - (window.innerWidth < 640 ? 104 : 148)),
-        top: Math.max(EDGE, window.innerHeight - (window.innerWidth < 640 ? 258 : 238)),
+        left: Math.max(EDGE, window.innerWidth - (window.innerWidth < 640 ? 112 : 164)),
+        top: 76,
       }));
     };
     place();
@@ -169,7 +169,7 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
   if (isClosed) {
     return (
       <button type="button" data-zordon-control="restore" onClick={restore} aria-label="Mostrar ZORDON" title="Mostrar ZORDON"
-        className="fixed bottom-16 right-2 md:bottom-3 md:right-4 z-[45] rounded-full border border-emerald-500/50 bg-[#0e1726] px-2 py-1 text-[10px] font-bold text-emerald-300 shadow-xl pointer-events-auto">
+        className="fixed top-20 right-3 md:top-20 md:right-4 z-[45] rounded-full border border-emerald-500/50 bg-[#0e1726] px-2 py-1 text-[10px] font-bold text-emerald-300 shadow-xl pointer-events-auto">
         Z
       </button>
     );
@@ -178,7 +178,7 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
   return (
     <div ref={launcherRef} id="zordon-engineer-launcher-container" onPointerDown={startDrag}
       className={`fixed z-[45] select-none pointer-events-auto ${isMinimized ? 'w-auto' : ''}`}
-      style={{ left: position?.left ?? 'auto', top: position?.top ?? 'auto', right: position ? 'auto' : 8, bottom: position ? 'auto' : 64, touchAction: 'none' }}>
+      style={{ left: position?.left ?? 'auto', top: position?.top ?? 76, right: position ? 'auto' : 16, bottom: 'auto', touchAction: 'none' }}>
       {isMinimized ? (
         <button type="button" data-zordon-control="restore" onClick={() => { setIsMinimized(false); persistVisibility(null); }} aria-label="Expandir ZORDON"
           className="rounded-full border border-emerald-500/50 bg-[#0e1726] px-2 py-1 text-[10px] font-bold text-emerald-300 shadow-xl">ZORDON</button>

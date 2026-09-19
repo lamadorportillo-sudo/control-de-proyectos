@@ -66,7 +66,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badge: blockingDeficiencyCount > 0 ? blockingDeficiencyCount : undefined,
       badgeType: 'danger',
     },
-    { id: 'documentos', label: 'Biblioteca Documental', icon: BookOpen },
     { id: 'reportes', label: 'Reportes', icon: BarChart3 },
     { id: 'transparencia', label: 'Transparencia', icon: FileSpreadsheet },
     { id: 'auditoria', label: 'Auditoría', icon: History },

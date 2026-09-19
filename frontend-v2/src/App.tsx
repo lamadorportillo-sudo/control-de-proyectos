@@ -31,6 +31,17 @@ import { LoginView } from './components/views/LoginView.tsx';
 import { AlertTriangle, RefreshCw, Home, FolderGit2, Receipt, Smartphone, MoreHorizontal } from 'lucide-react';
 import { logoutV2, recoveryModeRequested } from './services/authService.ts';
 
+function friendlyDataError(error: unknown): string {
+  const message = String((error as any)?.message || error || '');
+  if (/statement timeout|canceling statement/i.test(message)) {
+    return 'Una consulta tardó demasiado. La pantalla seguirá disponible y puedes reintentar esa información.';
+  }
+  if (/failed to fetch|network|fetch/i.test(message)) {
+    return 'No se pudo conectar temporalmente con la base productiva. Puedes reintentar.';
+  }
+  return message || 'No se pudo cargar una parte de la información productiva.';
+}
+
 export default function App() {
   const [currentModule, setCurrentModule] = useState<AppModule>('inicio');
   const [searchQuery, setSearchQuery] = useState('');
@@ -62,43 +73,48 @@ export default function App() {
     setLoading(true);
     setLoadError('');
     setSessionRequired(false);
+    const issues: string[] = [];
+
+    // Los proyectos son la fuente del buscador y no deben quedar bloqueados
+    // por auditoría, deficiencias o cualquier módulo secundario.
     try {
-      // Cada bloque inicial es independiente: un módulo lento no debe bloquear
-      // toda la interfaz ni mostrar el error interno de PostgreSQL en la barra.
-      const [projectResult, deficiencyResult, auditResult] = await Promise.allSettled([
-        dataRepository.getProjects(),
-        dataRepository.getDeficiencies(),
-        dataRepository.getAuditLogs(),
-      ]);
-
-      if (projectResult.status === 'rejected') throw projectResult.reason;
-      setProjects(projectResult.value);
-      setDeficiencies(deficiencyResult.status === 'fulfilled' ? deficiencyResult.value : []);
-      setAuditLogs(auditResult.status === 'fulfilled' ? auditResult.value : []);
-
-      if (deficiencyResult.status === 'rejected') {
-        console.warn('Seguimiento de deficiencias se cargará al abrir su módulo:', deficiencyResult.reason);
-      }
-      if (auditResult.status === 'rejected') {
-        console.warn('Actividad reciente se cargará al abrir auditoría:', auditResult.reason);
-      }
-
-      // Pendientes financieros se completan en segundo plano y no bloquean el primer render.
-      void Promise.all([
-        dataRepository.getEstimates(),
-        dataRepository.getGuarantees(),
-      ]).then(([estimateData, guaranteeData]) => {
-        setEstimates(estimateData);
-        setGuarantees(guaranteeData);
-      }).catch((err) => console.warn('Carga secundaria V2:', err));
-    } catch (err: any) {
-      console.error('V2 data load error', err);
-      const message = String(err?.message || 'No se pudo cargar la información productiva.');
-      setLoadError(message);
+      setProjects(await dataRepository.getProjects());
+    } catch (error) {
+      console.error('V2 project data load error', error);
+      const message = friendlyDataError(error);
+      issues.push(`Proyectos: ${message}`);
       setSessionRequired(/sesión requerida/i.test(message));
     } finally {
       setLoading(false);
     }
+
+    // El resto de las consultas se procesa por separado. Una falla no borra
+    // los datos que sí pudieron cargarse ni deja la pantalla inutilizable.
+    const secondary = await Promise.allSettled([
+      dataRepository.getDeficiencies(),
+      dataRepository.getAuditLogs(),
+    ]);
+    const [deficiencyResult, auditResult] = secondary;
+    if (deficiencyResult.status === 'fulfilled') setDeficiencies(deficiencyResult.value);
+    else {
+      console.warn('Carga de deficiencias V2:', deficiencyResult.reason);
+    }
+    if (auditResult.status === 'fulfilled') setAuditLogs(auditResult.value);
+    else {
+      console.warn('Carga de auditoría V2:', auditResult.reason);
+    }
+
+    if (issues.length) setLoadError(issues[0]);
+
+    // Pendientes financieros se completan sin bloquear el primer render.
+    const financial = await Promise.allSettled([
+      dataRepository.getEstimates(),
+      dataRepository.getGuarantees(),
+    ]);
+    if (financial[0].status === 'fulfilled') setEstimates(financial[0].value);
+    else console.warn('Carga de estimaciones V2:', financial[0].reason);
+    if (financial[1].status === 'fulfilled') setGuarantees(financial[1].value);
+    else console.warn('Carga de garantías V2:', financial[1].reason);
   };
 
   useEffect(() => {
@@ -119,10 +135,6 @@ export default function App() {
           setEstimates(await dataRepository.getEstimates());
         } else if (currentModule === 'garantias' && guarantees.length === 0) {
           setGuarantees(await dataRepository.getGuarantees());
-        } else if (currentModule === 'deficiencias' && deficiencies.length === 0) {
-          setDeficiencies(await dataRepository.getDeficiencies());
-        } else if (currentModule === 'auditoria' && auditLogs.length === 0) {
-          setAuditLogs(await dataRepository.getAuditLogs());
         } else if ((currentModule === 'documentos' || currentModule === 'convenios' || (currentModule === 'deficiencias' && selectedDeficiencyId) || (currentModule === 'visitas' && selectedVisitId)) && documents.length === 0) {
           setDocuments(await dataRepository.getDocuments());
         } else if ((currentModule === 'modo_campo' || currentModule === 'visitas') && visits.length === 0) {
@@ -141,7 +153,7 @@ export default function App() {
     };
 
     void loadModuleData();
-  }, [currentModule, selectedDeficiencyId, selectedVisitId, contracts.length, estimates.length, guarantees.length, deficiencies.length, auditLogs.length, documents.length, visits.length]);
+  }, [currentModule, selectedDeficiencyId, selectedVisitId, contracts.length, estimates.length, guarantees.length, documents.length, visits.length]);
 
   useEffect(() => {
     if (!selectedProjectId) return;
@@ -265,7 +277,7 @@ export default function App() {
       case 'busqueda':
         return <ProjectsView projects={projects} onOpenProject={openProject} initialQuery={searchQuery} onSaved={async () => setProjects(await dataRepository.getProjects())} />;
       case 'contratos':
-        return <ContratosView contracts={contracts} projects={projects} onOpenProject={openProject} initialAction={moduleAction} initialProjectId={moduleProjectId} onSaved={async () => setContracts(await dataRepository.getContracts())} />;
+        return <ContratosView contracts={contracts} projects={projects} onOpenProject={openProject} onNavigate={handleNavigate} initialAction={moduleAction} initialProjectId={moduleProjectId} onSaved={async () => setContracts(await dataRepository.getContracts())} />;
       case 'contratistas':
         return <ContratistasView contracts={contracts} projects={projects} onOpenProject={openProject} />;
       case 'convenios':
@@ -389,7 +401,7 @@ export default function App() {
 
   return (
     <div
-      className={`bg-[#0b1118] text-slate-100 h-[100dvh] overflow-hidden ${viewportClass}`}
+      className={`flex h-[100dvh] flex-col bg-[#0b1118] text-slate-100 overflow-hidden ${viewportClass}`}
       data-viewport-mode={viewportMode}
       data-telegram-mini-app={viewportMode === 'telegram' ? 'true' : 'false'}
     >

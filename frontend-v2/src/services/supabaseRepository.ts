@@ -410,20 +410,52 @@ function mapAlertToDeficiency(row: Row): Deficiency {
 }
 
 export class SupabaseDataRepository implements IDataRepository {
+  private workspaceId: string | null | undefined;
+  private workspaceUserId: string | null | undefined;
+
   private client() {
     if (!supabase) throw new Error('Supabase no está configurado en frontend-v2.');
     return supabase;
   }
 
-  async getProjects(): Promise<Project[]> {
-    const { data, error } = await this.client()
-      .from('projects')
-      .select('*')
-      .is('archived_at', null)
-      .order('updated_at', { ascending: false })
-      .limit(250);
+  private async getWorkspaceId(): Promise<string | null> {
+    if (this.workspaceId !== undefined) return this.workspaceId;
+    const client = this.client();
+    const { data: sessionData } = await client.auth.getSession();
+    const userId = sessionData.session?.user?.id;
+    if (this.workspaceUserId === userId && this.workspaceId !== undefined) {
+      return this.workspaceId;
+    }
+    this.workspaceUserId = userId || null;
+    if (!userId) {
+      this.workspaceId = null;
+      return null;
+    }
+    const { data, error } = await client
+      .from('workspace_members')
+      .select('workspace_id')
+      .eq('user_id', userId)
+      .eq('active', true)
+      .limit(1)
+      .maybeSingle();
     if (error) throw error;
-    return (data || []).map(mapProject);
+    this.workspaceId = data?.workspace_id ? String(data.workspace_id) : null;
+    return this.workspaceId;
+  }
+
+  async getProjects(): Promise<Project[]> {
+    const workspaceId = await this.getWorkspaceId();
+    let query = this.client()
+      .from('projects')
+      .select('id,workspace_id,code,name,description,location,project_type,budget_estimate,status,start_date,end_date,execution_days,archived_at,created_at,updated_at,raw_data')
+      .is('archived_at', null)
+      .limit(500);
+    if (workspaceId) query = query.eq('workspace_id', workspaceId);
+    const { data, error } = await query;
+    if (error) throw error;
+    return (data || []).map(mapProject).sort((a, b) =>
+      String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''))
+    );
   }
 
   async getProjectById(id: string): Promise<Project | undefined> {
@@ -699,15 +731,13 @@ export class SupabaseDataRepository implements IDataRepository {
     let deficiencyQuery = this.client()
       .from('deficiencies')
       .select('*')
-      .order('reported_at', { ascending: false })
-      .limit(500);
+      .order('reported_at', { ascending: false });
     if (projectId) deficiencyQuery = deficiencyQuery.eq('project_id', projectId);
 
     let followupQuery = this.client()
       .from('deficiency_followups')
       .select('*')
-      .order('created_at', { ascending: true })
-      .limit(1000);
+      .order('created_at', { ascending: true });
     if (projectId) followupQuery = followupQuery.eq('project_id', projectId);
 
     const [{ data, error }, { data: followups, error: followupError }] = await Promise.all([
@@ -831,7 +861,7 @@ export class SupabaseDataRepository implements IDataRepository {
       .from('audit_log')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(100);
+      .limit(250);
     if (error) throw error;
     return (data || []).map((row: Row) => ({
       id: s(row.id),

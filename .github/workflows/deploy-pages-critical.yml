@@ -118,6 +118,9 @@ jobs:
           test -d v2/assets
           grep -q 'Control Contractual' v2/index.html
 
+      - name: Preparar herramientas de prueba
+        run: npm install --no-save --include=dev @playwright/test@1.55.0
+
       - name: Instalar navegador de prueba
         run: npx playwright install --with-deps chromium
 

@@ -245,7 +245,7 @@ export default function App() {
       case 'convenios':
         return <ConveniosView documents={documents} projects={projects} onOpenProject={openProject} />;
       case 'estimaciones':
-        return <EstimacionesView estimates={estimates} projects={projects} onOpenProject={openProject} />;
+        return <EstimacionesView estimates={estimates} projects={projects} onOpenProject={openProject} onSaved={async () => setEstimates(await dataRepository.getEstimates())} />;
       case 'garantias':
         return <GarantiasView guarantees={guarantees} projects={projects} onOpenProject={openProject} />;
       case 'deficiencias':

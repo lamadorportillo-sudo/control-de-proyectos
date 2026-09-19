@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ShieldCheck, Search, Plus, AlertTriangle, ArrowRight, X, Save } from 'lucide-react';
 import type { Guarantee, Project } from '../../types.ts';
 import { formatLempiras, formatDateSpanish } from '../../services/calculationService.ts';
@@ -9,12 +9,14 @@ interface GarantiasViewProps {
   projects: Project[];
   onOpenProject: (projectId: string) => void;
   onSaved?: () => Promise<void> | void;
+  initialAction?: string | null;
+  initialProjectId?: string | null;
 }
 
 const norm = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const inputClass = 'w-full rounded-lg border border-[#243247] bg-[#0b1220] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-amber-500';
 
-export const GarantiasView: React.FC<GarantiasViewProps> = ({ guarantees, projects, onOpenProject, onSaved }) => {
+export const GarantiasView: React.FC<GarantiasViewProps> = ({ guarantees, projects, onOpenProject, onSaved, initialAction = null, initialProjectId = null }) => {
   const [query, setQuery] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -23,6 +25,11 @@ export const GarantiasView: React.FC<GarantiasViewProps> = ({ guarantees, projec
     projectId:'', type:'CUMPLIMIENTO' as Guarantee['type'], policyNumber:'', issuer:'', amount:'',
     issueDate:'', expiryDate:'', documentRef:''
   });
+
+  useEffect(() => {
+    if (initialAction === 'NEW_GUARANTEE') setShowCreate(true);
+    if (initialProjectId) setForm((current) => ({ ...current, projectId: initialProjectId }));
+  }, [initialAction, initialProjectId]);
 
   const q = norm(query.trim());
   const results = useMemo(() => {

@@ -20,6 +20,18 @@ const n = (value: unknown, fallback = 0): number => {
 };
 const s = (value: unknown, fallback = ''): string =>
   value === null || value === undefined ? fallback : String(value);
+
+function uniqueRows<T extends Row>(rows: T[]): T[] {
+  const seen = new Set<string>();
+  return rows.filter((row) => {
+    const id = s(row.id);
+    if (!id) return true;
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+}
+
 const dateOnly = (value: unknown): string => s(value).slice(0, 10);
 
 function projectStatus(row: Row): Project['status'] {
@@ -417,7 +429,7 @@ export class SupabaseDataRepository implements IDataRepository {
     if (workspaceId) query = query.eq('workspace_id', workspaceId);
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []).map(mapProject).sort((a, b) =>
+    return uniqueRows(data || []).map(mapProject).sort((a, b) =>
       String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''))
     );
   }
@@ -490,7 +502,7 @@ export class SupabaseDataRepository implements IDataRepository {
       .is('voided_at', null)
       .order('updated_at', { ascending: false });
     if (error) throw error;
-    return (data || []).map(mapContract);
+    return uniqueRows(data || []).map(mapContract);
   }
 
   async getContractByProjectId(projectId: string): Promise<Contract | undefined> {
@@ -558,7 +570,7 @@ export class SupabaseDataRepository implements IDataRepository {
     if (projectId) query = query.eq('project_id', projectId);
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []).map(mapEstimate);
+    return uniqueRows(data || []).map(mapEstimate);
   }
 
   async saveEstimate(estimate: Estimate): Promise<void> {
@@ -631,7 +643,7 @@ export class SupabaseDataRepository implements IDataRepository {
     if (contractId) query = query.eq('contract_id', contractId);
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []).map(mapGuarantee);
+    return uniqueRows(data || []).map(mapGuarantee);
   }
 
   async saveGuarantee(guarantee: Guarantee): Promise<void> {
@@ -713,14 +725,14 @@ export class SupabaseDataRepository implements IDataRepository {
     if (followupError) throw followupError;
 
     const byDeficiency = new Map<string, Row[]>();
-    for (const item of followups || []) {
+    for (const item of uniqueRows(followups || [])) {
       const key = s(item.deficiency_id);
       const list = byDeficiency.get(key) || [];
       list.push(item);
       byDeficiency.set(key, list);
     }
 
-    return (data || []).map((row: Row) => mapStructuredDeficiency(row, byDeficiency.get(s(row.id)) || []));
+    return uniqueRows(data || []).map((row: Row) => mapStructuredDeficiency(row, byDeficiency.get(s(row.id)) || []));
   }
 
   async saveDeficiency(deficiency: Deficiency): Promise<void> {
@@ -765,7 +777,7 @@ export class SupabaseDataRepository implements IDataRepository {
     if (projectId) query = query.eq('project_id', projectId);
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []).map(mapDocument);
+    return uniqueRows(data || []).map(mapDocument);
   }
 
   async saveDocument(_doc: DocumentEvidence): Promise<void> {
@@ -781,7 +793,7 @@ export class SupabaseDataRepository implements IDataRepository {
     if (projectId) query = query.eq('project_id', projectId);
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []).map(mapVisit);
+    return uniqueRows(data || []).map(mapVisit);
   }
 
   async saveFieldVisit(visit: FieldVisit): Promise<void> {

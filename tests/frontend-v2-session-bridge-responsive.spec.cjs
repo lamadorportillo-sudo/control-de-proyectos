@@ -317,7 +317,7 @@ test('V2 no desborda horizontalmente en anchos oficiales', async ({ page }) => {
 });
 
 
-test('Registrar visita mantiene escritura productiva desactivada por defecto', async ({ page }) => {
+test('Registrar visita guarda con el mismo ID mediante RLS cuando hay sesión', async ({ page }) => {
   const token = makeJwt();
   const capture = { token, restRequests: 0, restWriteRequests: 0 };
 
@@ -331,10 +331,12 @@ test('Registrar visita mantiene escritura productiva desactivada por defecto', a
   await page.getByRole('button', { name: 'Nueva visita' }).click();
 
   await expect(page.getByRole('heading', { name: 'Registrar visita de obra' })).toBeVisible();
+  await page.getByLabel('Proyecto').selectOption('22222222-2222-4222-8222-222222222222');
   await page.getByRole('button', { name: /Revisar y guardar/ }).click();
 
   const saveButton = page.getByRole('button', { name: 'Guardar visita' });
-  await expect(saveButton).toBeDisabled();
-  await expect(page.getByText(/escritura productiva está preparada pero permanece desactivada/i)).toBeVisible();
-  expect(capture.restWriteRequests).toBe(0);
+  await expect(saveButton).toBeEnabled();
+  await saveButton.click();
+  await expect(page.getByText(/Visita sincronizada con Supabase/i)).toBeVisible();
+  expect(capture.restWriteRequests).toBeGreaterThan(0);
 });

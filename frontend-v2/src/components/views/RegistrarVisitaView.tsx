@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, Camera, Mic, Plus, Save, MapPin } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Plus, Save, MapPin } from 'lucide-react';
 import type { Project } from '../../types.ts';
 import { saveVisitWithEvidence, visitWritesEnabled } from '../../services/visitWriteService.ts';
 
@@ -93,7 +93,7 @@ export const RegistrarVisitaView: React.FC<Props> = ({ projects, initialProjectI
       ? Boolean(draft.workObserved.trim() || draft.activities.length)
       : true;
 
-  const labels = ['Datos y avance','Trabajo realizado','Evidencia','Incidencias','Revisar y guardar'];
+  const labels = ['Datos y avance','Trabajo realizado','Incidencias','Revisar y guardar'];
 
   return (
     <div className="mx-auto max-w-4xl space-y-5 pb-12">
@@ -140,16 +140,7 @@ export const RegistrarVisitaView: React.FC<Props> = ({ projects, initialProjectI
         </div>}
 
         {step === 3 && <div className="space-y-4">
-          <Title n={3} text="Evidencia"/>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <label className="cursor-pointer rounded-xl border border-dashed border-[#334155] bg-[#0b1220] p-5 text-center"><Camera className="mx-auto h-6 w-6 text-blue-400"/><div className="mt-2 text-xs font-semibold text-white">Agregar fotografías</div><div className="mt-1 text-[10px] text-slate-500">{draft.photoNames.length ? String(draft.photoNames.length) + ' archivo(s)' : 'JPG/PNG desde cámara o galería'}</div><input type="file" accept="image/*" multiple className="hidden" onChange={(e)=>{ const files: File[] = e.currentTarget.files ? (Array.from(e.currentTarget.files) as File[]) : []; setPhotoFiles(files); update({photoNames:files.map((file: File)=>file.name)}); }}/></label>
-            <label className="cursor-pointer rounded-xl border border-dashed border-[#334155] bg-[#0b1220] p-5 text-center"><Mic className="mx-auto h-6 w-6 text-amber-400"/><div className="mt-2 text-xs font-semibold text-white">Nota de voz</div><div className="mt-1 text-[10px] text-slate-500">{draft.audioName || 'Audio opcional'}</div><input type="file" accept="audio/*" className="hidden" onChange={(e)=>{ const file=e.target.files?.[0] || null; setAudioFile(file); update({audioName:file?.name}); }}/></label>
-          </div>
-          <div className="rounded-lg border border-emerald-900/40 bg-emerald-950/20 p-3 text-[11px] text-emerald-200">Las fotografías y el audio se cargan a Storage productivo con el mismo ID de la visita. Si no hay conexión, conserva el borrador local para sincronizar después.</div>
-        </div>}
-
-        {step === 4 && <div className="space-y-4">
-          <Title n={4} text="Incidencias"/>
+          <Title n={3} text="Incidencias"/>
           <label className="flex items-center gap-2 text-xs font-semibold text-slate-200"><input type="checkbox" checked={draft.hasIncident} onChange={(e)=>update({hasIncident:e.target.checked})}/>Registrar incidencia o deficiencia observada</label>
           {draft.hasIncident && <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <Field label="Problema observado" wide><textarea rows={4} value={draft.incidentDescription || ''} onChange={(e)=>update({incidentDescription:e.target.value})} className={inputClass}/></Field>
@@ -160,15 +151,26 @@ export const RegistrarVisitaView: React.FC<Props> = ({ projects, initialProjectI
           </div>}
         </div>}
 
-        {step === 5 && <div className="space-y-4">
-          <Title n={5} text="Revisar y guardar"/>
+        {step === 3 && <div className="space-y-4">
+          <Title n={3} text="Incidencias"/>
+          <label className="flex items-center gap-2 text-xs font-semibold text-slate-200"><input type="checkbox" checked={draft.hasIncident} onChange={(e)=>update({hasIncident:e.target.checked})}/>Registrar incidencia o deficiencia observada</label>
+          {draft.hasIncident && <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <Field label="Problema observado" wide><textarea rows={4} value={draft.incidentDescription || ''} onChange={(e)=>update({incidentDescription:e.target.value})} className={inputClass}/></Field>
+            <Field label="Instrucción del supervisor" wide><textarea rows={3} value={draft.instruction || ''} onChange={(e)=>update({instruction:e.target.value})} className={inputClass}/></Field>
+            <Field label="Responsable"><input value={draft.responsible || ''} onChange={(e)=>update({responsible:e.target.value})} className={inputClass}/></Field>
+            <Field label="Fecha límite"><input type="date" value={draft.deadline || ''} onChange={(e)=>update({deadline:e.target.value})} className={inputClass}/></Field>
+            <div className="md:col-span-2 rounded-lg border border-amber-800/50 bg-amber-950/20 p-3 text-xs text-amber-200">Estado inicial automático: <strong>Pendiente</strong>. Corregida no significa cerrada; verificación y cierre son acciones separadas.</div>
+          </div>}
+        </div>}
+
+        {step === 4 && <div className="space-y-4">
+          <Title n={4} text="Revisar y guardar"/>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <Summary label="Proyecto" value={project ? project.code + ' · ' + project.name : 'Sin proyecto'}/>
             <Summary label="Fecha / hora" value={draft.date + ' · ' + draft.time}/>
             <Summary label="Avance observado" value={draft.observedProgress.toFixed(1) + '%'}/>
             <Summary label="Variación" value={(variation >= 0 ? '+' : '') + variation.toFixed(1) + '%'}/>
             <Summary label="Actividades" value={String(draft.activities.length)}/>
-            <Summary label="Evidencia" value={String(draft.photoNames.length) + ' foto(s)' + (draft.audioName ? ' · 1 audio' : '')}/>
             <Summary label="Incidencia" value={draft.hasIncident ? 'Sí · Pendiente' : 'No'}/>
             <Summary label="ID del registro" value={draft.id}/>
           </div>
@@ -188,7 +190,7 @@ export const RegistrarVisitaView: React.FC<Props> = ({ projects, initialProjectI
 
       <div className="flex items-center justify-between">
         <button disabled={step===1} onClick={()=>setStep((s)=>Math.max(1,s-1))} className="inline-flex items-center gap-1 rounded-lg border border-[#243247] px-3 py-2 text-xs font-semibold text-slate-300 disabled:opacity-30"><ArrowLeft className="h-3.5 w-3.5"/>Anterior</button>
-        {step < 5 && <button disabled={!canNext} onClick={()=>setStep((s)=>Math.min(5,s+1))} className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40">Siguiente<ArrowRight className="h-3.5 w-3.5"/></button>}
+        {step < 4 && <button disabled={!canNext} onClick={()=>setStep((s)=>Math.min(4,s+1))} className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40">Siguiente<ArrowRight className="h-3.5 w-3.5"/></button>}
       </div>
     </div>
   );

@@ -447,11 +447,14 @@ export class SupabaseDataRepository implements IDataRepository {
   }
 
   async getProjectById(id: string): Promise<Project | undefined> {
-    const { data, error } = await this.client()
+    const workspaceId = await this.getWorkspaceId();
+    let query = this.client()
       .from('projects')
       .select('*')
       .eq('id', id)
-      .maybeSingle();
+      .is('archived_at', null);
+    if (workspaceId) query = query.eq('workspace_id', workspaceId);
+    const { data, error } = await query.maybeSingle();
     if (error) throw error;
     return data ? mapProject(data) : undefined;
   }
@@ -508,11 +511,14 @@ export class SupabaseDataRepository implements IDataRepository {
   }
 
   async getContracts(): Promise<Contract[]> {
-    const { data, error } = await this.client()
+    const workspaceId = await this.getWorkspaceId();
+    let query = this.client()
       .from('contracts')
       .select('*')
       .is('voided_at', null)
       .order('updated_at', { ascending: false });
+    if (workspaceId) query = query.eq('workspace_id', workspaceId);
+    const { data, error } = await query;
     if (error) throw error;
     return uniqueByBusinessKey(uniqueRows(data || []), (row) => [s(row.project_id), s(row.number)].join('|')).map(mapContract);
   }

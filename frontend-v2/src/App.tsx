@@ -339,7 +339,7 @@ export default function App() {
   );
 
   const viewportClass = viewportMode === 'desktop'
-    ? 'w-full min-h-screen'
+    ? 'w-full h-[100dvh]'
     : viewportMode === 'tablet'
       ? 'max-w-[820px] mx-auto min-h-[820px] my-4 border border-[#243247] rounded-xl overflow-hidden shadow-2xl'
       : 'max-w-[420px] mx-auto min-h-[740px] my-4 border border-[#243247] rounded-xl overflow-hidden shadow-2xl';
@@ -375,7 +375,7 @@ export default function App() {
 
   return (
     <div
-      className={`bg-[#0b1220] text-slate-100 ${viewportClass}`}
+      className={`bg-[#0b1118] text-slate-100 h-[100dvh] overflow-hidden ${viewportClass}`}
       data-viewport-mode={viewportMode}
       data-telegram-mini-app={viewportMode === 'telegram' ? 'true' : 'false'}
     >
@@ -421,7 +421,7 @@ export default function App() {
         </button>
       )}
 
-      <div className="flex min-h-[calc(100vh-56px)]">
+      <div className="flex min-h-0 flex-1">
         <div className={`${viewportMode === 'mobile' || viewportMode === 'telegram' ? 'hidden' : 'hidden md:block'} shrink-0`}>
           <Sidebar currentModule={currentModule} onNavigate={handleNavigate} isCollapsed={isSidebarCollapsed} onToggleCollapse={() => setIsSidebarCollapsed((value) => !value)} blockingDeficiencyCount={blockingDefs.length} />
         </div>
@@ -433,7 +433,7 @@ export default function App() {
           </div>
         )}
 
-        <main className="min-w-0 flex-1 overflow-y-auto p-3 sm:p-4 md:p-5">{renderModule()}</main>
+        <main className="min-w-0 min-h-0 flex-1 overflow-y-auto p-3 sm:p-4 md:p-5">{renderModule()}</main>
       </div>
 
       <ZordonLauncher onOpen={() => setIsZordonOpen(true)} isAvailable />

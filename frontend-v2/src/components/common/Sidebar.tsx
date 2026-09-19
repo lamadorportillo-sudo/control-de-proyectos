@@ -84,16 +84,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside
       id="main-app-sidebar"
-      className={`bg-[#0b1220] border-r border-[#172235] flex flex-col justify-between transition-all duration-200 z-20 shrink-0 ${
-        isCollapsed ? 'w-16' : 'w-64'
+      className={`bg-[#101720] border-r border-[#2b3a4a] flex flex-col justify-between transition-all duration-200 z-20 shrink-0 ${
+        isCollapsed ? 'w-[72px]' : 'w-[232px]'
       }`}
     >
       {/* Brand Header */}
       <div>
-        <div className="h-14 border-b border-[#172235] flex items-center px-4 justify-between">
+        <div className="h-16 border-b border-[#2b3a4a] flex items-center px-4 justify-between">
           {!isCollapsed ? (
             <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="w-7 h-7 rounded bg-[#2563eb] text-white flex items-center justify-center font-bold text-sm shadow-md shrink-0">
+              <div className="w-7 h-7 rounded bg-[#c5a367] text-[#0b1118] flex items-center justify-center font-bold text-sm shrink-0">
                 CC
               </div>
               <div className="truncate">
@@ -106,7 +106,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             </div>
           ) : (
-            <div className="w-8 h-8 mx-auto rounded bg-[#2563eb] text-white flex items-center justify-center font-bold text-sm shadow-md">
+            <div className="w-8 h-8 mx-auto rounded bg-[#c5a367] text-[#0b1118] flex items-center justify-center font-bold text-sm shadow-md">
               CC
             </div>
           )}
@@ -123,7 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Navigation List */}
-        <nav className="p-2 space-y-0.5 overflow-y-auto max-h-[calc(100vh-170px)]" aria-label="Navegación principal">
+        <nav className="p-2 space-y-0.5 overflow-y-auto max-h-[calc(100dvh-170px)]" aria-label="Navegación principal">
           {navItems.map((item) => {
             const active = isModuleActive(item.id);
             const Icon = item.icon;
@@ -136,14 +136,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 title={isCollapsed ? item.label : undefined}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs font-medium transition-all group relative ${
                   active
-                    ? 'bg-[#172235] text-white border-l-2 border-[#2563eb] font-semibold'
-                    : 'text-slate-300 hover:text-white hover:bg-[#111827] border-l-2 border-transparent'
+                    ? 'bg-[#1b2735] text-white border-l-2 border-[#c5a367] font-semibold'
+                    : 'text-slate-300 hover:text-white hover:bg-[#151e29] border-l-2 border-transparent'
                 }`}
                 aria-current={active ? 'page' : undefined}
               >
                 <Icon
                   className={`w-4 h-4 shrink-0 transition-colors ${
-                    active ? 'text-[#3b82f6]' : 'text-slate-400 group-hover:text-slate-200'
+                    active ? 'text-[#c5a367]' : 'text-slate-400 group-hover:text-slate-200'
                   }`}
                 />
                 {!isCollapsed && <span className="truncate text-left flex-1">{item.label}</span>}
@@ -166,7 +166,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Bottom Field Mode & Institutional Footer */}
-      <div className="p-2 border-t border-[#172235] bg-[#0b1220] space-y-1.5">
+      <div className="p-2 border-t border-[#2b3a4a] bg-[#101720] space-y-1.5">
         <button
           id="btn-sidebar-modo-campo"
           onClick={() => onNavigate('modo_campo')}

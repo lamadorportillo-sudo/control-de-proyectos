@@ -88,7 +88,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header id="main-app-header" className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-[#172235] bg-[#0b1220] px-3 md:gap-4 md:px-5">
+    <header id="main-app-header" className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-2 border-b border-[#2b3a4a] bg-[#101720] px-3 md:gap-4 md:px-5">
       <div className="flex min-w-0 items-center gap-2 md:gap-3">
         {onToggleSidebar && (
           <button onClick={onToggleSidebar} className="rounded p-1.5 text-slate-400 hover:bg-[#172235] hover:text-white lg:hidden" aria-label="Abrir menú">
@@ -111,7 +111,7 @@ export const Header: React.FC<HeaderProps> = ({
               onChange={(e) => onSearchChange(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') onSearchSubmit(); }}
               placeholder="Buscar proyecto, contrato, código o ubicación…"
-              className="w-full rounded-md border border-[#172235] bg-[#111827] py-1.5 pl-9 pr-3 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500"
+              className="w-full rounded-md border border-[#2b3a4a] bg-[#151e29] py-1.5 pl-9 pr-3 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500"
             />
           </div>
         </div>
@@ -130,27 +130,27 @@ export const Header: React.FC<HeaderProps> = ({
           {online ? 'En línea' : 'Sin conexión'}
         </div>
 
-        <div className="hidden items-center rounded-md border border-[#172235] bg-[#111827] p-0.5 xl:flex">
+        <div className="hidden items-center rounded-md border border-[#2b3a4a] bg-[#151e29] p-0.5 xl:flex">
           <EnvButton active={viewportMode === 'desktop'} onClick={() => onViewportModeChange('desktop')} title="PC"><Monitor className="h-3.5 w-3.5" /></EnvButton>
           <EnvButton active={viewportMode === 'tablet'} onClick={() => onViewportModeChange('tablet')} title="Tablet"><Tablet className="h-3.5 w-3.5" /></EnvButton>
           <EnvButton active={viewportMode === 'mobile'} onClick={() => onViewportModeChange('mobile')} title="Celular"><Smartphone className="h-3.5 w-3.5" /></EnvButton>
           <EnvButton active={viewportMode === 'telegram'} onClick={() => onViewportModeChange('telegram')} title="Telegram"><Send className="h-3.5 w-3.5" /></EnvButton>
         </div>
 
-        <button onClick={() => onNavigate('modo_campo')} className="flex items-center gap-1 rounded border border-[#243247] bg-[#172235] px-2.5 py-1 text-xs font-medium text-slate-200 hover:bg-blue-600 hover:text-white" title="Modo Campo">
+        <button onClick={() => onNavigate('modo_campo')} className="flex items-center gap-1 rounded border border-[#2b3a4a] bg-[#1b2735] px-2.5 py-1 text-xs font-medium text-slate-200 hover:bg-blue-600 hover:text-white" title="Modo Campo">
           <Smartphone className="h-3.5 w-3.5 text-amber-400" />
           <span className="hidden md:inline">Campo</span>
         </button>
 
         {onOpenZordon && (
-          <button onClick={onOpenZordon} className="flex items-center gap-1.5 rounded border border-blue-700/60 bg-gradient-to-r from-blue-900/60 to-indigo-900/60 px-2 py-1 text-xs font-medium text-blue-200 hover:from-blue-600 hover:to-indigo-600 hover:text-white" aria-label="Abrir ZORDON">
+          <button onClick={onOpenZordon} className="flex items-center gap-1.5 rounded border border-[#2b3a4a] bg-[#1b2735] px-2 py-1 text-xs font-medium text-[#f1e4c5] hover:bg-[#c5a367] hover:text-[#0b1118]" aria-label="Abrir ZORDON">
             <EngineerFigure size={18} showStatusDot={false} />
             <span className="hidden sm:inline">ZORDON</span>
           </button>
         )}
 
         <div className="relative">
-          <button onClick={() => setShowUserMenu((value) => !value)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#243247] bg-[#172235] text-slate-300 hover:text-white" aria-label="Sesión de usuario">
+          <button onClick={() => setShowUserMenu((value) => !value)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#2b3a4a] bg-[#1b2735] text-slate-300 hover:text-white" aria-label="Sesión de usuario">
             <UserRound className="h-4 w-4" />
           </button>
           {showUserMenu && (

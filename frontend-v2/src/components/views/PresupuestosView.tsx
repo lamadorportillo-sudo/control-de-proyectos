@@ -42,7 +42,7 @@ export const PresupuestosView: React.FC<PresupuestosViewProps> = ({
   const totalAssigned = projects.reduce((acc, p) => acc + p.assignedBudget, 0);
   const totalRevised = projects.reduce((acc, p) => acc + p.revisedBudget, 0);
   const totalModifications = totalRevised - totalAssigned;
-  const projectById = new Map(projects.map((project) => [project.id, project]));
+  const projectById = new Map<string, Project>(projects.map((project): [string, Project] => [project.id, project]));
 
   const filteredProjects = projects.filter((p) =>
     `${p.name} ${p.code} ${p.fundingSource}`.toLowerCase().includes(search.toLowerCase())

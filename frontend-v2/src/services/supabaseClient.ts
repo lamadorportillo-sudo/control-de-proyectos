@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type Session, type SupabaseClient } from '@supabase/supabase-js';
 
 const DEFAULT_SUPABASE_URL = 'https://flethujkrharehjikwgj.supabase.co';
 // Publishable client key: designed by Supabase to be exposed in browser applications.
@@ -40,11 +40,17 @@ export const supabase: SupabaseClient | null = hasSupabaseConfig
  * already stores on the same GitHub Pages origin. This avoids a second login
  * system while frontend-v2 is integrated.
  */
-export async function ensureSupabaseSession(): Promise<void> {
-  if (!supabase || typeof window === 'undefined') return;
+export async function ensureSupabaseSession(): Promise<Session | null> {
+  if (!supabase || typeof window === 'undefined') return null;
 
-  const { data } = await supabase.auth.getSession();
-  if (data.session?.access_token) return;
+  const now = Math.floor(Date.now() / 1000);
+  const current = (await supabase.auth.getSession()).data.session;
+  if (current?.access_token && (!current.expires_at || current.expires_at > now + 30)) return current;
+
+  if (current?.refresh_token) {
+    const refreshed = await supabase.auth.refreshSession();
+    if (refreshed.data.session?.access_token) return refreshed.data.session;
+  }
 
   let legacy: any = null;
   try {
@@ -55,25 +61,27 @@ export async function ensureSupabaseSession(): Promise<void> {
 
   const accessToken = String(legacy?.accessToken || '');
   const refreshToken = String(legacy?.refreshToken || '');
-  if (!accessToken || !refreshToken) return;
+  if (!accessToken || !refreshToken) return null;
 
-  const { error } = await supabase.auth.setSession({
+  const bridged = await supabase.auth.setSession({
     access_token: accessToken,
     refresh_token: refreshToken,
   });
 
-  if (error) {
-    console.warn('No se pudo reutilizar la sesión productiva en frontend-v2:', error.message);
+  if (bridged.error || !bridged.data.session?.access_token) {
+    console.warn('No se pudo reutilizar la sesión productiva en frontend-v2:', bridged.error?.message || 'sesión vacía');
+    return null;
   }
+
+  return bridged.data.session;
 }
 
 export async function getV2AuthState() {
   if (!supabase) return { authenticated: false, user: null, session: null };
-  await ensureSupabaseSession();
-  const { data } = await supabase.auth.getSession();
+  const session = await ensureSupabaseSession();
   return {
-    authenticated: Boolean(data.session?.user),
-    user: data.session?.user || null,
-    session: data.session || null,
+    authenticated: Boolean(session?.user),
+    user: session?.user || null,
+    session,
   };
 }

@@ -475,7 +475,15 @@ export default function App() {
       </nav>
 
       <ZordonLauncher onOpen={() => setIsZordonOpen(true)} isAvailable />
-      <ZordonAssistant open={isZordonOpen} onClose={() => setIsZordonOpen(false)} context={context} />
+      <ZordonAssistant
+        open={isZordonOpen}
+        onClose={() => setIsZordonOpen(false)}
+        context={context}
+        onSessionExpired={() => {
+          setIsZordonOpen(false);
+          setSessionRequired(true);
+        }}
+      />
     </div>
   );
 }

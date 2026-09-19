@@ -12,9 +12,10 @@ interface ZordonAssistantProps {
   open: boolean;
   onClose: () => void;
   context?: string;
+  onSessionExpired?: () => void;
 }
 
-export const ZordonAssistant: React.FC<ZordonAssistantProps> = ({ open, onClose, context = '' }) => {
+export const ZordonAssistant: React.FC<ZordonAssistantProps> = ({ open, onClose, context = '', onSessionExpired }) => {
   const [message, setMessage] = useState('');
   const [history, setHistory] = useState<Turn[]>([]);
   const [loading, setLoading] = useState(false);
@@ -38,27 +39,44 @@ export const ZordonAssistant: React.FC<ZordonAssistantProps> = ({ open, onClose,
 
     setLoading(true);
     try {
-      await ensureSupabaseSession();
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session?.access_token) {
-        throw new Error('No existe una sesión autenticada reutilizable.');
+      const session = await ensureSupabaseSession();
+      if (!session?.access_token) {
+        const missingSession = new Error('SESSION_EXPIRED');
+        (missingSession as any).code = 'SESSION_EXPIRED';
+        throw missingSession;
       }
 
       const payloadHistory = history.slice(-24).map((turn) => ({ role: turn.role, text: turn.text.slice(0, 1000) }));
-      const { data, error: invokeError } = await supabase.functions.invoke('halu-chat', {
-        body: {
-          message: q,
-          context,
-          history: payloadHistory,
-        },
+      const body = { message: q, context, history: payloadHistory };
+      let { data, error: invokeError } = await supabase.functions.invoke('halu-chat', {
+        body,
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
+
+      if (invokeError && (invokeError as any).context?.status === 401) {
+        const refreshed = await supabase.auth.refreshSession();
+        if (refreshed.data.session?.access_token) {
+          ({ data, error: invokeError } = await supabase.functions.invoke('halu-chat', {
+            body,
+            headers: { Authorization: `Bearer ${refreshed.data.session.access_token}` },
+          }));
+        }
+      }
+
       if (invokeError) throw invokeError;
       const reply = String(data?.reply || '').trim();
       if (!reply) throw new Error('ZORDON no devolvió respuesta.');
       setHistory((prev) => [...prev, { role: 'assistant', text: reply }]);
     } catch (err: any) {
       console.error('ZORDON invoke error', err);
-      setError('Necesito una sesión válida de Control Contractual para consultar ZORDON. No se modificó ninguna conversación ni expediente.');
+      const status = Number(err?.context?.status || err?.status || 0);
+      const isSessionError = err?.code === 'SESSION_EXPIRED' || status === 401;
+      if (isSessionError) {
+        setError('La sesión de Control Contractual venció. Vuelve a ingresar para continuar con ZORDON.');
+        onSessionExpired?.();
+      } else {
+        setError('ZORDON tuvo un problema momentáneo al responder. El expediente no fue modificado; puedes volver a enviar el mensaje.');
+      }
     } finally {
       setLoading(false);
     }

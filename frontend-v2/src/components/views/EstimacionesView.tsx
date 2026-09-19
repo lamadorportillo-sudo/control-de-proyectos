@@ -8,6 +8,7 @@ interface EstimacionesViewProps {
   estimates: Estimate[];
   projects: Project[];
   onOpenProject: (projectId: string) => void;
+  onOpenProjectTab?: (projectId: string, tab: string) => void;
   onSaved?: () => Promise<void> | void;
   initialAction?: string | null;
   initialProjectId?: string | null;
@@ -16,7 +17,7 @@ interface EstimacionesViewProps {
 const norm = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const inputClass = 'w-full rounded-lg border border-[#243247] bg-[#0b1220] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-emerald-500';
 
-export const EstimacionesView: React.FC<EstimacionesViewProps> = ({ estimates, projects, onOpenProject, onSaved, initialAction = null, initialProjectId = null }) => {
+export const EstimacionesView: React.FC<EstimacionesViewProps> = ({ estimates, projects, onOpenProject, onOpenProjectTab, onSaved, initialAction = null, initialProjectId = null }) => {
   const [query, setQuery] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -153,7 +154,7 @@ export const EstimacionesView: React.FC<EstimacionesViewProps> = ({ estimates, p
             estimate.paymentStatus === 'PENDIENTE_REVISION' ? 'bg-amber-950 text-amber-300' :
             'bg-[#172235] text-slate-300';
           return (
-            <button key={estimate.id} onClick={() => onOpenProject(estimate.projectId)} className="group w-full rounded-xl border border-[#1f2e45] bg-[#111827] p-4 text-left hover:border-emerald-700 hover:bg-[#131d2f]">
+            <button key={estimate.id} onClick={() => (onOpenProjectTab ? onOpenProjectTab(estimate.projectId, 'estimaciones') : onOpenProject(estimate.projectId))} className="group w-full rounded-xl border border-[#1f2e45] bg-[#111827] p-4 text-left hover:border-emerald-700 hover:bg-[#131d2f]">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2"><span className="rounded bg-emerald-950/60 px-2 py-0.5 text-xs font-bold text-emerald-300">Estimación N.º {estimate.estimateNumber}</span><span className={`rounded px-2 py-0.5 text-[10px] font-semibold uppercase ${statusTone}`}>{estimate.paymentStatusLabel}</span>{estimate.netPayable > 1000000 && <span className="inline-flex items-center gap-1 rounded bg-amber-950/60 px-2 py-0.5 text-[10px] font-semibold text-amber-300"><AlertTriangle className="h-3 w-3"/>Pago &gt; L 1,000,000</span>}</div>

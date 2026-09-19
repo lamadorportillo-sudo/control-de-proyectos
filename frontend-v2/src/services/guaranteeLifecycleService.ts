@@ -36,6 +36,9 @@ export function getGuaranteeAttention(guarantee: Guarantee, project?: Project, r
   const projectEndYear = yearFromDate(project?.expectedEndDate);
   const annualClose = !projectFinished && ((guaranteeYear !== null && guaranteeYear < currentYear) || (projectEndYear !== null && projectEndYear < currentYear));
 
+  if (guarantee.status === 'REEMPLAZADA') {
+    return { kind: 'INFORMATIVA', label: 'Ver historial', detail: 'Esta póliza fue reemplazada por una ampliación; permanece disponible como historial.', context: 'Póliza reemplazada', isClosureCandidate: false };
+  }
   if (guarantee.status === 'LIBERADA') {
     return { kind: 'INFORMATIVA', label: 'Ver liberación', detail: 'La garantía ya está liberada; consulta el soporte de cierre en el expediente.', context: 'Garantía liberada', isClosureCandidate: false };
   }

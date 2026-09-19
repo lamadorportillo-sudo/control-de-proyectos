@@ -3,7 +3,6 @@ import {
   ArrowLeft,
   AlertOctagon,
   Camera,
-  FileText,
   History,
   ClipboardCheck,
   MapPin,
@@ -32,7 +31,7 @@ interface Props {
   onDocumentsChanged?: () => Promise<void> | void;
 }
 
-type Tab = 'resumen' | 'evidencia' | 'seguimiento' | 'documentos' | 'historial';
+type Tab = 'resumen' | 'evidencia' | 'seguimiento' | 'historial';
 
 const inputClass =
   'w-full rounded-lg border border-[#243247] bg-[#0b1220] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-red-500';
@@ -78,7 +77,6 @@ export const DeficiencyDetailView: React.FC<Props> = ({
   );
 
   const evidence = linked.filter((doc) => doc.type === 'FOTOGRAFIA' || doc.type === 'AUDIO');
-  const formalDocs = linked.filter((doc) => doc.type !== 'FOTOGRAFIA' && doc.type !== 'AUDIO');
 
   const openEvidence = async (id: string) => {
     setOpeningId(id);
@@ -145,7 +143,6 @@ export const DeficiencyDetailView: React.FC<Props> = ({
     { id: 'resumen', label: 'Resumen' },
     { id: 'evidencia', label: 'Evidencia', count: evidence.length },
     { id: 'seguimiento', label: 'Seguimiento', count: deficiency.history.length },
-    { id: 'documentos', label: 'Documentos', count: formalDocs.length },
     { id: 'historial', label: 'Historial', count: deficiency.history.length },
   ];
 
@@ -344,19 +341,6 @@ export const DeficiencyDetailView: React.FC<Props> = ({
             )}
           </section>
         </div>
-      )}
-
-      {tab === 'documentos' && (
-        <FileList
-          title="Documentos formales"
-          icon={FileText}
-          items={formalDocs}
-          openingId={openingId}
-          downloadingId={downloadingId}
-          onOpen={openEvidence}
-          onDownload={downloadEvidence}
-          empty="No hay documentos formales vinculados."
-        />
       )}
 
       {tab === 'historial' && (

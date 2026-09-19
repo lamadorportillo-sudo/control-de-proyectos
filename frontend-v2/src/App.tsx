@@ -63,15 +63,25 @@ export default function App() {
     setLoadError('');
     setSessionRequired(false);
     try {
-      // Arranque liviano: solo lo necesario para abrir Inicio sin bloquear la interfaz.
-      const [projectData, deficiencyData, auditData] = await Promise.all([
+      // Cada bloque inicial es independiente: un módulo lento no debe bloquear
+      // toda la interfaz ni mostrar el error interno de PostgreSQL en la barra.
+      const [projectResult, deficiencyResult, auditResult] = await Promise.allSettled([
         dataRepository.getProjects(),
         dataRepository.getDeficiencies(),
         dataRepository.getAuditLogs(),
       ]);
-      setProjects(projectData);
-      setDeficiencies(deficiencyData);
-      setAuditLogs(auditData);
+
+      if (projectResult.status === 'rejected') throw projectResult.reason;
+      setProjects(projectResult.value);
+      setDeficiencies(deficiencyResult.status === 'fulfilled' ? deficiencyResult.value : []);
+      setAuditLogs(auditResult.status === 'fulfilled' ? auditResult.value : []);
+
+      if (deficiencyResult.status === 'rejected') {
+        console.warn('Seguimiento de deficiencias se cargará al abrir su módulo:', deficiencyResult.reason);
+      }
+      if (auditResult.status === 'rejected') {
+        console.warn('Actividad reciente se cargará al abrir auditoría:', auditResult.reason);
+      }
 
       // Pendientes financieros se completan en segundo plano y no bloquean el primer render.
       void Promise.all([
@@ -251,7 +261,7 @@ export default function App() {
       case 'busqueda':
         return <ProjectsView projects={projects} onOpenProject={openProject} initialQuery={searchQuery} onSaved={async () => setProjects(await dataRepository.getProjects())} />;
       case 'contratos':
-        return <ContratosView contracts={contracts} projects={projects} onOpenProject={openProject} onNavigate={handleNavigate} initialAction={moduleAction} initialProjectId={moduleProjectId} onSaved={async () => setContracts(await dataRepository.getContracts())} />;
+        return <ContratosView contracts={contracts} projects={projects} onOpenProject={openProject} initialAction={moduleAction} initialProjectId={moduleProjectId} onSaved={async () => setContracts(await dataRepository.getContracts())} />;
       case 'contratistas':
         return <ContratistasView contracts={contracts} projects={projects} onOpenProject={openProject} />;
       case 'convenios':

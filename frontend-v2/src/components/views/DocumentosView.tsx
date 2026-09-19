@@ -3,7 +3,7 @@ import { FileText, Search, ExternalLink, Plus, X, UploadCloud } from 'lucide-rea
 import type { DocumentEvidence, Project } from '../../types.ts';
 import { formatDateSpanish } from '../../services/calculationService.ts';
 import { getGeneratedReports, type GeneratedReportRecord } from '../../services/reportService.ts';
-import { getEvidenceAccessUrl } from '../../services/evidenceAccessService.ts';
+import { downloadEvidenceFile, getEvidenceAccessUrl } from '../../services/evidenceAccessService.ts';
 import { uploadProjectDocument } from '../../services/documentUploadService.ts';
 
 interface DocumentosViewProps {
@@ -21,6 +21,7 @@ export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, proje
   const [query, setQuery] = useState('');
   const [reports, setReports] = useState<GeneratedReportRecord[]>([]);
   const [openingId, setOpeningId] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [openError, setOpenError] = useState('');
   const [showUpload, setShowUpload] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -71,6 +72,18 @@ export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, proje
       setOpenError(String(error?.message || 'No fue posible abrir la evidencia.'));
     } finally {
       setOpeningId(null);
+    }
+  };
+
+  const downloadEvidence = async (id: string) => {
+    setDownloadingId(id);
+    setOpenError('');
+    try {
+      await downloadEvidenceFile(id);
+    } catch (error: any) {
+      setOpenError(String(error?.message || 'No fue posible descargar la evidencia.'));
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -168,13 +181,22 @@ export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, proje
                 <div className="mt-1.5 truncate text-xs font-semibold text-white">{doc.title || doc.fileName}</div>
                 <div className="mt-1 text-[10px] text-slate-500">{project?.name || 'Proyecto no identificado'} · {formatDateSpanish(doc.uploadDate)}</div>
               </div>
-              <button
-                onClick={() => void openEvidence(doc.id)}
-                disabled={openingId === doc.id}
-                className="inline-flex items-center gap-1 rounded-lg border border-[#243247] bg-[#172235] px-2.5 py-1.5 text-[11px] font-semibold text-blue-300 hover:bg-[#1f2e45] disabled:opacity-50"
-              >
-                {openingId === doc.id ? 'Abriendo…' : 'Abrir'} <ExternalLink className="h-3 w-3" />
-              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  onClick={() => void openEvidence(doc.id)}
+                  disabled={openingId === doc.id || downloadingId === doc.id}
+                  className="inline-flex items-center gap-1 rounded-lg border border-[#243247] bg-[#172235] px-2.5 py-1.5 text-[11px] font-semibold text-blue-300 hover:bg-[#1f2e45] disabled:opacity-50"
+                >
+                  {openingId === doc.id ? 'Abriendo…' : 'Abrir'} <ExternalLink className="h-3 w-3" />
+                </button>
+                <button
+                  onClick={() => void downloadEvidence(doc.id)}
+                  disabled={openingId === doc.id || downloadingId === doc.id}
+                  className="rounded-lg border border-[#243247] px-2.5 py-1.5 text-[11px] font-semibold text-emerald-300 hover:bg-[#1f2e45] disabled:opacity-50"
+                >
+                  {downloadingId === doc.id ? 'Descargando…' : 'Descargar'}
+                </button>
+              </div>
             </div>
           );
         })}

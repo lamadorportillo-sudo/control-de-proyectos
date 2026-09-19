@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FileSignature, Search, ArrowRight, Plus, X, Save } from 'lucide-react';
 import type { Contract, Project } from '../../types.ts';
 import { formatLempiras, formatDateSpanish } from '../../services/calculationService.ts';
@@ -9,12 +9,13 @@ interface ContratosViewProps {
   projects: Project[];
   onOpenProject: (projectId: string) => void;
   onSaved?: () => Promise<void> | void;
+  initialAction?: string | null;
 }
 
 const norm = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const inputClass = 'w-full rounded-lg border border-[#243247] bg-[#0b1220] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500';
 
-export const ContratosView: React.FC<ContratosViewProps> = ({ contracts, projects, onOpenProject, onSaved }) => {
+export const ContratosView: React.FC<ContratosViewProps> = ({ contracts, projects, onOpenProject, onSaved, initialAction = null }) => {
   const [query, setQuery] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -31,6 +32,8 @@ export const ContratosView: React.FC<ContratosViewProps> = ({ contracts, project
     advancePercentage: '0',
     notes: '',
   });
+
+  useEffect(() => { if (initialAction === 'NEW_CONTRACT') setShowCreate(true); }, [initialAction]);
 
   const q = norm(query.trim());
   const results = useMemo(() => {

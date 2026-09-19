@@ -270,6 +270,9 @@ export default function App() {
             projects={projects}
             onOpenProject={openProject}
             onOpenDeficiency={setSelectedDeficiencyId}
+            initialAction={moduleAction}
+            initialProjectId={moduleProjectId}
+            onSaved={async () => setDeficiencies(await dataRepository.getDeficiencies())}
           />
         );
       case 'documentos':

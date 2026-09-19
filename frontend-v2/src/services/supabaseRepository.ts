@@ -580,11 +580,13 @@ export class SupabaseDataRepository implements IDataRepository {
   }
 
   async getEstimates(projectId?: string): Promise<Estimate[]> {
+    const workspaceId = await this.getWorkspaceId();
     let query = this.client()
       .from('estimates')
       .select('*')
       .is('voided_at', null)
       .order('updated_at', { ascending: false });
+    if (workspaceId) query = query.eq('workspace_id', workspaceId);
     if (projectId) query = query.eq('project_id', projectId);
     const { data, error } = await query;
     if (error) throw error;
@@ -653,11 +655,13 @@ export class SupabaseDataRepository implements IDataRepository {
   }
 
   async getGuarantees(contractId?: string): Promise<Guarantee[]> {
+    const workspaceId = await this.getWorkspaceId();
     let query = this.client()
       .from('guarantees')
       .select('*')
       .is('voided_at', null)
       .order('updated_at', { ascending: false });
+    if (workspaceId) query = query.eq('workspace_id', workspaceId);
     if (contractId) query = query.eq('contract_id', contractId);
     const { data, error } = await query;
     if (error) throw error;

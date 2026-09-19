@@ -1,22 +1,34 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FileText, Search, ExternalLink, Plus } from 'lucide-react';
+import { FileText, Search, ExternalLink, Plus, X, UploadCloud } from 'lucide-react';
 import type { DocumentEvidence, Project } from '../../types.ts';
 import { formatDateSpanish } from '../../services/calculationService.ts';
 import { getGeneratedReports, type GeneratedReportRecord } from '../../services/reportService.ts';
 import { getEvidenceAccessUrl } from '../../services/evidenceAccessService.ts';
+import { uploadProjectDocument } from '../../services/documentUploadService.ts';
 
 interface DocumentosViewProps {
   documents: DocumentEvidence[];
   projects: Project[];
+  onUploaded?: () => Promise<void> | void;
 }
 
 const norm = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const inputClass = 'w-full rounded-lg border border-[#243247] bg-[#0b1220] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-indigo-500';
 
-export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, projects }) => {
+export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, projects, onUploaded }) => {
   const [query, setQuery] = useState('');
   const [reports, setReports] = useState<GeneratedReportRecord[]>([]);
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [openError, setOpenError] = useState('');
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState('');
+  const [uploadForm, setUploadForm] = useState({
+    projectId:'',
+    type:'OTRO',
+    title:'',
+    file:null as File | null,
+  });
 
   useEffect(() => {
     void getGeneratedReports()
@@ -53,6 +65,31 @@ export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, proje
     }
   };
 
+  const doUpload = async () => {
+    if (!uploadForm.projectId || !uploadForm.file) {
+      setUploadMessage('Selecciona un proyecto y un archivo.');
+      return;
+    }
+    setUploading(true);
+    setUploadMessage('');
+    try {
+      await uploadProjectDocument({
+        projectId: uploadForm.projectId,
+        type: uploadForm.type,
+        title: uploadForm.title,
+        file: uploadForm.file,
+      });
+      await onUploaded?.();
+      setUploadMessage('Documento subido y vinculado al expediente.');
+      setUploadForm({projectId:'',type:'OTRO',title:'',file:null});
+      setShowUpload(false);
+    } catch (error:any) {
+      setUploadMessage('No se pudo subir: ' + String(error?.message || error));
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-6xl space-y-5 pb-12">
       <div className="flex items-start justify-between gap-3">
@@ -60,8 +97,10 @@ export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, proje
           <h2 className="flex items-center gap-2 text-xl font-bold text-white"><FileText className="h-5 w-5 text-indigo-400" />Documentos y evidencias</h2>
           <p className="mt-1 text-xs text-slate-400">Búsqueda por expediente, evidencia y reportes digitales generados. No se abre toda la biblioteca al entrar.</p>
         </div>
-        <button disabled className="inline-flex items-center gap-2 rounded-lg border border-[#243247] bg-[#172235] px-3 py-2 text-xs font-semibold text-slate-500"><Plus className="h-4 w-4" />Subir documento</button>
+        <button onClick={()=>{setShowUpload(true);setUploadMessage('');}} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-500"><Plus className="h-4 w-4" />Subir documento</button>
       </div>
+
+      {uploadMessage && <div className="rounded-lg border border-[#243247] bg-[#111827] p-3 text-xs text-slate-300">{uploadMessage}</div>}
 
       <div className="rounded-xl border border-[#1f2e45] bg-[#111827] p-4">
         <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Contrato, estimación, acta, fotografía, plano, proyecto…" className="w-full rounded-lg border border-[#243247] bg-[#0b1220] py-2.5 pl-9 pr-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-indigo-500" /></div>
@@ -114,6 +153,37 @@ export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, proje
           );
         })}
       </div>
+
+      {showUpload && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 p-3" role="dialog" aria-modal="true" aria-label="Subir documento">
+          <div className="w-full max-w-2xl rounded-2xl border border-[#243247] bg-[#111827] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#243247] px-4 py-3">
+              <div><div className="text-sm font-bold text-white">Subir documento al expediente</div><div className="text-[10px] text-slate-500">Storage productivo · acceso protegido por RLS.</div></div>
+              <button onClick={()=>setShowUpload(false)} className="rounded-lg p-2 text-slate-400 hover:bg-[#172235] hover:text-white" aria-label="Cerrar"><X className="h-4 w-4"/></button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2">
+              <Field label="Proyecto" wide><select value={uploadForm.projectId} onChange={(e)=>setUploadForm({...uploadForm,projectId:e.target.value})} className={inputClass}><option value="">Seleccionar proyecto</option>{projects.map(p=><option key={p.id} value={p.id}>{p.code} · {p.shortName || p.name}</option>)}</select></Field>
+              <Field label="Tipo"><select value={uploadForm.type} onChange={(e)=>setUploadForm({...uploadForm,type:e.target.value})} className={inputClass}><option value="CONTRATO">Contrato</option><option value="ESTIMACION">Estimación</option><option value="ORDEN_PAGO">Orden de pago</option><option value="POLIZA">Póliza / garantía</option><option value="ACTA">Acta</option><option value="INFORME">Informe</option><option value="PLANO">Plano</option><option value="CONVENIO">Convenio</option><option value="FOTOGRAFIA">Fotografía</option><option value="AUDIO">Audio</option><option value="OTRO">Otro</option></select></Field>
+              <Field label="Título"><input value={uploadForm.title} onChange={(e)=>setUploadForm({...uploadForm,title:e.target.value})} placeholder="Descripción breve del documento" className={inputClass}/></Field>
+              <Field label="Archivo" wide>
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-[#334155] bg-[#0b1220] p-5 text-xs font-semibold text-slate-300 hover:border-indigo-600">
+                  <UploadCloud className="h-5 w-5 text-indigo-400"/>
+                  <span>{uploadForm.file?.name || 'Seleccionar archivo'}</span>
+                  <input type="file" className="hidden" onChange={(e)=>setUploadForm({...uploadForm,file:e.target.files?.[0] || null})}/>
+                </label>
+              </Field>
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-[#243247] p-4">
+              <button onClick={()=>setShowUpload(false)} className="rounded-lg border border-[#334155] px-4 py-2 text-xs font-semibold text-slate-300">Cancelar</button>
+              <button onClick={()=>void doUpload()} disabled={uploading} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"><UploadCloud className="h-4 w-4"/>{uploading?'Subiendo…':'Subir y vincular'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+const Field: React.FC<{label:string;children:React.ReactNode;wide?:boolean}> = ({label,children,wide}) => <label className={wide ? 'sm:col-span-2' : ''}><span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</span>{children}</label>;

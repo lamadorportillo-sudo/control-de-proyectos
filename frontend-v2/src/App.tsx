@@ -350,7 +350,7 @@ export default function App() {
       case 'estimaciones':
         return <EstimacionesView estimates={estimates} projects={projects} onOpenProject={openProject} onOpenProjectTab={openProjectAtTab} initialAction={moduleAction} initialProjectId={moduleProjectId} onSaved={async () => setEstimates(await dataRepository.getEstimates())} />;
       case 'garantias':
-        return <GarantiasView guarantees={guarantees} projects={projects} onOpenProject={openProject} onOpenProjectTab={openProjectAtTab} initialAction={moduleAction} initialProjectId={moduleProjectId} onSaved={async () => setGuarantees(await dataRepository.getGuarantees())} />;
+        return <GarantiasView guarantees={guarantees} projects={projects} onOpenProject={openProject} onOpenProjectTab={openProjectAtTab} initialAction={moduleAction} initialProjectId={moduleProjectId} onSaved={async () => { setGuarantees(await dataRepository.getGuarantees()); setProjects(await dataRepository.getProjects()); }} />;
       case 'deficiencias':
         return selectedDeficiency ? (
           <DeficiencyDetailView

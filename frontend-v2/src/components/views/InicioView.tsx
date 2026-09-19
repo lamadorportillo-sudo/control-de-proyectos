@@ -53,67 +53,24 @@ export const InicioView: React.FC<InicioViewProps> = ({
   const quickActions = [
     {
       id: 'qa-new-project',
-      label: 'Proyectos',
-      desc: 'Buscar y abrir expedientes',
+      label: 'Nuevo proyecto',
+      desc: 'Crear o revisar un expediente',
       icon: FolderPlus,
       action: () => onNavigate('proyectos', { action: 'NEW_PROJECT' }),
-      color: 'hover:border-blue-500 hover:bg-blue-950/20 text-blue-400',
     },
     {
-      id: 'qa-new-contract',
-      label: 'Contratos',
-      desc: 'Buscar y revisar contratos',
-      icon: FilePlus2,
-      action: () => onNavigate('contratos', { action: 'NEW_CONTRACT' }),
-      color: 'hover:border-blue-500 hover:bg-blue-950/20 text-blue-400',
+      id: 'qa-register-visit',
+      label: 'Registrar visita',
+      desc: 'Guardar observaciones y evidencias',
+      icon: Smartphone,
+      action: () => onNavigate('registrar_visita'),
     },
     {
       id: 'qa-new-estimate',
-      label: 'Estimaciones y pagos',
-      desc: 'Revisar estimaciones y deducciones',
+      label: 'Nueva estimación',
+      desc: 'Registrar actividades y deducciones',
       icon: Receipt,
       action: () => onNavigate('estimaciones', { action: 'NEW_ESTIMATE' }),
-      color: 'hover:border-emerald-500 hover:bg-emerald-950/20 text-emerald-400',
-    },
-    {
-      id: 'qa-pay-record',
-      label: 'Pagos pendientes',
-      desc: 'Revisar órdenes y liquidaciones',
-      icon: CreditCard,
-      action: () => onNavigate('estimaciones', { filterStatus: 'ORDEN_PAGO' }),
-      color: 'hover:border-emerald-500 hover:bg-emerald-950/20 text-emerald-400',
-    },
-    {
-      id: 'qa-upload-doc',
-      label: 'Biblioteca documental',
-      desc: 'Buscar evidencias, actas y reportes',
-      icon: UploadCloud,
-      action: () => onNavigate('documentos', { action: 'UPLOAD_DOC' }),
-      color: 'hover:border-indigo-500 hover:bg-indigo-950/20 text-indigo-400',
-    },
-    {
-      id: 'qa-deficiency',
-      label: 'Deficiencias',
-      desc: 'Seguimiento de hallazgos técnicos',
-      icon: AlertOctagon,
-      action: () => onNavigate('deficiencias', { action: 'NEW_DEFICIENCY' }),
-      color: 'hover:border-red-500 hover:bg-red-950/20 text-red-400',
-    },
-    {
-      id: 'qa-field-mode',
-      label: 'Modo campo',
-      desc: 'Inspección técnica offline',
-      icon: Smartphone,
-      action: () => onNavigate('modo_campo'),
-      color: 'hover:border-amber-500 hover:bg-amber-950/20 text-amber-400',
-    },
-    {
-      id: 'qa-transparency',
-      label: 'Generar portal de transparencia',
-      desc: 'Expediente mensual oficial',
-      icon: FileSpreadsheet,
-      action: () => onNavigate('transparencia'),
-      color: 'hover:border-amber-500 hover:bg-amber-950/20 text-amber-400',
     },
   ];
 
@@ -121,14 +78,14 @@ export const InicioView: React.FC<InicioViewProps> = ({
     <div id="inicio-view-container" className="max-w-5xl mx-auto space-y-7 pb-12">
       <div className="pt-2">
         <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">
-          Control Contractual
+          ¿Qué necesitas revisar?
         </h2>
         <p className="text-xs md:text-sm text-slate-400 mt-1 max-w-2xl">
-          Supervisión técnica, contratos de obra pública, deducciones de ley y portal oficial de transparencia municipal.
+          Busca un proyecto, contrato o ubicación para abrir el expediente correcto.
         </p>
       </div>
 
-      <div className="bg-[#111827] border border-[#1f2e45] rounded-xl p-3 md:p-4 shadow-xl">
+      <div className="bg-[#151e29] border border-[#2b3a4a] rounded-xl p-3 md:p-4 shadow-xl">
         <label htmlFor="inicio-search-input" className="block text-xs font-medium text-slate-300 mb-2">
           Búsqueda directa de expediente
         </label>
@@ -153,7 +110,7 @@ export const InicioView: React.FC<InicioViewProps> = ({
           <button
             type="submit"
             id="btn-inicio-search"
-            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs rounded-lg transition-colors shrink-0 flex items-center gap-1.5"
+            className="px-4 py-2.5 bg-[#c5a367] hover:bg-[#d4b779] text-[#0b1118] font-medium text-xs rounded-lg transition-colors shrink-0 flex items-center gap-1.5"
           >
             <span>Buscar</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -165,7 +122,7 @@ export const InicioView: React.FC<InicioViewProps> = ({
         <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
           Acciones Operativas
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {quickActions.map((qa) => {
             const Icon = qa.icon;
             return (
@@ -173,7 +130,7 @@ export const InicioView: React.FC<InicioViewProps> = ({
                 key={qa.id}
                 id={qa.id}
                 onClick={qa.action}
-                className={`p-3.5 rounded-lg bg-[#111827] border border-[#172235] text-left transition-all flex flex-col justify-between group ${qa.color}`}
+                className={`p-3.5 rounded-lg bg-[#151e29] border border-[#2b3a4a] text-left transition-all flex flex-col justify-between group ${qa.color}`}
               >
                 <div className="flex items-center justify-between w-full mb-2">
                   <div className="p-2 rounded bg-[#0b1220] border border-[#1f2e45] text-slate-300 group-hover:text-white transition-colors">
@@ -321,7 +278,7 @@ export const InicioView: React.FC<InicioViewProps> = ({
           </div>
           <button
             onClick={() => onNavigate('auditoria')}
-            className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+            className="text-xs text-[#c5a367] hover:text-[#d4b779] transition-colors"
           >
             Ver historial completo
           </button>

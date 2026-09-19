@@ -1,4 +1,5 @@
 import { ensureSupabaseSession, getV2AuthState, supabase } from './supabaseClient.ts';
+import { classifyDocumentType } from './documentClassification.ts';
 
 export interface TransparencySourceCounts {
   agreements: number;
@@ -15,7 +16,7 @@ export async function getTransparencySourceCounts(): Promise<TransparencySourceC
     supabase.from('project_procurement_audit').select('*', { count: 'exact', head: true }),
     supabase
       .from('project_evidence')
-      .select('id,file_name,analysis')
+      .select('id,file_name,mime_type,evidence_type,extracted_text,analysis')
       .limit(500),
   ]);
 
@@ -23,9 +24,20 @@ export async function getTransparencySourceCounts(): Promise<TransparencySourceC
 
   let agreements = 0;
   if (!convenioEvidence.error) {
-    agreements = (convenioEvidence.data || []).filter((row: any) =>
-      `${row.file_name || ''} ${JSON.stringify(row.analysis || {})}`.toLowerCase().includes('convenio')
-    ).length;
+    agreements = (convenioEvidence.data || []).filter((row: any) => {
+      const analysis = row.analysis || {};
+      return classifyDocumentType({
+        evidenceType: row.evidence_type,
+        fileName: row.file_name,
+        mimeType: row.mime_type,
+        title: analysis.title || row.file_name,
+        documentType: analysis.documentType,
+        document_type: analysis.document_type,
+        type: analysis.type,
+        category: analysis.category,
+        extractedText: row.extracted_text,
+      }).type === 'CONVENIO';
+    }).length;
   }
 
   return {

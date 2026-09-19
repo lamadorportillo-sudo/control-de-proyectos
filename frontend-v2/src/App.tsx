@@ -17,6 +17,7 @@ import { DeficienciasView } from './components/views/DeficienciasView.tsx';
 import { DeficiencyDetailView } from './components/views/DeficiencyDetailView.tsx';
 import { DocumentosView } from './components/views/DocumentosView.tsx';
 import { TransparenciaView } from './components/views/TransparenciaView.tsx';
+import { PublicTransparencyPortalView, type PublicPortalDraft } from './components/views/PublicTransparencyPortalView.tsx';
 import { ReportesView } from './components/views/ReportesView.tsx';
 import { ModoCampoView } from './components/views/ModoCampoView.tsx';
 import { VisitasView } from './components/views/VisitasView.tsx';
@@ -44,6 +45,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [sessionRequired, setSessionRequired] = useState(false);
+  const [publicPortalDraft, setPublicPortalDraft] = useState<PublicPortalDraft | null>(null);
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -282,7 +284,7 @@ export default function App() {
       case 'reportes':
         return <ReportesView projects={projects} onOpenProject={openProject} />;
       case 'transparencia':
-        return <TransparenciaView projects={projects} contracts={contracts} estimates={estimates} guarantees={guarantees} deficiencies={deficiencies} documents={documents} />;
+        return <TransparenciaView projects={projects} contracts={contracts} estimates={estimates} guarantees={guarantees} deficiencies={deficiencies} documents={documents} onPreviewPublic={(draft) => { setPublicPortalDraft(draft); setCurrentModule('portal_publico'); }} />;
       case 'visitas':
         return selectedVisit ? (
           <VisitDetailView
@@ -358,6 +360,21 @@ export default function App() {
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (currentModule === 'portal_publico' && publicPortalDraft) {
+    return (
+      <PublicTransparencyPortalView
+        draft={publicPortalDraft}
+        projects={projects}
+        contracts={contracts}
+        estimates={estimates}
+        guarantees={guarantees}
+        deficiencies={deficiencies}
+        documents={documents}
+        onBack={() => setCurrentModule('transparencia')}
+      />
     );
   }
 

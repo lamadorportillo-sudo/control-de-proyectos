@@ -3,6 +3,7 @@ import { ShieldCheck, Search, Plus, AlertTriangle, ArrowRight, X, Save } from 'l
 import type { Guarantee, Project } from '../../types.ts';
 import { formatLempiras, formatDateSpanish } from '../../services/calculationService.ts';
 import { dataRepository } from '../../services/backendAdapter.ts';
+import { matchesSearch, normalizeSearch } from '../../services/searchService.ts';
 import { getGuaranteeAttention } from '../../services/guaranteeLifecycleService.ts';
 
 interface GarantiasViewProps {
@@ -15,7 +16,6 @@ interface GarantiasViewProps {
   initialProjectId?: string | null;
 }
 
-const norm = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const inputClass = 'w-full rounded-lg border border-[#243247] bg-[#0b1220] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-amber-500';
 
 export const GarantiasView: React.FC<GarantiasViewProps> = ({ guarantees, projects, onOpenProject, onOpenProjectTab, onSaved, initialAction = null, initialProjectId = null }) => {
@@ -33,12 +33,12 @@ export const GarantiasView: React.FC<GarantiasViewProps> = ({ guarantees, projec
     if (initialProjectId) setForm((current) => ({ ...current, projectId: initialProjectId }));
   }, [initialAction, initialProjectId]);
 
-  const q = norm(query.trim());
+  const q = normalizeSearch(query.trim());
   const results = useMemo(() => {
     if (q.length < 2) return [];
     return guarantees.filter((guarantee) => {
       const project = projects.find((p) => p.id === guarantee.projectId);
-      return norm([project?.code, project?.name, guarantee.typeLabel, guarantee.policyNumber, guarantee.issuer, guarantee.statusLabel].filter(Boolean).join(' ')).includes(q);
+      return matchesSearch(q, [project?.code, project?.name, guarantee.typeLabel, guarantee.policyNumber, guarantee.issuer, guarantee.statusLabel]);
     }).slice(0, 60);
   }, [guarantees, projects, q]);
 

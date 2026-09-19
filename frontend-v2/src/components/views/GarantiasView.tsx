@@ -9,6 +9,7 @@ interface GarantiasViewProps {
   guarantees: Guarantee[];
   projects: Project[];
   onOpenProject: (projectId: string) => void;
+  onOpenProjectTab?: (projectId: string, tab: string) => void;
   onSaved?: () => Promise<void> | void;
   initialAction?: string | null;
   initialProjectId?: string | null;
@@ -17,7 +18,7 @@ interface GarantiasViewProps {
 const norm = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const inputClass = 'w-full rounded-lg border border-[#243247] bg-[#0b1220] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-amber-500';
 
-export const GarantiasView: React.FC<GarantiasViewProps> = ({ guarantees, projects, onOpenProject, onSaved, initialAction = null, initialProjectId = null }) => {
+export const GarantiasView: React.FC<GarantiasViewProps> = ({ guarantees, projects, onOpenProject, onOpenProjectTab, onSaved, initialAction = null, initialProjectId = null }) => {
   const [query, setQuery] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -141,7 +142,7 @@ export const GarantiasView: React.FC<GarantiasViewProps> = ({ guarantees, projec
           const attention = getGuaranteeAttention(guarantee, project);
           const warning = guarantee.status === 'VENCIDA' || guarantee.status === 'POR_VENCER' || attention.isClosureCandidate;
           return (
-            <button key={guarantee.id} onClick={() => onOpenProject(guarantee.projectId)} className={`group w-full rounded-xl border p-4 text-left ${warning ? 'border-amber-800/60 bg-amber-950/20' : 'border-[#1f2e45] bg-[#111827] hover:border-amber-700'}`}>
+            <button key={guarantee.id} onClick={() => (onOpenProjectTab ? onOpenProjectTab(guarantee.projectId, 'garantias') : onOpenProject(guarantee.projectId))} className={`group w-full rounded-xl border p-4 text-left ${warning ? 'border-amber-800/60 bg-amber-950/20' : 'border-[#1f2e45] bg-[#111827] hover:border-amber-700'}`}>
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2"><span className="rounded bg-[#172235] px-2 py-0.5 text-xs font-bold text-white">{guarantee.typeLabel}</span><span className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${warning ? 'bg-amber-900/60 text-amber-200' : 'bg-emerald-950 text-emerald-300'}`}>{guarantee.statusLabel}</span>{warning && <AlertTriangle className="h-4 w-4 text-amber-400" />}</div>

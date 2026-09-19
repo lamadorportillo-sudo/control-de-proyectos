@@ -35,6 +35,7 @@ export default function App() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedDeficiencyId, setSelectedDeficiencyId] = useState<string | null>(null);
   const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
+  const [moduleAction, setModuleAction] = useState<string | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isZordonOpen, setIsZordonOpen] = useState(false);
@@ -164,6 +165,7 @@ export default function App() {
   const handleNavigate = (module: AppModule, extra?: any) => {
     setCurrentModule(module);
     setIsMobileSidebarOpen(false);
+    setModuleAction(extra?.action ? String(extra.action) : null);
 
     if (module === 'proyectos' && extra?.projectId) {
       setSelectedProjectId(String(extra.projectId));
@@ -190,6 +192,7 @@ export default function App() {
   };
 
   const openProject = (projectId: string) => {
+    setModuleAction(null);
     setSelectedProjectId(projectId);
     setCurrentModule('proyectos');
   };
@@ -234,18 +237,18 @@ export default function App() {
             onBack={() => setSelectedProjectId(null)}
           />
         ) : (
-          <ProjectsView projects={projects} onOpenProject={openProject} />
+          <ProjectsView projects={projects} onOpenProject={openProject} initialAction={moduleAction} onSaved={async () => setProjects(await dataRepository.getProjects())} />
         );
       case 'busqueda':
-        return <ProjectsView projects={projects} onOpenProject={openProject} initialQuery={searchQuery} />;
+        return <ProjectsView projects={projects} onOpenProject={openProject} initialQuery={searchQuery} onSaved={async () => setProjects(await dataRepository.getProjects())} />;
       case 'contratos':
-        return <ContratosView contracts={contracts} projects={projects} onOpenProject={openProject} onSaved={async () => setContracts(await dataRepository.getContracts())} />;
+        return <ContratosView contracts={contracts} projects={projects} onOpenProject={openProject} initialAction={moduleAction} onSaved={async () => setContracts(await dataRepository.getContracts())} />;
       case 'contratistas':
         return <ContratistasView contracts={contracts} projects={projects} onOpenProject={openProject} />;
       case 'convenios':
         return <ConveniosView documents={documents} projects={projects} onOpenProject={openProject} />;
       case 'estimaciones':
-        return <EstimacionesView estimates={estimates} projects={projects} onOpenProject={openProject} onSaved={async () => setEstimates(await dataRepository.getEstimates())} />;
+        return <EstimacionesView estimates={estimates} projects={projects} onOpenProject={openProject} initialAction={moduleAction} onSaved={async () => setEstimates(await dataRepository.getEstimates())} />;
       case 'garantias':
         return <GarantiasView guarantees={guarantees} projects={projects} onOpenProject={openProject} onSaved={async () => setGuarantees(await dataRepository.getGuarantees())} />;
       case 'deficiencias':
@@ -265,7 +268,7 @@ export default function App() {
           />
         );
       case 'documentos':
-        return <DocumentosView documents={documents} projects={projects} onUploaded={async () => setDocuments(await dataRepository.getDocuments())} />;
+        return <DocumentosView documents={documents} projects={projects} initialAction={moduleAction} onUploaded={async () => setDocuments(await dataRepository.getDocuments())} />;
       case 'reportes':
         return <ReportesView projects={projects} onOpenProject={openProject} />;
       case 'transparencia':

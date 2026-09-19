@@ -61,6 +61,14 @@ jobs:
           node --check tests/project-create-route-responsive.spec.cjs
           node --test tests/core-stability-regressions.test.cjs tests/ui-tabs-functional.test.cjs tests/ui-contrast-final-guard.test.cjs
 
+      - name: Preparar interfaz anterior para comprobaciones
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -s legacy.html ]; then
+            cp legacy.html index.html
+          fi
+
       - name: Reconstruir y estabilizar aplicación
         run: |
           node build-pages.cjs

@@ -78,7 +78,7 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
         <td>${escapeHtml(project.location)}</td>
         <td class="num">${escapeHtml(project.physicalProgress.toFixed(2))}%</td>
         <td class="num">${escapeHtml(project.financialProgress.toFixed(2))}%</td>
-        <td class="num">${esc(formatLempiras(project.revisedBudget))}</td>
+        <td class="num">${escapeHtml(formatLempiras(project.revisedBudget))}</td>
       </tr>`
     ).join('');
 

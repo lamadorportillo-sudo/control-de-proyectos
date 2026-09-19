@@ -65,13 +65,13 @@ export const ZordonAssistant: React.FC<ZordonAssistantProps> = ({ open, onClose,
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-end bg-black/45 p-2 sm:p-4 backdrop-blur-[2px]" role="dialog" aria-modal="true" aria-label="ZORDON">
+    <div className="fixed inset-0 z-[80] flex items-end justify-end overflow-hidden bg-black/45 p-2 sm:p-4 backdrop-blur-[2px]" role="dialog" aria-modal="true" aria-labelledby="zordon-dialog-title">
       <div className="flex h-[min(720px,88vh)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-[#243247] bg-[#0b1220] shadow-2xl">
         <div className="flex items-center justify-between border-b border-[#1f2e45] bg-[#111827] px-4 py-3">
           <div className="flex items-center gap-3">
             <EngineerFigure size={34} showStatusDot />
             <div>
-              <div className="text-sm font-bold text-white">ZORDON</div>
+              <div id="zordon-dialog-title" className="text-sm font-bold text-white">ZORDON</div>
               <div className="text-[10px] text-emerald-400">Mismo asistente de la web y Telegram</div>
             </div>
           </div>
@@ -80,7 +80,7 @@ export const ZordonAssistant: React.FC<ZordonAssistantProps> = ({ open, onClose,
           </button>
         </div>
 
-        <div className="flex-1 space-y-3 overflow-y-auto p-4">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-4 [touch-action:pan-y]">
           {history.length === 0 && (
             <div className="rounded-xl border border-[#1f2e45] bg-[#111827] p-4 text-xs leading-relaxed text-slate-400">
               Esta interfaz reutiliza el ZORDON productivo y su memoria compartida. No crea otro bot ni otra base paralela.
@@ -113,6 +113,7 @@ export const ZordonAssistant: React.FC<ZordonAssistantProps> = ({ open, onClose,
         <div className="border-t border-[#1f2e45] bg-[#111827] p-3">
           <div className="flex items-end gap-2">
             <textarea
+              aria-label="Mensaje para ZORDON"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={(e) => {

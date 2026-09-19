@@ -194,10 +194,14 @@ function guaranteeType(value: unknown): Guarantee['type'] {
 }
 
 function guaranteeStatus(row: Row): Guarantee['status'] {
-  const raw = s(row.raw_data?.status || '').toLowerCase();
+  const raw = s(row.raw_data?.status || row.status || '').toLowerCase();
   if (row.voided_at) return 'EJECUTADA';
-  if (/reemplaz/.test(raw) || /reemplaz/.test(s(row.status))) return 'REEMPLAZADA';
+  if (/reemplaz/.test(raw)) return 'REEMPLAZADA';
   if (/liber/.test(raw)) return 'LIBERADA';
+  if (/ejecut/.test(raw)) return 'EJECUTADA';
+  if (/por.?vencer/.test(raw)) return 'POR_VENCER';
+  if (/vencid/.test(raw)) return 'VENCIDA';
+  if (/vigen/.test(raw)) return 'VIGENTE';
   const end = row.end_date ? new Date(row.end_date) : null;
   if (end && !Number.isNaN(end.getTime())) {
     const days = Math.ceil((end.getTime() - Date.now()) / 86400000);

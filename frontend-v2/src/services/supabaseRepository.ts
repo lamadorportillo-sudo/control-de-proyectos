@@ -405,8 +405,47 @@ export class SupabaseDataRepository implements IDataRepository {
     return data ? mapContract(data) : undefined;
   }
 
-  async saveContract(_contract: Contract): Promise<void> {
-    throw new Error('La escritura de contratos se habilitará tras validar el contrato RLS/RPC productivo.');
+  async saveContract(contract: Contract): Promise<void> {
+    const project = await this.getProjectById(contract.projectId);
+    if (!project) throw new Error('Proyecto no encontrado para guardar el contrato.');
+
+    const { data: projectRow, error: projectError } = await this.client()
+      .from('projects')
+      .select('workspace_id')
+      .eq('id', contract.projectId)
+      .maybeSingle();
+    if (projectError) throw projectError;
+    if (!projectRow?.workspace_id) throw new Error('No se pudo resolver el espacio de trabajo del proyecto.');
+
+    const row = {
+      id: contract.id || crypto.randomUUID(),
+      workspace_id: projectRow.workspace_id,
+      project_id: contract.projectId,
+      number: contract.contractNumber.trim(),
+      contractor: contract.contractorName.trim(),
+      original_amount: contract.amount,
+      signature_date: contract.signedDate || null,
+      execution_days: contract.executionTermDays || null,
+      status: contract.statusLabel || 'Vigente',
+      advance_requested_pct: contract.advancePercentage || 0,
+      advance_approved: contract.advanceAmount || 0,
+      advance_paid: 0,
+      recovery_target_pct: 80,
+      advance_recovery_basis: contract.advanceAmortizationRule || 'ORIGINAL',
+      notes: contract.notes || null,
+      raw_data: {
+        source: 'frontend-v2',
+        contractorRTN: contract.contractorRTN,
+        contractorRep: contract.contractorRep,
+        sourceDocumentId: contract.sourceDocumentId || null,
+      },
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await this.client()
+      .from('contracts')
+      .upsert(row, { onConflict: 'id' });
+    if (error) throw error;
   }
 
   async getEstimates(projectId?: string): Promise<Estimate[]> {
@@ -421,8 +460,65 @@ export class SupabaseDataRepository implements IDataRepository {
     return (data || []).map(mapEstimate);
   }
 
-  async saveEstimate(_estimate: Estimate): Promise<void> {
-    throw new Error('La escritura de estimaciones se habilitará tras validar el contrato RLS/RPC productivo.');
+  async saveEstimate(estimate: Estimate): Promise<void> {
+    const { data: projectRow, error: projectError } = await this.client()
+      .from('projects')
+      .select('workspace_id')
+      .eq('id', estimate.projectId)
+      .maybeSingle();
+    if (projectError) throw projectError;
+    if (!projectRow?.workspace_id) throw new Error('No se pudo resolver el espacio de trabajo del proyecto.');
+
+    const { data: contractRow, error: contractError } = await this.client()
+      .from('contracts')
+      .select('id')
+      .eq('project_id', estimate.projectId)
+      .is('voided_at', null)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (contractError) throw contractError;
+    if (!contractRow?.id) throw new Error('Este proyecto no tiene un contrato vigente para registrar la estimación.');
+
+    const totalDeductions =
+      Number(estimate.advanceAmortization || 0) +
+      Number(estimate.isrDeduction || 0) +
+      Number(estimate.complianceRetention || 0) +
+      Number(estimate.qualityRetention || 0) +
+      Number(estimate.otherDeductions || 0);
+
+    const row = {
+      id: estimate.id || crypto.randomUUID(),
+      workspace_id: projectRow.workspace_id,
+      project_id: estimate.projectId,
+      contract_id: contractRow.id,
+      number: estimate.estimateNumber,
+      period_start: estimate.periodStart || null,
+      period_end: estimate.periodEnd || null,
+      gross: estimate.grossAmount,
+      advance_applied: estimate.advanceAmortization || 0,
+      quality_applied: estimate.qualityRetention || 0,
+      isr_applied: estimate.isrDeduction || 0,
+      other_deductions: Number(estimate.otherDeductions || 0) + Number(estimate.complianceRetention || 0),
+      total_deductions: totalDeductions,
+      net: estimate.netPayable,
+      status: estimate.paymentStatusLabel || 'Borrador',
+      payment_date: estimate.paymentDate || null,
+      payment_order: estimate.paymentReference || null,
+      notes: estimate.remarks || null,
+      raw_data: {
+        source: 'frontend-v2',
+        physicalProgressPeriod: estimate.physicalProgressPeriod,
+        physicalProgressCumulative: estimate.physicalProgressCumulative,
+        complianceRetention: estimate.complianceRetention,
+      },
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await this.client()
+      .from('estimates')
+      .upsert(row, { onConflict: 'id' });
+    if (error) throw error;
   }
 
   async getGuarantees(contractId?: string): Promise<Guarantee[]> {
@@ -437,8 +533,61 @@ export class SupabaseDataRepository implements IDataRepository {
     return (data || []).map(mapGuarantee);
   }
 
-  async saveGuarantee(_guarantee: Guarantee): Promise<void> {
-    throw new Error('La escritura de garantías se habilitará tras validar el contrato RLS/RPC productivo.');
+  async saveGuarantee(guarantee: Guarantee): Promise<void> {
+    const { data: projectRow, error: projectError } = await this.client()
+      .from('projects')
+      .select('workspace_id')
+      .eq('id', guarantee.projectId)
+      .maybeSingle();
+    if (projectError) throw projectError;
+    if (!projectRow?.workspace_id) throw new Error('No se pudo resolver el espacio de trabajo del proyecto.');
+
+    let contractId = guarantee.contractId || null;
+    if (!contractId) {
+      const { data: contractRow, error: contractError } = await this.client()
+        .from('contracts')
+        .select('id')
+        .eq('project_id', guarantee.projectId)
+        .is('voided_at', null)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (contractError) throw contractError;
+      contractId = contractRow?.id || null;
+    }
+
+    const dbType =
+      guarantee.type === 'ANTICIPO' ? 'Anticipo' :
+      guarantee.type === 'CALIDAD_OBRA' ? 'Calidad de obra' :
+      guarantee.type === 'MANTENIMIENTO_OFERTA' ? 'Mantenimiento de oferta' :
+      'Cumplimiento';
+
+    const row = {
+      id: guarantee.id || crypto.randomUUID(),
+      workspace_id: projectRow.workspace_id,
+      project_id: guarantee.projectId,
+      contract_id: contractId,
+      guarantee_type: dbType,
+      number: guarantee.policyNumber || null,
+      issuer: guarantee.issuer || null,
+      document_ref: guarantee.sourceDocumentId || null,
+      calculation_base: guarantee.amount || 0,
+      percentage: 0,
+      calculated_amount: guarantee.amount || 0,
+      applied_amount: guarantee.amount || 0,
+      start_date: guarantee.issueDate,
+      end_date: guarantee.expiryDate,
+      raw_data: {
+        source: 'frontend-v2',
+        status: guarantee.statusLabel,
+      },
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await this.client()
+      .from('guarantees')
+      .upsert(row, { onConflict: 'id' });
+    if (error) throw error;
   }
 
   async getDeficiencies(projectId?: string): Promise<Deficiency[]> {
@@ -496,8 +645,40 @@ export class SupabaseDataRepository implements IDataRepository {
     return (data || []).map(mapVisit);
   }
 
-  async saveFieldVisit(_visit: FieldVisit): Promise<void> {
-    throw new Error('La escritura de visitas se conectará al flujo productivo existente para no duplicar IDs ni evidencias.');
+  async saveFieldVisit(visit: FieldVisit): Promise<void> {
+    const { data: projectRow, error: projectError } = await this.client()
+      .from('projects')
+      .select('workspace_id')
+      .eq('id', visit.projectId)
+      .maybeSingle();
+    if (projectError) throw projectError;
+    if (!projectRow?.workspace_id) throw new Error('No se pudo resolver el espacio de trabajo del proyecto.');
+
+    const row = {
+      id: visit.id || crypto.randomUUID(),
+      workspace_id: projectRow.workspace_id,
+      project_id: visit.projectId,
+      visit_date: visit.visitDate,
+      inspector: visit.inspectorName || null,
+      summary: visit.workCompleted || null,
+      raw_data: {
+        source: 'frontend-v2',
+        progressReported: visit.progressReported,
+        weatherCondition: visit.weatherCondition,
+        staffCount: visit.staffCount,
+        equipmentOnSite: visit.equipmentOnSite,
+        gpsCoords: visit.gpsCoords || null,
+        audioNotes: visit.audioNotes || null,
+        deficienciesCreated: visit.deficienciesCreated || [],
+        syncStatus: visit.syncStatus,
+      },
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await this.client()
+      .from('visits')
+      .upsert(row, { onConflict: 'id' });
+    if (error) throw error;
   }
 
   async getAuditLogs(): Promise<AuditLog[]> {

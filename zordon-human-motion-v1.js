@@ -5,7 +5,7 @@
   window.__CC_ZORDON_HUMAN_MOTION_V1__ = true;
 
   const STYLE_ID = 'cc-zordon-human-motion-v1-style';
-  const HUMAN_ASSET = './halu-engineer-cutout-v4.webp';
+  const HUMAN_ASSET = './zordon-human-fullbody-v1.webp';
 
   function installStyle() {
     if (document.getElementById(STYLE_ID)) return;
@@ -13,8 +13,8 @@
     style.id = STYLE_ID;
     style.textContent = `
       #zordon-engineer-launcher-container.cc-zordon-human-launcher {
-        width: 112px !important;
-        height: 228px !important;
+        width: 120px !important;
+        height: 250px !important;
         right: 10px !important;
         bottom: 12px !important;
         z-index: 70 !important;
@@ -113,8 +113,8 @@
 
       @media (max-width: 700px) {
         #zordon-engineer-launcher-container.cc-zordon-human-launcher {
-          width: 86px !important;
-          height: 176px !important;
+          width: 94px !important;
+          height: 196px !important;
           right: 7px !important;
           bottom: 62px !important;
         }

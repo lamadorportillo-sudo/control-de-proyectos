@@ -1,24 +1,58 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search, FolderGit2, MapPin, ArrowRight, Plus } from 'lucide-react';
-import type { Project } from '../../types.ts';
+import { Search, FolderGit2, MapPin, ArrowRight, Plus, X, Save } from 'lucide-react';
+import type { Project, ProjectStatus } from '../../types.ts';
 import { formatLempiras, formatPercent } from '../../services/calculationService.ts';
+import { dataRepository } from '../../services/backendAdapter.ts';
 
 interface ProjectsViewProps {
   projects: Project[];
   onOpenProject: (projectId: string) => void;
-  onNewProject?: () => void;
+  onSaved?: () => Promise<void> | void;
   initialQuery?: string;
+  initialAction?: string | null;
 }
 
 const normalize = (value: string) =>
   value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
-export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, onOpenProject, onNewProject, initialQuery = '' }) => {
+const inputClass = 'w-full rounded-lg border border-[#243247] bg-[#0b1220] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-blue-500';
+
+export const ProjectsView: React.FC<ProjectsViewProps> = ({
+  projects,
+  onOpenProject,
+  onSaved,
+  initialQuery = '',
+  initialAction = null,
+}) => {
   const [query, setQuery] = useState(initialQuery);
+  const [showCreate, setShowCreate] = useState(initialAction === 'NEW_PROJECT');
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+  const [form, setForm] = useState({
+    code:'',
+    planningCode:'',
+    executionCode:'',
+    name:'',
+    shortName:'',
+    location:'',
+    community:'',
+    status:'PLANIFICACION' as ProjectStatus,
+    assignedBudget:'',
+    fundingSource:'',
+    startDate:'',
+    endDate:'',
+    responsibleUnit:'Unidad de Proyectos',
+    responsiblePerson:'',
+    description:'',
+  });
 
   useEffect(() => {
     setQuery(initialQuery);
   }, [initialQuery]);
+
+  useEffect(() => {
+    if (initialAction === 'NEW_PROJECT') setShowCreate(true);
+  }, [initialAction]);
 
   const normalizedQuery = normalize(query);
 
@@ -51,6 +85,63 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, onOpenProj
       .map((item) => item.project);
   }, [projects, normalizedQuery]);
 
+  const saveProject = async () => {
+    const budget = Math.max(0, Number(form.assignedBudget) || 0);
+    if (!form.code.trim() || !form.name.trim()) {
+      setMessage('Código y nombre del proyecto son obligatorios.');
+      return;
+    }
+    setSaving(true);
+    setMessage('');
+    try {
+      const statusLabel =
+        form.status === 'EN_EJECUCION' ? 'En ejecución' :
+        form.status === 'SUSPENDIDO' ? 'Suspendido' :
+        form.status === 'RECEPCION_PROVISIONAL' ? 'Recepción provisional' :
+        form.status === 'FINALIZADO' ? 'Finalizado' : 'Planificación';
+
+      const record: Project = {
+        id: crypto.randomUUID(),
+        code: form.code.trim(),
+        planningCode: form.planningCode.trim() || undefined,
+        executionCode: form.executionCode.trim() || undefined,
+        name: form.name.trim(),
+        shortName: form.shortName.trim() || form.name.trim(),
+        location: form.location.trim(),
+        community: form.community.trim(),
+        status: form.status,
+        statusLabel,
+        physicalProgress: 0,
+        financialProgress: 0,
+        responsibleUnit: form.responsibleUnit.trim() || 'Unidad de Proyectos',
+        responsiblePerson: form.responsiblePerson.trim(),
+        assignedBudget: budget,
+        revisedBudget: budget,
+        fundingSource: form.fundingSource.trim() || 'Por registrar',
+        startDate: form.startDate,
+        expectedEndDate: form.endDate,
+        description: form.description.trim(),
+        createdAt: new Date().toISOString().slice(0,10),
+        updatedAt: new Date().toISOString().slice(0,10),
+        syncStatus: 'SINCRONIZADO',
+      };
+
+      await dataRepository.saveProject(record);
+      await onSaved?.();
+      setMessage('Proyecto registrado correctamente.');
+      setShowCreate(false);
+      setForm({
+        code:'',planningCode:'',executionCode:'',name:'',shortName:'',location:'',community:'',
+        status:'PLANIFICACION',assignedBudget:'',fundingSource:'',startDate:'',endDate:'',
+        responsibleUnit:'Unidad de Proyectos',responsiblePerson:'',description:''
+      });
+    } catch (error:any) {
+      setMessage('No se pudo guardar: ' + String(error?.message || error));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-6xl space-y-5 pb-12">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -63,12 +154,12 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, onOpenProj
             Busca por código, nombre, ubicación o comunidad. No se cargan todos los expedientes en pantalla al entrar.
           </p>
         </div>
-        {onNewProject && (
-          <button onClick={onNewProject} className="inline-flex items-center gap-2 self-start rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500">
-            <Plus className="h-4 w-4" /> Nuevo proyecto
-          </button>
-        )}
+        <button onClick={()=>{setShowCreate(true);setMessage('');}} className="inline-flex items-center gap-2 self-start rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500">
+          <Plus className="h-4 w-4" /> Nuevo proyecto
+        </button>
       </div>
+
+      {message && <div className="rounded-lg border border-[#243247] bg-[#111827] p-3 text-xs text-slate-300">{message}</div>}
 
       <div className="rounded-xl border border-[#1f2e45] bg-[#111827] p-4 shadow-lg">
         <div className="relative">
@@ -117,6 +208,40 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ projects, onOpenProj
           </button>
         ))}
       </div>
+
+      {showCreate && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 p-3" role="dialog" aria-modal="true" aria-label="Nuevo proyecto">
+          <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-[#243247] bg-[#111827] shadow-2xl">
+            <div className="sticky top-0 flex items-center justify-between border-b border-[#243247] bg-[#111827] px-4 py-3">
+              <div><div className="text-sm font-bold text-white">Nuevo proyecto</div><div className="text-[10px] text-slate-500">Registro productivo protegido por Auth y RLS.</div></div>
+              <button onClick={()=>setShowCreate(false)} className="rounded-lg p-2 text-slate-400 hover:bg-[#172235] hover:text-white" aria-label="Cerrar"><X className="h-4 w-4"/></button>
+            </div>
+            <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Field label="Código"><input value={form.code} onChange={(e)=>setForm({...form,code:e.target.value})} className={inputClass}/></Field>
+              <Field label="Código planificación"><input value={form.planningCode} onChange={(e)=>setForm({...form,planningCode:e.target.value})} className={inputClass}/></Field>
+              <Field label="Código ejecución"><input value={form.executionCode} onChange={(e)=>setForm({...form,executionCode:e.target.value})} className={inputClass}/></Field>
+              <Field label="Nombre" wide><input value={form.name} onChange={(e)=>setForm({...form,name:e.target.value})} className={inputClass}/></Field>
+              <Field label="Nombre corto"><input value={form.shortName} onChange={(e)=>setForm({...form,shortName:e.target.value})} className={inputClass}/></Field>
+              <Field label="Estado"><select value={form.status} onChange={(e)=>setForm({...form,status:e.target.value as ProjectStatus})} className={inputClass}><option value="PLANIFICACION">Planificación</option><option value="EN_EJECUCION">En ejecución</option><option value="SUSPENDIDO">Suspendido</option><option value="RECEPCION_PROVISIONAL">Recepción provisional</option><option value="FINALIZADO">Finalizado</option></select></Field>
+              <Field label="Ubicación"><input value={form.location} onChange={(e)=>setForm({...form,location:e.target.value})} className={inputClass}/></Field>
+              <Field label="Comunidad / barrio"><input value={form.community} onChange={(e)=>setForm({...form,community:e.target.value})} className={inputClass}/></Field>
+              <Field label="Presupuesto inicial"><input type="number" min="0" step="0.01" value={form.assignedBudget} onChange={(e)=>setForm({...form,assignedBudget:e.target.value})} className={inputClass}/></Field>
+              <Field label="Fuente de financiamiento"><input value={form.fundingSource} onChange={(e)=>setForm({...form,fundingSource:e.target.value})} className={inputClass}/></Field>
+              <Field label="Fecha inicio"><input type="date" value={form.startDate} onChange={(e)=>setForm({...form,startDate:e.target.value})} className={inputClass}/></Field>
+              <Field label="Fecha prevista final"><input type="date" value={form.endDate} onChange={(e)=>setForm({...form,endDate:e.target.value})} className={inputClass}/></Field>
+              <Field label="Unidad responsable"><input value={form.responsibleUnit} onChange={(e)=>setForm({...form,responsibleUnit:e.target.value})} className={inputClass}/></Field>
+              <Field label="Responsable"><input value={form.responsiblePerson} onChange={(e)=>setForm({...form,responsiblePerson:e.target.value})} className={inputClass}/></Field>
+              <Field label="Descripción" wide><textarea rows={4} value={form.description} onChange={(e)=>setForm({...form,description:e.target.value})} className={inputClass}/></Field>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-[#243247] p-4">
+              <button onClick={()=>setShowCreate(false)} className="rounded-lg border border-[#334155] px-4 py-2 text-xs font-semibold text-slate-300">Cancelar</button>
+              <button onClick={()=>void saveProject()} disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"><Save className="h-4 w-4"/>{saving?'Guardando…':'Guardar proyecto'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+const Field: React.FC<{label:string;children:React.ReactNode;wide?:boolean}> = ({label,children,wide}) => <label className={wide ? 'sm:col-span-2 lg:col-span-3' : ''}><span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</span>{children}</label>;

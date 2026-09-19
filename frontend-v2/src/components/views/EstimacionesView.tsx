@@ -3,6 +3,7 @@ import { Receipt, Search, Plus, ArrowRight, X, Save, AlertTriangle } from 'lucid
 import type { Estimate, Project } from '../../types.ts';
 import { formatLempiras, formatDateSpanish } from '../../services/calculationService.ts';
 import { dataRepository } from '../../services/backendAdapter.ts';
+import { matchesSearch, normalizeSearch } from '../../services/searchService.ts';
 
 interface EstimacionesViewProps {
   estimates: Estimate[];
@@ -14,7 +15,6 @@ interface EstimacionesViewProps {
   initialProjectId?: string | null;
 }
 
-const norm = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const inputClass = 'w-full rounded-lg border border-[#243247] bg-[#0b1220] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-emerald-500';
 
 export const EstimacionesView: React.FC<EstimacionesViewProps> = ({ estimates, projects, onOpenProject, onOpenProjectTab, onSaved, initialAction = null, initialProjectId = null }) => {
@@ -32,13 +32,13 @@ export const EstimacionesView: React.FC<EstimacionesViewProps> = ({ estimates, p
     if (initialProjectId) setForm((current) => ({ ...current, projectId: initialProjectId }));
   }, [initialAction, initialProjectId]);
 
-  const q = norm(query.trim());
+  const q = normalizeSearch(query.trim());
   const results = useMemo(() => {
     if (q.length < 2) return [];
     return estimates.filter((estimate) => {
       const project = projects.find((p) => p.id === estimate.projectId);
       const text = [project?.code, project?.name, estimate.estimateNumber, estimate.paymentReference, estimate.paymentStatusLabel].filter(Boolean).join(' ');
-      return norm(text).includes(q);
+      return matchesSearch(q, [text]);
     }).slice(0, 60);
   }, [estimates, projects, q]);
 

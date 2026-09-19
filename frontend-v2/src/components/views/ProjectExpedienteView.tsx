@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, FileText, Receipt, ShieldCheck, AlertOctagon, Camera, WalletCards, ClipboardList, History, UploadCloud, Plus } from 'lucide-react';
 import type { Project, Contract, Estimate, Guarantee, Deficiency, DocumentEvidence, FieldVisit, AuditLog, AppModule } from '../../types.ts';
 import { formatLempiras, formatPercent, formatDateSpanish } from '../../services/calculationService.ts';
-import { getEvidenceAccessUrl } from '../../services/evidenceAccessService.ts';
+import { downloadEvidenceFile, getEvidenceAccessUrl } from '../../services/evidenceAccessService.ts';
 
 interface ProjectExpedienteViewProps {
   project: Project;
@@ -37,11 +37,13 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
 }) => {
   const [tab, setTab] = useState<TabId>('resumen');
   const [openingDocId, setOpeningDocId] = useState<string | null>(null);
+  const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null);
   const [documentError, setDocumentError] = useState('');
 
   useEffect(() => {
     setTab(isTabId(initialTab) ? initialTab : 'resumen');
     setOpeningDocId(null);
+    setDownloadingDocId(null);
     setDocumentError('');
   }, [project.id, initialTab]);
   const projectContracts = useMemo(() => contracts.filter((x) => x.projectId === project.id), [contracts, project.id]);
@@ -71,6 +73,18 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
       setDocumentError(String(error?.message || 'No fue posible abrir la evidencia.'));
     } finally {
       setOpeningDocId(null);
+    }
+  };
+
+  const downloadEvidence = async (id: string) => {
+    setDownloadingDocId(id);
+    setDocumentError('');
+    try {
+      await downloadEvidenceFile(id);
+    } catch (error: any) {
+      setDocumentError(String(error?.message || 'No fue posible descargar la evidencia.'));
+    } finally {
+      setDownloadingDocId(null);
     }
   };
 
@@ -219,7 +233,10 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
       {tab === 'documentos' && (
         <Section icon={ClipboardList} title="Documentos fuente">
           {documentError && <div className="mb-3 rounded-lg border border-amber-800/60 bg-amber-950/25 p-3 text-xs text-amber-200">{documentError}</div>}
-          {projectDocuments.length === 0 ? <EmptyActions text="No hay documentos o evidencias vinculadas." actions={[{ label: 'Subir documento', onClick: () => onNavigate('documentos', { action: 'UPLOAD_DOC', projectId: project.id }) }]} /> : <div className="space-y-2">{projectDocuments.map((d) => <div key={d.id} className="flex items-center justify-between gap-3 rounded-lg border border-[#2b3a4a] bg-[#0b1118] p-3"><div className="min-w-0"><div className="truncate text-xs font-semibold text-white">{d.title || d.fileName}</div><div className="mt-0.5 text-[10px] text-slate-500">{d.typeLabel} · {formatDateSpanish(d.uploadDate)}</div></div><button onClick={() => void openEvidence(d.id)} disabled={openingDocId === d.id} className="text-xs font-semibold text-[#c5a367] hover:text-[#f1e4c5] disabled:opacity-50">{openingDocId === d.id ? 'Abriendo…' : 'Abrir'}</button></div>)}</div>}
+          {projectDocuments.length === 0 ? <EmptyActions text="No hay documentos o evidencias vinculadas." actions={[{ label: 'Subir documento', onClick: () => onNavigate('documentos', { action: 'UPLOAD_DOC', projectId: project.id }) }]} /> : <div className="space-y-2">{projectDocuments.map((d) => <div key={d.id} className="flex items-center justify-between gap-3 rounded-lg border border-[#2b3a4a] bg-[#0b1118] p-3"><div className="min-w-0"><div className="truncate text-xs font-semibold text-white">{d.title || d.fileName}</div><div className="mt-0.5 text-[10px] text-slate-500">{d.typeLabel} · {formatDateSpanish(d.uploadDate)}</div></div><div className="flex shrink-0 items-center gap-2">
+                  <button onClick={() => void openEvidence(d.id)} disabled={openingDocId === d.id || downloadingDocId === d.id} className="text-xs font-semibold text-[#c5a367] hover:text-[#f1e4c5] disabled:opacity-50">{openingDocId === d.id ? 'Abriendo…' : 'Abrir'}</button>
+                  <button onClick={() => void downloadEvidence(d.id)} disabled={openingDocId === d.id || downloadingDocId === d.id} className="rounded-lg border border-[#2b3a4a] px-2 py-1 text-xs font-semibold text-blue-300 hover:bg-[#1b2735] disabled:opacity-50">{downloadingDocId === d.id ? 'Descargando…' : 'Descargar'}</button>
+                </div></div>)}</div>}
         </Section>
       )}
 

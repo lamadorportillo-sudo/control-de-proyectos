@@ -48,6 +48,25 @@ export async function getEvidenceAccessUrl(evidenceId: string): Promise<string> 
   return access.url;
 }
 
+export async function downloadUrlFile(url: string, fileName: string): Promise<void> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`El servidor no pudo entregar el archivo (HTTP ${response.status}).`);
+  }
+  const blob = await response.blob();
+  if (!blob.size) throw new Error('El archivo recibido está vacío.');
+
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = objectUrl;
+  anchor.download = fileName || 'documento';
+  anchor.rel = 'noopener';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+}
+
 export async function downloadEvidenceFile(evidenceId: string): Promise<void> {
   const access = await resolveEvidenceAccess(evidenceId);
   const response = await fetch(access.url);

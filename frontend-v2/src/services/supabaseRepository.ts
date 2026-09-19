@@ -36,7 +36,8 @@ function uniqueByBusinessKey<T extends Row>(rows: T[], keyOf: (row: T) => string
   const seen = new Set<string>();
   return rows.filter((row) => {
     const businessKey = keyOf(row).trim();
-    const key = businessKey || `id:${s(row.id)}`;
+    const hasBusinessValue = businessKey.replace(/\|/g, '').trim().length > 0;
+    const key = hasBusinessValue ? businessKey : `id:${s(row.id)}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;

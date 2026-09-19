@@ -420,7 +420,8 @@ export class SupabaseDataRepository implements IDataRepository {
       .from('projects')
       .select('*')
       .is('archived_at', null)
-      .order('updated_at', { ascending: false });
+      .order('updated_at', { ascending: false })
+      .limit(250);
     if (error) throw error;
     return (data || []).map(mapProject);
   }
@@ -698,13 +699,15 @@ export class SupabaseDataRepository implements IDataRepository {
     let deficiencyQuery = this.client()
       .from('deficiencies')
       .select('*')
-      .order('reported_at', { ascending: false });
+      .order('reported_at', { ascending: false })
+      .limit(500);
     if (projectId) deficiencyQuery = deficiencyQuery.eq('project_id', projectId);
 
     let followupQuery = this.client()
       .from('deficiency_followups')
       .select('*')
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: true })
+      .limit(1000);
     if (projectId) followupQuery = followupQuery.eq('project_id', projectId);
 
     const [{ data, error }, { data: followups, error: followupError }] = await Promise.all([
@@ -828,7 +831,7 @@ export class SupabaseDataRepository implements IDataRepository {
       .from('audit_log')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(250);
+      .limit(100);
     if (error) throw error;
     return (data || []).map((row: Row) => ({
       id: s(row.id),

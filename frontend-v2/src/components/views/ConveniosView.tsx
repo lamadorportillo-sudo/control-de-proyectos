@@ -18,9 +18,10 @@ export const ConveniosView: React.FC<ConveniosViewProps> = ({ documents, project
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [openError, setOpenError] = useState('');
 
-  const convenioDocs = useMemo(() => documents.filter((doc) =>
-    norm(`${doc.typeLabel} ${doc.title} ${doc.fileName}`).includes('convenio')
-  ), [documents]);
+  const convenioDocs = useMemo(() => documents.filter((doc) => {
+    const typeLabel = norm(doc.typeLabel || '');
+    return doc.type === 'CONVENIO' || typeLabel === 'convenio' || typeLabel.startsWith('convenio ');
+  }), [documents]);
 
   const filtered = useMemo(() => {
     const q = norm(query.trim());
@@ -52,7 +53,7 @@ export const ConveniosView: React.FC<ConveniosViewProps> = ({ documents, project
           Convenios
         </h2>
         <p className="mt-1 text-xs text-slate-400">
-          Se muestran únicamente convenios respaldados por documentos/evidencias existentes. Actualmente no hay una tabla estructurada independiente de convenios en la base productiva.
+          Aquí solo aparecen documentos clasificados como convenio. No se mezclan contratos, actas ni documentos que únicamente mencionen la palabra “convenio”.
         </p>
       </div>
 
@@ -101,7 +102,7 @@ export const ConveniosView: React.FC<ConveniosViewProps> = ({ documents, project
 
         {filtered.length === 0 && (
           <div className="rounded-xl border border-dashed border-[#243247] p-10 text-center text-sm text-slate-500">
-            No hay convenios estructurados para mostrar con el criterio actual.
+            No hay documentos clasificados como convenios con el criterio actual.
           </div>
         )}
       </div>

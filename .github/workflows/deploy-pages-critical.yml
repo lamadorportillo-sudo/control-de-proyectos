@@ -35,7 +35,7 @@ concurrency:
 jobs:
   build-smoke-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 25
     steps:
       - name: Descargar repositorio
         uses: actions/checkout@v6
@@ -148,16 +148,34 @@ jobs:
           timeout 90s npx playwright test tests/project-create-route-responsive.spec.cjs --workers=1 --retries=0
           timeout 120s npx playwright test tests/navigation-centers-responsive.spec.cjs --workers=1 --retries=0
 
+      - name: Preparar V2 como interfaz principal y conservar respaldo
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp index.html legacy.html
+          cp frontend-v2/dist/index.html index.html
+          mkdir -p assets
+          cp -R frontend-v2/dist/assets/. assets/
+          test -s legacy.html
+          test -s index.html
+          grep -q 'Control Contractual' index.html
+
+      - name: Probar V2 desde la raíz publicada
+        env:
+          FRONTEND_V2_URL: http://127.0.0.1:4173/
+        shell: bash
+        run: timeout 180s npx playwright test tests/frontend-v2-session-bridge-responsive.spec.cjs --workers=1 --retries=0
+
       - name: Publicar después de las comprobaciones básicas
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [ -z "$(git status --porcelain -- index.html v2/)" ]; then
-            echo "index.html y V2 ya están actualizados."
+          if [ -z "$(git status --porcelain -- index.html legacy.html assets/ v2/)" ]; then
+            echo "Interfaz principal V2 y respaldo ya están actualizados."
           else
-            git add index.html v2/
-            git commit -m "Publicar interfaz estabilizada y V2 paralela"
+            git add index.html legacy.html assets/ v2/
+            git commit -m "Publicar V2 principal y conservar interfaz anterior"
             git push origin HEAD:main
           fi

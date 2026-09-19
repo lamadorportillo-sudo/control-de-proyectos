@@ -78,7 +78,6 @@ export interface Contract {
   isDraft: boolean;
   status: ContractStatus;
   statusLabel: string;
-  observations?: string;
   sourceDocumentId?: string;
   notes?: string;
   createdAt: string;
@@ -156,6 +155,7 @@ export interface Guarantee {
   daysToExpiry: number;
   status: GuaranteeStatus;
   statusLabel: string;
+  observations?: string;
   sourceDocumentId?: string;
 }
 

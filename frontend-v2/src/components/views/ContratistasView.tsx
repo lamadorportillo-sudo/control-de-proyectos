@@ -3,12 +3,6 @@ import { Building2, Search, ArrowRight, FileSignature } from 'lucide-react';
 import type { Contract, Project } from '../../types.ts';
 import { formatLempiras } from '../../services/calculationService.ts';
 
-const normalizeContractor = (value: string) =>
-  value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
-
-const normalizeContractorKey = (value: string) =>
-  normalizeContractor(value).replace(/[^a-z0-9]/g, '');
-
 interface ContratistasViewProps {
   contracts: Contract[];
   projects: Project[];
@@ -16,6 +10,7 @@ interface ContratistasViewProps {
 }
 
 interface ContractorSummary {
+  key: string;
   name: string;
   rtn: string;
   representative: string;
@@ -24,6 +19,64 @@ interface ContractorSummary {
   totalAmount: number;
   projectIds: string[];
 }
+
+/**
+ * Los contratos históricos no siempre guardan el nombre legal con el mismo
+ * formato. Esta clave sirve únicamente para consolidar la vista del directorio;
+ * no modifica ni elimina los contratos productivos.
+ */
+const contractorNameKey = (value: string): string => {
+  const normalized = value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/&/g, ' Y ')
+    .replace(/[^A-Z0-9]+/g, ' ')
+    .trim();
+
+  if (!normalized) return '';
+
+  const tokens = normalized.split(/\s+/);
+  // “Constructora” es un prefijo descriptivo que aparece solo en algunos
+  // registros de la misma empresa.
+  if (tokens.length > 1 && ['CONSTRUCTORA', 'CONSTRUCTOR'].includes(tokens[0])) {
+    tokens.shift();
+  }
+
+  // Quita únicamente sufijos societarios, de derecha a izquierda. Así se
+  // consideran iguales “S DE R L”, “S.DE R.L.” y “S DE RL”, sin afectar el
+  // nombre real de la empresa.
+  const legalTokens = new Set([
+    'S',
+    'R',
+    'L',
+    'RL',
+    'SRL',
+    'SA',
+    'SAS',
+    'LTDA',
+    'LIMITADA',
+    'DE',
+  ]);
+  while (tokens.length > 1 && legalTokens.has(tokens[tokens.length - 1])) {
+    tokens.pop();
+  }
+
+  return tokens.join('');
+};
+
+const contractorIdentity = (contract: Contract): string => {
+  const nameKey = contractorNameKey(contract.contractorName || '');
+  // El nombre normalizado permite unir un contrato histórico sin RTN con otro
+  // del mismo contratista que sí tenga RTN. El RTN queda como respaldo cuando
+  // el nombre aún no fue registrado.
+  if (nameKey) return `name:${nameKey}`;
+
+  const rtn = (contract.contractorRTN || '').replace(/[^0-9A-Z]/gi, '').toUpperCase();
+  if (rtn) return `rtn:${rtn}`;
+
+  return `name:${nameKey || 'POR_REGISTRAR'}`;
+};
 
 export const ContratistasView: React.FC<ContratistasViewProps> = ({ contracts, projects, onOpenProject }) => {
   const [search, setSearch] = useState('');
@@ -35,8 +88,9 @@ export const ContratistasView: React.FC<ContratistasViewProps> = ({ contracts, p
       if (contract.id && seenContractIds.has(contract.id)) continue;
       if (contract.id) seenContractIds.add(contract.id);
 
-      const key = normalizeContractorKey(contract.contractorRTN || contract.contractorName);
+      const key = contractorIdentity(contract);
       const current = map.get(key) || {
+        key,
         name: contract.contractorName || 'Contratista por registrar',
         rtn: contract.contractorRTN || '',
         representative: contract.contractorRep || '',
@@ -90,8 +144,12 @@ export const ContratistasView: React.FC<ContratistasViewProps> = ({ contracts, p
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {filtered.map((contractor) => {
+          const linkedProjects = contractor.projectIds
+            .map((projectId) => projects.find((project) => project.id === projectId))
+            .filter((project): project is Project => Boolean(project));
+
           return (
-            <div key={contractor.rtn || contractor.name} className="rounded-xl border border-[#1f2e45] bg-[#111827] p-4">
+            <div key={contractor.key} className="rounded-xl border border-[#1f2e45] bg-[#111827] p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="truncate text-sm font-bold text-white">{contractor.name}</div>
@@ -112,26 +170,45 @@ export const ContratistasView: React.FC<ContratistasViewProps> = ({ contracts, p
               </div>
 
               <div className="mt-4 border-t border-[#1f2e45] pt-3">
-                <div className="text-[11px] text-slate-500">
-                  {contractor.projectIds.length} proyecto(s) vinculado(s)
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-slate-500">
+                    {contractor.projectIds.length} proyecto(s) vinculado(s)
+                  </span>
+                  {linkedProjects.length > 0 && (
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+                      Todos los expedientes
+                    </span>
+                  )}
                 </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {contractor.projectIds.map((projectId) => {
-                    const project = projects.find((item) => item.id === projectId);
-                    if (!project) return null;
-                    return (
-                      <button
+
+                {linkedProjects.length > 0 ? (
+                  <div className="max-h-36 space-y-1.5 overflow-y-auto pr-1">
+                    {linkedProjects.map((project) => (
+                      <div
                         key={project.id}
-                        onClick={() => onOpenProject(project.id)}
-                        title={project.name}
-                        className="inline-flex items-center gap-1 rounded-lg border border-[#243247] bg-[#172235] px-2.5 py-1.5 text-[11px] font-medium text-blue-300 hover:border-blue-500 hover:bg-blue-600 hover:text-white"
+                        className="flex items-center justify-between gap-2 rounded-lg border border-[#243247] bg-[#0b1220] px-2.5 py-2"
                       >
-                        {project.code || project.shortName || project.name}
-                        <ArrowRight className="h-3 w-3" />
-                      </button>
-                    );
-                  })}
-                </div>
+                        <div className="min-w-0">
+                          <div className="truncate text-[11px] font-semibold text-slate-200">
+                            <span className="font-mono text-blue-300">{project.code}</span>
+                            <span className="mx-1 text-slate-600">·</span>
+                            {project.shortName || project.name}
+                          </div>
+                          <div className="truncate text-[10px] text-slate-500">{project.statusLabel}</div>
+                        </div>
+                        <button
+                          onClick={() => onOpenProject(project.id)}
+                          aria-label={`Abrir expediente ${project.code}`}
+                          className="flex shrink-0 items-center gap-1 rounded-md bg-[#172235] px-2 py-1 text-[10px] font-semibold text-blue-300 hover:bg-blue-600 hover:text-white"
+                        >
+                          Abrir <ArrowRight className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-[11px] text-slate-600">Sin proyecto vinculado en el catálogo actual.</span>
+                )}
               </div>
             </div>
           );

@@ -19,6 +19,7 @@ on:
       - 'templates/**'
       - 'assets/formats/**'
       - 'supabase/**'
+      - 'frontend-v2/**'
       - 'package.json'
       - 'playwright.config.cjs'
       - '.github/workflows/deploy-pages-critical.yml'
@@ -67,6 +68,27 @@ jobs:
           node patch-session-security.cjs
           node stabilize-core-v1.cjs
           node patch-offline-field.cjs
+
+      - name: Construir interfaz V2 paralela
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd frontend-v2
+          npm install --no-package-lock
+          npm run lint
+          npm run build
+          cd ..
+          rm -rf v2
+          mkdir -p v2
+          cp -R frontend-v2/dist/. v2/
+
+      - name: Confirmar V2 paralela
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s v2/index.html
+          test -d v2/assets
+          grep -q 'Control Contractual' v2/index.html
 
       - name: Confirmar página generada
         shell: bash
@@ -132,10 +154,10 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- index.html; then
-            echo "index.html ya está actualizado."
+          if git diff --quiet -- index.html v2/; then
+            echo "index.html y V2 ya están actualizados."
           else
-            git add index.html
-            git commit -m "Publicar interfaz estabilizada por recorrido real"
+            git add index.html v2/
+            git commit -m "Publicar interfaz estabilizada y V2 paralela"
             git push origin HEAD:main
           fi

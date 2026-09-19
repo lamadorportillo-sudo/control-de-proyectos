@@ -178,7 +178,7 @@ export const PresupuestosView: React.FC<PresupuestosViewProps> = ({
                     <tr key={amendment.id} className="hover:bg-[#1b2735]">
                       <td className="p-2 font-medium text-white">{project?.shortName || project?.name || 'Proyecto pendiente'}</td>
                       <td className="p-2 text-[#b4c0ce]">{typeLabel}</td>
-                      <td className={\`p-2 font-semibold tabular-nums \${isIncrease ? 'text-[#35b882]' : 'text-[#e07178]'}\`}>
+                      <td className={`p-2 font-semibold tabular-nums ${isIncrease ? 'text-[#35b882]' : 'text-[#e07178]'}`}>
                         {isIncrease ? '+' : '-'}{formatLempiras(Math.abs(amendment.amount))}
                       </td>
                       <td className="p-2 text-[#b4c0ce]">{formatDateSpanish(amendment.approvalDate)}</td>

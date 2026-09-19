@@ -41,7 +41,18 @@ export const GarantiasView: React.FC<GarantiasViewProps> = ({ guarantees, projec
   }, [guarantees, projects, q]);
 
   const totalGuaranteed = useMemo(() => guarantees.reduce((sum, guarantee) => sum + Number(guarantee.amount || 0), 0), [guarantees]);
-  const attentionCount = useMemo(() => guarantees.filter((guarantee) => guarantee.status === 'VENCIDA' || guarantee.status === 'POR_VENCER').length, [guarantees]);
+  const needsClosureReview = (guarantee: Guarantee) => {
+    const project = projects.find((item) => item.id === guarantee.projectId);
+    return project?.status === 'FINALIZADO' && !['LIBERADA', 'EJECUTADA'].includes(guarantee.status);
+  };
+  const attentionCount = useMemo(
+    () => guarantees.filter((guarantee) =>
+      guarantee.status === 'VENCIDA' ||
+      guarantee.status === 'POR_VENCER' ||
+      needsClosureReview(guarantee)
+    ).length,
+    [guarantees, projects]
+  );
 
   const saveGuarantee = async () => {
     const amount = Number(form.amount) || 0;
@@ -107,7 +118,7 @@ export const GarantiasView: React.FC<GarantiasViewProps> = ({ guarantees, projec
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Kpi label="Garantías registradas" value={String(guarantees.length)} detail="Pólizas disponibles" />
-        <Kpi label="Requieren atención" value={String(attentionCount)} detail="Vencidas o por vencer" />
+        <Kpi label="Requieren atención" value={String(attentionCount)} detail="Vencidas, por vencer o cierre pendiente" />
         <Kpi label="Monto garantizado" value={formatLempiras(totalGuaranteed)} detail="Suma de pólizas" />
       </div>
 
@@ -130,7 +141,15 @@ export const GarantiasView: React.FC<GarantiasViewProps> = ({ guarantees, projec
       <div className="space-y-3">
         {results.map((guarantee) => {
           const project = projects.find((p) => p.id === guarantee.projectId);
-          const warning = guarantee.status === 'VENCIDA' || guarantee.status === 'POR_VENCER';
+          const closureReview = needsClosureReview(guarantee);
+          const warning = guarantee.status === 'VENCIDA' || guarantee.status === 'POR_VENCER' || closureReview;
+          const actionLabel =
+            guarantee.status === 'VENCIDA' ? 'Revisar garantía vencida' :
+            closureReview ? 'Cerrar o liberar por proyecto finalizado' :
+            guarantee.status === 'POR_VENCER' ? 'Solicitar ampliación de vigencia' :
+            guarantee.status === 'LIBERADA' ? 'Ver liberación' :
+            guarantee.status === 'EJECUTADA' ? 'Ver ejecución' :
+            'Revisar garantía';
           return (
             <button key={guarantee.id} onClick={() => onOpenProject(guarantee.projectId)} className={`group w-full rounded-xl border p-4 text-left ${warning ? 'border-amber-800/60 bg-amber-950/20' : 'border-[#1f2e45] bg-[#111827] hover:border-amber-700'}`}>
               <div className="flex items-start justify-between gap-4">
@@ -138,6 +157,10 @@ export const GarantiasView: React.FC<GarantiasViewProps> = ({ guarantees, projec
                   <div className="flex flex-wrap items-center gap-2"><span className="rounded bg-[#172235] px-2 py-0.5 text-xs font-bold text-white">{guarantee.typeLabel}</span><span className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${warning ? 'bg-amber-900/60 text-amber-200' : 'bg-emerald-950 text-emerald-300'}`}>{guarantee.statusLabel}</span>{warning && <AlertTriangle className="h-4 w-4 text-amber-400" />}</div>
                   <h3 className="mt-2 text-sm font-semibold text-white">{project?.code} · {project?.name || 'Proyecto'}</h3>
                   <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4"><Metric label="Póliza" value={guarantee.policyNumber || 'No registrada'} /><Metric label="Emisor" value={guarantee.issuer || 'No registrado'} /><Metric label="Monto" value={formatLempiras(guarantee.amount)} /><Metric label="Vence" value={formatDateSpanish(guarantee.expiryDate)} /></div>
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[#243247] pt-3">
+                    <span className={warning ? 'text-[11px] font-semibold text-amber-300' : 'text-[11px] text-slate-400'}>{actionLabel}</span>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-300 group-hover:text-white">Abrir seguimiento <ArrowRight className="h-3 w-3" /></span>
+                  </div>
                 </div>
                 <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-slate-500 group-hover:translate-x-0.5 group-hover:text-amber-400" />
               </div>

@@ -3,6 +3,7 @@ import { AlertOctagon, Search, ArrowRight, Plus, MapPin, X, Save } from 'lucide-
 import type { Deficiency, DeficiencySeverity, Project } from '../../types.ts';
 import { formatDateSpanish } from '../../services/calculationService.ts';
 import { dataRepository } from '../../services/backendAdapter.ts';
+import { matchesSearch, normalizeSearch } from '../../services/searchService.ts';
 
 interface DeficienciasViewProps {
   deficiencies: Deficiency[];
@@ -46,7 +47,7 @@ export const DeficienciasView: React.FC<DeficienciasViewProps> = ({
     if (initialProjectId) setForm((current) => ({ ...current, projectId: initialProjectId }));
   }, [initialAction, initialProjectId]);
 
-  const q = norm(query.trim());
+  const q = normalizeSearch(query.trim());
 
   const results = useMemo(() => {
     return deficiencies
@@ -54,7 +55,7 @@ export const DeficienciasView: React.FC<DeficienciasViewProps> = ({
       .filter((d) => {
         if (!q) return true;
         const project = projects.find((p) => p.id === d.projectId);
-        return norm([d.title, d.description, d.specificLocation, d.severity, d.statusLabel, project?.code, project?.name].filter(Boolean).join(' ')).includes(q);
+        return matchesSearch(q, [d.title, d.description, d.specificLocation, d.severity, d.statusLabel, project?.code, project?.name]);
       })
       .sort((a, b) => {
         const order = { BLOQUEANTE: 4, GRAVE: 3, MODERADA: 2, LEVE: 1 } as const;

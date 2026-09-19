@@ -57,6 +57,7 @@ export default function App() {
   const [viewportMode, setViewportMode] = useState<'desktop' | 'tablet' | 'mobile' | 'telegram'>('desktop');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [loadingExpediente, setLoadingExpediente] = useState(false);
   const [sessionRequired, setSessionRequired] = useState(false);
   const [recoveryRequested, setRecoveryRequested] = useState(() => recoveryModeRequested());
   const [publicPortalDraft, setPublicPortalDraft] = useState<PublicPortalDraft | null>(null);
@@ -157,8 +158,14 @@ export default function App() {
   }, [currentModule, selectedDeficiencyId, selectedVisitId, contracts.length, estimates.length, guarantees.length, documents.length, visits.length]);
 
   useEffect(() => {
-    if (!selectedProjectId) return;
-    // El expediente carga sus pestañas bajo demanda al abrir un proyecto.
+    if (!selectedProjectId) {
+      setLoadingExpediente(false);
+      return;
+    }
+
+    // No mostramos estados vacíos mientras el expediente termina de cargar.
+    let active = true;
+    setLoadingExpediente(true);
     void Promise.all([
       contracts.length ? Promise.resolve(contracts) : dataRepository.getContracts(),
       estimates.length ? Promise.resolve(estimates) : dataRepository.getEstimates(),
@@ -166,12 +173,21 @@ export default function App() {
       documents.length ? Promise.resolve(documents) : dataRepository.getDocuments(),
       visits.length ? Promise.resolve(visits) : dataRepository.getFieldVisits(),
     ]).then(([contractData, estimateData, guaranteeData, documentData, visitData]) => {
+      if (!active) return;
       if (contracts.length === 0) setContracts(contractData);
       if (estimates.length === 0) setEstimates(estimateData);
       if (guarantees.length === 0) setGuarantees(guaranteeData);
       if (documents.length === 0) setDocuments(documentData);
       if (visits.length === 0) setVisits(visitData);
-    }).catch((err) => console.warn('Carga de expediente V2:', err));
+    }).catch((err) => {
+      console.warn('Carga de expediente V2:', err);
+    }).finally(() => {
+      if (active) setLoadingExpediente(false);
+    });
+
+    return () => {
+      active = false;
+    };
   }, [selectedProjectId]);
 
   const blockingDefs = useMemo(
@@ -294,6 +310,16 @@ export default function App() {
           />
         );
       case 'proyectos':
+        if (selectedProject && loadingExpediente) {
+          return (
+            <div className="mx-auto flex min-h-[50vh] max-w-6xl items-center justify-center">
+              <div className="flex items-center gap-2 text-sm text-slate-400">
+                <RefreshCw className="h-4 w-4 animate-spin text-blue-400" />
+                Preparando expediente…
+              </div>
+            </div>
+          );
+        }
         return selectedProject ? (
           <ProjectExpedienteView
             project={selectedProject}

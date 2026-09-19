@@ -73,27 +73,24 @@ export const EngineerFullBodyFigure: React.FC<FullBodyProps> = ({
 
   return (
     <div className={`zordon-idle relative flex flex-col items-center select-none group cursor-pointer ${className}`}>
-      {/* Contenedor estilizado que mimetiza la figura de cuerpo entero recortada sobre fondo oscuro */}
-      <div className="relative h-28 sm:h-32 md:h-40 w-12 sm:w-14 md:w-18 overflow-hidden rounded-xl bg-gradient-to-b from-transparent via-[#0b1220]/80 to-[#0b1220] border border-blue-500/20 group-hover:border-emerald-400/80 shadow-2xl transition-all duration-300 group-hover:scale-105">
+      <div className="relative h-36 w-24 sm:h-44 sm:w-28 md:h-52 md:w-32 overflow-visible rounded-xl border border-blue-500/20 bg-gradient-to-b from-transparent via-[#0b1220]/20 to-[#0b1220]/80 shadow-2xl transition-all duration-300 group-hover:border-emerald-400/80 group-hover:scale-105">
         {!imgError ? (
           <img
-            src="/control-de-proyectos/engineer-assistant-avatar.png"
-            alt="ZORDON - Ingeniero Oficial de Obra"
+            src="/control-de-proyectos/zordon-human-fullbody-v1.webp"
+            alt="ZORDON - Ingeniero Supervisor de cuerpo entero"
             referrerPolicy="no-referrer"
-            className="w-full h-full object-cover object-top filter contrast-105"
+            className="h-full w-full object-contain object-bottom"
             onError={() => setImgError(true)}
           />
         ) : (
           <img
             src="/control-de-proyectos/engineer-assistant-avatar.png"
-            alt="ZORDON - Ingeniero Oficial de Obra"
+            alt="ZORDON - Ingeniero Supervisor"
             referrerPolicy="no-referrer"
-            className="w-full h-full object-cover object-top filter contrast-105"
-            onError={() => {}}
+            className="h-full w-full rounded-xl object-cover object-top"
           />
         )}
 
-        {/* Círculo indicador verde oficial en la esquina inferior derecha, idéntico a la captura original */}
         {showStatusDot && (
           <div className="absolute bottom-1 right-1 z-20 flex h-4 w-4 items-center justify-center">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -102,8 +99,7 @@ export const EngineerFullBodyFigure: React.FC<FullBodyProps> = ({
         )}
       </div>
 
-      {/* Mini tag ZORDON discreto */}
-      <div className="mt-1 px-1.5 py-0.5 rounded bg-[#0e1726]/90 border border-[#1f2e45] group-hover:border-emerald-400/50 shadow transition-colors">
+      <div className="mt-0.5 px-1.5 py-0.5 rounded bg-[#0e1726]/90 border border-[#1f2e45] group-hover:border-emerald-400/50 shadow transition-colors">
         <span className="text-[9px] font-bold text-slate-300 group-hover:text-emerald-300 tracking-wider">
           ZORDON
         </span>

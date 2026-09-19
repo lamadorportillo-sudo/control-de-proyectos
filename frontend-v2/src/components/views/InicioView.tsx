@@ -130,7 +130,7 @@ export const InicioView: React.FC<InicioViewProps> = ({
                 key={qa.id}
                 id={qa.id}
                 onClick={qa.action}
-                className={`p-3.5 rounded-lg bg-[#151e29] border border-[#2b3a4a] text-left transition-all flex flex-col justify-between group ${qa.color}`}
+                className={`p-3.5 rounded-lg bg-[#151e29] border border-[#2b3a4a] text-left transition-all flex flex-col justify-between group text-[#b4c0ce] hover:border-[#c5a367] hover:bg-[#1b2735]`}
               >
                 <div className="flex items-center justify-between w-full mb-2">
                   <div className="p-2 rounded bg-[#0b1220] border border-[#1f2e45] text-slate-300 group-hover:text-white transition-colors">

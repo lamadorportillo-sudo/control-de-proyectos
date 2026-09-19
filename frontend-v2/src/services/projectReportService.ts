@@ -28,6 +28,9 @@ export interface ProjectReportOptions {
   includeCover: boolean;
   includeEvidence: boolean;
   includeSignatures: boolean;
+  includeCharts: boolean;
+  includeProcessGuide: boolean;
+  compactLayout: boolean;
   estimateId?: string;
   visitId?: string;
 }
@@ -167,6 +170,92 @@ const executiveSummary = (data: ProjectReportData): string => {
     </div>
     ${differenceNote}
   `, 'Lectura rápida del estado técnico, financiero y documental con información existente en el expediente.');
+};
+
+
+const normalizedStatus = (value: unknown): string =>
+  String(value ?? '').trim().toLowerCase();
+
+const isResolvedDeficiency = (item: Deficiency): boolean => {
+  const value = normalizedStatus(item.statusLabel || item.status);
+  return /cerrad|resuelt|subsanad|corregid|finaliz/.test(value);
+};
+
+const progressChartsSection = (data: ProjectReportData): string => {
+  const physical = Math.max(0, Math.min(100, Number(data.project.physicalProgress) || 0));
+  const financial = Math.max(0, Math.min(100, Number(data.project.financialProgress) || 0));
+  const recentVisits = [...data.visits]
+    .filter((visit) => Number.isFinite(Number(visit.progressReported)))
+    .slice(-8);
+  const maxVisit = Math.max(100, ...recentVisits.map((visit) => Number(visit.progressReported) || 0));
+
+  const visitBars = recentVisits.length
+    ? `<div class="report-mini-chart">
+        <div class="report-chart-title">Tendencia de avance reportado en visitas</div>
+        <div class="report-column-chart">
+          ${recentVisits.map((visit) => {
+            const value = Math.max(0, Number(visit.progressReported) || 0);
+            const height = maxVisit ? Math.max(4, (value / maxVisit) * 100) : 4;
+            return `<div class="report-column-item">
+              <div class="report-column-value">${pct(value)}</div>
+              <div class="report-column-track"><span style="height:${height}%"></span></div>
+              <div class="report-column-label">${date(visit.visitDate)}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`
+    : '<div class="report-note">Aún no hay suficientes registros de visita para mostrar tendencia de avance.</div>';
+
+  return section('Gráficos de seguimiento', `
+    <div class="report-chart-grid">
+      <div class="report-mini-chart">
+        <div class="report-chart-title">Comparativo de avance actual</div>
+        <div class="report-bar-row"><span>Físico</span><div class="report-bar-track"><i style="width:${physical}%"></i></div><b>${pct(physical)}</b></div>
+        <div class="report-bar-row"><span>Financiero</span><div class="report-bar-track gold"><i style="width:${financial}%"></i></div><b>${pct(financial)}</b></div>
+        <div class="report-chart-caption">La diferencia actual es de ${Math.abs(physical - financial).toFixed(2)} puntos porcentuales.</div>
+      </div>
+      ${visitBars}
+    </div>
+  `, 'Visualización rápida para comparar avance y evolución registrada en campo.');
+};
+
+const processGuideSection = (data: ProjectReportData): string => {
+  const status = normalizedStatus(data.project.statusLabel || data.project.status);
+  const projectClosed = /terminad|finaliz|cerrad|recepcionad/.test(status);
+  const openDeficiencies = data.deficiencies.filter((item) => !isResolvedDeficiency(item));
+  const gap = Math.abs((Number(data.project.physicalProgress) || 0) - (Number(data.project.financialProgress) || 0));
+
+  const stages = [
+    ['Expediente base', Boolean(data.project.code || data.project.name), 'Identificación y datos generales'],
+    ['Contrato', Boolean(data.contract), data.contract ? 'Contrato vinculado' : 'Sin contrato vinculado'],
+    ['Garantías', data.guarantees.length > 0, data.guarantees.length ? `${data.guarantees.length} registro(s)` : 'Sin registros'],
+    ['Seguimiento de campo', data.visits.length > 0, data.visits.length ? `${data.visits.length} visita(s)` : 'Sin visitas registradas'],
+    ['Estimaciones', data.estimates.length > 0, data.estimates.length ? `${data.estimates.length} registro(s)` : 'Sin estimaciones'],
+    ['Cierre', projectClosed, projectClosed ? 'Proyecto en estado de cierre/finalizado' : 'Proceso aún activo'],
+  ] as Array<[string, boolean, string]>;
+
+  const actions: string[] = [];
+  if (!data.contract) actions.push('Revisar si corresponde vincular o registrar el contrato del proyecto.');
+  if (!data.guarantees.length) actions.push('Verificar si corresponde registrar garantías o pólizas asociadas.');
+  if (!data.visits.length) actions.push('Programar o registrar seguimiento de campo cuando corresponda.');
+  if (!data.estimates.length) actions.push('Registrar estimaciones y pagos cuando el avance contractual lo requiera.');
+  if (openDeficiencies.length) actions.push(`Dar seguimiento a ${openDeficiencies.length} deficiencia(s) que no figuran como cerradas.`);
+  if (gap >= 10) actions.push(`Revisar la diferencia de ${gap.toFixed(2)} puntos entre avance físico y financiero.`);
+  if (!actions.length) actions.push('No se detectaron pendientes automáticos con los datos actualmente registrados.');
+
+  return section('Ruta de avance y control', `
+    <div class="report-process-flow">
+      ${stages.map(([label, complete, detail], index) => `
+        <div class="report-process-step ${complete ? 'complete' : 'pending'}">
+          <div class="report-process-number">${index + 1}</div>
+          <div><b>${esc(label)}</b><small>${esc(detail)}</small></div>
+        </div>`).join('')}
+    </div>
+    <div class="report-action-box">
+      <div class="report-action-title">Próximas acciones sugeridas por el expediente</div>
+      <ol>${actions.map((action) => `<li>${esc(action)}</li>`).join('')}</ol>
+    </div>
+  `, 'Guía dinámica basada en la información registrada; no sustituye la revisión técnica o contractual.');
 };
 
 const projectOverview = (data: ProjectReportData): string => {
@@ -338,9 +427,13 @@ const reportHeader = (data: ProjectReportData, type: ProjectReportType): string 
 export const reportCss = (options: ProjectReportOptions, scoped = false): string => {
   const prefix = scoped ? '.cc-report-preview ' : '';
   const size = options.paperSize === 'LETTER' ? 'letter' : 'A4';
+  const compact = options.compactLayout;
+  const pageMargin = compact ? '9mm 10mm' : '14mm 13mm';
+  const sectionGap = compact ? '8px 0 10px' : '12px 0 16px';
+  const cellPadding = compact ? '4px 5px' : '6px 7px';
   return `
-@page{size:${size} ${options.orientation};margin:14mm 13mm}
-${prefix}*{box-sizing:border-box}${prefix}body{margin:0;background:#fff;color:#1d2b36;font-family:Arial,Helvetica,sans-serif;font-size:10pt;line-height:1.42;-webkit-print-color-adjust:exact;print-color-adjust:exact}${prefix}.report-shell{background:#fff;color:#1d2b36;max-width:100%;padding:0}${prefix}.report-cover{min-height:230mm;display:flex;flex-direction:column;justify-content:center;text-align:center;page-break-after:always;break-after:page;border:1px solid #d6dee5;padding:28mm 18mm}${prefix}.report-cover .crest{width:26mm;height:26mm;border:2px solid #3d6380;border-radius:50%;display:grid;place-items:center;margin:0 auto 9mm;color:#3d6380;font-weight:800;font-size:9pt}${prefix}.report-cover h1{font-size:21pt;color:#244766;margin:5mm 0 3mm}${prefix}.report-cover h2{font-size:15pt;color:#263c4c;margin:0 0 7mm}${prefix}.report-cover p{margin:2mm 0;color:#5d7180}${prefix}.report-cover .cover-meta{margin-top:18mm;padding-top:7mm;border-top:1px solid #cad6df;font-size:9pt}${prefix}.report-sheet{width:100%}${prefix}.report-header{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:end;border-bottom:3px solid #315f8c;padding-bottom:8px;margin-bottom:10px}${prefix}.report-kicker{font-size:8pt;font-weight:800;letter-spacing:.08em;color:#60778c}${prefix}.report-unit{font-size:8pt;color:#60778c;margin-top:2px}${prefix}.report-header h1{font-size:17pt;color:#244766;margin:5px 0 2px}${prefix}.report-header p{margin:0;font-size:11pt;font-weight:700;color:#263c4c}${prefix}.report-code{border:1px solid #b9c9d8;padding:8px 10px;min-width:145px;text-align:right}${prefix}.report-code b{display:block;font-size:10pt}${prefix}.report-code span{font-size:8pt;color:#607489}${prefix}.report-section{margin:12px 0 16px;break-inside:auto;page-break-inside:auto}${prefix}.report-section-title{border-left:4px solid #315f8c;padding-left:8px;margin:0 0 6px;break-after:avoid}${prefix}.report-section-title h2{font-size:11pt;color:#244766;margin:0;text-transform:uppercase;letter-spacing:.025em}${prefix}.report-section-subtitle{font-size:8.5pt;color:#6a7e8e;margin-top:2px}${prefix}.report-table-wrap{width:100%;overflow:visible}${prefix}.report-table{width:100%;border-collapse:collapse;margin:0 0 4px;table-layout:auto}${prefix}.report-table th,.report-table td{border:1px solid #aabccd;padding:6px 7px;vertical-align:top;overflow-wrap:anywhere}${prefix}.report-table th{background:#e9f0f6;color:#294760;font-size:8pt;text-align:left;text-transform:uppercase;letter-spacing:.02em}${prefix}.report-table td{font-size:9pt;background:#fff}${prefix}.report-table tbody tr:nth-child(even) td{background:#fafcfd}${prefix}.report-table .label-cell{width:29%;background:#eef4f8;text-transform:none;font-size:8.5pt}${prefix}.report-table .cell-number{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}${prefix}.report-table .cell-center{text-align:center}${prefix}.report-table .strong{font-weight:800}${prefix}.report-table .empty-cell{text-align:center;color:#697b89;padding:11px}${prefix}.report-note{border:1px solid #cbd8e1;background:#f7fafc;border-radius:6px;padding:10px;color:#4d6272}${prefix}.report-note.warning{border-color:#decf9e;background:#fffbea;color:#735b17}${prefix}.report-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:0 0 9px}${prefix}.report-metric{border:1px solid #c8d4de;border-top:3px solid #315f8c;background:#fbfcfd;padding:8px;min-height:67px;break-inside:avoid}${prefix}.report-metric-label{font-size:7.5pt;font-weight:800;text-transform:uppercase;letter-spacing:.035em;color:#667b8c}${prefix}.report-metric-value{font-size:13pt;line-height:1.15;font-weight:800;color:#244766;margin-top:4px}${prefix}.report-metric-note{font-size:7.3pt;color:#788a98;margin-top:3px}${prefix}.report-progress-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;border:1px solid #d5dee6;background:#f8fafc;padding:8px;margin-bottom:9px;break-inside:avoid}${prefix}.report-progress-head{display:flex;justify-content:space-between;gap:8px;font-size:8pt;color:#425a6d;margin-bottom:4px}${prefix}.report-progress-head b{color:#263f54}${prefix}.report-progress-track{height:7px;background:#e4eaf0;border-radius:99px;overflow:hidden}${prefix}.report-progress-fill{display:block;height:100%;background:#315f8c;border-radius:99px}${prefix}.report-progress-fill.gold{background:#c5a367}${prefix}.report-control-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0 0 9px}${prefix}.report-control-item{display:flex;align-items:flex-start;gap:6px;border:1px solid #d7e0e7;background:#fff;padding:7px;break-inside:avoid}${prefix}.report-control-item b{display:block;font-size:8pt;color:#31495b}${prefix}.report-control-item small{display:block;font-size:7.3pt;color:#718391;margin-top:1px}${prefix}.report-control-dot{width:7px;height:7px;border-radius:50%;margin-top:3px;flex:0 0 auto;background:#b7791f}${prefix}.report-control-dot.ok{background:#2f855a}${prefix}.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}${prefix}.photo-grid figure{margin:0;border:1px solid #bdcbd5;padding:5px;break-inside:avoid}${prefix}.photo-grid img{display:block;width:100%;height:43mm;object-fit:contain;background:#f5f7f9}${prefix}.photo-grid figcaption{font-size:7.5pt;color:#637889;margin-top:4px}${prefix}.signatures{display:grid;grid-template-columns:repeat(3,1fr);gap:18mm;margin-top:18mm;break-inside:avoid;page-break-inside:avoid}${prefix}.signatures div{text-align:center;font-size:8pt;color:#334b5e}${prefix}.signatures span{display:block;border-top:1px solid #445b6c;margin-bottom:4px}${prefix}.report-footer{display:flex;justify-content:space-between;border-top:1px solid #cad6df;margin-top:13mm;padding-top:5px;font-size:7.5pt;color:#687b8d;break-inside:avoid}${prefix}.report-disclaimer{font-size:8pt;color:#6b7b87;margin:10px 0 0;padding:8px;background:#f6f8fa;border-left:3px solid #9eafbc}${prefix}@media print{${prefix}.report-cover{border:0}${prefix}.report-section{break-inside:auto}${prefix}.report-table tr{break-inside:avoid;page-break-inside:avoid}${prefix}.report-table thead{display:table-header-group}${prefix}.report-note,${prefix}.signatures{break-inside:avoid;page-break-inside:avoid}}`;
+@page{size:${size} ${options.orientation};margin:${pageMargin}}
+${prefix}*{box-sizing:border-box}${prefix}body{margin:0;background:#fff;color:#1d2b36;font-family:Arial,Helvetica,sans-serif;font-size:${compact ? '9pt' : '10pt'};line-height:${compact ? '1.32' : '1.42'};-webkit-print-color-adjust:exact;print-color-adjust:exact}${prefix}.report-shell{background:#fff;color:#1d2b36;max-width:100%;padding:0}${prefix}.report-cover{display:flex;flex-direction:column;justify-content:center;text-align:center;border:1px solid #d6dee5;padding:${compact ? '8mm 10mm' : '14mm 14mm'};margin-bottom:10px;break-inside:avoid}${prefix}.report-cover .crest{width:${compact ? '18mm' : '24mm'};height:${compact ? '18mm' : '24mm'};border:2px solid #3d6380;border-radius:50%;display:grid;place-items:center;margin:0 auto ${compact ? '4mm' : '7mm'};color:#3d6380;font-weight:800;font-size:8pt}${prefix}.report-cover h1{font-size:${compact ? '16pt' : '20pt'};color:#244766;margin:${compact ? '2mm 0' : '4mm 0 3mm'}}${prefix}.report-cover h2{font-size:${compact ? '11pt' : '14pt'};color:#263c4c;margin:0 0 ${compact ? '3mm' : '6mm'}}${prefix}.report-cover p{margin:1mm 0;color:#5d7180}${prefix}.report-cover .cover-meta{margin-top:${compact ? '5mm' : '10mm'};padding-top:4mm;border-top:1px solid #cad6df;font-size:8pt}${prefix}.report-sheet{width:100%}${prefix}.report-header{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:end;border-bottom:3px solid #315f8c;padding-bottom:8px;margin-bottom:10px}${prefix}.report-kicker{font-size:8pt;font-weight:800;letter-spacing:.08em;color:#60778c}${prefix}.report-unit{font-size:8pt;color:#60778c;margin-top:2px}${prefix}.report-header h1{font-size:17pt;color:#244766;margin:5px 0 2px}${prefix}.report-header p{margin:0;font-size:11pt;font-weight:700;color:#263c4c}${prefix}.report-code{border:1px solid #b9c9d8;padding:8px 10px;min-width:145px;text-align:right}${prefix}.report-code b{display:block;font-size:10pt}${prefix}.report-code span{font-size:8pt;color:#607489}${prefix}.report-section{margin:${sectionGap};break-inside:auto;page-break-inside:auto}${prefix}.report-section-title{border-left:4px solid #315f8c;padding-left:8px;margin:0 0 6px;break-after:avoid}${prefix}.report-section-title h2{font-size:11pt;color:#244766;margin:0;text-transform:uppercase;letter-spacing:.025em}${prefix}.report-section-subtitle{font-size:8.5pt;color:#6a7e8e;margin-top:2px}${prefix}.report-table-wrap{width:100%;overflow:visible}${prefix}.report-table{width:100%;border-collapse:collapse;margin:0 0 4px;table-layout:auto}${prefix}.report-table th,.report-table td{border:1px solid #aabccd;padding:${cellPadding};vertical-align:top;overflow-wrap:anywhere}${prefix}.report-table th{background:#e9f0f6;color:#294760;font-size:8pt;text-align:left;text-transform:uppercase;letter-spacing:.02em}${prefix}.report-table td{font-size:${compact ? '8.2pt' : '9pt'};background:#fff}${prefix}.report-table tbody tr:nth-child(even) td{background:#fafcfd}${prefix}.report-table .label-cell{width:29%;background:#eef4f8;text-transform:none;font-size:8.5pt}${prefix}.report-table .cell-number{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}${prefix}.report-table .cell-center{text-align:center}${prefix}.report-table .strong{font-weight:800}${prefix}.report-table .empty-cell{text-align:center;color:#697b89;padding:11px}${prefix}.report-note{border:1px solid #cbd8e1;background:#f7fafc;border-radius:6px;padding:10px;color:#4d6272}${prefix}.report-note.warning{border-color:#decf9e;background:#fffbea;color:#735b17}${prefix}.report-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:0 0 9px}${prefix}.report-metric{border:1px solid #c8d4de;border-top:3px solid #315f8c;background:#fbfcfd;padding:${compact ? '6px' : '8px'};min-height:${compact ? '52px' : '67px'};break-inside:avoid}${prefix}.report-metric-label{font-size:7.5pt;font-weight:800;text-transform:uppercase;letter-spacing:.035em;color:#667b8c}${prefix}.report-metric-value{font-size:13pt;line-height:1.15;font-weight:800;color:#244766;margin-top:4px}${prefix}.report-metric-note{font-size:7.3pt;color:#788a98;margin-top:3px}${prefix}.report-progress-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;border:1px solid #d5dee6;background:#f8fafc;padding:8px;margin-bottom:9px;break-inside:avoid}${prefix}.report-progress-head{display:flex;justify-content:space-between;gap:8px;font-size:8pt;color:#425a6d;margin-bottom:4px}${prefix}.report-progress-head b{color:#263f54}${prefix}.report-progress-track{height:7px;background:#e4eaf0;border-radius:99px;overflow:hidden}${prefix}.report-progress-fill{display:block;height:100%;background:#315f8c;border-radius:99px}${prefix}.report-progress-fill.gold{background:#c5a367}${prefix}.report-control-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0 0 9px}${prefix}.report-control-item{display:flex;align-items:flex-start;gap:6px;border:1px solid #d7e0e7;background:#fff;padding:7px;break-inside:avoid}${prefix}.report-control-item b{display:block;font-size:8pt;color:#31495b}${prefix}.report-control-item small{display:block;font-size:7.3pt;color:#718391;margin-top:1px}${prefix}.report-control-dot{width:7px;height:7px;border-radius:50%;margin-top:3px;flex:0 0 auto;background:#b7791f}${prefix}.report-control-dot.ok{background:#2f855a}${prefix}.report-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}${prefix}.report-mini-chart{border:1px solid #d3dde5;background:#fbfcfd;padding:7px;break-inside:avoid}${prefix}.report-chart-title{font-size:8pt;font-weight:800;color:#31495b;margin-bottom:7px;text-transform:uppercase;letter-spacing:.025em}${prefix}.report-bar-row{display:grid;grid-template-columns:58px 1fr 46px;gap:6px;align-items:center;margin:5px 0;font-size:8pt}${prefix}.report-bar-row b{text-align:right;color:#244766}${prefix}.report-bar-track{height:8px;background:#e5ebf0;border-radius:99px;overflow:hidden}${prefix}.report-bar-track i{display:block;height:100%;background:#315f8c;border-radius:99px}${prefix}.report-bar-track.gold i{background:#c5a367}${prefix}.report-chart-caption{font-size:7.4pt;color:#6e8190;margin-top:6px}${prefix}.report-column-chart{display:flex;align-items:end;gap:5px;min-height:74px;padding-top:14px}${prefix}.report-column-item{flex:1;min-width:0;text-align:center}${prefix}.report-column-value{font-size:6.7pt;color:#52697b;white-space:nowrap}${prefix}.report-column-track{height:45px;display:flex;align-items:end;justify-content:center;border-bottom:1px solid #c9d4dd}${prefix}.report-column-track span{display:block;width:70%;min-height:3px;background:#315f8c;border-radius:2px 2px 0 0}${prefix}.report-column-label{font-size:6.2pt;color:#738593;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}${prefix}.report-process-flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}${prefix}.report-process-step{display:flex;gap:6px;align-items:flex-start;border:1px solid #d5dee5;padding:6px;background:#fff;break-inside:avoid}${prefix}.report-process-step.complete{border-left:3px solid #2f855a}${prefix}.report-process-step.pending{border-left:3px solid #b7791f}${prefix}.report-process-number{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:#e8eef3;color:#294760;font-size:7pt;font-weight:800;flex:0 0 auto}${prefix}.report-process-step b{display:block;font-size:7.8pt;color:#31495b}${prefix}.report-process-step small{display:block;font-size:7pt;color:#718391;margin-top:1px}${prefix}.report-action-box{margin-top:7px;border:1px solid #cbd8e1;background:#f7fafc;padding:7px}${prefix}.report-action-title{font-size:8pt;font-weight:800;color:#31495b;margin-bottom:3px}${prefix}.report-action-box ol{margin:0;padding-left:17px}${prefix}.report-action-box li{font-size:7.8pt;color:#526879;margin:2px 0}${prefix}.photo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:${compact ? '6px' : '8px'}}${prefix}.photo-grid figure{margin:0;border:1px solid #bdcbd5;padding:${compact ? '4px' : '5px'};break-inside:avoid}${prefix}.photo-grid img{display:block;width:100%;height:${compact ? '34mm' : '43mm'};object-fit:cover;background:#f5f7f9}${prefix}.photo-grid figcaption{font-size:7.5pt;color:#637889;margin-top:4px}${prefix}.signatures{display:grid;grid-template-columns:repeat(3,1fr);gap:18mm;margin-top:18mm;break-inside:avoid;page-break-inside:avoid}${prefix}.signatures div{text-align:center;font-size:8pt;color:#334b5e}${prefix}.signatures span{display:block;border-top:1px solid #445b6c;margin-bottom:4px}${prefix}.report-footer{display:flex;justify-content:space-between;border-top:1px solid #cad6df;margin-top:13mm;padding-top:5px;font-size:7.5pt;color:#687b8d;break-inside:avoid}${prefix}.report-disclaimer{font-size:8pt;color:#6b7b87;margin:10px 0 0;padding:8px;background:#f6f8fa;border-left:3px solid #9eafbc}${prefix}@media print{${prefix}.report-cover{border:0}${prefix}.report-section{break-inside:auto}${prefix}.report-table tr{break-inside:avoid;page-break-inside:avoid}${prefix}.report-table thead{display:table-header-group}${prefix}.report-note,${prefix}.signatures{break-inside:avoid;page-break-inside:avoid}}`;
 };
 
 export function buildProjectReportBody(data: ProjectReportData, type: ProjectReportType, options: ProjectReportOptions): string {
@@ -349,6 +442,8 @@ export function buildProjectReportBody(data: ProjectReportData, type: ProjectRep
   const sections: string[] = [];
 
   sections.push(executiveSummary(data));
+  if (options.includeCharts) sections.push(progressChartsSection(data));
+  if (options.includeProcessGuide) sections.push(processGuideSection(data));
 
   if (type === 'final' || type === 'adjudicacion' || type === 'contractual' || type === 'financiero') sections.push(projectOverview(data));
   if (type === 'final' || type === 'adjudicacion' || type === 'contractual') sections.push(contractSection(data));

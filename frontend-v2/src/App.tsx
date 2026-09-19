@@ -376,7 +376,7 @@ export default function App() {
       case 'documentos':
         return <DocumentosView documents={documents} projects={projects} initialAction={moduleAction} initialProjectId={moduleProjectId} onUploaded={async () => setDocuments(await dataRepository.getDocuments())} />;
       case 'reportes':
-        return <ReportesView projects={projects} onOpenProject={openProject} />;
+        return <ReportesView projects={projects} onOpenProject={openProject} onOpenProjectTab={openProjectAtTab} />;
       case 'transparencia':
         return <TransparenciaView projects={projects} contracts={contracts} estimates={estimates} guarantees={guarantees} deficiencies={deficiencies} documents={documents} onPreviewPublic={(draft) => { setPublicPortalDraft(draft); setCurrentModule('portal_publico'); }} />;
       case 'visitas':

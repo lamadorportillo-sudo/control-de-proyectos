@@ -20,6 +20,7 @@ export interface VisitWriteInput {
 export interface VisitWriteResult {
   visitId: string;
   evidenceCount: number;
+  deficiencyId?: string;
   warning?: string;
 }
 
@@ -108,6 +109,7 @@ export async function saveVisitWithEvidence(
   }
 
   const uploadedPaths: string[] = [];
+  let deficiencyId: string | undefined;
   try {
     for (const item of uploads) {
       const { error } = await supabase.storage.from('project-files').upload(item.path, item.file, {
@@ -130,6 +132,36 @@ export async function saveVisitWithEvidence(
 
     if (visitError) throw visitError;
 
+    if (input.hasIncident) {
+      deficiencyId = await deterministicUuid(input.id + ':deficiency:0');
+      const description = (input.incidentDescription || '').trim();
+      const title = description
+        ? description.split(/\r?\n/)[0].slice(0, 140)
+        : 'Deficiencia observada en visita';
+
+      const { error: deficiencyError } = await supabase.from('deficiencies').upsert({
+        id: deficiencyId,
+        workspace_id: workspaceId,
+        project_id: input.projectId,
+        source_visit_id: input.id,
+        title,
+        specific_location: input.location || '',
+        description: description || 'Deficiencia observada durante visita de obra.',
+        severity: 'MODERADA',
+        supervisor_instruction: input.instruction || '',
+        responsible: input.responsible || '',
+        due_date: input.deadline || null,
+        status: 'ABIERTA',
+        reported_by: auth.user.id,
+        raw_data: {
+          source: 'frontend-v2',
+          visit_id: input.id,
+        },
+      }, { onConflict: 'id' });
+
+      if (deficiencyError) throw deficiencyError;
+    }
+
     if (uploads.length) {
       const rows = uploads.map((item) => ({
         id: item.id,
@@ -149,6 +181,7 @@ export async function saveVisitWithEvidence(
         verification_status: 'unreviewed',
         source_kind: 'web',
         visit_id: input.id,
+        deficiency_id: deficiencyId || null,
       }));
 
       const { error: evidenceError } = await supabase
@@ -161,8 +194,9 @@ export async function saveVisitWithEvidence(
     return {
       visitId: input.id,
       evidenceCount: uploads.length,
-      warning: input.hasIncident
-        ? 'La incidencia quedó dentro de la visita; el alta estructurada en Deficiencias continúa bloqueada hasta usar un flujo backend autorizado.'
+      deficiencyId,
+      warning: deficiencyId
+        ? 'Deficiencia registrada y vinculada automáticamente a la visita.'
         : undefined,
     };
   } catch (error) {

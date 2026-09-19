@@ -27,8 +27,10 @@ import { PresupuestosView } from './components/views/PresupuestosView.tsx';
 import { ComprasView } from './components/views/ComprasView.tsx';
 import { AuditoriaView } from './components/views/AuditoriaView.tsx';
 import { ConfiguracionView } from './components/views/ConfiguracionView.tsx';
+import { LoginView } from './components/views/LoginView.tsx';
 import { ModulePlaceholder } from './components/views/ModulePlaceholder.tsx';
-import { AlertTriangle, RefreshCw, LogIn, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { logoutV2 } from './services/authService.ts';
 
 export default function App() {
   const [currentModule, setCurrentModule] = useState<AppModule>('inicio');
@@ -332,34 +334,12 @@ export default function App() {
 
   if (sessionRequired) {
     return (
-      <div className="min-h-screen bg-[#0b1220] px-4 py-10 text-slate-100">
-        <div className="mx-auto flex min-h-[70vh] max-w-lg items-center justify-center">
-          <div className="w-full rounded-2xl border border-[#243247] bg-[#111827] p-6 shadow-2xl">
-            <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600/15 text-blue-400 ring-1 ring-blue-500/30">
-                <ShieldCheck className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="text-sm font-bold text-white">Control Contractual</div>
-                <div className="text-[11px] text-slate-500">Interfaz V2 protegida</div>
-              </div>
-            </div>
-            <h1 className="text-lg font-bold text-white">Sesión requerida</h1>
-            <p className="mt-2 text-sm leading-relaxed text-slate-400">
-              Sesión requerida. Abre la V2 desde una sesión iniciada en Control Contractual.
-            </p>
-            <p className="mt-2 text-xs leading-relaxed text-slate-500">
-              La V2 reutiliza el acceso, MFA y permisos del sistema actual; no crea una segunda cuenta ni un segundo inicio de sesión.
-            </p>
-            <a
-              href="/control-de-proyectos/"
-              className="mt-5 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-500"
-            >
-              <LogIn className="h-4 w-4" /> Ir al acceso
-            </a>
-          </div>
-        </div>
-      </div>
+      <LoginView
+        onAuthenticated={async () => {
+          setSessionRequired(false);
+          await loadData();
+        }}
+      />
     );
   }
 
@@ -395,6 +375,22 @@ export default function App() {
         onToggleSidebar={() => setIsMobileSidebarOpen((value) => !value)}
         onOpenZordon={() => setIsZordonOpen(true)}
         blockingDeficiencyCount={blockingDefs.length}
+        onLogout={async () => {
+          await logoutV2();
+          setProjects([]);
+          setContracts([]);
+          setEstimates([]);
+          setGuarantees([]);
+          setDeficiencies([]);
+          setDocuments([]);
+          setVisits([]);
+          setAuditLogs([]);
+          setSelectedProjectId(null);
+          setSelectedDeficiencyId(null);
+          setSelectedVisitId(null);
+          setCurrentModule('inicio');
+          setSessionRequired(true);
+        }}
       />
 
       {loadError && (

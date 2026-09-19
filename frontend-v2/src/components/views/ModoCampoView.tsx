@@ -49,6 +49,13 @@ export const ModoCampoView: React.FC<ModoCampoViewProps> = ({ visits, projects, 
         <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar visita por proyecto, código o actividad…" className="w-full rounded-lg border border-[#243247] bg-[#0b1220] py-2.5 pl-9 pr-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-amber-500" /></div>
       </div>
 
+      {recent.length === 0 && (
+        <div className="rounded-xl border border-dashed border-[#243247] bg-[#0d1623] p-8 text-center">
+          <div className="text-sm font-semibold text-white">{visits.length === 0 ? 'Modo campo listo para la primera visita' : 'No encontramos visitas con esa búsqueda'}</div>
+          <div className="mx-auto mt-1 max-w-xl text-xs leading-relaxed text-slate-500">{visits.length === 0 ? 'Registra la visita desde el botón superior para documentar avance, fotografías, GPS y observaciones.' : 'Prueba con el código del proyecto, el nombre o la actividad ejecutada.'}</div>
+        </div>
+      )}
+
       <div className="space-y-3">
         {recent.map((visit) => {
           const project = projects.find((p) => p.id === visit.projectId);

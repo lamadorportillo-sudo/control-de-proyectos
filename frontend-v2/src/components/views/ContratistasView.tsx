@@ -3,6 +3,12 @@ import { Building2, Search, ArrowRight, FileSignature } from 'lucide-react';
 import type { Contract, Project } from '../../types.ts';
 import { formatLempiras } from '../../services/calculationService.ts';
 
+const normalizeContractor = (value: string) =>
+  value.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().trim().replace(/\\s+/g, ' ');
+
+const normalizeContractorKey = (value: string) =>
+  normalizeContractor(value).replace(/[^a-z0-9]/g, '');
+
 interface ContratistasViewProps {
   contracts: Contract[];
   projects: Project[];
@@ -24,8 +30,12 @@ export const ContratistasView: React.FC<ContratistasViewProps> = ({ contracts, p
 
   const contractors = useMemo(() => {
     const map = new Map<string, ContractorSummary>();
+    const seenContractIds = new Set<string>();
     for (const contract of contracts) {
-      const key = (contract.contractorRTN || contract.contractorName).trim().toLowerCase();
+      if (contract.id && seenContractIds.has(contract.id)) continue;
+      if (contract.id) seenContractIds.add(contract.id);
+
+      const key = normalizeContractorKey(contract.contractorRTN || contract.contractorName);
       const current = map.get(key) || {
         name: contract.contractorName || 'Contratista por registrar',
         rtn: contract.contractorRTN || '',
@@ -80,7 +90,6 @@ export const ContratistasView: React.FC<ContratistasViewProps> = ({ contracts, p
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {filtered.map((contractor) => {
-          const firstProject = projects.find((p) => contractor.projectIds.includes(p.id));
           return (
             <div key={contractor.rtn || contractor.name} className="rounded-xl border border-[#1f2e45] bg-[#111827] p-4">
               <div className="flex items-start justify-between gap-3">
@@ -102,18 +111,27 @@ export const ContratistasView: React.FC<ContratistasViewProps> = ({ contracts, p
                 <Metric label="Monto acumulado" value={formatLempiras(contractor.totalAmount)} compact />
               </div>
 
-              <div className="mt-4 flex items-center justify-between border-t border-[#1f2e45] pt-3">
-                <span className="text-[11px] text-slate-500">
+              <div className="mt-4 border-t border-[#1f2e45] pt-3">
+                <div className="text-[11px] text-slate-500">
                   {contractor.projectIds.length} proyecto(s) vinculado(s)
-                </span>
-                {firstProject && (
-                  <button
-                    onClick={() => onOpenProject(firstProject.id)}
-                    className="flex items-center gap-1 rounded-lg bg-[#172235] px-3 py-1.5 text-xs font-medium text-blue-300 hover:bg-blue-600 hover:text-white"
-                  >
-                    Abrir expediente <ArrowRight className="h-3.5 w-3.5" />
-                  </button>
-                )}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {contractor.projectIds.map((projectId) => {
+                    const project = projects.find((item) => item.id === projectId);
+                    if (!project) return null;
+                    return (
+                      <button
+                        key={project.id}
+                        onClick={() => onOpenProject(project.id)}
+                        title={project.name}
+                        className="inline-flex items-center gap-1 rounded-lg border border-[#243247] bg-[#172235] px-2.5 py-1.5 text-[11px] font-medium text-blue-300 hover:border-blue-500 hover:bg-blue-600 hover:text-white"
+                      >
+                        {project.code || project.shortName || project.name}
+                        <ArrowRight className="h-3 w-3" />
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           );

@@ -28,9 +28,8 @@ import { ComprasView } from './components/views/ComprasView.tsx';
 import { AuditoriaView } from './components/views/AuditoriaView.tsx';
 import { ConfiguracionView } from './components/views/ConfiguracionView.tsx';
 import { LoginView } from './components/views/LoginView.tsx';
-import { ModulePlaceholder } from './components/views/ModulePlaceholder.tsx';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
-import { logoutV2 } from './services/authService.ts';
+import { logoutV2, recoveryModeRequested } from './services/authService.ts';
 
 export default function App() {
   const [currentModule, setCurrentModule] = useState<AppModule>('inicio');
@@ -47,6 +46,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [sessionRequired, setSessionRequired] = useState(false);
+  const [recoveryRequested, setRecoveryRequested] = useState(() => recoveryModeRequested());
   const [publicPortalDraft, setPublicPortalDraft] = useState<PublicPortalDraft | null>(null);
 
   const [projects, setProjects] = useState<Project[]>([]);
@@ -317,7 +317,19 @@ export default function App() {
       case 'configuracion':
         return <ConfiguracionView />;
       default:
-        return <ModulePlaceholder title="Módulo en integración" description="Esta sección continúa en migración controlada contra el backend productivo existente." onBack={() => handleNavigate('inicio')} />;
+        return (
+          <InicioView
+            onNavigate={(module, extra) => handleNavigate(module, extra)}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onSearchSubmit={submitSearch}
+            projects={projects}
+            deficiencies={deficiencies}
+            guarantees={guarantees}
+            estimates={estimates}
+            recentActivity={auditLogs}
+          />
+        );
     }
   };
 
@@ -332,10 +344,13 @@ export default function App() {
       ? 'max-w-[820px] mx-auto min-h-[820px] my-4 border border-[#243247] rounded-xl overflow-hidden shadow-2xl'
       : 'max-w-[420px] mx-auto min-h-[740px] my-4 border border-[#243247] rounded-xl overflow-hidden shadow-2xl';
 
-  if (sessionRequired) {
+  if (sessionRequired || recoveryRequested) {
     return (
       <LoginView
+        forceRecovery={recoveryRequested}
+        onRecoveryCompleted={() => setRecoveryRequested(false)}
         onAuthenticated={async () => {
+          setRecoveryRequested(false);
           setSessionRequired(false);
           await loadData();
         }}

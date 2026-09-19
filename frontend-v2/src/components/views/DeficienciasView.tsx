@@ -134,7 +134,7 @@ export const DeficienciasView: React.FC<DeficienciasViewProps> = ({
           <div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar problema, ubicación, proyecto o severidad…" className="w-full rounded-lg border border-[#243247] bg-[#0b1220] py-2.5 pl-9 pr-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-red-500" /></div>
           <label className="flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" checked={onlyOpen} onChange={(e) => setOnlyOpen(e.target.checked)} className="accent-red-500" />Solo abiertas</label>
         </div>
-        <div className="mt-2 text-[11px] text-slate-500">{results.length} registro(s) visibles.</div>
+        <div className="mt-2 text-[11px] text-slate-500">{results.length} caso(s) visibles. Cada resultado abre su expediente de seguimiento.</div>
       </div>
 
       {results.length === 0 && (

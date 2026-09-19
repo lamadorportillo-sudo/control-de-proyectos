@@ -10,12 +10,13 @@ interface DocumentosViewProps {
   documents: DocumentEvidence[];
   projects: Project[];
   onUploaded?: () => Promise<void> | void;
+  initialAction?: string | null;
 }
 
 const norm = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const inputClass = 'w-full rounded-lg border border-[#243247] bg-[#0b1220] px-3 py-2 text-xs text-white outline-none placeholder:text-slate-500 focus:border-indigo-500';
 
-export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, projects, onUploaded }) => {
+export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, projects, onUploaded, initialAction = null }) => {
   const [query, setQuery] = useState('');
   const [reports, setReports] = useState<GeneratedReportRecord[]>([]);
   const [openingId, setOpeningId] = useState<string | null>(null);
@@ -29,6 +30,8 @@ export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, proje
     title:'',
     file:null as File | null,
   });
+
+  useEffect(() => { if (initialAction === 'UPLOAD_DOC') setShowUpload(true); }, [initialAction]);
 
   useEffect(() => {
     void getGeneratedReports()

@@ -25,6 +25,9 @@ export const VisitasView: React.FC<Props> = ({ visits, projects, onOpenVisit, on
     ].filter(Boolean).join(' ')).includes(q);
   }).slice(0,100), [visits, projects, q]);
 
+  const photoCount = useMemo(() => visits.reduce((sum, visit) => sum + visit.photoUrls.length, 0), [visits]);
+  const gpsCount = useMemo(() => visits.filter((visit) => Boolean(visit.gpsCoords)).length, [visits]);
+
   return (
     <div className="mx-auto max-w-6xl space-y-5 pb-12">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -33,6 +36,12 @@ export const VisitasView: React.FC<Props> = ({ visits, projects, onOpenVisit, on
           <p className="mt-1 text-xs text-slate-400">Listado cronológico de supervisión. La evidencia se abre dentro de cada visita, no como galería general.</p>
         </div>
         <button onClick={onNewVisit} className="inline-flex items-center gap-2 self-start rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-amber-400"><Plus className="h-4 w-4"/>Registrar visita</button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Kpi label="Visitas registradas" value={String(visits.length)} detail="Seguimientos de obra" />
+        <Kpi label="Evidencias fotográficas" value={String(photoCount)} detail="Fotos vinculadas" />
+        <Kpi label="Ubicaciones GPS" value={String(gpsCount)} detail="Visitas georreferenciadas" />
       </div>
 
       <div className="rounded-xl border border-[#1f2e45] bg-[#111827] p-4">
@@ -65,8 +74,16 @@ export const VisitasView: React.FC<Props> = ({ visits, projects, onOpenVisit, on
             </button>
           );
         })}
-        {filtered.length===0 && <div className="rounded-xl border border-dashed border-[#243247] p-10 text-center text-sm text-slate-500">No hay visitas que coincidan con la búsqueda.</div>}
+        {filtered.length===0 && <div className="rounded-xl border border-dashed border-[#243247] bg-[#0d1623] p-8 text-center"><div className="text-sm font-semibold text-white">{visits.length === 0 ? 'Aún no hay visitas registradas' : 'No encontramos visitas con esa búsqueda'}</div><div className="mx-auto mt-1 max-w-xl text-xs leading-relaxed text-slate-500">{visits.length === 0 ? 'Usa “Registrar visita” para documentar avance, trabajos ejecutados, fotografías y ubicación.' : 'Prueba con el código, nombre del proyecto, inspector o actividad observada.'}</div></div>}
       </div>
     </div>
   );
 };
+
+const Kpi: React.FC<{ label: string; value: string; detail: string }> = ({ label, value, detail }) => (
+  <div className="rounded-xl border border-[#1f2e45] bg-[#111827] p-3.5">
+    <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</div>
+    <div className="mt-1 text-base font-bold text-white tabular-nums">{value}</div>
+    <div className="mt-0.5 text-[11px] text-slate-500">{detail}</div>
+  </div>
+);

@@ -36,6 +36,7 @@ export default function App() {
   const [selectedDeficiencyId, setSelectedDeficiencyId] = useState<string | null>(null);
   const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
   const [moduleAction, setModuleAction] = useState<string | null>(null);
+  const [moduleProjectId, setModuleProjectId] = useState<string | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isZordonOpen, setIsZordonOpen] = useState(false);
@@ -166,6 +167,7 @@ export default function App() {
     setCurrentModule(module);
     setIsMobileSidebarOpen(false);
     setModuleAction(extra?.action ? String(extra.action) : null);
+    setModuleProjectId(extra?.projectId ? String(extra.projectId) : null);
 
     if (module === 'proyectos' && extra?.projectId) {
       setSelectedProjectId(String(extra.projectId));
@@ -193,6 +195,7 @@ export default function App() {
 
   const openProject = (projectId: string) => {
     setModuleAction(null);
+    setModuleProjectId(projectId);
     setSelectedProjectId(projectId);
     setCurrentModule('proyectos');
   };
@@ -234,6 +237,8 @@ export default function App() {
             deficiencies={deficiencies}
             documents={documents}
             visits={visits}
+            auditLogs={auditLogs}
+            onNavigate={handleNavigate}
             onBack={() => setSelectedProjectId(null)}
           />
         ) : (
@@ -242,15 +247,15 @@ export default function App() {
       case 'busqueda':
         return <ProjectsView projects={projects} onOpenProject={openProject} initialQuery={searchQuery} onSaved={async () => setProjects(await dataRepository.getProjects())} />;
       case 'contratos':
-        return <ContratosView contracts={contracts} projects={projects} onOpenProject={openProject} initialAction={moduleAction} onSaved={async () => setContracts(await dataRepository.getContracts())} />;
+        return <ContratosView contracts={contracts} projects={projects} onOpenProject={openProject} initialAction={moduleAction} initialProjectId={moduleProjectId} onSaved={async () => setContracts(await dataRepository.getContracts())} />;
       case 'contratistas':
         return <ContratistasView contracts={contracts} projects={projects} onOpenProject={openProject} />;
       case 'convenios':
         return <ConveniosView documents={documents} projects={projects} onOpenProject={openProject} />;
       case 'estimaciones':
-        return <EstimacionesView estimates={estimates} projects={projects} onOpenProject={openProject} initialAction={moduleAction} onSaved={async () => setEstimates(await dataRepository.getEstimates())} />;
+        return <EstimacionesView estimates={estimates} projects={projects} onOpenProject={openProject} initialAction={moduleAction} initialProjectId={moduleProjectId} onSaved={async () => setEstimates(await dataRepository.getEstimates())} />;
       case 'garantias':
-        return <GarantiasView guarantees={guarantees} projects={projects} onOpenProject={openProject} onSaved={async () => setGuarantees(await dataRepository.getGuarantees())} />;
+        return <GarantiasView guarantees={guarantees} projects={projects} onOpenProject={openProject} initialAction={moduleAction} initialProjectId={moduleProjectId} onSaved={async () => setGuarantees(await dataRepository.getGuarantees())} />;
       case 'deficiencias':
         return selectedDeficiency ? (
           <DeficiencyDetailView
@@ -268,7 +273,7 @@ export default function App() {
           />
         );
       case 'documentos':
-        return <DocumentosView documents={documents} projects={projects} initialAction={moduleAction} onUploaded={async () => setDocuments(await dataRepository.getDocuments())} />;
+        return <DocumentosView documents={documents} projects={projects} initialAction={moduleAction} initialProjectId={moduleProjectId} onUploaded={async () => setDocuments(await dataRepository.getDocuments())} />;
       case 'reportes':
         return <ReportesView projects={projects} onOpenProject={openProject} />;
       case 'transparencia':
@@ -293,7 +298,7 @@ export default function App() {
       case 'modo_campo':
         return <ModoCampoView visits={visits} projects={projects} onOpenProject={openProject} onNewVisit={() => handleNavigate('registrar_visita')} />;
       case 'registrar_visita':
-        return <RegistrarVisitaView projects={projects} onBack={() => handleNavigate('modo_campo')} />;
+        return <RegistrarVisitaView projects={projects} initialProjectId={moduleProjectId} onBack={() => handleNavigate('modo_campo')} />;
       case 'presupuestos':
         return <PresupuestosView projects={projects} onNavigate={(module, extra) => handleNavigate(module, extra)} />;
       case 'compras':

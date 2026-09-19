@@ -239,7 +239,7 @@ export default function App() {
       case 'busqueda':
         return <ProjectsView projects={projects} onOpenProject={openProject} initialQuery={searchQuery} />;
       case 'contratos':
-        return <ContratosView contracts={contracts} projects={projects} onOpenProject={openProject} />;
+        return <ContratosView contracts={contracts} projects={projects} onOpenProject={openProject} onSaved={async () => setContracts(await dataRepository.getContracts())} />;
       case 'contratistas':
         return <ContratistasView contracts={contracts} projects={projects} onOpenProject={openProject} />;
       case 'convenios':

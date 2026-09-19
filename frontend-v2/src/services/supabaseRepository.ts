@@ -290,6 +290,7 @@ function mapDocument(row: Row): DocumentEvidence {
     id: s(row.id),
     projectId: s(row.project_id || ''),
     visitId: s(row.visit_id || '') || undefined,
+    deficiencyId: s(row.deficiency_id || '') || undefined,
     type,
     typeLabel,
     title,
@@ -299,6 +300,62 @@ function mapDocument(row: Row): DocumentEvidence {
     uploadedBy: s(raw.uploadedBy || raw.uploaded_by || ''),
     version: n(raw.version, 1),
     url: undefined,
+  };
+}
+
+function mapStructuredDeficiency(row: Row, followups: Row[] = []): Deficiency {
+  const history: Deficiency['history'] = [
+    {
+      timestamp: s(row.reported_at || row.created_at),
+      action: 'Registrada',
+      user: s(row.reported_by || 'Usuario'),
+      comment: s(row.description || ''),
+    },
+    ...followups.map((item) => ({
+      timestamp: s(item.created_at),
+      action: s(item.action || 'Seguimiento'),
+      user: s(item.created_by || 'Usuario'),
+      comment: [item.comment, item.instruction].filter(Boolean).join(' · ') || undefined,
+    })),
+  ];
+
+  if (row.verified_at) {
+    history.push({
+      timestamp: s(row.verified_at),
+      action: 'Verificada',
+      user: s(row.verified_by || 'Usuario'),
+      comment: s(row.verification_observation || '') || undefined,
+    });
+  }
+  if (row.closed_at) {
+    history.push({
+      timestamp: s(row.closed_at),
+      action: 'Cerrada',
+      user: s(row.closed_by || 'Usuario'),
+    });
+  }
+
+  return {
+    id: s(row.id),
+    projectId: s(row.project_id),
+    title: s(row.title),
+    specificLocation: s(row.specific_location || ''),
+    description: s(row.description || ''),
+    severity: (['LEVE','MODERADA','GRAVE','BLOQUEANTE'].includes(s(row.severity)) ? s(row.severity) : 'MODERADA') as Deficiency['severity'],
+    reportedDate: dateOnly(row.reported_at || row.created_at),
+    reportedBy: s(row.reported_by || ''),
+    responsibleContractor: s(row.responsible || ''),
+    deadline: dateOnly(row.due_date),
+    status: (['ABIERTA','EN_CORRECCION','VERIFICADA','CERRADA'].includes(s(row.status)) ? s(row.status) : 'ABIERTA') as Deficiency['status'],
+    statusLabel: row.status === 'EN_CORRECCION' ? 'En corrección' : row.status === 'VERIFICADA' ? 'Verificada' : row.status === 'CERRADA' ? 'Cerrada' : 'Abierta',
+    isVerified: Boolean(row.verified_at),
+    verifiedDate: row.verified_at ? dateOnly(row.verified_at) : undefined,
+    verifiedBy: s(row.verified_by || '') || undefined,
+    closedDate: row.closed_at ? dateOnly(row.closed_at) : undefined,
+    closedBy: s(row.closed_by || '') || undefined,
+    evidenceUrls: [],
+    linkedVisitId: s(row.source_visit_id || '') || undefined,
+    history: history.sort((a,b) => String(a.timestamp).localeCompare(String(b.timestamp))),
   };
 }
 
@@ -638,31 +695,69 @@ export class SupabaseDataRepository implements IDataRepository {
   }
 
   async getDeficiencies(projectId?: string): Promise<Deficiency[]> {
-    // Deficiencias de obra ≠ alertas administrativas/financieras.
-    // Solo se consumen fuentes que representan hallazgos técnicos/no conformidades.
-    const deficiencySources = [
-      'DEFICIENCY',
-      'FIELD_DEFICIENCY',
-      'SITE_DEFICIENCY',
-      'VISIT_DEFICIENCY',
-      'QUALITY_TEST',
-      'quality_tests',
-      'NONCONFORMITY',
-    ];
-
-    let query = this.client()
-      .from('alert_events')
+    let deficiencyQuery = this.client()
+      .from('deficiencies')
       .select('*')
-      .in('source_type', deficiencySources)
-      .order('last_evaluated_at', { ascending: false });
-    if (projectId) query = query.eq('project_id', projectId);
-    const { data, error } = await query;
+      .order('reported_at', { ascending: false });
+    if (projectId) deficiencyQuery = deficiencyQuery.eq('project_id', projectId);
+
+    let followupQuery = this.client()
+      .from('deficiency_followups')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (projectId) followupQuery = followupQuery.eq('project_id', projectId);
+
+    const [{ data, error }, { data: followups, error: followupError }] = await Promise.all([
+      deficiencyQuery,
+      followupQuery,
+    ]);
+
     if (error) throw error;
-    return (data || []).map(mapAlertToDeficiency);
+    if (followupError) throw followupError;
+
+    const byDeficiency = new Map<string, Row[]>();
+    for (const item of followups || []) {
+      const key = s(item.deficiency_id);
+      const list = byDeficiency.get(key) || [];
+      list.push(item);
+      byDeficiency.set(key, list);
+    }
+
+    return (data || []).map((row: Row) => mapStructuredDeficiency(row, byDeficiency.get(s(row.id)) || []));
   }
 
-  async saveDeficiency(_deficiency: Deficiency): Promise<void> {
-    throw new Error('La escritura de deficiencias se conectará al flujo productivo existente, no a alert_events directamente.');
+  async saveDeficiency(deficiency: Deficiency): Promise<void> {
+    const { data: projectRow, error: projectError } = await this.client()
+      .from('projects')
+      .select('workspace_id')
+      .eq('id', deficiency.projectId)
+      .maybeSingle();
+    if (projectError) throw projectError;
+    if (!projectRow?.workspace_id) throw new Error('No se pudo resolver el espacio de trabajo del proyecto.');
+
+    const row = {
+      id: deficiency.id || crypto.randomUUID(),
+      workspace_id: projectRow.workspace_id,
+      project_id: deficiency.projectId,
+      source_visit_id: deficiency.linkedVisitId || null,
+      title: deficiency.title.trim(),
+      specific_location: deficiency.specificLocation || '',
+      description: deficiency.description || '',
+      severity: deficiency.severity,
+      responsible: deficiency.responsibleContractor || '',
+      due_date: deficiency.deadline || null,
+      status: deficiency.status,
+      verified_at: deficiency.verifiedDate ? new Date(deficiency.verifiedDate + 'T12:00:00Z').toISOString() : null,
+      verified_by: deficiency.verifiedBy || null,
+      closed_at: deficiency.closedDate ? new Date(deficiency.closedDate + 'T12:00:00Z').toISOString() : null,
+      closed_by: deficiency.closedBy || null,
+      raw_data: { source: 'frontend-v2' },
+    };
+
+    const { error } = await this.client()
+      .from('deficiencies')
+      .upsert(row, { onConflict: 'id' });
+    if (error) throw error;
   }
 
   async getDocuments(projectId?: string): Promise<DocumentEvidence[]> {

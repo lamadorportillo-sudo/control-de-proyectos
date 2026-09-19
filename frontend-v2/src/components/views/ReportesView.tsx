@@ -21,6 +21,8 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [paperSize, setPaperSize] = useState<'A4' | 'Letter'>('A4');
+  const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('landscape');
 
   const load = async () => {
     setLoading(true);
@@ -89,7 +91,8 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
         h1{font-size:20px;margin:0 0 4px}.meta{color:#64748b;font-size:11px;margin-bottom:18px}
         table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #cbd5e1;padding:7px;vertical-align:top}
         th{background:#e2e8f0;text-align:left}.num{text-align:right;white-space:nowrap}
-        @media print{body{margin:10mm}}
+        @page{size: ${paperSize} ${orientation}; margin: 10mm}
+        @media print{body{margin:0}}
       </style></head><body>
       <h1>Reporte de proyectos en ejecución</h1>
       <div class="meta">Control Contractual · Generado ${escapeHtml(new Date().toLocaleString('es-HN'))} · ${executionProjects.length} proyecto(s)</div>
@@ -120,6 +123,7 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
         h1{font-size:20px;margin:0 0 4px}.meta{color:#64748b;font-size:11px;margin-bottom:18px}
         table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #cbd5e1;padding:7px;vertical-align:top}
         th{background:#e2e8f0;text-align:left}
+        @page{size: ${paperSize} ${orientation}; margin: 10mm}
       </style></head><body>
       <h1>Reporte de proyectos en ejecución</h1>
       <div class="meta">Control Contractual · Generado ${escapeHtml(new Date().toLocaleString('es-HN'))} · ${executionProjects.length} proyecto(s)</div>
@@ -172,8 +176,25 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
               {executionProjects.length} proyecto(s) incluidos
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="flex flex-wrap items-end gap-2">
+              <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                Hoja
+                <select value={paperSize} onChange={(e) => setPaperSize(e.target.value as 'A4' | 'Letter')} className="ml-1 rounded border border-[#243247] bg-[#0b1220] px-2 py-1.5 text-xs font-normal normal-case tracking-normal text-slate-200">
+                  <option value="A4">A4</option>
+                  <option value="Letter">Carta</option>
+                </select>
+              </label>
+              <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                Orientación
+                <select value={orientation} onChange={(e) => setOrientation(e.target.value as 'portrait' | 'landscape')} className="ml-1 rounded border border-[#243247] bg-[#0b1220] px-2 py-1.5 text-xs font-normal normal-case tracking-normal text-slate-200">
+                  <option value="landscape">Horizontal</option>
+                  <option value="portrait">Vertical</option>
+                </select>
+              </label>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
               onClick={printExecutionReport}
               className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500"
             >

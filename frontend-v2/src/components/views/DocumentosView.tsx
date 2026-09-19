@@ -3,7 +3,7 @@ import { FileText, Search, ExternalLink, Plus, X, UploadCloud } from 'lucide-rea
 import type { DocumentEvidence, Project } from '../../types.ts';
 import { formatDateSpanish } from '../../services/calculationService.ts';
 import { getGeneratedReports, type GeneratedReportRecord } from '../../services/reportService.ts';
-import { downloadEvidenceFile, getEvidenceAccessUrl } from '../../services/evidenceAccessService.ts';
+import { downloadEvidenceFile, downloadUrlFile, getEvidenceAccessUrl } from '../../services/evidenceAccessService.ts';
 import { uploadProjectDocument } from '../../services/documentUploadService.ts';
 
 interface DocumentosViewProps {
@@ -22,6 +22,7 @@ export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, proje
   const [reports, setReports] = useState<GeneratedReportRecord[]>([]);
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadingReportId, setDownloadingReportId] = useState<string | null>(null);
   const [openError, setOpenError] = useState('');
   const [showUpload, setShowUpload] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -84,6 +85,19 @@ export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, proje
       setOpenError(String(error?.message || 'No fue posible descargar la evidencia.'));
     } finally {
       setDownloadingId(null);
+    }
+  };
+
+  const downloadReport = async (report: GeneratedReportRecord) => {
+    if (!report.publicUrl) return;
+    setDownloadingReportId(report.id);
+    setOpenError('');
+    try {
+      await downloadUrlFile(report.publicUrl, report.fileName || 'reporte');
+    } catch (error: any) {
+      setOpenError(String(error?.message || 'No fue posible descargar el reporte.'));
+    } finally {
+      setDownloadingReportId(null);
     }
   };
 
@@ -162,9 +176,14 @@ export const DocumentosView: React.FC<DocumentosViewProps> = ({ documents, proje
                 <div className="mt-1 text-[10px] text-slate-500">{project?.name || 'Proyecto no identificado'} · {formatDateSpanish(report.createdAt)} · v{report.version}</div>
               </div>
               {report.publicUrl ? (
-                <a href={report.publicUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-emerald-800/60 bg-emerald-950/30 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-900/50">
-                  Abrir <ExternalLink className="h-3 w-3" />
-                </a>
+                <div className="flex shrink-0 items-center gap-2">
+                  <a href={report.publicUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-emerald-800/60 bg-emerald-950/30 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-900/50">
+                    Abrir <ExternalLink className="h-3 w-3" />
+                  </a>
+                  <button onClick={() => void downloadReport(report)} disabled={downloadingReportId === report.id} className="rounded-lg border border-emerald-800/60 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-900/50 disabled:opacity-50">
+                    {downloadingReportId === report.id ? 'Descargando…' : 'Descargar'}
+                  </button>
+                </div>
               ) : (
                 <span className="text-[10px] text-slate-600">Acceso interno</span>
               )}

@@ -72,7 +72,7 @@ export const EngineerFullBodyFigure: React.FC<FullBodyProps> = ({
   const [imgError, setImgError] = useState(false);
 
   return (
-    <div className={`relative flex flex-col items-center select-none group cursor-pointer ${className}`}>
+    <div className={`zordon-idle relative flex flex-col items-center select-none group cursor-pointer ${className}`}>
       {/* Contenedor estilizado que mimetiza la figura de cuerpo entero recortada sobre fondo oscuro */}
       <div className="relative h-28 sm:h-32 md:h-40 w-12 sm:w-14 md:w-18 overflow-hidden rounded-xl bg-gradient-to-b from-transparent via-[#0b1220]/80 to-[#0b1220] border border-blue-500/20 group-hover:border-emerald-400/80 shadow-2xl transition-all duration-300 group-hover:scale-105">
         {!imgError ? (

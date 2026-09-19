@@ -103,7 +103,7 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
     URL.revokeObjectURL(url);
   };
 
-  const buildExecutionReportHtml = (autoPrint = false) => {
+  const buildExecutionReportHtml = () => {
     const rows = executionProjects.map((project) => `
       <tr>
         <td class="code">${escapeHtml(project.code)}</td>
@@ -117,8 +117,6 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
 
     const generated = escapeHtml(new Date().toLocaleString('es-HN'));
     const size = paperSize === 'Letter' ? 'letter' : 'A4';
-    const printScript = autoPrint ? '<script>window.onload=()=>window.print();<\\/script>' : '';
-
     return `<!doctype html>
       <html lang="es"><head><meta charset="utf-8"><title>Reporte de proyectos en ejecución</title>
       <style>
@@ -151,7 +149,6 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
       <tbody>${rows || '<tr><td colspan="6">No hay proyectos en ejecución.</td></tr>'}</tbody></table>
       <div class="note"><b>Nota de control:</b> este reporte resume únicamente los datos disponibles en Control Contractual al momento de generarlo. Los documentos fuente y el expediente de cada proyecto prevalecen para revisión y firma.</div>
       <footer class="footer"><span>Control Contractual</span><span>Reporte de proyectos en ejecución</span><span>Uso administrativo</span></footer>
-      ${printScript}
       </body></html>`;
   };
 
@@ -159,12 +156,13 @@ export const ReportesView: React.FC<ReportesViewProps> = ({ projects, onOpenProj
     const popup = window.open('', '_blank');
     if (!popup) return;
     try { popup.opener = null; } catch {}
-    popup.document.write(buildExecutionReportHtml(true));
+    popup.onload = () => window.setTimeout(() => popup.print(), 160);
+    popup.document.write(buildExecutionReportHtml());
     popup.document.close();
   };
 
   const exportExecutionWord = () => {
-    const html = buildExecutionReportHtml(false);
+    const html = buildExecutionReportHtml();
     const blob = new Blob(['\uFEFF' + html], { type: 'application/msword;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');

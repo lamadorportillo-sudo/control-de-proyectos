@@ -1,0 +1,81 @@
+name: Import AI Studio source into frontend-v2
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout integration branch
+        uses: actions/checkout@v4
+        with:
+          ref: integracion-ai-studio
+          fetch-depth: 0
+
+      - name: Validate source archive exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f frontend-v2/source-aistudio.zip
+
+      - name: Extract source archive
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/aistudio
+          mkdir -p /tmp/aistudio
+          unzip -q -o frontend-v2/source-aistudio.zip -d /tmp/aistudio
+
+      - name: Copy only files that are still missing
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p frontend-v2/src/components/common frontend-v2/src/components/views
+
+          copy_if_missing() {
+            src="$1"
+            dst="$2"
+            if [ -f "$dst" ]; then
+              echo "Preservado: $dst"
+            elif [ -f "$src" ]; then
+              cp "$src" "$dst"
+              echo "Importado: $dst"
+            else
+              echo "No existe en el ZIP: $src"
+            fi
+          }
+
+          copy_if_missing /tmp/aistudio/src/components/common/ZordonAssistant.tsx frontend-v2/src/components/common/ZordonAssistant.tsx
+
+          for file in \
+            ProjectsView.tsx \
+            ModoCampoView.tsx \
+            DeficienciasView.tsx \
+            TransparenciaView.tsx \
+            DocumentosView.tsx \
+            SearchView.tsx \
+            ContratosView.tsx \
+            EstimacionesView.tsx \
+            ProjectExpedienteView.tsx \
+            GarantiasView.tsx \
+            ConfiguracionView.tsx \
+            InicioView.tsx
+          do
+            copy_if_missing "/tmp/aistudio/src/components/views/$file" "frontend-v2/src/components/views/$file"
+          done
+
+      - name: Commit only genuinely missing files
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend-v2/src/components/common frontend-v2/src/components/views
+          if git diff --cached --quiet; then
+            echo "No missing files to import"
+          else
+            git commit -m "Importa únicamente archivos faltantes de AI Studio"
+            git push origin HEAD:integracion-ai-studio
+          fi

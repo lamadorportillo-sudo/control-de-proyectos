@@ -3,6 +3,7 @@ import { ArrowLeft, FileText, Receipt, ShieldCheck, AlertOctagon, Camera, Wallet
 import type { Project, Contract, Estimate, Guarantee, Deficiency, DocumentEvidence, FieldVisit, AuditLog, AppModule } from '../../types.ts';
 import { formatLempiras, formatPercent, formatDateSpanish } from '../../services/calculationService.ts';
 import { downloadEvidenceFile, getEvidenceAccessUrl } from '../../services/evidenceAccessService.ts';
+import { ProjectReportView } from './ProjectReportView.tsx';
 
 interface ProjectExpedienteViewProps {
   project: Project;
@@ -18,8 +19,8 @@ interface ProjectExpedienteViewProps {
   initialTab?: string | null;
 }
 
-type TabId = 'resumen' | 'presupuesto' | 'contrato' | 'estimaciones' | 'garantias' | 'documentos' | 'visitas' | 'deficiencias' | 'historial';
-const tabIds: TabId[] = ['resumen', 'presupuesto', 'contrato', 'estimaciones', 'garantias', 'documentos', 'visitas', 'deficiencias', 'historial'];
+type TabId = 'resumen' | 'presupuesto' | 'contrato' | 'estimaciones' | 'garantias' | 'documentos' | 'visitas' | 'deficiencias' | 'historial' | 'informes';
+const tabIds: TabId[] = ['resumen', 'presupuesto', 'contrato', 'estimaciones', 'garantias', 'documentos', 'visitas', 'deficiencias', 'historial', 'informes'];
 const isTabId = (value: string | null | undefined): value is TabId => Boolean(value && tabIds.includes(value as TabId));
 
 export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
@@ -100,6 +101,8 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
     { id: 'historial', label: 'Historial / auditoría', count: projectHistory.length },
   ];
 
+  tabs.push({ id: 'informes', label: 'Informes' });
+
   return (
     <div className="mx-auto max-w-7xl space-y-4 pb-12">
       <div className="flex items-start gap-3">
@@ -126,6 +129,9 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
         </button>
         <button onClick={() => onNavigate('deficiencias', { projectId: project.id })} className="inline-flex items-center gap-1.5 rounded-lg bg-[#1b2735] px-3 py-2 text-xs font-semibold text-red-300 hover:bg-red-700 hover:text-white">
           <AlertOctagon className="h-3.5 w-3.5" /> Ver deficiencias
+        </button>
+        <button onClick={() => setTab('informes')} className="inline-flex items-center gap-1.5 rounded-lg border border-[#c5a367]/50 bg-[#3a3020] px-3 py-2 text-xs font-semibold text-[#f1e4c5] hover:bg-[#4b3e27]">
+          <FileText className="h-3.5 w-3.5" /> Generar informe
         </button>
       </div>
 
@@ -255,6 +261,19 @@ export const ProjectExpedienteView: React.FC<ProjectExpedienteViewProps> = ({
             ))}</div>
           )}
         </Section>
+      )}
+
+      {tab === 'informes' && (
+        <ProjectReportView
+          project={project}
+          contract={contract}
+          estimates={projectEstimates}
+          guarantees={projectGuarantees}
+          deficiencies={projectDeficiencies}
+          documents={projectDocuments}
+          visits={projectVisits}
+          auditLogs={projectHistory}
+        />
       )}
     </div>
   );

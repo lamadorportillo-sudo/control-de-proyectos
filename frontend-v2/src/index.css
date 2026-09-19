@@ -50,6 +50,28 @@ body {
   overscroll-behavior: none;
 }
 
+@keyframes zordon-float {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(0, -4px, 0) rotate(-1deg);
+  }
+}
+
+.zordon-idle {
+  animation: zordon-float 3.2s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zordon-idle,
+  .animate-ping,
+  .animate-spin {
+    animation: none !important;
+  }
+}
+
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }

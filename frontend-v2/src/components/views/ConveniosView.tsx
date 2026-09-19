@@ -18,10 +18,7 @@ export const ConveniosView: React.FC<ConveniosViewProps> = ({ documents, project
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [openError, setOpenError] = useState('');
 
-  const convenioDocs = useMemo(() => documents.filter((doc) => {
-    const typeLabel = norm(doc.typeLabel || '');
-    return doc.type === 'CONVENIO' || typeLabel === 'convenio' || typeLabel.startsWith('convenio ');
-  }), [documents]);
+  const convenioDocs = useMemo(() => documents.filter((doc) => doc.type === 'CONVENIO'), [documents]);
 
   const filtered = useMemo(() => {
     const q = norm(query.trim());
@@ -53,7 +50,7 @@ export const ConveniosView: React.FC<ConveniosViewProps> = ({ documents, project
           Convenios
         </h2>
         <p className="mt-1 text-xs text-slate-400">
-          Aquí solo aparecen documentos clasificados como convenio. No se mezclan contratos, actas ni documentos que únicamente mencionen la palabra “convenio”.
+          Solo se muestran documentos identificados como convenios interinstitucionales. Los contratos, adendas, fotografías y demás evidencias permanecen en su expediente correspondiente.
         </p>
       </div>
 

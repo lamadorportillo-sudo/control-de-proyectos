@@ -26,6 +26,7 @@ function evidenceType(type: string, mime: string): string {
   if (/acta/.test(t)) return 'act';
   if (/informe|reporte/.test(t)) return 'report';
   if (/convenio/.test(t)) return 'agreement';
+  if (/adenda|addendum|modificatorio/.test(t)) return 'contract_amendment';
   if (/orden.*pago/.test(t)) return 'payment_order';
   return 'document';
 }

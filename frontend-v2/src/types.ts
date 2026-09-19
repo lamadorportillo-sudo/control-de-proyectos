@@ -210,6 +210,7 @@ export type DocumentType =
   | 'ACTA'
   | 'AUDIO'
   | 'CONVENIO'
+  | 'ADENDA'
   | 'OTRO';
 
 export interface DocumentEvidence {

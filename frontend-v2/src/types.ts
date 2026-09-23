@@ -240,6 +240,7 @@ export interface DocumentEvidence {
 export interface FieldVisit {
   id: string;
   projectId: string;
+  visitNumber?: number;
   visitDate: string;
   inspectorName: string;
   progressReported: number;
@@ -247,6 +248,7 @@ export interface FieldVisit {
   weatherCondition: string;
   staffCount: number;
   equipmentOnSite: string;
+  photoCount?: number;
   gpsCoords?: {
     lat: number;
     lng: number;

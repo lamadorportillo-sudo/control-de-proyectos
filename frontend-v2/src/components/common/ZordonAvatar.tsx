@@ -133,7 +133,6 @@ const PREVIOUS_POSITION_KEY = 'control-contractual:zordon-position:v2';
 const LEGACY_VISIBILITY_KEY = 'control-contractual:zordon-visibility:v1';
 const EDGE = 14;
 const DRAG_THRESHOLD = 5;
-const INTERACTION_DISTANCE = 72;
 
 function visualViewportBox() {
   const visual = window.visualViewport;
@@ -317,6 +316,8 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
     setPose('standing');
     setMotion('walking');
     setPosition(next);
+    saveZordonPosition(next);
+    window.requestAnimationFrame(() => window.dispatchEvent(new Event(ZORDON_POSITION_EVENT)));
     if (nextPose !== 'working') finishWalk();
   }, [clampPosition, finishWalk, position, preferences]);
 
@@ -408,11 +409,6 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
   }, [clearTimers, pose, preferences.deskMode]);
 
   useEffect(() => {
-    if (!position) return;
-    saveZordonPosition(position);
-  }, [position]);
-
-  useEffect(() => {
     const move = (event: PointerEvent) => {
       const drag = dragRef.current;
       if (!drag || event.pointerId !== drag.pointerId) return;
@@ -429,6 +425,7 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
       if (event.clientX < drag.startX) setFacing('left');
       if (event.clientX > drag.startX) setFacing('right');
       setPosition(clampPosition({ left: event.clientX - drag.offsetX, top: event.clientY - drag.offsetY }, 'standing'));
+      window.requestAnimationFrame(() => window.dispatchEvent(new Event(ZORDON_POSITION_EVENT)));
       event.preventDefault();
     };
     const end = (event: PointerEvent) => {
@@ -437,7 +434,11 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
       dragRef.current = null;
       setIsDragging(false);
       document.body.style.removeProperty('user-select');
-      if (suppressClick.current) finishWalk();
+      if (suppressClick.current) {
+        const rect = launcherRef.current?.getBoundingClientRect();
+        if (rect) saveZordonPosition({ left: rect.left, top: rect.top });
+        finishWalk();
+      }
     };
     window.addEventListener('pointermove', move, { passive: false });
     window.addEventListener('pointerup', end);
@@ -456,12 +457,13 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
       if (!target || target.closest('#zordon-engineer-launcher-container')) return;
       if (!target.closest('button,input,textarea,select,a,[role="button"],[contenteditable="true"]')) return;
       const rect = launcherRef.current?.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
       if (!rect) return;
-      const nearLauncher = event.clientX >= rect.left - INTERACTION_DISTANCE
-        && event.clientX <= rect.right + INTERACTION_DISTANCE
-        && event.clientY >= rect.top - INTERACTION_DISTANCE
-        && event.clientY <= rect.bottom + INTERACTION_DISTANCE;
-      if (!nearLauncher) return;
+      const overlapsLauncher = rect.left < targetRect.right + 8
+        && rect.right > targetRect.left - 8
+        && rect.top < targetRect.bottom + 8
+        && rect.bottom > targetRect.top - 8;
+      if (!overlapsLauncher) return;
       if (avoidTimer.current) window.clearTimeout(avoidTimer.current);
       avoidTimer.current = window.setTimeout(() => {
         if (!dragRef.current) walkTo(quietPosition(position, 'standing', preferences));
@@ -481,7 +483,7 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
       const focused = target.getBoundingClientRect();
       if (!rect) return;
       const overlaps = rect.left < focused.right + 10 && rect.right > focused.left - 10 && rect.top < focused.bottom + 10 && rect.bottom > focused.top - 10;
-      if (overlaps && !isEditingField()) walkTo(quietPosition(position, 'standing', preferences));
+      if (overlaps) walkTo(quietPosition(position, 'standing', preferences));
     };
     document.addEventListener('pointermove', avoidActiveControl, { passive: true });
     document.addEventListener('focusin', avoidFocusedControl, true);
@@ -531,6 +533,44 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
     setPose('standing');
     setMotion('idle');
   }, [clearTimers, isPanelOpen]);
+
+  useEffect(() => {
+    if (!preferences.autonomousMovement || !preferences.avoidControls || !position || isPanelOpen || settingsOpen) return;
+    const overlapsCritical = () => {
+      if (dragRef.current || isEditingField()) return;
+      const launcher = launcherRef.current?.getBoundingClientRect();
+      if (!launcher) return;
+      const critical = Array.from(document.querySelectorAll('[data-zordon-critical],[role="dialog"],.modal.open,.modal[open],.modal-actions,.form-actions,.toast-actions,button,input,textarea,select,[role="button"]'))
+        .filter((element) => !element.closest('#zordon-engineer-launcher-container') && !element.closest('[data-zordon-chat-panel]'));
+      const blocked = critical.some((element) => {
+        const rect = element.getBoundingClientRect();
+        if (rect.width < 4 || rect.height < 4) return false;
+        return launcher.left < rect.right + 8 && launcher.right > rect.left - 8 && launcher.top < rect.bottom + 8 && launcher.bottom > rect.top - 8;
+      });
+      if (blocked) walkTo(quietPosition(position, 'standing', preferences));
+    };
+    const observer = new MutationObserver(() => {
+      if (avoidTimer.current) window.clearTimeout(avoidTimer.current);
+      avoidTimer.current = window.setTimeout(overlapsCritical, 100);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener('cc:route-changed', overlapsCritical as EventListener);
+    const initial = window.setTimeout(overlapsCritical, 180);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('cc:route-changed', overlapsCritical as EventListener);
+      window.clearTimeout(initial);
+    };
+  }, [isPanelOpen, position, preferences, settingsOpen, walkTo]);
+
+  useEffect(() => {
+    if (!settingsOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSettingsOpen(false);
+    };
+    document.addEventListener('keydown', closeOnEscape, true);
+    return () => document.removeEventListener('keydown', closeOnEscape, true);
+  }, [settingsOpen]);
 
   useEffect(() => () => clearTimers(), [clearTimers]);
 
@@ -675,7 +715,7 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
           </label>
           <label className="mb-3 block">
             <span className="flex items-center justify-between gap-2 font-semibold text-white">
-              <span>Modo trabajo</span><span className="text-emerald-300">{Math.round(preferences.workDelaySeconds / 60)} min</span>
+              <span>Modo trabajo</span><span className="text-emerald-300">{preferences.workDelaySeconds < 60 ? `${preferences.workDelaySeconds} s` : `${Math.round(preferences.workDelaySeconds / 60)} min`}</span>
             </span>
             <input
               type="range"

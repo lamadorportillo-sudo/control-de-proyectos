@@ -1,4 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  normalizeZordonPreferences,
+  readZordonPreferences,
+  type ZordonFigureSize,
+  type ZordonPreferences,
+  ZORDON_PREFERENCES_EVENT,
+  ZORDON_PREFERENCES_KEY,
+  ZORDON_POSITION_KEY,
+  ZORDON_REPOSITION_EVENT,
+} from '../../services/zordonPreferences.ts';
 
 const zordonAvatarSrc = `${import.meta.env.BASE_URL}engineer-assistant-avatar.png`;
 const zordonFullBodySrc = `${import.meta.env.BASE_URL}zordon-human-fullbody-v1.webp`;
@@ -48,7 +58,23 @@ interface FullBodyProps {
   pose?: ZordonPose;
   motion?: ZordonMotion;
   facing?: 'left' | 'right';
+  figureSize?: ZordonFigureSize;
 }
+
+const figureClasses: Record<ZordonFigureSize, Record<ZordonPose, string>> = {
+  compacto: {
+    standing: 'h-32 w-20 sm:h-36 sm:w-24 md:h-44 md:w-28',
+    working: 'h-32 w-24 sm:h-36 sm:w-28 md:h-40 md:w-32',
+  },
+  normal: {
+    standing: 'h-36 w-24 sm:h-44 sm:w-28 md:h-52 md:w-32',
+    working: 'h-36 w-28 sm:h-44 sm:w-32 md:h-48 md:w-36',
+  },
+  amplio: {
+    standing: 'h-40 w-28 sm:h-48 sm:w-32 md:h-56 md:w-36',
+    working: 'h-40 w-32 sm:h-48 sm:w-36 md:h-52 md:w-40',
+  },
+};
 
 export const EngineerFullBodyFigure: React.FC<FullBodyProps> = ({
   showStatusDot = true,
@@ -56,6 +82,7 @@ export const EngineerFullBodyFigure: React.FC<FullBodyProps> = ({
   pose = 'standing',
   motion = 'idle',
   facing = 'left',
+  figureSize = 'normal',
 }) => {
   const [imgError, setImgError] = useState(false);
   const isWorking = pose === 'working' && !imgError;
@@ -68,7 +95,7 @@ export const EngineerFullBodyFigure: React.FC<FullBodyProps> = ({
       data-zordon-facing={facing}
       className={`zordon-idle relative flex flex-col items-center select-none group ${className}`}
     >
-      <div className={`relative overflow-visible rounded-xl border border-blue-500/20 bg-gradient-to-b from-transparent via-[#0b1220]/20 to-[#0b1220]/80 shadow-2xl transition-all duration-300 group-hover:border-emerald-400/80 ${isWorking ? 'h-36 w-28 sm:h-44 sm:w-32 md:h-48 md:w-36' : 'h-36 w-24 sm:h-44 sm:w-28 md:h-52 md:w-32'}`}>
+      <div className={`relative overflow-visible rounded-xl border border-blue-500/20 bg-gradient-to-b from-transparent via-[#0b1220]/20 to-[#0b1220]/80 shadow-2xl transition-all duration-300 group-hover:border-emerald-400/80 ${figureClasses[figureSize][isWorking ? 'working' : 'standing']}`}>
         <img
           src={isWorking ? zordonDeskWorkSrc : (imgError ? zordonAvatarSrc : zordonFullBodySrc)}
           alt={isWorking ? 'ZORDON revisando planos en su mesa de trabajo' : 'ZORDON - Ingeniero Supervisor de cuerpo entero'}
@@ -98,16 +125,35 @@ interface ZordonLauncherProps {
 
 type Position = { left: number; top: number };
 
-const POSITION_KEY = 'control-contractual:zordon-position:v3';
 const PREVIOUS_POSITION_KEY = 'control-contractual:zordon-position:v2';
 const LEGACY_VISIBILITY_KEY = 'control-contractual:zordon-visibility:v1';
 const EDGE = 12;
-const WALK_DURATION = 980;
 const INTERACTION_DISTANCE = 150;
 
-const ZORDON_MOTION_CSS = `
+const launcherSizes: Record<ZordonFigureSize, Record<ZordonPose, { width: number; height: number }>> = {
+  compacto: {
+    standing: { width: 116, height: 202 },
+    working: { width: 136, height: 194 },
+  },
+  normal: {
+    standing: { width: 142, height: 236 },
+    working: { width: 160, height: 222 },
+  },
+  amplio: {
+    standing: { width: 164, height: 252 },
+    working: { width: 182, height: 240 },
+  },
+};
+
+const walkingDuration = (speed: ZordonPreferences['walkingSpeed']): number => ({
+  suave: 1480,
+  normal: 980,
+  rapido: 620,
+}[speed]);
+
+const zordonMotionCss = (duration: number) => `
   #zordon-engineer-launcher-container {
-    transition: left ${WALK_DURATION}ms cubic-bezier(.22,.82,.28,1), top ${WALK_DURATION}ms cubic-bezier(.22,.82,.28,1);
+    transition: left ${duration}ms cubic-bezier(.22,.82,.28,1), top ${duration}ms cubic-bezier(.22,.82,.28,1);
     will-change: left, top;
   }
   #zordon-engineer-launcher-container[data-zordon-dragging="true"] { transition: none; }
@@ -126,12 +172,12 @@ const ZORDON_MOTION_CSS = `
   }
 `;
 
-function launcherSize(pose: ZordonPose) {
-  return pose === 'working' ? { width: 160, height: 222 } : { width: 142, height: 236 };
+function launcherSize(pose: ZordonPose, figureSize: ZordonFigureSize) {
+  return launcherSizes[figureSize][pose];
 }
 
-function clampToViewport(next: Position, pose: ZordonPose, rect?: DOMRect | null): Position {
-  const fallback = launcherSize(pose);
+function clampToViewport(next: Position, pose: ZordonPose, figureSize: ZordonFigureSize, rect?: DOMRect | null): Position {
+  const fallback = launcherSize(pose, figureSize);
   const width = rect?.width || fallback.width;
   const height = rect?.height || fallback.height;
   return {
@@ -140,13 +186,17 @@ function clampToViewport(next: Position, pose: ZordonPose, rect?: DOMRect | null
   };
 }
 
-function viewportAnchor(pose: ZordonPose): Position {
-  const size = launcherSize(pose);
+function viewportAnchor(pose: ZordonPose, preferences: ZordonPreferences): Position {
+  const size = launcherSize(pose, preferences.figureSize);
   const mobile = window.innerWidth < 640;
+  const left = preferences.preferredDock === 'izquierda'
+    ? (mobile ? 8 : EDGE)
+    : window.innerWidth - size.width - (mobile ? 8 : 20);
+
   return clampToViewport({
-    left: window.innerWidth - size.width - (mobile ? 8 : 20),
+    left,
     top: mobile ? Math.max(70, window.innerHeight - size.height - 82) : Math.max(78, window.innerHeight - size.height - 22),
-  }, pose);
+  }, pose, preferences.figureSize);
 }
 
 function interactiveAt(x: number, y: number): boolean {
@@ -157,8 +207,8 @@ function interactiveAt(x: number, y: number): boolean {
   });
 }
 
-function quietPosition(from: Position, pose: ZordonPose): Position {
-  const size = launcherSize(pose);
+function quietPosition(from: Position, pose: ZordonPose, preferences: ZordonPreferences): Position {
+  const size = launcherSize(pose, preferences.figureSize);
   const header = document.querySelector('header')?.getBoundingClientRect();
   const sidebar = Array.from(document.querySelectorAll('aside,[role="navigation"]'))
     .map((element) => element.getBoundingClientRect())
@@ -171,7 +221,7 @@ function quietPosition(from: Position, pose: ZordonPose): Position {
     { left: window.innerWidth - size.width - EDGE, top: bottom },
     { left: leftLane, top: bottom },
     { left: leftLane, top },
-  ].map((candidate) => clampToViewport(candidate, pose));
+  ].map((candidate) => clampToViewport(candidate, pose, preferences.figureSize));
 
   return candidates
     .map((candidate) => {
@@ -185,11 +235,12 @@ function quietPosition(from: Position, pose: ZordonPose): Position {
       const distance = Math.hypot(candidate.left - from.left, candidate.top - from.top);
       return { candidate, score: blocked * 1000 - Math.min(distance, 320) / 16 };
     })
-    .sort((a, b) => a.score - b.score)[0]?.candidate || viewportAnchor(pose);
+    .sort((a, b) => a.score - b.score)[0]?.candidate || viewportAnchor(pose, preferences);
 }
 
 /** Lanzador permanente: se arrastra, camina al reubicarse y descansa revisando planos. */
 export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvailable = true, isPanelOpen = false }) => {
+  const [preferences, setPreferences] = useState<ZordonPreferences>(() => readZordonPreferences());
   const [position, setPosition] = useState<Position | null>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [pose, setPose] = useState<ZordonPose>('standing');
@@ -204,19 +255,23 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
   const idleTimer = useRef<number | undefined>(undefined);
   const avoidTimer = useRef<number | undefined>(undefined);
   const lastActivity = useRef(Date.now());
+  const preferencesRef = useRef(preferences);
+  const moveDuration = walkingDuration(preferences.walkingSpeed);
 
   const clearTimers = useCallback(() => {
     if (walkTimer.current) window.clearTimeout(walkTimer.current);
     if (workTimer.current) window.clearTimeout(workTimer.current);
     if (idleTimer.current) window.clearTimeout(idleTimer.current);
+    if (avoidTimer.current) window.clearTimeout(avoidTimer.current);
     walkTimer.current = undefined;
     workTimer.current = undefined;
     idleTimer.current = undefined;
+    avoidTimer.current = undefined;
   }, []);
 
   const clampPosition = useCallback((next: Position, nextPose: ZordonPose = pose) => (
-    clampToViewport(next, nextPose, launcherRef.current?.getBoundingClientRect())
-  ), [pose]);
+    clampToViewport(next, nextPose, preferences.figureSize, launcherRef.current?.getBoundingClientRect())
+  ), [pose, preferences.figureSize]);
 
   const rememberActivity = useCallback(() => {
     lastActivity.current = Date.now();
@@ -224,11 +279,11 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
 
   const finishWalk = useCallback((nextMotion: ZordonMotion = 'idle') => {
     if (walkTimer.current) window.clearTimeout(walkTimer.current);
-    walkTimer.current = window.setTimeout(() => setMotion(nextMotion), WALK_DURATION);
-  }, []);
+    walkTimer.current = window.setTimeout(() => setMotion(nextMotion), moveDuration);
+  }, [moveDuration]);
 
   const walkTo = useCallback((target: Position, nextPose: ZordonPose = 'standing') => {
-    const current = position || viewportAnchor(nextPose);
+    const current = position || viewportAnchor(nextPose, preferences);
     const next = clampPosition(target, nextPose);
     if (next.left > current.left) setFacing('right');
     if (next.left < current.left) setFacing('left');
@@ -236,27 +291,54 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
     setMotion('walking');
     setPosition(next);
     if (nextPose !== 'working') finishWalk();
-  }, [clampPosition, finishWalk, position]);
+  }, [clampPosition, finishWalk, position, preferences]);
 
   const startWorking = useCallback(() => {
-    if (!position || dragRef.current || isPanelOpen) return;
+    if (!preferences.autonomousMovement || !preferences.deskMode || !position || dragRef.current || isPanelOpen) return;
     clearTimers();
-    const target = quietPosition(position, 'working');
+    const target = quietPosition(position, 'working', preferences);
     walkTo(target, 'working');
     walkTimer.current = window.setTimeout(() => {
+      if (!preferencesRef.current.autonomousMovement || !preferencesRef.current.deskMode) {
+        setMotion('idle');
+        return;
+      }
       setPose('working');
       setMotion('working');
       workTimer.current = window.setTimeout(() => {
         setPose('standing');
-        walkTo(quietPosition(target, 'standing'));
-      }, 9000 + Math.round(Math.random() * 5000));
-    }, WALK_DURATION);
-  }, [clearTimers, isPanelOpen, position, walkTo]);
+        walkTo(quietPosition(target, 'standing', preferences));
+      }, preferences.workDurationSeconds * 1000);
+    }, moveDuration);
+  }, [clearTimers, isPanelOpen, moveDuration, position, preferences, walkTo]);
+
+  useEffect(() => {
+    preferencesRef.current = preferences;
+  }, [preferences]);
+
+  useEffect(() => {
+    const syncPreferences = (event: Event) => {
+      const detail = (event as CustomEvent<ZordonPreferences>).detail;
+      setPreferences(detail ? normalizeZordonPreferences(detail) : readZordonPreferences());
+    };
+    const syncStorage = (event: StorageEvent) => {
+      if (event.key === ZORDON_PREFERENCES_KEY) setPreferences(readZordonPreferences());
+    };
+    window.addEventListener(ZORDON_PREFERENCES_EVENT, syncPreferences);
+    window.addEventListener('storage', syncStorage);
+    return () => {
+      window.removeEventListener(ZORDON_PREFERENCES_EVENT, syncPreferences);
+      window.removeEventListener('storage', syncStorage);
+    };
+  }, []);
 
   useEffect(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem(POSITION_KEY) || 'null');
-      if (saved && Number.isFinite(saved.left) && Number.isFinite(saved.top)) setPosition(clampToViewport(saved, 'standing'));
+      const saved = JSON.parse(localStorage.getItem(ZORDON_POSITION_KEY) || 'null');
+      if (saved && Number.isFinite(saved.left) && Number.isFinite(saved.top)) {
+        const savedPreferences = readZordonPreferences();
+        setPosition(clampToViewport(saved, 'standing', savedPreferences.figureSize));
+      }
       // La configuración anterior podía dejar la figura centrada u oculta.
       // V3 inicia en una zona lateral y conserva solo las ubicaciones nuevas.
       localStorage.removeItem(PREVIOUS_POSITION_KEY);
@@ -266,16 +348,42 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
 
   useEffect(() => {
     const place = () => {
-      setPosition((current) => clampPosition(current || viewportAnchor(pose)));
+      setPosition((current) => clampPosition(current || viewportAnchor(pose, preferences)));
     };
     place();
     window.addEventListener('resize', place);
     return () => window.removeEventListener('resize', place);
-  }, [clampPosition, pose]);
+  }, [clampPosition, pose, preferences]);
+
+  useEffect(() => {
+    const returnToPreferredDock = () => {
+      clearTimers();
+      setPose('standing');
+      setFacing(preferences.preferredDock === 'izquierda' ? 'right' : 'left');
+      setPosition(viewportAnchor('standing', preferences));
+      if (preferences.autonomousMovement) {
+        setMotion('walking');
+        finishWalk();
+      } else {
+        setMotion('idle');
+      }
+    };
+    window.addEventListener(ZORDON_REPOSITION_EVENT, returnToPreferredDock);
+    return () => window.removeEventListener(ZORDON_REPOSITION_EVENT, returnToPreferredDock);
+  }, [clearTimers, finishWalk, preferences]);
+
+  useEffect(() => {
+    if (preferences.autonomousMovement && preferences.deskMode) return;
+    if (pose === 'working') {
+      clearTimers();
+      setPose('standing');
+      setMotion('idle');
+    }
+  }, [clearTimers, pose, preferences.autonomousMovement, preferences.deskMode]);
 
   useEffect(() => {
     if (!position) return;
-    try { localStorage.setItem(POSITION_KEY, JSON.stringify(position)); } catch { /* ignore */ }
+    try { localStorage.setItem(ZORDON_POSITION_KEY, JSON.stringify(position)); } catch { /* ignore */ }
   }, [position]);
 
   useEffect(() => {
@@ -283,7 +391,12 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
       const drag = dragRef.current;
       if (!drag || event.pointerId !== drag.pointerId) return;
       if (!drag.moved && Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) < 6) return;
-      drag.moved = true;
+      if (!drag.moved) {
+        drag.moved = true;
+        setIsDragging(true);
+        launcherRef.current?.setPointerCapture?.(event.pointerId);
+        document.body.style.setProperty('user-select', 'none');
+      }
       rememberActivity();
       setPose('standing');
       setMotion('walking');
@@ -298,7 +411,7 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
       dragRef.current = null;
       setIsDragging(false);
       document.body.style.removeProperty('user-select');
-      finishWalk();
+      if (suppressClick.current) finishWalk();
     };
     window.addEventListener('pointermove', move, { passive: false });
     window.addEventListener('pointerup', end);
@@ -312,7 +425,7 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
 
   useEffect(() => {
     const avoidActiveControl = (event: PointerEvent) => {
-      if (dragRef.current || isPanelOpen || !position) return;
+      if (!preferences.autonomousMovement || !preferences.avoidControls || dragRef.current || isPanelOpen || !position) return;
       const target = event.target as Element | null;
       if (!target || target.closest('#zordon-engineer-launcher-container')) return;
       if (!target.closest('button,input,textarea,select,a,[role="button"],[contenteditable="true"]')) return;
@@ -325,13 +438,13 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
       if (!nearLauncher) return;
       if (avoidTimer.current) window.clearTimeout(avoidTimer.current);
       avoidTimer.current = window.setTimeout(() => {
-        if (!dragRef.current) walkTo(quietPosition(position, 'standing'));
+        if (!dragRef.current) walkTo(quietPosition(position, 'standing', preferences));
       }, 180);
     };
     const keepInFrame = () => {
       if (avoidTimer.current) window.clearTimeout(avoidTimer.current);
       avoidTimer.current = window.setTimeout(() => {
-        setPosition((current) => current ? clampPosition(current) : viewportAnchor(pose));
+        setPosition((current) => current ? clampPosition(current) : viewportAnchor(pose, preferences));
       }, 220);
     };
     document.addEventListener('pointermove', avoidActiveControl, { passive: true });
@@ -341,23 +454,25 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
       window.removeEventListener('scroll', keepInFrame, true);
       if (avoidTimer.current) window.clearTimeout(avoidTimer.current);
     };
-  }, [clampPosition, isPanelOpen, pose, position, walkTo]);
+  }, [clampPosition, isPanelOpen, pose, position, preferences, walkTo]);
 
   useEffect(() => {
-    if (!position || isPanelOpen || pose === 'working' || motion === 'walking') return;
-    const scheduleBreak = () => {
+    if (!preferences.autonomousMovement || !preferences.deskMode || !position || isPanelOpen || pose === 'working' || motion === 'walking') return;
+    const delay = preferences.workDelaySeconds * 1000;
+    const scheduleBreak = (wait: number = delay) => {
       if (idleTimer.current) window.clearTimeout(idleTimer.current);
       idleTimer.current = window.setTimeout(() => {
-        if (dragRef.current || isPanelOpen || Date.now() - lastActivity.current < 16000) {
-          scheduleBreak();
+        const remaining = delay - (Date.now() - lastActivity.current);
+        if (dragRef.current || isPanelOpen || remaining > 0) {
+          scheduleBreak(Math.max(1000, remaining));
           return;
         }
         startWorking();
-      }, 10000 + Math.round(Math.random() * 5000));
+      }, wait);
     };
     scheduleBreak();
     return () => { if (idleTimer.current) window.clearTimeout(idleTimer.current); };
-  }, [isPanelOpen, motion, position, pose, startWorking]);
+  }, [isPanelOpen, motion, position, pose, preferences.autonomousMovement, preferences.deskMode, preferences.workDelaySeconds, startWorking]);
 
   useEffect(() => {
     if (!isPanelOpen) return;
@@ -372,6 +487,7 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
     if (event.button !== 0) return;
     const rect = launcherRef.current?.getBoundingClientRect();
     if (!rect) return;
+    event.stopPropagation();
     clearTimers();
     rememberActivity();
     dragRef.current = {
@@ -382,9 +498,6 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
       startY: event.clientY,
       moved: false,
     };
-    setIsDragging(true);
-    (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
-    document.body.style.setProperty('user-select', 'none');
   };
 
   const open = () => {
@@ -399,7 +512,13 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
     onOpen();
   };
 
-  const status = pose === 'working' ? 'Revisando planos' : motion === 'walking' ? 'Caminando a una zona libre' : 'Arrastra para mover · clic para consultar';
+  const status = pose === 'working'
+    ? 'Revisando planos'
+    : motion === 'walking'
+      ? 'Caminando a una zona libre'
+      : preferences.autonomousMovement
+        ? 'Arrastra para mover · clic para consultar'
+        : 'Ubicación manual · clic para consultar';
 
   return (
     <div
@@ -409,11 +528,12 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
       data-zordon-pose={pose}
       data-zordon-motion={motion}
       data-zordon-dragging={isDragging ? 'true' : 'false'}
+      data-zordon-autonomous={preferences.autonomousMovement ? 'true' : 'false'}
       onPointerDown={startDrag}
       className="fixed z-[90] select-none pointer-events-auto"
       style={{ left: position?.left ?? 'auto', top: position?.top ?? 76, right: position ? 'auto' : 16, bottom: 'auto', touchAction: 'none' }}
     >
-      <style>{ZORDON_MOTION_CSS}</style>
+      <style>{zordonMotionCss(moveDuration)}</style>
       <button
         type="button"
         data-zordon-control="open"
@@ -428,7 +548,13 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
           <span className="text-xs font-bold tracking-wide">ZORDON · Asistente Oficial</span>
           <span className="text-[10px] text-slate-400">{status}</span>
         </div>
-        <EngineerFullBodyFigure showStatusDot={isAvailable} pose={pose} motion={motion} facing={facing} />
+        <EngineerFullBodyFigure
+          showStatusDot={isAvailable}
+          pose={pose}
+          motion={motion}
+          facing={facing}
+          figureSize={preferences.figureSize}
+        />
       </button>
     </div>
   );

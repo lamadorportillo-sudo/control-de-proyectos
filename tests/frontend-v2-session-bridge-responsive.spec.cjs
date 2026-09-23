@@ -270,6 +270,39 @@ test('ZORDON se reubica al arrastrarlo sin abrirse ni salirse de la pantalla', a
   expect(saved).toMatch(/"left"/);
 });
 
+test('Configuración de ZORDON actualiza sus preferencias y permite reubicarlo', async ({ page }) => {
+  const token = makeJwt();
+  const capture = { token, restRequests: 0 };
+
+  await seedProductionSession(page, token);
+  await mockSupabase(page, capture);
+  await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
+
+  await page.locator('#nav-item-configuracion').click();
+  await expect(page.getByRole('heading', { name: /ZORDON · presencia y movimiento/i })).toBeVisible();
+  await expect(page.getByText('Visible en todo momento')).toBeVisible();
+
+  const autonomous = page.getByLabel('Movimiento autónomo');
+  await autonomous.uncheck();
+  await expect(page.getByLabel('Evitar controles cercanos')).toBeDisabled();
+  await expect(page.locator('#zordon-engineer-launcher-container')).toHaveAttribute('data-zordon-autonomous', 'false');
+
+  await autonomous.check();
+  await page.getByLabel('Ritmo al caminar de ZORDON').selectOption('rapido');
+  await page.getByLabel('Lado preferido de ZORDON').selectOption('izquierda');
+  await page.getByRole('button', { name: 'Amplio' }).click();
+  await page.getByRole('button', { name: 'Reubicar ahora' }).click();
+
+  const preferences = await page.evaluate(() => JSON.parse(localStorage.getItem('control-contractual:zordon-preferences:v1') || '{}'));
+  expect(preferences).toMatchObject({
+    autonomousMovement: true,
+    walkingSpeed: 'rapido',
+    preferredDock: 'izquierda',
+    figureSize: 'amplio',
+  });
+  await expect(page.getByText(/volvió al lado izquierda sin ocultarse/i)).toBeVisible();
+});
+
 test('Telegram Mini App activa automáticamente el entorno Telegram', async ({ page }) => {
   const token = makeJwt();
   const capture = { token, restRequests: 0 };

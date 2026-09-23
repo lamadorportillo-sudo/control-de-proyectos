@@ -1,5 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 
+const zordonAvatarSrc = `${import.meta.env.BASE_URL}engineer-assistant-avatar.png`;
+const zordonFullBodySrc = `${import.meta.env.BASE_URL}zordon-human-fullbody-v1.webp`;
+
 interface ZordonAvatarProps {
   size?: number;
   showStatusDot?: boolean;
@@ -17,7 +20,7 @@ export const EngineerFigure: React.FC<ZordonAvatarProps> = ({
     <div className={`relative inline-block select-none shrink-0 ${className}`} style={{ width: size, height: size }}>
       <div className="w-full h-full rounded-full overflow-hidden border-2 border-blue-500/70 shadow-md bg-[#0e1726]">
         <img
-          src="/control-de-proyectos/engineer-assistant-avatar.png"
+          src={zordonAvatarSrc}
           alt="ZORDON - Ingeniero Supervisor"
           referrerPolicy="no-referrer"
           className="w-full h-full object-cover object-[50%_6%] scale-[2.2]"
@@ -47,10 +50,10 @@ export const EngineerFullBodyFigure: React.FC<FullBodyProps> = ({ showStatusDot 
     <div className={`zordon-idle relative flex flex-col items-center select-none group ${className}`}>
       <div className="relative h-36 w-24 sm:h-44 sm:w-28 md:h-52 md:w-32 overflow-visible rounded-xl border border-blue-500/20 bg-gradient-to-b from-transparent via-[#0b1220]/20 to-[#0b1220]/80 shadow-2xl transition-all duration-300 group-hover:border-emerald-400/80">
         <img
-          src={imgError ? '/control-de-proyectos/engineer-assistant-avatar.png' : '/control-de-proyectos/zordon-human-fullbody-v1.webp'}
+          src={imgError ? zordonAvatarSrc : zordonFullBodySrc}
           alt="ZORDON - Ingeniero Supervisor de cuerpo entero"
           referrerPolicy="no-referrer"
-          className={imgError ? 'h-full w-full rounded-xl object-cover object-top' : 'h-full w-full object-contain object-bottom'}
+          className={imgError ? 'h-full w-full rounded-xl object-cover object-top' : 'h-full w-full object-contain object-bottom animate-pulse'}
           onError={() => setImgError(true)}
         />
         {showStatusDot && (
@@ -74,16 +77,14 @@ interface ZordonLauncherProps {
 
 type Position = { left: number; top: number };
 const POSITION_KEY = 'control-contractual:zordon-position:v2';
-const VISIBILITY_KEY = 'control-contractual:zordon-visibility:v1';
+const LEGACY_VISIBILITY_KEY = 'control-contractual:zordon-visibility:v1';
 const EDGE = 8;
 
-/** Launcher arrastrable, con posición persistente y controles accesibles. */
+/** Launcher permanente, arrastrable y con posición persistente. */
 export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvailable = true }) => {
   const [position, setPosition] = useState<Position | null>(null);
-  const [isMinimized, setIsMinimized] = useState(false);
-  const [isClosed, setIsClosed] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const dragRef = useRef<{ pointerId: number; offsetX: number; offsetY: number; moved: boolean } | null>(null);
+  const dragRef = useRef<{ pointerId: number; offsetX: number; offsetY: number; startX: number; startY: number; moved: boolean } | null>(null);
   const suppressClick = useRef(false);
   const launcherRef = useRef<HTMLDivElement>(null);
 
@@ -100,10 +101,10 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(POSITION_KEY) || 'null');
-      const hidden = localStorage.getItem(VISIBILITY_KEY);
       if (saved && Number.isFinite(saved.left) && Number.isFinite(saved.top)) setPosition(saved);
-      if (hidden === 'minimized') setIsMinimized(true);
-      if (hidden === 'closed') setIsClosed(true);
+      // ZORDON debe permanecer visible. Limpia estados antiguos que lo dejaban
+      // reducido a una letra o completamente oculto.
+      localStorage.removeItem(LEGACY_VISIBILITY_KEY);
     } catch { /* storage can be unavailable in private browsing */ }
   }, []);
 
@@ -117,7 +118,7 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
     place();
     window.addEventListener('resize', place);
     return () => window.removeEventListener('resize', place);
-  }, [isMinimized, isClosed]);
+  }, []);
 
   useEffect(() => {
     if (!position) return;
@@ -128,6 +129,7 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
     const move = (event: PointerEvent) => {
       const drag = dragRef.current;
       if (!drag || event.pointerId !== drag.pointerId) return;
+      if (!drag.moved && Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) < 6) return;
       drag.moved = true;
       setPosition(clampPosition({ left: event.clientX - drag.offsetX, top: event.clientY - drag.offsetY }));
       event.preventDefault();
@@ -149,57 +151,31 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
   }, []);
 
   const startDrag = (event: React.PointerEvent<HTMLDivElement>) => {
-    if ((event.target as HTMLElement).closest('button[data-zordon-control]')) return;
+    if (event.button !== 0) return;
     const rect = launcherRef.current?.getBoundingClientRect();
     if (!rect) return;
-    dragRef.current = { pointerId: event.pointerId, offsetX: event.clientX - rect.left, offsetY: event.clientY - rect.top, moved: false };
-    event.currentTarget.setPointerCapture?.(event.pointerId);
+    dragRef.current = { pointerId: event.pointerId, offsetX: event.clientX - rect.left, offsetY: event.clientY - rect.top, startX: event.clientX, startY: event.clientY, moved: false };
+    (event.target as HTMLElement).setPointerCapture?.(event.pointerId);
     document.body.style.setProperty('user-select', 'none');
   };
 
-  const persistVisibility = (value: string | null) => {
-    try { value ? localStorage.setItem(VISIBILITY_KEY, value) : localStorage.removeItem(VISIBILITY_KEY); } catch { /* ignore */ }
-  };
   const open = () => {
     if (suppressClick.current) { suppressClick.current = false; return; }
     onOpen();
   };
-  const restore = () => { setIsClosed(false); persistVisibility(null); };
-
-  if (isClosed) {
-    return (
-      <button type="button" data-zordon-control="restore" onClick={restore} aria-label="Mostrar ZORDON" title="Mostrar ZORDON"
-        className="fixed top-20 right-3 md:top-20 md:right-4 z-[45] rounded-full border border-emerald-500/50 bg-[#0e1726] px-2 py-1 text-[10px] font-bold text-emerald-300 shadow-xl pointer-events-auto">
-        Z
-      </button>
-    );
-  }
 
   return (
     <div ref={launcherRef} id="zordon-engineer-launcher-container" onPointerDown={startDrag}
-      className={`fixed z-[45] select-none pointer-events-auto ${isMinimized ? 'w-auto' : ''}`}
+      className="fixed z-[90] select-none pointer-events-auto"
       style={{ left: position?.left ?? 'auto', top: position?.top ?? 76, right: position ? 'auto' : 16, bottom: 'auto', touchAction: 'none' }}>
-      {isMinimized ? (
-        <button type="button" data-zordon-control="restore" onClick={() => { setIsMinimized(false); persistVisibility(null); }} aria-label="Expandir ZORDON"
-          className="rounded-full border border-emerald-500/50 bg-[#0e1726] px-2 py-1 text-[10px] font-bold text-emerald-300 shadow-xl">ZORDON</button>
-      ) : (
-        <div className="relative">
-          <button type="button" data-zordon-control="open" onClick={open} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}
-            className="group relative flex items-center rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400/80" aria-label="Abrir ZORDON" title="ZORDON - Asistente Técnico y Supervisión de Obras">
-            <div className={`hidden md:flex flex-col items-start absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-xl bg-[#0f172a] border border-emerald-500/40 text-white shadow-2xl whitespace-nowrap z-50 pointer-events-none transition-opacity ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-              <span className="text-xs font-bold tracking-wide">ZORDON · Asistente Oficial</span>
-              <span className="text-[10px] text-slate-400">Arrastra para mover · clic para consultar</span>
-            </div>
-            <EngineerFullBodyFigure showStatusDot={isAvailable} />
-          </button>
-          <div className="absolute -right-1 -top-1 z-30 flex gap-1">
-            <button type="button" data-zordon-control="minimize" onClick={() => { setIsMinimized(true); persistVisibility('minimized'); }} aria-label="Minimizar ZORDON" title="Minimizar"
-              className="h-5 w-5 rounded-full border border-slate-500/70 bg-[#0b1220] text-[11px] leading-none text-slate-200 shadow pointer-events-auto">−</button>
-            <button type="button" data-zordon-control="close" onClick={() => { setIsClosed(true); persistVisibility('closed'); }} aria-label="Cerrar ZORDON temporalmente" title="Cerrar temporalmente"
-              className="h-5 w-5 rounded-full border border-red-400/60 bg-[#0b1220] text-[11px] leading-none text-red-200 shadow pointer-events-auto">×</button>
-          </div>
+      <button type="button" data-zordon-control="open" onClick={open} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}
+        className="group relative flex items-center rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400/80" aria-label="Abrir ZORDON" title="ZORDON - Asistente Técnico y Supervisión de Obras">
+        <div className={`hidden md:flex flex-col items-start absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-xl bg-[#0f172a] border border-emerald-500/40 text-white shadow-2xl whitespace-nowrap z-50 pointer-events-none transition-opacity ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+          <span className="text-xs font-bold tracking-wide">ZORDON · Asistente Oficial</span>
+          <span className="text-[10px] text-slate-400">Arrastra para mover · clic para consultar</span>
         </div>
-      )}
+        <EngineerFullBodyFigure showStatusDot={isAvailable} />
+      </button>
     </div>
   );
 };

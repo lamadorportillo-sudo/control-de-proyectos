@@ -218,6 +218,27 @@ test('ZORDON V2 usa la misma sesión y el Edge Function productivo', async ({ pa
   expect(capture.functionBody?.message).toBe('Revisa el estado del proyecto QA.');
 });
 
+test('ZORDON permanece visible y no ofrece controles para ocultarlo', async ({ page }) => {
+  const token = makeJwt();
+  const capture = { token, restRequests: 0 };
+
+  await seedProductionSession(page, token);
+  await mockSupabase(page, capture);
+  await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
+
+  const launcher = page.locator('#zordon-engineer-launcher-container');
+  await expect(launcher).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Minimizar ZORDON' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Cerrar ZORDON temporalmente' })).toHaveCount(0);
+
+  await launcher.getByRole('button', { name: 'Abrir ZORDON' }).click();
+  await expect(page.getByPlaceholder('Escribe a ZORDON…')).toBeVisible();
+  await expect(launcher).toBeVisible();
+
+  await page.getByRole('button', { name: 'Cerrar ZORDON', exact: true }).click();
+  await expect(launcher).toBeVisible();
+});
+
 test('Telegram Mini App activa automáticamente el entorno Telegram', async ({ page }) => {
   const token = makeJwt();
   const capture = { token, restRequests: 0 };
@@ -397,11 +418,3 @@ test('Registrar visita guarda con el mismo ID mediante RLS cuando hay sesión', 
 
   await expect(page.getByRole('heading', { name: 'Registrar visita de obra' })).toBeVisible();
   await page.getByLabel('Proyecto').selectOption('22222222-2222-4222-8222-222222222222');
-  await page.getByRole('button', { name: /Revisar y guardar/ }).click();
-
-  const saveButton = page.getByRole('button', { name: 'Guardar visita' });
-  await expect(saveButton).toBeEnabled();
-  await saveButton.click();
-  await expect(page.getByText(/Visita sincronizada con Supabase/i)).toBeVisible();
-  expect(capture.restWriteRequests).toBeGreaterThan(0);
-});

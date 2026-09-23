@@ -27,6 +27,7 @@ import {
   saveZordonPreferences,
   type ZordonPreferences,
   ZORDON_PREFERENCES_EVENT,
+  ZORDON_PREFERENCES_KEY,
 } from '../../services/zordonPreferences.ts';
 
 export const ConfiguracionView: React.FC = () => {
@@ -49,7 +50,7 @@ export const ConfiguracionView: React.FC = () => {
       setZordonPreferences(detail || readZordonPreferences());
     };
     const syncStorage = (event: StorageEvent) => {
-      if (event.key?.startsWith('control-contractual:zordon-')) setZordonPreferences(readZordonPreferences());
+      if (event.key === ZORDON_PREFERENCES_KEY) setZordonPreferences(readZordonPreferences());
     };
     window.addEventListener(ZORDON_PREFERENCES_EVENT, syncPreferences);
     window.addEventListener('storage', syncStorage);
@@ -123,29 +124,29 @@ export const ConfiguracionView: React.FC = () => {
             />
             <ZordonStatus
               label="Movimiento"
-              value={zordonPreferences.autonomousMovement ? 'Autónomo y manual' : 'Solo manual'}
-              detail={zordonPreferences.autonomousMovement ? 'Camina a espacios más libres cuando es necesario.' : 'Solo se mueve cuando lo arrastras.'}
+              value={zordonPreferences.autonomousMovement ? 'Inteligente y manual' : 'Solo manual'}
+              detail={zordonPreferences.autonomousMovement ? 'Solo se aparta cuando cubre un control importante.' : 'Solo se mueve cuando lo arrastras.'}
               icon={<Move className="h-4 w-4 text-blue-400" />}
             />
             <ZordonStatus
               label="Pausa de planos"
-              value={zordonPreferences.deskMode && zordonPreferences.autonomousMovement ? 'Activa' : 'Desactivada'}
-              detail={zordonPreferences.deskMode && zordonPreferences.autonomousMovement ? 'Puede sentarse temporalmente a trabajar.' : 'Se mantiene de pie hasta que cambies el ajuste.'}
+              value={zordonPreferences.deskMode ? 'Activa' : 'Desactivada'}
+              detail={zordonPreferences.deskMode ? 'Puede revisar planos después de inactividad real de la página.' : 'Se mantiene de pie hasta que cambies el ajuste.'}
               icon={<Armchair className="h-4 w-4 text-amber-400" />}
             />
           </div>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <ZordonToggle
-              title="Movimiento autónomo"
-              description="Además de arrastrarlo manualmente, ZORDON puede caminar hacia una zona lateral libre."
+              title="Movimiento inteligente"
+              description="Además de arrastrarlo manualmente, ZORDON solo se reubica si está cubriendo una acción importante."
               icon={<Move className="h-4 w-4" />}
               checked={zordonPreferences.autonomousMovement}
               onChange={(checked) => updateZordon({ autonomousMovement: checked })}
             />
             <ZordonToggle
               title="Evitar controles cercanos"
-              description="Si el cursor llega a un botón, campo o enlace junto a ZORDON, se aparta para no estorbar."
+              description="Si ZORDON cubre un botón, campo, menú o acción importante, se aparta sin interrumpir la escritura."
               icon={<Route className="h-4 w-4" />}
               checked={zordonPreferences.avoidControls}
               disabled={!zordonPreferences.autonomousMovement}
@@ -153,10 +154,9 @@ export const ConfiguracionView: React.FC = () => {
             />
             <ZordonToggle
               title="Modo de trabajo con planos"
-              description="Después de un tiempo sin interactuar con él, puede sacar su mesa compacta y revisar planos."
+              description="Después de un tiempo sin actividad en la página, puede revisar planos sin desplazarse innecesariamente."
               icon={<Armchair className="h-4 w-4" />}
               checked={zordonPreferences.deskMode}
-              disabled={!zordonPreferences.autonomousMovement}
               onChange={(checked) => updateZordon({ deskMode: checked })}
             />
             <div className="rounded-lg border border-[#243247] bg-[#0b1220] p-4">
@@ -172,7 +172,7 @@ export const ConfiguracionView: React.FC = () => {
 
           <div className="grid grid-cols-1 gap-4 rounded-xl border border-[#243247] bg-[#0b1220] p-4 sm:grid-cols-2">
             <label className="block">
-              <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400"><Gauge className="h-3.5 w-3.5 text-blue-400" /> Ritmo al caminar</span>
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400"><Gauge className="h-3.5 w-3.5 text-blue-400" /> Velocidad al apartarse</span>
               <select
                 aria-label="Ritmo al caminar de ZORDON"
                 value={zordonPreferences.walkingSpeed}
@@ -204,11 +204,11 @@ export const ConfiguracionView: React.FC = () => {
               label="Tiempo antes de trabajar con planos"
               description="Sin interacción con ZORDON"
               value={zordonPreferences.workDelaySeconds}
-              min={15}
-              max={90}
-              step={5}
+              min={30}
+              max={600}
+              step={30}
               unit="s"
-              disabled={!zordonPreferences.autonomousMovement || !zordonPreferences.deskMode}
+              disabled={!zordonPreferences.deskMode}
               onChange={(value) => updateZordon({ workDelaySeconds: value })}
             />
             <ZordonRange

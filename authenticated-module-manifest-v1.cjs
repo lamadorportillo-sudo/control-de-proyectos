@@ -89,7 +89,7 @@ const supplementalModules=[
      desde este plan para impedir versiones históricas o cargadores secundarios.
      Los identificadores 20260914 fuerzan al navegador a abandonar las copias
      antiguas que producían respuestas locales y tono incorrecto. */
-  ['zordon-continuous-runtime-v1.js','20260914-zordon6human'],
+  ['zordon-continuous-runtime-v1.js','20260922-zordon7context'],
   ['zordon-project-search-v1.js','20260908-zordonsearch7'],
   /* Coordina Enter en la búsqueda superior con el motor normalizado de ZORDON,
      preserva la consulta visible tras el rerender y refresca decoraciones. */
@@ -142,7 +142,7 @@ const buildOnlyModules=[
   ['adaptive-chat-learning-v1.js','20260822-global1'],
   ['halu-page-controller-v1.js','20260824-control1'],
   ['engineer-chatbot-v3.js','20260913-ai6'],
-  ['halu-avatar-motion-v1.js','20260915-place14'],
+  ['zordon-presence-v4.js','20260922-presence4'],
 ];
 
 /* Orden exacto de inyección del constructor. Los módulos retirados no aparecen
@@ -183,7 +183,7 @@ const buildLateOrder=[
   'adaptive-chat-learning-v1.js',
   'halu-page-controller-v1.js',
   'engineer-chatbot-v3.js',
-  'halu-avatar-motion-v1.js',
+  'zordon-presence-v4.js',
   'transparency-portal-v1.js',
   'photo-gallery-polish-v2.js',
   'ui-theme-unifier-v1.js',

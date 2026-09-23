@@ -219,7 +219,7 @@ export const ConfiguracionView: React.FC = () => {
               max={30}
               step={1}
               unit="s"
-              disabled={!zordonPreferences.autonomousMovement || !zordonPreferences.deskMode}
+              disabled={!zordonPreferences.deskMode}
               onChange={(value) => updateZordon({ workDurationSeconds: value })}
             />
           </div>

@@ -422,10 +422,15 @@ export default function App() {
     }
   };
 
-  const context = useMemo(
-    () => `Módulo activo: ${currentModule}. Proyectos cargados: ${projects.length}. Contratos: ${contracts.length}. Estimaciones: ${estimates.length}. Garantías: ${guarantees.length}. Visitas: ${visits.length}. Documentos/evidencias: ${documents.length}.`,
-    [currentModule, projects.length, contracts.length, estimates.length, guarantees.length, visits.length, documents.length]
-  );
+  const context = useMemo(() => {
+    const visibleProject = selectedProject
+      ? ` Proyecto visible: ${selectedProject.name || 'Sin nombre'}${selectedProject.code ? ` · código ${selectedProject.code}` : ''}${selectedProject.location ? ` · ubicación ${selectedProject.location}` : ''}.`
+      : moduleProjectId
+        ? ` Proyecto vinculado al módulo: ${moduleProjectId}.`
+        : '';
+    const visibleTab = selectedProjectTab ? ` Pestaña visible del expediente: ${selectedProjectTab}.` : '';
+    return `Módulo activo: ${currentModule}.${visibleProject}${visibleTab} Proyectos cargados: ${projects.length}. Contratos: ${contracts.length}. Estimaciones: ${estimates.length}. Garantías: ${guarantees.length}. Visitas: ${visits.length}. Documentos/evidencias: ${documents.length}.`;
+  }, [currentModule, selectedProject, selectedProjectTab, moduleProjectId, projects.length, contracts.length, estimates.length, guarantees.length, visits.length, documents.length]);
 
   const viewportClass = viewportMode === 'desktop'
     ? 'w-full min-h-[100dvh]'

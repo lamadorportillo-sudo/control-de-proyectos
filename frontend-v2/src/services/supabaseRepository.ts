@@ -845,21 +845,42 @@ export class SupabaseDataRepository implements IDataRepository {
 
   async getFieldVisits(projectId?: string): Promise<FieldVisit[]> {
     const workspaceId = await this.getWorkspaceId();
-    let query = this.client()
+
+    // Fuente preferida: vista liviana, para no descargar fotografías base64.
+    let viewQuery = this.client()
       .from('visit_list_v1')
       .select('id,workspace_id,project_id,visit_number,visit_date,inspector,summary,raw_progress_reported,raw_physical_progress,raw_weather_condition,raw_staff_count,raw_equipment_on_site,raw_gps_coords,raw_audio_notes,raw_deficiencies_created,raw_photo_count,created_at,voided_at')
       .is('voided_at', null)
       .order('visit_date', { ascending: false })
       .order('visit_number', { ascending: false });
-    if (workspaceId) query = query.eq('workspace_id', workspaceId);
-    if (projectId) query = query.eq('project_id', projectId);
-    const { data, error } = await query;
-    if (error) throw error;
+    if (workspaceId) viewQuery = viewQuery.eq('workspace_id', workspaceId);
+    if (projectId) viewQuery = viewQuery.eq('project_id', projectId);
 
-    // La vista evita descargar fotografías base64 incrustadas en raw_data.
-    // Para visitas, el ID es la identidad canónica: dos inspecciones del mismo
-    // proyecto, fecha e inspector siguen siendo registros distintos.
-    return uniqueRows(data || []).map(mapVisit);
+    const viewResult = await viewQuery;
+    if (!viewResult.error && (viewResult.data?.length || 0) > 0) {
+      return uniqueRows(viewResult.data || []).map(mapVisit);
+    }
+
+    // Respaldo canónico: si la vista todavía no está disponible, queda
+    // desactualizada o devuelve cero filas por una publicación parcial,
+    // consultar directamente public.visits. Los reportes de supervisión
+    // nacen de estos registros, por lo que esta tabla es la fuente de verdad.
+    let tableQuery = this.client()
+      .from('visits')
+      .select('id,workspace_id,project_id,visit_number,visit_date,inspector,summary,raw_data,created_at,voided_at')
+      .is('voided_at', null)
+      .order('visit_date', { ascending: false })
+      .order('visit_number', { ascending: false });
+    if (workspaceId) tableQuery = tableQuery.eq('workspace_id', workspaceId);
+    if (projectId) tableQuery = tableQuery.eq('project_id', projectId);
+
+    const tableResult = await tableQuery;
+    if (tableResult.error) {
+      if (viewResult.error) throw viewResult.error;
+      throw tableResult.error;
+    }
+
+    return uniqueRows(tableResult.data || []).map(mapVisit);
   }
 
   async saveFieldVisit(visit: FieldVisit): Promise<void> {

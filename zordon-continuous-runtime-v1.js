@@ -7,7 +7,7 @@ window.__CC_ZORDON_CONTINUOUS_V5__=true;
 window.__CC_ZORDON_CONTINUOUS_V4__=true;
 window.__CC_ZORDON_CONTINUOUS_V3__=true;
 
-const VERSION=6;
+const VERSION=7;
 const now=()=>new Date().toISOString();
 const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const normalize=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9ñ]+/g,' ').trim();
@@ -25,7 +25,7 @@ function learningStore(){
     store.enabled=true;
     store.mode='continuous';
     store.engine='ZORDON';
-    store.version=Math.max(Number(store.version)||0,6);
+    store.version=Math.max(Number(store.version)||0,7);
     if(!store.reportUsage||typeof store.reportUsage!=='object')store.reportUsage={};
     store.lastPolicyAppliedAt=store.lastPolicyAppliedAt||now();
     return store;
@@ -142,7 +142,7 @@ function cloudContext(message){
     try{const base=window.__ccEngineerChat?.haluCloudContext?.(message);if(base)parts.push(base)}catch{}
     try{const learned=window.__ccZordonLearning?.contextFor?.(message,scope(message));if(learned&&!parts.join('\n').includes(learned))parts.push(learned)}catch{}
   }
-  parts.push('Identidad activa: ZORDON. Habla como alguien que ya conoce la forma de trabajar de Luis: sereno, observador, directo, leal y con humor seco cuando encaje. No actúes como soporte al cliente, no uses saludos de oficio ni cierres automáticos. Mantén continuidad real de conversación, usa la corrección más reciente disponible y evita respuestas genéricas si el contexto permite responder mejor. La referencia literaria solo define rasgos generales de carácter; nunca copies frases, diálogos ni texto de libros.');
+  try{const ui=window.__ccZordonAvatar?.context?.()||window.__ccZordonContext;if(ui)parts.push('Contexto visible actual de la plataforma: '+JSON.stringify(ui)+'. Adapta la ayuda al módulo abierto sin asumir datos que no estén presentes.')}catch{}\n  parts.push('Identidad activa: ZORDON. Habla como alguien que ya conoce la forma de trabajar de Luis: sereno, observador, directo, leal y con humor seco cuando encaje. No actúes como soporte al cliente, no uses saludos de oficio ni cierres automáticos. Mantén continuidad real de conversación, usa la corrección más reciente disponible y evita respuestas genéricas si el contexto permite responder mejor. Regla técnica permanente: nunca inventes cantidades, precios, rendimientos, fechas, pagos, garantías ni datos contractuales. Usa los datos registrados o las fuentes disponibles; si falta un parámetro necesario, pide exactamente ese dato antes de calcular o afirmar. La referencia literaria solo define rasgos generales de carácter; nunca copies frases, diálogos ni texto de libros.');
   return parts.join('\n\n').slice(0,4200);
 }
 
@@ -207,8 +207,8 @@ function consumeInput(form){
 }
 
 function installConversationOverride(){
-  if(document.documentElement.dataset.zordonConversation==='6')return;
-  document.documentElement.dataset.zordonConversation='6';
+  if(document.documentElement.dataset.zordonConversation==='7')return;
+  document.documentElement.dataset.zordonConversation='7';
 
   document.addEventListener('submit',event=>{
     const form=event.target;

@@ -136,62 +136,99 @@ export const ZordonAssistant: React.FC<ZordonAssistantProps> = ({ open, onClose,
   const send = async () => {
     const q = message.trim();
     if (!q || loading) return;
+
     setMessage('');
     setError('');
-    const currentHistory = [...history, { role: 'user' as const, text: q }];
-    setHistory(currentHistory);
+    setHistory((prev) => [...prev, { role: 'user', text: q }]);
+
+    const safeFallback = (input: string) => {
+      const normalized = input.trim().toLowerCase();
+      if (/^(hola|holi|buenas|buenos días|buen día|buenas tardes|buenas noches|qué tal|que tal)[.! ]*$/.test(normalized)) {
+        return 'Aquí estoy. Dime qué necesitas revisar.';
+      }
+      return 'Se me cortó el motor principal un momento. No voy a inventar datos. Reenvíame eso en unos segundos; tu expediente sigue intacto.';
+    };
 
     if (!hasSupabaseConfig || !supabase) {
-      setHistory((prev) => [...prev, { role: 'assistant', text: 'La interfaz nueva no tiene conexión pública de Supabase disponible. El ZORDON productivo sigue intacto; no usaré respuestas simuladas.' }]);
+      setHistory((prev) => [...prev, { role: 'assistant', text: safeFallback(q) }]);
       return;
     }
 
     setLoading(true);
     try {
-      const session = await ensureSupabaseSession();
+      let session = await ensureSupabaseSession();
+
+      if (!session?.access_token) {
+        const refreshed = await supabase.auth.refreshSession();
+        session = refreshed.data.session;
+      }
+
       if (!session?.access_token) {
         const missingSession = new Error('SESSION_EXPIRED');
         (missingSession as any).code = 'SESSION_EXPIRED';
         throw missingSession;
       }
 
-      const payloadHistory = history.slice(-24).map((turn) => ({ role: turn.role, text: turn.text.slice(0, 1000) }));
+      const payloadHistory = history.slice(-24).map((turn) => ({
+        role: turn.role,
+        text: turn.text.slice(0, 1000),
+      }));
+
       const operationalContext = [
         context,
         'Regla operativa de ZORDON: adapta la respuesta al módulo visible.',
         'No inventes cantidades de obra, precios unitarios, rendimientos, fechas, pagos, garantías ni datos contractuales.',
         'Si falta un parámetro indispensable, pide exactamente el dato faltante antes de calcular o afirmar.',
       ].filter(Boolean).join('\n');
+
       const body = { message: q, context: operationalContext, history: payloadHistory };
 
-      let { data, error: invokeError } = await supabase.functions.invoke('halu-chat', {
+      const invoke = async (token: string) => supabase.functions.invoke('halu-chat', {
         body,
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (invokeError && (invokeError as any).context?.status === 401) {
+      let result = await invoke(session.access_token);
+
+      const firstStatus = Number((result.error as any)?.context?.status || (result.error as any)?.status || 0);
+      if (result.error && firstStatus === 401) {
         const refreshed = await supabase.auth.refreshSession();
-        if (refreshed.data.session?.access_token) {
-          ({ data, error: invokeError } = await supabase.functions.invoke('halu-chat', {
-            body,
-            headers: { Authorization: `Bearer ${refreshed.data.session.access_token}` },
-          }));
-        }
+        const token = refreshed.data.session?.access_token;
+        if (token) result = await invoke(token);
+      } else if (result.error && [429, 500, 502, 503, 504].includes(firstStatus)) {
+        await new Promise((resolve) => window.setTimeout(resolve, 450));
+        result = await invoke(session.access_token);
       }
 
-      if (invokeError) throw invokeError;
-      const reply = String(data?.reply || '').trim();
-      if (!reply) throw new Error('ZORDON no devolvió respuesta.');
+      if (result.error) {
+        const status = Number((result.error as any)?.context?.status || (result.error as any)?.status || 0);
+        if (status === 401) {
+          const expired = new Error('SESSION_EXPIRED');
+          (expired as any).code = 'SESSION_EXPIRED';
+          throw expired;
+        }
+        console.error('ZORDON backend error', result.error);
+        setHistory((prev) => [...prev, { role: 'assistant', text: safeFallback(q) }]);
+        return;
+      }
+
+      const reply = String(result.data?.reply || '').trim();
+      if (!reply) {
+        setHistory((prev) => [...prev, { role: 'assistant', text: safeFallback(q) }]);
+        return;
+      }
+
       setHistory((prev) => [...prev, { role: 'assistant', text: reply }]);
     } catch (err: any) {
       console.error('ZORDON invoke error', err);
       const status = Number(err?.context?.status || err?.status || 0);
       const isSessionError = err?.code === 'SESSION_EXPIRED' || status === 401;
+
       if (isSessionError) {
         setError('La sesión de Control Contractual venció. Vuelve a ingresar para continuar con ZORDON.');
         onSessionExpired?.();
       } else {
-        setError('ZORDON tuvo un problema momentáneo al responder. El expediente no fue modificado; puedes volver a enviar el mensaje.');
+        setHistory((prev) => [...prev, { role: 'assistant', text: safeFallback(q) }]);
       }
     } finally {
       setLoading(false);

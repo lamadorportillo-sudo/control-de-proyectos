@@ -65,6 +65,20 @@ body {
   transform-origin: center bottom;
 }
 
+/* MODO ESTABLE DEL LANZADOR: el personaje no se balancea, camina ni cambia
+   de postura por sí solo. La posición solo cambia mediante arrastre manual. */
+#zordon-engineer-launcher-container .zordon-idle,
+#zordon-engineer-launcher-container [data-zordon-body],
+#zordon-engineer-launcher-container [data-zordon-body] img {
+  animation: none !important;
+  translate: none !important;
+}
+
+#zordon-engineer-launcher-container {
+  transition: none !important;
+  will-change: auto !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .zordon-idle,
   .animate-ping,

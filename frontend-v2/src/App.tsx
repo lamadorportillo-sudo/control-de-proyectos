@@ -537,7 +537,7 @@ export default function App() {
         ><MoreHorizontal className="h-4 w-4" /></MobileNavButton>
       </nav>
 
-      <ZordonLauncher onOpen={() => setIsZordonOpen(true)} isAvailable />
+      <ZordonLauncher onOpen={() => setIsZordonOpen(true)} isAvailable isPanelOpen={isZordonOpen} />
       <ZordonAssistant
         open={isZordonOpen}
         onClose={() => setIsZordonOpen(false)}

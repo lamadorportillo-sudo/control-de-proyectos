@@ -239,6 +239,37 @@ test('ZORDON permanece visible y no ofrece controles para ocultarlo', async ({ p
   await expect(launcher).toBeVisible();
 });
 
+test('ZORDON se reubica al arrastrarlo sin abrirse ni salirse de la pantalla', async ({ page }) => {
+  const token = makeJwt();
+  const capture = { token, restRequests: 0 };
+
+  await page.setViewportSize({ width: 1280, height: 820 });
+  await seedProductionSession(page, token);
+  await mockSupabase(page, capture);
+  await page.goto(APP_URL, { waitUntil: 'domcontentloaded' });
+
+  const launcher = page.locator('#zordon-engineer-launcher-container');
+  await expect(launcher).toBeVisible();
+  const before = await launcher.boundingBox();
+  expect(before).not.toBeNull();
+
+  await page.mouse.move(before.x + 48, before.y + 72);
+  await page.mouse.down();
+  await page.mouse.move(Math.max(24, before.x - 180), Math.max(96, before.y + 58), { steps: 5 });
+  await page.mouse.up();
+
+  await expect(launcher).toHaveAttribute('data-zordon-permanent', 'true');
+  await expect(launcher).toHaveAttribute('data-zordon-dragging', 'false');
+  await expect(page.getByPlaceholder('Escribe a ZORDON…')).toHaveCount(0);
+  await expect.poll(async () => {
+    const box = await launcher.boundingBox();
+    return box ? Math.round(box.x) : null;
+  }).not.toBe(Math.round(before.x));
+
+  const saved = await page.evaluate(() => localStorage.getItem('control-contractual:zordon-position:v3'));
+  expect(saved).toMatch(/"left"/);
+});
+
 test('Telegram Mini App activa automáticamente el entorno Telegram', async ({ page }) => {
   const token = makeJwt();
   const capture = { token, restRequests: 0 };
@@ -418,3 +449,11 @@ test('Registrar visita guarda con el mismo ID mediante RLS cuando hay sesión', 
 
   await expect(page.getByRole('heading', { name: 'Registrar visita de obra' })).toBeVisible();
   await page.getByLabel('Proyecto').selectOption('22222222-2222-4222-8222-222222222222');
+  await page.getByRole('button', { name: /Revisar y guardar/ }).click();
+
+  const saveButton = page.getByRole('button', { name: 'Guardar visita' });
+  await expect(saveButton).toBeEnabled();
+  await saveButton.click();
+  await expect(page.getByText(/Visita sincronizada con Supabase/i)).toBeVisible();
+  expect(capture.restWriteRequests).toBeGreaterThan(0);
+});

@@ -138,8 +138,8 @@ export const ConfiguracionView: React.FC = () => {
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <ZordonToggle
-              title="Movimiento inteligente"
-              description="Además de arrastrarlo manualmente, ZORDON solo se reubica si está cubriendo una acción importante."
+              title="Movimiento autónomo"
+              description="Movimiento inteligente: además de arrastrarlo manualmente, ZORDON solo se reubica si está cubriendo una acción importante."
               icon={<Move className="h-4 w-4" />}
               checked={zordonPreferences.autonomousMovement}
               onChange={(checked) => updateZordon({ autonomousMovement: checked })}

@@ -1,35 +1,48 @@
 export type ZordonWalkingSpeed = 'suave' | 'normal' | 'rapido';
 export type ZordonFigureSize = 'compacto' | 'normal' | 'amplio';
 export type ZordonDock = 'izquierda' | 'derecha';
+export type ZordonPosition = { left: number; top: number };
 
 export interface ZordonPreferences {
-  /** ZORDON sigue visible; este ajuste solo controla sus desplazamientos automáticos. */
+  /** ZORDON sigue visible; este ajuste solo controla reubicaciones automáticas necesarias. */
   autonomousMovement: boolean;
-  /** Permite que se siente temporalmente a revisar planos. */
+  /** Permite que adopte temporalmente la postura de revisión de planos. */
   deskMode: boolean;
-  /** Antes de caminar, busca alejarse de botones, campos y enlaces cercanos. */
+  /** Se aparta si cubre botones, campos, menús o acciones importantes. */
   avoidControls: boolean;
   walkingSpeed: ZordonWalkingSpeed;
-  /** Segundos sin interacción con ZORDON antes de iniciar una pausa de planos. */
+  /** Segundos de inactividad general antes de entrar en modo trabajo. */
   workDelaySeconds: number;
-  /** Tiempo que permanece en la mesa de trabajo. */
+  /** Duración orientativa del modo trabajo antes de volver a atención. */
   workDurationSeconds: number;
   figureSize: ZordonFigureSize;
   /** Lado al que vuelve al usar “Reubicar ahora”. */
   preferredDock: ZordonDock;
 }
 
-export const ZORDON_PREFERENCES_KEY = 'control-contractual:zordon-preferences:v1';
+interface ZordonStoreV2 {
+  version: 2;
+  preferences: ZordonPreferences;
+  position: ZordonPosition | null;
+}
+
+export const ZORDON_STORAGE_KEY = 'halu.zordon.v2';
+/** Conservado para listeners existentes: ahora apunta al almacén versionado único. */
+export const ZORDON_PREFERENCES_KEY = ZORDON_STORAGE_KEY;
+/** Clave anterior, solo para migración; no escribir datos nuevos aquí. */
 export const ZORDON_POSITION_KEY = 'control-contractual:zordon-position:v3';
 export const ZORDON_PREFERENCES_EVENT = 'cc:zordon-preferences-changed';
+export const ZORDON_POSITION_EVENT = 'cc:zordon-position-changed';
 export const ZORDON_REPOSITION_EVENT = 'cc:zordon-reposition-requested';
+
+const LEGACY_PREFERENCES_KEY = 'control-contractual:zordon-preferences:v1';
 
 export const defaultZordonPreferences: ZordonPreferences = {
   autonomousMovement: true,
   deskMode: true,
   avoidControls: true,
   walkingSpeed: 'normal',
-  workDelaySeconds: 26,
+  workDelaySeconds: 120,
   workDurationSeconds: 12,
   figureSize: 'normal',
   preferredDock: 'derecha',
@@ -49,41 +62,102 @@ const inRange = (value: unknown, fallback: number, min: number, max: number, ste
   return Math.max(min, Math.min(max, rounded));
 };
 
+const validPosition = (value: unknown): value is ZordonPosition => {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<ZordonPosition>;
+  return Number.isFinite(candidate.left) && Number.isFinite(candidate.top);
+};
+
 export function normalizeZordonPreferences(value: unknown): ZordonPreferences {
   const saved = value && typeof value === 'object' ? value as Partial<ZordonPreferences> : {};
-
   return {
     autonomousMovement: typeof saved.autonomousMovement === 'boolean' ? saved.autonomousMovement : defaultZordonPreferences.autonomousMovement,
     deskMode: typeof saved.deskMode === 'boolean' ? saved.deskMode : defaultZordonPreferences.deskMode,
     avoidControls: typeof saved.avoidControls === 'boolean' ? saved.avoidControls : defaultZordonPreferences.avoidControls,
     walkingSpeed: isOneOf(saved.walkingSpeed, walkingSpeeds) ? saved.walkingSpeed : defaultZordonPreferences.walkingSpeed,
-    workDelaySeconds: inRange(saved.workDelaySeconds, defaultZordonPreferences.workDelaySeconds, 15, 90, 5),
+    workDelaySeconds: inRange(saved.workDelaySeconds, defaultZordonPreferences.workDelaySeconds, 30, 600, 30),
     workDurationSeconds: inRange(saved.workDurationSeconds, defaultZordonPreferences.workDurationSeconds, 6, 30, 1),
     figureSize: isOneOf(saved.figureSize, figureSizes) ? saved.figureSize : defaultZordonPreferences.figureSize,
     preferredDock: isOneOf(saved.preferredDock, docks) ? saved.preferredDock : defaultZordonPreferences.preferredDock,
   };
 }
 
-export function readZordonPreferences(): ZordonPreferences {
-  if (typeof window === 'undefined') return defaultZordonPreferences;
+function defaultStore(): ZordonStoreV2 {
+  return { version: 2, preferences: { ...defaultZordonPreferences }, position: null };
+}
+
+function readStore(): ZordonStoreV2 {
+  if (typeof window === 'undefined') return defaultStore();
   try {
-    return normalizeZordonPreferences(JSON.parse(window.localStorage.getItem(ZORDON_PREFERENCES_KEY) || 'null'));
+    const parsed = JSON.parse(window.localStorage.getItem(ZORDON_STORAGE_KEY) || 'null');
+    if (parsed && typeof parsed === 'object' && Number((parsed as any).version) === 2) {
+      return {
+        version: 2,
+        preferences: normalizeZordonPreferences((parsed as any).preferences),
+        position: validPosition((parsed as any).position) ? { ...(parsed as any).position } : null,
+      };
+    }
   } catch {
-    return defaultZordonPreferences;
+    // Se recupera con valores seguros.
   }
+
+  let preferences = { ...defaultZordonPreferences };
+  let position: ZordonPosition | null = null;
+  try {
+    preferences = normalizeZordonPreferences(JSON.parse(window.localStorage.getItem(LEGACY_PREFERENCES_KEY) || 'null'));
+  } catch {
+    preferences = { ...defaultZordonPreferences };
+  }
+  try {
+    const legacyPosition = JSON.parse(window.localStorage.getItem(ZORDON_POSITION_KEY) || 'null');
+    if (validPosition(legacyPosition)) position = { ...legacyPosition };
+  } catch {
+    position = null;
+  }
+
+  const migrated: ZordonStoreV2 = { version: 2, preferences, position };
+  try {
+    window.localStorage.setItem(ZORDON_STORAGE_KEY, JSON.stringify(migrated));
+  } catch {
+    // La interfaz funciona aunque el navegador bloquee localStorage.
+  }
+  return migrated;
+}
+
+function writeStore(store: ZordonStoreV2): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(ZORDON_STORAGE_KEY, JSON.stringify(store));
+  } catch {
+    // La interfaz se mantiene funcional aun sin almacenamiento local.
+  }
+}
+
+export function readZordonPreferences(): ZordonPreferences {
+  return readStore().preferences;
 }
 
 export function saveZordonPreferences(next: ZordonPreferences): ZordonPreferences {
   const preferences = normalizeZordonPreferences(next);
   if (typeof window === 'undefined') return preferences;
-
-  try {
-    window.localStorage.setItem(ZORDON_PREFERENCES_KEY, JSON.stringify(preferences));
-  } catch {
-    // La interfaz se mantiene funcional aun si el navegador bloquea el almacenamiento local.
-  }
+  const current = readStore();
+  writeStore({ ...current, version: 2, preferences });
   window.dispatchEvent(new CustomEvent<ZordonPreferences>(ZORDON_PREFERENCES_EVENT, { detail: preferences }));
   return preferences;
+}
+
+export function readZordonPosition(): ZordonPosition | null {
+  const position = readStore().position;
+  return position ? { ...position } : null;
+}
+
+export function saveZordonPosition(position: ZordonPosition | null): ZordonPosition | null {
+  if (typeof window === 'undefined') return position;
+  const current = readStore();
+  const safePosition = validPosition(position) ? { left: Number(position.left), top: Number(position.top) } : null;
+  writeStore({ ...current, version: 2, position: safePosition });
+  window.dispatchEvent(new CustomEvent<ZordonPosition | null>(ZORDON_POSITION_EVENT, { detail: safePosition }));
+  return safePosition;
 }
 
 export function resetZordonPreferences(): ZordonPreferences {
@@ -92,10 +166,6 @@ export function resetZordonPreferences(): ZordonPreferences {
 
 export function requestZordonReposition(): void {
   if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.removeItem(ZORDON_POSITION_KEY);
-  } catch {
-    // La señal sigue permitiendo reubicarlo durante la sesión actual.
-  }
+  saveZordonPosition(null);
   window.dispatchEvent(new Event(ZORDON_REPOSITION_EVENT));
 }

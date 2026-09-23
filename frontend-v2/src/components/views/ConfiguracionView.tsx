@@ -360,14 +360,14 @@ const ZordonToggle: React.FC<{
     <span className="relative mt-1 inline-flex shrink-0">
       <input
         type="checkbox"
-        className="peer sr-only"
+        className="peer absolute inset-0 z-10 h-5 w-9 cursor-pointer opacity-0 disabled:cursor-not-allowed"
         checked={checked}
         disabled={disabled}
         aria-label={title}
         onChange={(event) => onChange(event.target.checked)}
       />
-      <span className="h-5 w-9 rounded-full bg-slate-700 transition peer-checked:bg-emerald-500 peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-300 peer-disabled:opacity-60" />
-      <span className="pointer-events-none absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4" />
+      <span aria-hidden="true" className="pointer-events-none h-5 w-9 rounded-full bg-slate-700 transition peer-checked:bg-emerald-500 peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-300 peer-disabled:opacity-60" />
+      <span aria-hidden="true" className="pointer-events-none absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4" />
     </span>
   </label>
 );

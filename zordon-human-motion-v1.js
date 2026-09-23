@@ -1,6 +1,39 @@
 /* ZORDON · figura humana completa y movimiento visible en la interfaz V2. */
 (() => {
   'use strict';
+  // La V2 ya anima a ZORDON desde React. Este guardia solo conserva el
+  // lanzador visible y evita que la versión anterior vuelva a ocultarlo.
+  if (window.__CC_ZORDON_PERSISTENT_LAUNCHER_V2__) return;
+  window.__CC_ZORDON_PERSISTENT_LAUNCHER_V2__ = true;
+
+  const LEGACY_VISIBILITY_KEY = 'control-contractual:zordon-visibility:v1';
+  const PERSISTENT_STYLE_ID = 'cc-zordon-persistent-launcher-v2-style';
+  const clearLegacyVisibility = () => {
+    try { localStorage.removeItem(LEGACY_VISIBILITY_KEY); } catch { /* almacenamiento no disponible */ }
+  };
+  const repair = () => {
+    clearLegacyVisibility();
+    if (!document.getElementById(PERSISTENT_STYLE_ID)) {
+      const style = document.createElement('style');
+      style.id = PERSISTENT_STYLE_ID;
+      style.textContent = `
+        #zordon-engineer-launcher-container { z-index: 90 !important; }
+        #zordon-engineer-launcher-container [data-zordon-control="minimize"],
+        #zordon-engineer-launcher-container [data-zordon-control="close"] { display: none !important; }
+      `;
+      document.head.appendChild(style);
+    }
+    const launcher = document.getElementById('zordon-engineer-launcher-container');
+    if (launcher) launcher.setAttribute('data-zordon-permanent', 'true');
+  };
+
+  clearLegacyVisibility();
+  repair();
+  requestAnimationFrame(repair);
+  setTimeout(repair, 400);
+  setTimeout(repair, 1200);
+  return;
+
   if (window.__CC_ZORDON_HUMAN_MOTION_V1__) return;
   window.__CC_ZORDON_HUMAN_MOTION_V1__ = true;
 

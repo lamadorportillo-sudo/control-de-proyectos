@@ -207,6 +207,7 @@ export const ZordonAssistant: React.FC<ZordonAssistantProps> = ({ open, onClose,
       aria-modal="false"
       aria-labelledby="zordon-dialog-title"
       data-zordon-critical
+      data-zordon-chat-panel
     >
       <div className="flex items-center justify-between border-b border-[#1f2e45] bg-[#111827] px-4 py-3">
         <div className="flex items-center gap-3">

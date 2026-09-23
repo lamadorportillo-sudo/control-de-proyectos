@@ -128,6 +128,13 @@ function writeStore(store: ZordonStoreV2): void {
   if (typeof window === 'undefined') return;
   try {
     window.localStorage.setItem(ZORDON_STORAGE_KEY, JSON.stringify(store));
+    // Compatibilidad temporal con la V1/V3 mientras toda la plataforma migra al almacén unificado.
+    window.localStorage.setItem(LEGACY_PREFERENCES_KEY, JSON.stringify(store.preferences));
+    if (store.position) {
+      window.localStorage.setItem(ZORDON_POSITION_KEY, JSON.stringify(store.position));
+    } else {
+      window.localStorage.removeItem(ZORDON_POSITION_KEY);
+    }
   } catch {
     // La interfaz se mantiene funcional aun sin almacenamiento local.
   }

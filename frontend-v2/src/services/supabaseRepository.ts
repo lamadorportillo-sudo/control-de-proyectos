@@ -246,22 +246,44 @@ function mapGuarantee(row: Row): Guarantee {
 
 function mapVisit(row: Row): FieldVisit {
   const raw = row.raw_data || {};
+  const flatDeficiencies = Array.isArray(row.raw_deficiencies_created)
+    ? row.raw_deficiencies_created
+    : [];
+  const photoUrls = Array.isArray(raw.photoUrls) ? raw.photoUrls : [];
+  const embeddedPhotos = Array.isArray(raw.photos) ? raw.photos.length : 0;
+  const photoCount = n(
+    row.raw_photo_count ?? raw.photoCount ?? raw.reportPhotoCount,
+    Math.max(photoUrls.length, embeddedPhotos),
+  );
+
   return {
     id: s(row.id),
     projectId: s(row.project_id),
+    visitNumber: n(row.visit_number, 0) || undefined,
     visitDate: dateOnly(row.visit_date),
-    inspectorName: s(row.inspector || raw.inspectorName || ''),
-    progressReported: n(raw.progressReported ?? raw.physicalProgress, 0),
-    workCompleted: s(row.summary || raw.workCompleted || ''),
-    weatherCondition: s(raw.weatherCondition || ''),
-    staffCount: n(raw.staffCount, 0),
-    equipmentOnSite: s(raw.equipmentOnSite || ''),
-    gpsCoords: raw.gpsCoords || undefined,
-    photoUrls: Array.isArray(raw.photoUrls) ? raw.photoUrls : [],
-    audioNotes: s(raw.audioNotes || '') || undefined,
-    deficienciesCreated: Array.isArray(raw.deficienciesCreated)
-      ? raw.deficienciesCreated
-      : [],
+    inspectorName: s(row.inspector || raw.inspectorName || raw.supervisor || ''),
+    progressReported: n(
+      row.raw_progress_reported ??
+        row.raw_physical_progress ??
+        raw.progressReported ??
+        raw.physicalProgress,
+      0,
+    ),
+    workCompleted: s(row.summary || raw.workCompleted || raw.generalObservations || ''),
+    weatherCondition: s(
+      row.raw_weather_condition ?? raw.weatherCondition ?? raw.weather ?? '',
+    ),
+    staffCount: n(row.raw_staff_count ?? raw.staffCount ?? raw.personnel, 0),
+    equipmentOnSite: s(row.raw_equipment_on_site ?? raw.equipmentOnSite ?? ''),
+    gpsCoords: row.raw_gps_coords || raw.gpsCoords || undefined,
+    photoUrls,
+    photoCount,
+    audioNotes: s(row.raw_audio_notes ?? raw.audioNotes ?? '') || undefined,
+    deficienciesCreated: flatDeficiencies.length
+      ? flatDeficiencies
+      : Array.isArray(raw.deficienciesCreated)
+        ? raw.deficienciesCreated
+        : [],
     syncStatus: 'SINCRONIZADO',
     createdAt: dateOnly(row.created_at),
   };
@@ -824,15 +846,20 @@ export class SupabaseDataRepository implements IDataRepository {
   async getFieldVisits(projectId?: string): Promise<FieldVisit[]> {
     const workspaceId = await this.getWorkspaceId();
     let query = this.client()
-      .from('visits')
-      .select('*')
+      .from('visit_list_v1')
+      .select('id,workspace_id,project_id,visit_number,visit_date,inspector,summary,raw_progress_reported,raw_physical_progress,raw_weather_condition,raw_staff_count,raw_equipment_on_site,raw_gps_coords,raw_audio_notes,raw_deficiencies_created,raw_photo_count,created_at,voided_at')
       .is('voided_at', null)
-      .order('visit_date', { ascending: false });
+      .order('visit_date', { ascending: false })
+      .order('visit_number', { ascending: false });
     if (workspaceId) query = query.eq('workspace_id', workspaceId);
     if (projectId) query = query.eq('project_id', projectId);
     const { data, error } = await query;
     if (error) throw error;
-    return uniqueByBusinessKey(uniqueRows(data || []), (row) => [s(row.project_id), s(row.visit_date), s(row.inspector)].join('|')).map(mapVisit);
+
+    // La vista evita descargar fotografías base64 incrustadas en raw_data.
+    // Para visitas, el ID es la identidad canónica: dos inspecciones del mismo
+    // proyecto, fecha e inspector siguen siendo registros distintos.
+    return uniqueRows(data || []).map(mapVisit);
   }
 
   async saveFieldVisit(visit: FieldVisit): Promise<void> {

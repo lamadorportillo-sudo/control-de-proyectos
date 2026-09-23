@@ -367,7 +367,9 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
 
   useEffect(() => {
     const place = () => {
-      setPosition((current) => clampPosition(current || viewportAnchor(pose, preferences)));
+      // La postura puede cambiar (de pie / revisando planos), pero su punto
+      // de anclaje no debe saltar por ese cambio visual.
+      setPosition((current) => clampPosition(current || viewportAnchor('standing', preferences), 'standing'));
     };
     place();
     window.addEventListener('resize', place);
@@ -380,7 +382,7 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
       window.visualViewport?.removeEventListener('resize', place);
       window.visualViewport?.removeEventListener('scroll', place);
     };
-  }, [clampPosition, pose, preferences]);
+  }, [clampPosition, preferences]);
 
   useEffect(() => {
     const returnToPreferredDock = () => {

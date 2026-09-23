@@ -25,7 +25,7 @@ export const VisitasView: React.FC<Props> = ({ visits, projects, onOpenVisit, on
     ].filter(Boolean).join(' ')).includes(q);
   }).slice(0,100), [visits, projects, q]);
 
-  const photoCount = useMemo(() => visits.reduce((sum, visit) => sum + visit.photoUrls.length, 0), [visits]);
+  const photoCount = useMemo(() => visits.reduce((sum, visit) => sum + (visit.photoCount ?? visit.photoUrls.length), 0), [visits]);
   const gpsCount = useMemo(() => visits.filter((visit) => Boolean(visit.gpsCoords)).length, [visits]);
 
   return (
@@ -57,7 +57,7 @@ export const VisitasView: React.FC<Props> = ({ visits, projects, onOpenVisit, on
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded bg-amber-950/50 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-300">{formatDateSpanish(visit.visitDate)}</span>
+                    <span className="rounded bg-amber-950/50 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-300">{visit.visitNumber ? `Visita N.º ${visit.visitNumber} · ` : ''}{formatDateSpanish(visit.visitDate)}</span>
                     <span className="font-mono text-[10px] text-blue-300">{project?.code}</span>
                     <span className="text-[10px] text-slate-500">Avance {formatPercent(visit.progressReported)}</span>
                   </div>
@@ -65,7 +65,7 @@ export const VisitasView: React.FC<Props> = ({ visits, projects, onOpenVisit, on
                   <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-400">{visit.workCompleted || 'Sin resumen de trabajos.'}</p>
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
                     <span>Inspector: {visit.inspectorName || 'No registrado'}</span>
-                    <span className="inline-flex items-center gap-1"><Camera className="h-3 w-3"/>{visit.photoUrls.length} evidencia(s)</span>
+                    <span className="inline-flex items-center gap-1"><Camera className="h-3 w-3"/>{visit.photoCount ?? visit.photoUrls.length} evidencia(s)</span>
                     {visit.gpsCoords && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3"/>GPS registrado</span>}
                   </div>
                 </div>

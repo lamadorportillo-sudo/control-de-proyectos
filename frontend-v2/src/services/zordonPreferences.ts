@@ -71,9 +71,11 @@ const validPosition = (value: unknown): value is ZordonPosition => {
 export function normalizeZordonPreferences(value: unknown): ZordonPreferences {
   const saved = value && typeof value === 'object' ? value as Partial<ZordonPreferences> : {};
   return {
-    autonomousMovement: typeof saved.autonomousMovement === 'boolean' ? saved.autonomousMovement : defaultZordonPreferences.autonomousMovement,
+    // MODO ESTABLE: ZORDON no puede reubicarse solo. Se conserva únicamente
+    // el arrastre manual y la reubicación explícita solicitada por el usuario.
+    autonomousMovement: false,
     deskMode: typeof saved.deskMode === 'boolean' ? saved.deskMode : defaultZordonPreferences.deskMode,
-    avoidControls: typeof saved.avoidControls === 'boolean' ? saved.avoidControls : defaultZordonPreferences.avoidControls,
+    avoidControls: false,
     walkingSpeed: isOneOf(saved.walkingSpeed, walkingSpeeds) ? saved.walkingSpeed : defaultZordonPreferences.walkingSpeed,
     workDelaySeconds: inRange(saved.workDelaySeconds, defaultZordonPreferences.workDelaySeconds, 30, 600, 30),
     workDurationSeconds: inRange(saved.workDurationSeconds, defaultZordonPreferences.workDurationSeconds, 6, 30, 1),

@@ -94,8 +94,9 @@ export default function App() {
     const secondary = await Promise.allSettled([
       dataRepository.getDeficiencies(),
       dataRepository.getAuditLogs(),
+      dataRepository.getFieldVisits(),
     ]);
-    const [deficiencyResult, auditResult] = secondary;
+    const [deficiencyResult, auditResult, visitResult] = secondary;
     if (deficiencyResult.status === 'fulfilled') setDeficiencies(deficiencyResult.value);
     else {
       console.warn('Carga de deficiencias V2:', deficiencyResult.reason);
@@ -103,6 +104,10 @@ export default function App() {
     if (auditResult.status === 'fulfilled') setAuditLogs(auditResult.value);
     else {
       console.warn('Carga de auditoría V2:', auditResult.reason);
+    }
+    if (visitResult.status === 'fulfilled') setVisits(visitResult.value);
+    else {
+      console.warn('Carga de visitas V2:', visitResult.reason);
     }
 
     if (issues.length) setLoadError(issues[0]);

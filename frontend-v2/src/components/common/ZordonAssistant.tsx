@@ -217,7 +217,7 @@ export const ZordonAssistant: React.FC<ZordonAssistantProps> = ({ open, onClose,
             <div className="text-[10px] text-emerald-400">Asistente de ingeniería · contexto del módulo actual</div>
           </div>
         </div>
-        <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-[#172235] hover:text-white" aria-label="Cerrar conversación de ZORDON">
+        <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-[#172235] hover:text-white" aria-label="Cerrar ZORDON">
           <X className="h-4 w-4" />
         </button>
       </div>

@@ -61,6 +61,8 @@ jobs:
           node --check patch-session-security.cjs
           node --check patch-offline-field.cjs
           node --check stabilize-core-v1.cjs
+          node --check zordon-continuous-runtime-v1.js
+          node --check zordon-presence-v4.js
           node --check tests/startup-responsive.spec.cjs
           node --check tests/project-create-route-responsive.spec.cjs
           node --test tests/core-stability-regressions.test.cjs tests/ui-tabs-functional.test.cjs tests/ui-contrast-final-guard.test.cjs

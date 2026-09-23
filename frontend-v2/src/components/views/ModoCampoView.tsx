@@ -63,10 +63,10 @@ export const ModoCampoView: React.FC<ModoCampoViewProps> = ({ visits, projects, 
             <button key={visit.id} onClick={() => onOpenProject(visit.projectId)} className="group w-full rounded-xl border border-[#1f2e45] bg-[#111827] p-4 text-left hover:border-amber-700/70 hover:bg-[#151c26]">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2"><span className="rounded bg-amber-950/50 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-300">Visita de campo</span><span className="font-mono text-[10px] text-slate-500">{project?.code}</span></div>
+                  <div className="flex flex-wrap items-center gap-2"><span className="rounded bg-amber-950/50 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-300">{visit.visitNumber ? `Visita N.º ${visit.visitNumber}` : 'Visita de campo'}</span><span className="font-mono text-[10px] text-slate-500">{project?.code}</span></div>
                   <h3 className="mt-2 text-sm font-semibold text-white">{project?.name || 'Proyecto'}</h3>
                   <p className="mt-1 text-xs leading-relaxed text-slate-400">{visit.workCompleted || 'Sin resumen registrado.'}</p>
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500"><span>{formatDateSpanish(visit.visitDate)}</span><span>Avance: <strong className="text-slate-200">{formatPercent(visit.progressReported)}</strong></span>{visit.gpsCoords && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />GPS registrado</span>}<span>{visit.photoUrls.length} foto(s)</span></div>
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500"><span>{formatDateSpanish(visit.visitDate)}</span><span>Avance: <strong className="text-slate-200">{formatPercent(visit.progressReported)}</strong></span>{visit.gpsCoords && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />GPS registrado</span>}<span>{visit.photoCount ?? visit.photoUrls.length} foto(s)</span></div>
                 </div>
                 <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-slate-500 group-hover:translate-x-0.5 group-hover:text-amber-400" />
               </div>

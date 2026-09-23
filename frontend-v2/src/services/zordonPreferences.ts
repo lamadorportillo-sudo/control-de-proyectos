@@ -39,7 +39,7 @@ const LEGACY_PREFERENCES_KEY = 'control-contractual:zordon-preferences:v1';
 
 export const defaultZordonPreferences: ZordonPreferences = {
   autonomousMovement: false,
-  deskMode: true,
+  deskMode: false,
   avoidControls: false,
   walkingSpeed: 'normal',
   workDelaySeconds: 120,
@@ -74,7 +74,7 @@ export function normalizeZordonPreferences(value: unknown): ZordonPreferences {
     // MODO ESTABLE: ZORDON no puede reubicarse solo. Se conserva únicamente
     // el arrastre manual y la reubicación explícita solicitada por el usuario.
     autonomousMovement: false,
-    deskMode: typeof saved.deskMode === 'boolean' ? saved.deskMode : defaultZordonPreferences.deskMode,
+    deskMode: false,
     avoidControls: false,
     walkingSpeed: isOneOf(saved.walkingSpeed, walkingSpeeds) ? saved.walkingSpeed : defaultZordonPreferences.walkingSpeed,
     workDelaySeconds: inRange(saved.workDelaySeconds, defaultZordonPreferences.workDelaySeconds, 30, 600, 30),

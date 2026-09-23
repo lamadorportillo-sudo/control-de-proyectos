@@ -1,12 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   normalizeZordonPreferences,
+  readZordonPosition,
   readZordonPreferences,
+  resetZordonPreferences,
+  saveZordonPosition,
+  saveZordonPreferences,
   type ZordonFigureSize,
   type ZordonPreferences,
+  ZORDON_POSITION_EVENT,
   ZORDON_PREFERENCES_EVENT,
   ZORDON_PREFERENCES_KEY,
-  ZORDON_POSITION_KEY,
   ZORDON_REPOSITION_EVENT,
 } from '../../services/zordonPreferences.ts';
 
@@ -127,8 +131,21 @@ type Position = { left: number; top: number };
 
 const PREVIOUS_POSITION_KEY = 'control-contractual:zordon-position:v2';
 const LEGACY_VISIBILITY_KEY = 'control-contractual:zordon-visibility:v1';
-const EDGE = 12;
-const INTERACTION_DISTANCE = 150;
+const EDGE = 14;
+const DRAG_THRESHOLD = 5;
+const INTERACTION_DISTANCE = 72;
+
+function visualViewportBox() {
+  const visual = window.visualViewport;
+  return visual
+    ? { left: visual.offsetLeft || 0, top: visual.offsetTop || 0, width: visual.width || window.innerWidth, height: visual.height || window.innerHeight }
+    : { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+}
+
+function isEditingField() {
+  const active = document.activeElement as HTMLElement | null;
+  return Boolean(active?.matches('input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"]'));
+}
 
 const launcherSizes: Record<ZordonFigureSize, Record<ZordonPose, { width: number; height: number }>> = {
   compacto: {
@@ -180,22 +197,30 @@ function clampToViewport(next: Position, pose: ZordonPose, figureSize: ZordonFig
   const fallback = launcherSize(pose, figureSize);
   const width = rect?.width || fallback.width;
   const height = rect?.height || fallback.height;
+  const viewport = visualViewportBox();
+  const minLeft = viewport.left + EDGE;
+  const minTop = viewport.top + EDGE;
+  const maxLeft = Math.max(minLeft, viewport.left + viewport.width - width - EDGE);
+  const maxTop = Math.max(minTop, viewport.top + viewport.height - height - EDGE);
   return {
-    left: Math.max(EDGE, Math.min(next.left, Math.max(EDGE, window.innerWidth - width - EDGE))),
-    top: Math.max(EDGE, Math.min(next.top, Math.max(EDGE, window.innerHeight - height - EDGE))),
+    left: Math.max(minLeft, Math.min(next.left, maxLeft)),
+    top: Math.max(minTop, Math.min(next.top, maxTop)),
   };
 }
 
 function viewportAnchor(pose: ZordonPose, preferences: ZordonPreferences): Position {
   const size = launcherSize(pose, preferences.figureSize);
-  const mobile = window.innerWidth < 640;
+  const viewport = visualViewportBox();
+  const mobile = viewport.width < 640;
   const left = preferences.preferredDock === 'izquierda'
-    ? (mobile ? 8 : EDGE)
-    : window.innerWidth - size.width - (mobile ? 8 : 20);
+    ? viewport.left + EDGE
+    : viewport.left + viewport.width - size.width - (mobile ? EDGE : 20);
 
   return clampToViewport({
     left,
-    top: mobile ? Math.max(70, window.innerHeight - size.height - 82) : Math.max(78, window.innerHeight - size.height - 22),
+    top: mobile
+      ? Math.max(viewport.top + 70, viewport.top + viewport.height - size.height - 82)
+      : Math.max(viewport.top + 78, viewport.top + viewport.height - size.height - 22),
   }, pose, preferences.figureSize);
 }
 
@@ -247,6 +272,8 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
   const [motion, setMotion] = useState<ZordonMotion>('idle');
   const [facing, setFacing] = useState<'left' | 'right'>('left');
   const [isDragging, setIsDragging] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsPosition, setSettingsPosition] = useState<Position>({ left: EDGE, top: EDGE });
   const dragRef = useRef<{ pointerId: number; offsetX: number; offsetY: number; startX: number; startY: number; moved: boolean } | null>(null);
   const suppressClick = useRef(false);
   const launcherRef = useRef<HTMLDivElement>(null);
@@ -294,23 +321,16 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
   }, [clampPosition, finishWalk, position, preferences]);
 
   const startWorking = useCallback(() => {
-    if (!preferences.autonomousMovement || !preferences.deskMode || !position || dragRef.current || isPanelOpen) return;
+    if (!preferences.deskMode || !position || dragRef.current || isPanelOpen || settingsOpen || isEditingField()) return;
     clearTimers();
-    const target = quietPosition(position, 'working', preferences);
-    walkTo(target, 'working');
-    walkTimer.current = window.setTimeout(() => {
-      if (!preferencesRef.current.autonomousMovement || !preferencesRef.current.deskMode) {
-        setMotion('idle');
-        return;
-      }
-      setPose('working');
-      setMotion('working');
-      workTimer.current = window.setTimeout(() => {
-        setPose('standing');
-        walkTo(quietPosition(target, 'standing', preferences));
-      }, preferences.workDurationSeconds * 1000);
-    }, moveDuration);
-  }, [clearTimers, isPanelOpen, moveDuration, position, preferences, walkTo]);
+    setPose('working');
+    setMotion('working');
+    workTimer.current = window.setTimeout(() => {
+      setPose('standing');
+      setMotion('idle');
+      lastActivity.current = Date.now();
+    }, preferences.workDurationSeconds * 1000);
+  }, [clearTimers, isPanelOpen, position, preferences.deskMode, preferences.workDurationSeconds, settingsOpen]);
 
   useEffect(() => {
     preferencesRef.current = preferences;
@@ -334,13 +354,11 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
 
   useEffect(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem(ZORDON_POSITION_KEY) || 'null');
-      if (saved && Number.isFinite(saved.left) && Number.isFinite(saved.top)) {
+      const saved = readZordonPosition();
+      if (saved) {
         const savedPreferences = readZordonPreferences();
         setPosition(clampToViewport(saved, 'standing', savedPreferences.figureSize));
       }
-      // La configuración anterior podía dejar la figura centrada u oculta.
-      // V3 inicia en una zona lateral y conserva solo las ubicaciones nuevas.
       localStorage.removeItem(PREVIOUS_POSITION_KEY);
       localStorage.removeItem(LEGACY_VISIBILITY_KEY);
     } catch { /* storage can be unavailable in private browsing */ }
@@ -352,7 +370,15 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
     };
     place();
     window.addEventListener('resize', place);
-    return () => window.removeEventListener('resize', place);
+    window.addEventListener('orientationchange', place);
+    window.visualViewport?.addEventListener('resize', place);
+    window.visualViewport?.addEventListener('scroll', place);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('orientationchange', place);
+      window.visualViewport?.removeEventListener('resize', place);
+      window.visualViewport?.removeEventListener('scroll', place);
+    };
   }, [clampPosition, pose, preferences]);
 
   useEffect(() => {
@@ -373,24 +399,24 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
   }, [clearTimers, finishWalk, preferences]);
 
   useEffect(() => {
-    if (preferences.autonomousMovement && preferences.deskMode) return;
+    if (preferences.deskMode) return;
     if (pose === 'working') {
       clearTimers();
       setPose('standing');
       setMotion('idle');
     }
-  }, [clearTimers, pose, preferences.autonomousMovement, preferences.deskMode]);
+  }, [clearTimers, pose, preferences.deskMode]);
 
   useEffect(() => {
     if (!position) return;
-    try { localStorage.setItem(ZORDON_POSITION_KEY, JSON.stringify(position)); } catch { /* ignore */ }
+    saveZordonPosition(position);
   }, [position]);
 
   useEffect(() => {
     const move = (event: PointerEvent) => {
       const drag = dragRef.current;
       if (!drag || event.pointerId !== drag.pointerId) return;
-      if (!drag.moved && Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) < 6) return;
+      if (!drag.moved && Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) < DRAG_THRESHOLD) return;
       if (!drag.moved) {
         drag.moved = true;
         setIsDragging(true);
@@ -425,7 +451,7 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
 
   useEffect(() => {
     const avoidActiveControl = (event: PointerEvent) => {
-      if (!preferences.autonomousMovement || !preferences.avoidControls || dragRef.current || isPanelOpen || !position) return;
+      if (!preferences.autonomousMovement || !preferences.avoidControls || dragRef.current || isPanelOpen || settingsOpen || !position || isEditingField()) return;
       const target = event.target as Element | null;
       if (!target || target.closest('#zordon-engineer-launcher-container')) return;
       if (!target.closest('button,input,textarea,select,a,[role="button"],[contenteditable="true"]')) return;
@@ -447,24 +473,49 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
         setPosition((current) => current ? clampPosition(current) : viewportAnchor(pose, preferences));
       }, 220);
     };
+    const avoidFocusedControl = (event: FocusEvent) => {
+      if (!preferences.autonomousMovement || !preferences.avoidControls || isPanelOpen || settingsOpen || dragRef.current) return;
+      const target = event.target as Element | null;
+      if (!target?.matches('input,textarea,select,button,[role="button"],[contenteditable="true"]')) return;
+      const rect = launcherRef.current?.getBoundingClientRect();
+      const focused = target.getBoundingClientRect();
+      if (!rect) return;
+      const overlaps = rect.left < focused.right + 10 && rect.right > focused.left - 10 && rect.top < focused.bottom + 10 && rect.bottom > focused.top - 10;
+      if (overlaps && !isEditingField()) walkTo(quietPosition(position, 'standing', preferences));
+    };
     document.addEventListener('pointermove', avoidActiveControl, { passive: true });
+    document.addEventListener('focusin', avoidFocusedControl, true);
     window.addEventListener('scroll', keepInFrame, true);
     return () => {
       document.removeEventListener('pointermove', avoidActiveControl);
+      document.removeEventListener('focusin', avoidFocusedControl, true);
       window.removeEventListener('scroll', keepInFrame, true);
       if (avoidTimer.current) window.clearTimeout(avoidTimer.current);
     };
-  }, [clampPosition, isPanelOpen, pose, position, preferences, walkTo]);
+  }, [clampPosition, isPanelOpen, pose, position, preferences, settingsOpen, walkTo]);
 
   useEffect(() => {
-    if (!preferences.autonomousMovement || !preferences.deskMode || !position || isPanelOpen || pose === 'working' || motion === 'walking') return;
+    const markActivity = () => {
+      lastActivity.current = Date.now();
+      if (pose === 'working') {
+        setPose('standing');
+        setMotion('idle');
+      }
+    };
+    const events: Array<keyof DocumentEventMap> = ['pointerdown', 'keydown', 'wheel', 'scroll', 'touchstart', 'focusin', 'input', 'change'];
+    events.forEach((name) => document.addEventListener(name, markActivity, { capture: true, passive: name !== 'keydown' }));
+    return () => events.forEach((name) => document.removeEventListener(name, markActivity, true));
+  }, [pose]);
+
+  useEffect(() => {
+    if (!preferences.deskMode || !position || isPanelOpen || settingsOpen || pose === 'working' || motion === 'walking') return;
     const delay = preferences.workDelaySeconds * 1000;
     const scheduleBreak = (wait: number = delay) => {
       if (idleTimer.current) window.clearTimeout(idleTimer.current);
       idleTimer.current = window.setTimeout(() => {
         const remaining = delay - (Date.now() - lastActivity.current);
-        if (dragRef.current || isPanelOpen || remaining > 0) {
-          scheduleBreak(Math.max(1000, remaining));
+        if (dragRef.current || isPanelOpen || settingsOpen || isEditingField() || remaining > 0) {
+          scheduleBreak(Math.max(1000, remaining > 0 ? remaining : 5000));
           return;
         }
         startWorking();
@@ -472,7 +523,7 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
     };
     scheduleBreak();
     return () => { if (idleTimer.current) window.clearTimeout(idleTimer.current); };
-  }, [isPanelOpen, motion, position, pose, preferences.autonomousMovement, preferences.deskMode, preferences.workDelaySeconds, startWorking]);
+  }, [isPanelOpen, motion, position, pose, preferences.deskMode, preferences.workDelaySeconds, settingsOpen, startWorking]);
 
   useEffect(() => {
     if (!isPanelOpen) return;
@@ -484,7 +535,7 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
   useEffect(() => () => clearTimers(), [clearTimers]);
 
   const startDrag = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || (event.target as Element)?.closest?.('[data-zordon-no-drag]')) return;
     const rect = launcherRef.current?.getBoundingClientRect();
     if (!rect) return;
     event.stopPropagation();
@@ -515,10 +566,47 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
   const status = pose === 'working'
     ? 'Revisando planos'
     : motion === 'walking'
-      ? 'Caminando a una zona libre'
+      ? 'Apartándome de un control'
       : preferences.autonomousMovement
         ? 'Arrastra para mover · clic para consultar'
         : 'Ubicación manual · clic para consultar';
+
+  const updatePreferences = (changes: Partial<ZordonPreferences>) => {
+    setPreferences((current) => saveZordonPreferences({ ...current, ...changes }));
+    rememberActivity();
+  };
+
+  const resetSettings = () => {
+    const restored = resetZordonPreferences();
+    setPreferences(restored);
+    saveZordonPosition(null);
+    const next = viewportAnchor('standing', restored);
+    setPosition(next);
+    setPose('standing');
+    setMotion('idle');
+    setSettingsOpen(false);
+    rememberActivity();
+  };
+
+  const openSettings = () => {
+    const next = !settingsOpen;
+    setSettingsOpen(next);
+    if (next) {
+      clearTimers();
+      setPose('standing');
+      setMotion('idle');
+      const rect = launcherRef.current?.getBoundingClientRect();
+      const viewport = visualViewportBox();
+      const width = Math.min(320, viewport.width - EDGE * 2);
+      const height = 300;
+      const left = rect && rect.left > viewport.left + viewport.width / 2
+        ? Math.max(viewport.left + EDGE, rect.left - width - 10)
+        : Math.min(viewport.left + viewport.width - width - EDGE, (rect?.right || viewport.left + EDGE) + 10);
+      const top = Math.max(viewport.top + EDGE, Math.min(rect?.top || viewport.top + EDGE, viewport.top + viewport.height - height - EDGE));
+      setSettingsPosition({ left, top });
+    }
+    rememberActivity();
+  };
 
   return (
     <div
@@ -534,6 +622,77 @@ export const ZordonLauncher: React.FC<ZordonLauncherProps> = ({ onOpen, isAvaila
       style={{ left: position?.left ?? 'auto', top: position?.top ?? 76, right: position ? 'auto' : 16, bottom: 'auto', touchAction: 'none' }}
     >
       <style>{zordonMotionCss(moveDuration)}</style>
+      <button
+        type="button"
+        data-zordon-no-drag
+        onClick={openSettings}
+        className="absolute right-0 top-0 z-[96] grid h-8 w-8 place-items-center rounded-full border border-slate-600/70 bg-[#0b1220]/95 text-sm text-slate-300 shadow-lg transition hover:border-emerald-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+        aria-label="Ajustes de ZORDON"
+        title="Ajustes de ZORDON"
+      >
+        ⚙
+      </button>
+      {settingsOpen && (
+        <section
+          data-zordon-no-drag
+          data-zordon-critical
+          role="dialog"
+          aria-modal="false"
+          aria-label="Ajustes de ZORDON"
+          className="fixed z-[97] w-[min(320px,calc(100vw-28px))] rounded-xl border border-[#29405a] bg-[#08111b] p-4 text-left text-xs text-slate-200 shadow-2xl"
+          style={{ left: settingsPosition.left, top: settingsPosition.top }}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <div className="font-bold text-white">Ajustes de ZORDON</div>
+              <div className="mt-0.5 text-[10px] text-slate-500">El avatar siempre permanece visible.</div>
+            </div>
+            <button type="button" onClick={() => setSettingsOpen(false)} className="rounded p-1 text-lg text-slate-400 hover:bg-slate-800 hover:text-white" aria-label="Cerrar ajustes">×</button>
+          </div>
+          <label className="mb-3 flex items-center justify-between gap-3">
+            <span>
+              <span className="block font-semibold text-white">Movimiento inteligente</span>
+              <span className="block text-[10px] text-slate-500">Solo se aparta si cubre un control importante.</span>
+            </span>
+            <input
+              type="checkbox"
+              checked={preferences.autonomousMovement && preferences.avoidControls}
+              onChange={(event) => updatePreferences({ autonomousMovement: event.target.checked, avoidControls: event.target.checked })}
+              className="h-4 w-4 accent-emerald-400"
+            />
+          </label>
+          <label className="mb-3 block">
+            <span className="mb-1 block font-semibold text-white">Tamaño</span>
+            <select
+              value={preferences.figureSize === 'compacto' ? 'compacto' : 'normal'}
+              onChange={(event) => updatePreferences({ figureSize: event.target.value === 'compacto' ? 'compacto' : 'normal' })}
+              className="w-full rounded-lg border border-slate-700 bg-[#111827] px-2 py-2 text-xs text-white"
+            >
+              <option value="compacto">Compacto</option>
+              <option value="normal">Normal</option>
+            </select>
+          </label>
+          <label className="mb-3 block">
+            <span className="flex items-center justify-between gap-2 font-semibold text-white">
+              <span>Modo trabajo</span><span className="text-emerald-300">{Math.round(preferences.workDelaySeconds / 60)} min</span>
+            </span>
+            <input
+              type="range"
+              min={30}
+              max={600}
+              step={30}
+              value={preferences.workDelaySeconds}
+              onChange={(event) => updatePreferences({ workDelaySeconds: Number(event.target.value) })}
+              className="mt-2 w-full accent-emerald-400"
+              aria-label="Tiempo antes de modo trabajo"
+            />
+          </label>
+          <button type="button" onClick={resetSettings} className="w-full rounded-lg border border-slate-700 px-3 py-2 font-semibold text-slate-300 hover:bg-slate-800 hover:text-white">
+            Restaurar posición y configuración inicial
+          </button>
+        </section>
+      )}
       <button
         type="button"
         data-zordon-control="open"

@@ -20,8 +20,8 @@ export interface ZordonPreferences {
   preferredDock: ZordonDock;
 }
 
-interface ZordonStoreV2 {
-  version: 2;
+interface ZordonStoreV3 {
+  version: 3;
   preferences: ZordonPreferences;
   position: ZordonPosition | null;
 }
@@ -38,9 +38,9 @@ export const ZORDON_REPOSITION_EVENT = 'cc:zordon-reposition-requested';
 const LEGACY_PREFERENCES_KEY = 'control-contractual:zordon-preferences:v1';
 
 export const defaultZordonPreferences: ZordonPreferences = {
-  autonomousMovement: true,
+  autonomousMovement: false,
   deskMode: true,
-  avoidControls: true,
+  avoidControls: false,
   walkingSpeed: 'normal',
   workDelaySeconds: 120,
   workDurationSeconds: 12,
@@ -82,20 +82,42 @@ export function normalizeZordonPreferences(value: unknown): ZordonPreferences {
   };
 }
 
-function defaultStore(): ZordonStoreV2 {
-  return { version: 2, preferences: { ...defaultZordonPreferences }, position: null };
+function defaultStore(): ZordonStoreV3 {
+  return { version: 3, preferences: { ...defaultZordonPreferences }, position: null };
 }
 
-function readStore(): ZordonStoreV2 {
+function readStore(): ZordonStoreV3 {
   if (typeof window === 'undefined') return defaultStore();
   try {
     const parsed = JSON.parse(window.localStorage.getItem(ZORDON_STORAGE_KEY) || 'null');
-    if (parsed && typeof parsed === 'object' && Number((parsed as any).version) === 2) {
+    if (parsed && typeof parsed === 'object' && Number((parsed as any).version) === 3) {
       return {
-        version: 2,
+        version: 3,
         preferences: normalizeZordonPreferences((parsed as any).preferences),
         position: validPosition((parsed as any).position) ? { ...(parsed as any).position } : null,
       };
+    }
+
+    // Migración V2 -> V3: conserva tamaño, lado, pausas y posición,
+    // pero desactiva el desplazamiento autónomo que podía hacer que
+    // ZORDON cruzara la pantalla al detectar controles cercanos.
+    if (parsed && typeof parsed === 'object' && Number((parsed as any).version) === 2) {
+      const previous = normalizeZordonPreferences((parsed as any).preferences);
+      const migrated: ZordonStoreV3 = {
+        version: 3,
+        preferences: {
+          ...previous,
+          autonomousMovement: false,
+          avoidControls: false,
+        },
+        position: validPosition((parsed as any).position) ? { ...(parsed as any).position } : null,
+      };
+      try {
+        window.localStorage.setItem(ZORDON_STORAGE_KEY, JSON.stringify(migrated));
+      } catch {
+        // La interfaz funciona aunque localStorage esté bloqueado.
+      }
+      return migrated;
     }
   } catch {
     // Se recupera con valores seguros.
@@ -115,7 +137,7 @@ function readStore(): ZordonStoreV2 {
     position = null;
   }
 
-  const migrated: ZordonStoreV2 = { version: 2, preferences, position };
+  const migrated: ZordonStoreV3 = { version: 3, preferences: { ...preferences, autonomousMovement: false, avoidControls: false }, position };
   try {
     window.localStorage.setItem(ZORDON_STORAGE_KEY, JSON.stringify(migrated));
   } catch {
@@ -124,7 +146,7 @@ function readStore(): ZordonStoreV2 {
   return migrated;
 }
 
-function writeStore(store: ZordonStoreV2): void {
+function writeStore(store: ZordonStoreV3): void {
   if (typeof window === 'undefined') return;
   try {
     window.localStorage.setItem(ZORDON_STORAGE_KEY, JSON.stringify(store));
@@ -148,7 +170,7 @@ export function saveZordonPreferences(next: ZordonPreferences): ZordonPreference
   const preferences = normalizeZordonPreferences(next);
   if (typeof window === 'undefined') return preferences;
   const current = readStore();
-  writeStore({ ...current, version: 2, preferences });
+  writeStore({ ...current, version: 3, preferences });
   window.dispatchEvent(new CustomEvent<ZordonPreferences>(ZORDON_PREFERENCES_EVENT, { detail: preferences }));
   return preferences;
 }
@@ -162,7 +184,7 @@ export function saveZordonPosition(position: ZordonPosition | null): ZordonPosit
   if (typeof window === 'undefined') return position;
   const current = readStore();
   const safePosition = validPosition(position) ? { left: Number(position.left), top: Number(position.top) } : null;
-  writeStore({ ...current, version: 2, position: safePosition });
+  writeStore({ ...current, version: 3, position: safePosition });
   window.dispatchEvent(new CustomEvent<ZordonPosition | null>(ZORDON_POSITION_EVENT, { detail: safePosition }));
   return safePosition;
 }
